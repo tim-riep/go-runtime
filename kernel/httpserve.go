@@ -1,0 +1,222 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kernel
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/tim-riep/go-runtime/internal/auth"
+	"github.com/tim-riep/go-runtime/internal/httpsvc"
+	"github.com/tim-riep/go-runtime/kernelpkg/natives"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/vm"
+)
+
+// httpState is the activation of the service nodes at one generation of
+// the activation.
+type httpState struct {
+	n      int64
+	states map[string]httpsvc.State
+}
+
+// HTTPHandler returns the http.Handler of the http services of the kernel.
+// Every request reads the generations of code and activation, so
+// installations, upgrades and activations take effect without restart; a
+// request keeps the generation it started with.
+func (k *Kernel) HTTPHandler() http.Handler {
+	return http.HandlerFunc(k.serveHTTP)
+}
+
+// treeOf returns the tree of service nodes of a generation.
+func (g *generation) treeOf() *httpsvc.Tree {
+	g.treeOnce.Do(func() { g.tree = httpsvc.Build(g.schema) })
+	return g.tree
+}
+
+func (k *Kernel) activation(ctx context.Context) (map[string]httpsvc.State, error) {
+	n, err := k.repo.HTTPGeneration(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	if s := k.httpStates.Load(); s != nil && s.n == n {
+		return s.states, nil
+	}
+	stored, err := k.repo.HTTPStates(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	s := &httpState{n: n, states: states(stored)}
+	k.httpStates.Store(s)
+	return s.states, nil
+}
+
+// accessEntry is the line of the access log of a request.
+type accessEntry struct {
+	user, tenant, node, handler string
+	status                      int
+	size                        int
+}
+
+func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	entry := &accessEntry{}
+	defer func() {
+		slog.Info("http request", "method", r.Method, "path", r.URL.Path, "user", entry.user, "tenant", entry.tenant, "node", entry.node,
+			"handler", entry.handler, "status", entry.status, "duration", time.Since(start), "bytes", entry.size)
+	}()
+	ctx := r.Context()
+	lang := model.DefaultLanguage
+	fail := func(status int, code string) {
+		entry.status = status
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if status == http.StatusServiceUnavailable {
+			w.Header().Set("Retry-After", "1")
+		}
+		w.WriteHeader(status)
+		body, _ := json.Marshal(map[string]string{"code": code, "message": httpText(code, lang)})
+		entry.size, _ = w.Write(body)
+	}
+	if err := k.requireInit(ctx, k.db); err != nil {
+		slog.Error("http services are not available", "error", err)
+		fail(http.StatusServiceUnavailable, httpsvc.CodeUnavailable)
+		return
+	}
+	g, err := k.generation(ctx)
+	if err != nil {
+		slog.Error("loading the code", "error", err)
+		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	}
+	st, err := k.activation(ctx)
+	if err != nil {
+		slog.Error("loading the activation of service nodes", "error", err)
+		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	}
+	langs, err := k.repo.LanguageCodes(ctx, k.db)
+	if err != nil {
+		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	}
+	node, rest := g.treeOf().Match(r.URL.Path)
+	if node != nil {
+		lang = httpsvc.Language(r, node.Settings, nil, langs)
+	}
+	if node == nil || !httpsvc.Reachable(node, st) || len(node.Handlers()) == 0 {
+		fail(http.StatusNotFound, httpsvc.CodeNotFound)
+		return
+	}
+	entry.node = node.Path
+	set := node.Settings
+
+	user, err := k.Authenticate(ctx, r, set.Authentication)
+	if err != nil && !errors.Is(err, auth.ErrInvalid) {
+		slog.Error("authentication", "error", err)
+		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	}
+	if err != nil || user == nil && !set.Anonymous {
+		for _, c := range auth.Challenges(set.Authentication) {
+			w.Header().Add("WWW-Authenticate", c)
+		}
+		fail(http.StatusUnauthorized, httpsvc.CodeUnauthorized)
+		return
+	}
+	userName := model.None[string]()
+	if user != nil {
+		userName = model.Some(user.Name)
+		entry.user = user.Name
+	}
+	lang = httpsvc.Language(r, set, user, langs)
+	tenant, err := httpsvc.Tenant(r, set, user)
+	var he *httpsvc.Error
+	if errors.As(err, &he) {
+		fail(he.Status, he.Code)
+		return
+	}
+	entry.tenant = tenant.Or("")
+
+	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, MaxBody: set.MaxBodySize}
+	resp := natives.NewHTTPResponse(set.MaxResponseSize)
+	handled := false
+	opts := ExecOptions{Tenant: tenant.Or(""), Language: lang, User: userName, Timeout: set.Timeout, VM: vm.Options{Budget: set.Budget},
+		Rollback: func() bool { return !handled || resp.Status >= 400 }}
+	err = k.executeWith(ctx, g, opts, func(ctx context.Context, m *vm.Machine) error {
+		reqV, err := m.NewNative("/TRBASE/HTTP_REQUEST", req)
+		if err != nil {
+			return err
+		}
+		respV, err := m.NewNative("/TRBASE/HTTP_RESPONSE", resp)
+		if err != nil {
+			return err
+		}
+		for _, h := range node.Handlers() {
+			entry.handler = h.Class
+			req.Params = h.Parameters
+			obj, err := m.NewObject(ctx, h.Class)
+			if err != nil {
+				return err
+			}
+			v, err := m.Invoke(ctx, obj, "HANDLE", reqV, respV)
+			if err != nil {
+				return err
+			}
+			if v.AsBool() {
+				handled = true
+				return nil
+			}
+		}
+		return nil
+	})
+	var ex *vm.Exception
+	var le *vm.LimitError
+	switch {
+	case errors.As(err, &ex) && ex.Class == "/RT/INPUT_TOO_LARGE" && req.TooLarge:
+		fail(http.StatusRequestEntityTooLarge, httpsvc.CodeTooLarge)
+		return
+	case errors.As(err, &le) && (le.Limit == "time limit" || le.Limit == "canceled"):
+		slog.Warn("a request exceeded its time limit", "node", node.Path, "handler", entry.handler, "error", err)
+		fail(http.StatusServiceUnavailable, httpsvc.CodeUnavailable)
+		return
+	case err != nil:
+		slog.Error("a request failed", "node", node.Path, "handler", entry.handler, "user", entry.user, "tenant", entry.tenant, "error", err)
+		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	case !handled:
+		fail(http.StatusNotFound, httpsvc.CodeNotHandled)
+		return
+	}
+	entry.status = resp.Status
+	for name, vals := range resp.Header {
+		w.Header()[name] = vals
+	}
+	if resp.Serve != nil {
+		resp.Serve(w)
+		return
+	}
+	if w.Header().Get("Content-Length") == "" {
+		w.Header().Set("Content-Length", strconv.Itoa(resp.Body.Len()))
+	}
+	w.WriteHeader(resp.Status)
+	if r.Method != http.MethodHead {
+		entry.size, _ = w.Write(resp.Body.Bytes())
+	}
+}

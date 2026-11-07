@@ -21,9 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/internal/httpsvc"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
@@ -49,6 +51,13 @@ type ExecOptions struct {
 	Tenant string
 	// Language is the language of texts for the execution.
 	Language string
+	// User is the signed-in user, for requests of http services.
+	User model.Optional[string]
+	// Rollback, when set, decides at the end of an execution without
+	// exception whether the default session is rolled back instead of
+	// committed: http services roll back responses with a status of 400
+	// and above.
+	Rollback func() bool
 	End      EndMode
 	// MaxSessions limits the sessions of an execution including the
 	// default session; 0 means 4.
@@ -115,13 +124,22 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(ctx cont
 	if err != nil {
 		return err
 	}
-	if !slices.ContainsFunc(tenants, func(t Tenant) bool { return t.ID == opts.Tenant }) {
+	// Anonymous requests of http services may run without tenant.
+	if opts.Tenant != "" && !slices.ContainsFunc(tenants, func(t Tenant) bool { return t.ID == opts.Tenant }) {
 		return &rterr.NotFound{Kind: "tenant", Name: opts.Tenant}
 	}
 	g, err := k.generation(ctx)
 	if err != nil {
 		return err
 	}
+	return k.executeWith(ctx, g, opts, fn)
+}
+
+// executeWith runs fn on a machine with the code of generation g.
+func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOptions, fn func(ctx context.Context, m *vm.Machine) error) (err error) {
+	opts.defaults()
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
 	image := g.image
 	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts}
 	x.sessions = []*session{{x: x, n: 1}}
@@ -150,7 +168,7 @@ func (x *execution) finish(failure error) error {
 			if err := s.discard(ctx); err != nil {
 				errs = append(errs, err)
 			}
-		case s.n == 1 && failure == nil && x.opts.End == CommitOnSuccess:
+		case s.n == 1 && failure == nil && x.opts.End == CommitOnSuccess && (x.opts.Rollback == nil || !x.opts.Rollback()):
 			if err := s.Commit(ctx); err != nil {
 				errs = append(errs, fmt.Errorf("commit at the end of the execution: %w", err))
 			}
@@ -175,6 +193,9 @@ type generation struct {
 	phys   *model.Physical
 	schema *model.Schema
 	sheets *sheets
+	// tree are the service nodes, built when a request needs them.
+	tree     *httpsvc.Tree
+	treeOnce sync.Once
 }
 
 // generation returns the code of the current generation. An execution

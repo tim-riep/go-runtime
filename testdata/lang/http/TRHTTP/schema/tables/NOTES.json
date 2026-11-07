@@ -1,0 +1,3 @@
+{ "name": "/TRHTTP/NOTES", "tenantSpecific": true, "dataClass": "application",
+  "fields": [{ "name": "NOTE_ID", "domain": "/TRBASE/GUID" }, { "name": "TEXT", "domain": "/TRHTTP/TEXT", "notNull": true }],
+  "primaryKey": ["NOTE_ID"] }

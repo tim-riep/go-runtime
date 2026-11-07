@@ -1,0 +1,9 @@
+# Passes every request to the next handler.
+public class /TRHTTP/NOPE implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    response.SET_HEADER("X-Passed", "nope")
+    return false
+  end
+
+end

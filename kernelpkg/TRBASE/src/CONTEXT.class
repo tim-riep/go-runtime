@@ -1,0 +1,13 @@
+# The context of the execution: the signed-in user, the tenant and the
+# language.
+public class /TRBASE/CONTEXT
+
+  # The user of the request, null without one, e.g. for anonymous access.
+  public static method USER() returns STRING? executed by kernel
+
+  # The tenant whose rows the code reads and writes, null without one.
+  public static method TENANT() returns STRING? executed by kernel
+
+  public static method LANGUAGE() returns STRING executed by kernel
+
+end

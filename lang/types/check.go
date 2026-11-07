@@ -62,6 +62,9 @@ type Config struct {
 	// LibraryCapabilities returns the capabilities of a method of a
 	// required kernel package, from its compiled code.
 	LibraryCapabilities func(class, method string) []string
+	// HTTPHandlers are the handler classes of the service nodes of the
+	// package.
+	HTTPHandlers []HandlerRef
 }
 
 // Natives looks up the registrations of native methods.
@@ -234,6 +237,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 			c.classRules(k)
 		}
 	}
+	c.httpHandlers()
 	for _, k := range c.sorted() {
 		if !k.External {
 			c.bodies(k)

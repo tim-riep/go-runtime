@@ -1,0 +1,21 @@
+# Stores a note; the status of the answer decides about the commit.
+public class /TRHTTP/NOTES_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    if request.METHOD() = "GET"
+      response.WRITE_TEXT("{select count from /TRHTTP/NOTES}")
+      return true
+    end
+    var note: /TRHTTP/NOTES
+    note.NOTE_ID = UUID.RANDOM()
+    note.TEXT = request.QUERY("text") default "-"
+    insert note
+    if request.QUERY("fail") is not null
+      var list = new array of INT4
+      list.REMOVE(1)
+    end
+    response.SET_STATUS((request.QUERY("status") default "201") as INT4)
+    return true
+  end
+
+end

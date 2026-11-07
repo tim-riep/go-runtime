@@ -333,6 +333,7 @@ const (
 	CodeNotYet     = "not-yet"
 	CodeNative     = "native"
 	CodeCapability = "capability"
+	CodeHandler    = "handler"
 	CodeConstant   = "constant"
 	CodeTest       = "test"
 	CodeStatement  = "statement"

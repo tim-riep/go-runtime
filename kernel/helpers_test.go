@@ -17,6 +17,8 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -142,3 +144,5 @@ func consistent(t *testing.T, k *kernel.Kernel) {
 		t.Fatalf("schema check: %v", d)
 	}
 }
+
+func removeFile(dir, rel string) error { return os.Remove(filepath.Join(dir, rel)) }

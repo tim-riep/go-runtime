@@ -1,0 +1,16 @@
+# Answers with what it sees of the request.
+public class /TRHTTP/ECHO implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    var body = ""
+    if request.METHOD() = "POST"
+      body = request.BODY_TEXT()
+    end
+    response.SET_HEADER("Content-Type", "text/plain")
+    response.WRITE_TEXT("method={request.METHOD()} path={request.PATH()} rest={request.REST_PATH()} q={request.QUERY("q") default "<null>"} qs={request.QUERY_ALL("q").LENGTH()}")
+    response.WRITE_TEXT(" h={request.HEADER("X-Test") default "<null>"} p={request.HANDLER_PARAMETER("greeting") default "<null>"} e={request.HANDLER_PARAMETER("empty") default "<null>"}")
+    response.WRITE_TEXT(" user={/TRBASE/CONTEXT.USER() default "<null>"} tenant={/TRBASE/CONTEXT.TENANT() default "<null>"} lang={/TRBASE/CONTEXT.LANGUAGE()} body={body}")
+    return true
+  end
+
+end

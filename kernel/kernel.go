@@ -79,6 +79,8 @@ type Kernel struct {
 	kernelPkgs []*model.Package
 	// maxFailedLogins locks a user after this many failed logins.
 	maxFailedLogins int
+	// httpStates caches the activation of the service nodes.
+	httpStates atomic.Pointer[httpState]
 }
 
 // Open connects to a database. The connection string selects the dialect:

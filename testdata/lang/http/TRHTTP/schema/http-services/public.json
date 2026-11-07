@@ -1,0 +1,2 @@
+{ "path": "public", "texts": { "en": { "label": "Public" } }, "handlers": [{ "class": "/TRHTTP/ECHO" }],
+  "settings": { "anonymous": true, "anonymousTenant": "ACME" } }

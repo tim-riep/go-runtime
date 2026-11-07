@@ -1,0 +1,3 @@
+{ "path": "echo", "texts": { "en": { "label": "Echo" } },
+  "handlers": [{ "class": "/TRHTTP/NOPE" }, { "class": "/TRHTTP/ECHO", "parameters": [{ "name": "greeting", "value": "hello" }, { "name": "empty", "value": "" }] }],
+  "settings": { "maxBodySize": 16 } }

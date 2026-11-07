@@ -197,6 +197,9 @@ func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, p *b
 	if table == nil {
 		return nil, fmt.Errorf("kernel: table %s does not exist", q.Table)
 	}
+	if table.TenantSpecific && tenant == "" {
+		return nil, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: fmt.Sprintf("the execution has no tenant, so it cannot access the table %s of tenants", q.Table)}
+	}
 	sb := &sqlBuilder{d: d, table: table, phys: phys}
 	layout := &p.Layouts[p.Types[q.Row].Layout]
 	var columns []string

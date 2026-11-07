@@ -21,6 +21,7 @@ package build
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -364,7 +365,8 @@ func CheckPackageOpts(pkg *model.Package, schema *model.Schema, opts Options) *R
 		}
 	}
 	prog, diags := types.Check(types.Config{Package: id, Schema: schema, Units: units, Libraries: libraries, Visible: visible, Includes: incs,
-		KernelPackage: kernelPackage, Natives: natives, Capabilities: caps, LibraryCapabilities: libraryCapabilities(schema, opts.Programs)})
+		KernelPackage: kernelPackage, Natives: natives, Capabilities: caps, LibraryCapabilities: libraryCapabilities(schema, opts.Programs),
+		HTTPHandlers: handlerRefs(schema, pkg)})
 	r.Program = prog
 	r.Diagnostics = append(r.Diagnostics, diags...)
 	for name, u := range incs {
@@ -451,4 +453,28 @@ func libraryCapabilities(schema *model.Schema, programs map[model.PackageID]*byt
 		m, _ := p.Method(class, method)
 		return m.Capabilities
 	}
+}
+
+// handlerRefs returns the handler classes of the service nodes of a
+// package.
+func handlerRefs(schema *model.Schema, pkg *model.Package) []types.HandlerRef {
+	var out []types.HandlerRef
+	add := func(h *model.HTTPService) {
+		for i, r := range h.Handlers {
+			out = append(out, types.HandlerRef{Class: r.Class, File: h.File, Pointer: fmt.Sprintf("/handlers/%d/class", i)})
+		}
+	}
+	found := false
+	for _, path := range slices.Sorted(maps.Keys(schema.HTTPServices)) {
+		if h := schema.HTTPServices[path]; h.Owner == pkg.Manifest.ID {
+			add(h)
+			found = true
+		}
+	}
+	if !found {
+		for i := range pkg.HTTPServices {
+			add(&pkg.HTTPServices[i])
+		}
+	}
+	return out
 }

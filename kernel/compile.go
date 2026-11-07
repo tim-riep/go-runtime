@@ -291,7 +291,7 @@ func (k *Kernel) compileSet(ctx context.Context, q dialect.Querier, want *model.
 		delete(programs, id)
 		out.packages = append(out.packages, id)
 		sources := want.Sources[id]
-		if len(sources) == 0 {
+		if len(sources) == 0 && !hasHandlers(want, id) {
 			continue
 		}
 		info := want.Packages[id]
@@ -445,4 +445,15 @@ func codeReferences(r *build.Result) ([]repo.CodeUse, []repo.CodeInclude) {
 		includes = append(includes, repo.CodeInclude{Name: inc.Name, Package: id, IfFound: inc.IfFound, Found: inc.Found})
 	}
 	return uses, includes
+}
+
+// hasHandlers reports whether service nodes of a package name handler
+// classes, which are checked like code.
+func hasHandlers(s *model.Schema, id model.PackageID) bool {
+	for _, h := range s.HTTPServices {
+		if h.Owner == id && len(h.Handlers) > 0 {
+			return true
+		}
+	}
+	return false
 }

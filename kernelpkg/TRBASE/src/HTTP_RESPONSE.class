@@ -1,0 +1,17 @@
+# The response of a handler of http services. The kernel sends it when the
+# request is done; until then status, headers and body can change.
+public class /TRBASE/HTTP_RESPONSE executed by kernel
+
+  public method SET_STATUS(code: INT4) executed by kernel
+
+  public method STATUS() returns INT4 executed by kernel
+
+  public method SET_HEADER(name: STRING, value: STRING) executed by kernel
+
+  public method ADD_HEADER(name: STRING, value: STRING) executed by kernel
+
+  public method WRITE(data: BYTES) executed by kernel
+
+  public method WRITE_TEXT(text: STRING) executed by kernel
+
+end

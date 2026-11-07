@@ -1,0 +1,31 @@
+# The request of a handler of http services. A query parameter, header or
+# handler parameter that is missing is null; one without value is "".
+public class /TRBASE/HTTP_REQUEST executed by kernel
+
+  # GET, POST, ...
+  public method METHOD() returns STRING executed by kernel
+
+  # The full path, e.g. /trfin/companies/42.
+  public method PATH() returns STRING executed by kernel
+
+  # The path below the service node, e.g. 42, "" at the node itself.
+  public method REST_PATH() returns STRING executed by kernel
+
+  public method QUERY(name: STRING) returns STRING? executed by kernel
+
+  public method QUERY_ALL(name: STRING) returns array of STRING executed by kernel
+
+  public method HEADER(name: STRING) returns STRING? executed by kernel
+
+  public method HEADER_ALL(name: STRING) returns array of STRING executed by kernel
+
+  # The body, at most as large as the service node allows.
+  public method BODY() returns BYTES executed by kernel
+
+  # The body as UTF-8 text.
+  public method BODY_TEXT() returns STRING executed by kernel
+
+  # A parameter of the handler entry of the service node.
+  public method HANDLER_PARAMETER(name: STRING) returns STRING? executed by kernel
+
+end

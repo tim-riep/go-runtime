@@ -34,6 +34,8 @@ import (
 
 func (x *execution) Tenant() string { return x.tenant }
 
+func (x *execution) User() model.Optional[string] { return x.opts.User }
+
 func (x *execution) Language() string {
 	if x.opts.Language == "" {
 		return model.DefaultLanguage

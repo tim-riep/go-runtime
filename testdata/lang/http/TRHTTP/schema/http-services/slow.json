@@ -1,0 +1,2 @@
+{ "path": "slow", "texts": { "en": { "label": "Slow" } }, "handlers": [{ "class": "/TRHTTP/SLOW" }],
+  "settings": { "timeoutSeconds": 1, "budget": 100000000000 } }

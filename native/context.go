@@ -35,6 +35,8 @@ type Caller struct {
 // Host is what the kernel provides to native methods of one execution.
 type Host interface {
 	Tenant() string
+	// User is the signed-in user of the execution, if any.
+	User() model.Optional[string]
 	Language() string
 	// Now returns the time of the kernel's clock.
 	Now() time.Time
@@ -64,6 +66,14 @@ func (c *Context) Tenant() string {
 		return ""
 	}
 	return c.Host.Tenant()
+}
+
+// User returns the signed-in user of the execution, if any.
+func (c *Context) User() model.Optional[string] {
+	if c.Host == nil {
+		return model.None[string]()
+	}
+	return c.Host.User()
 }
 
 // Language returns the language of the execution.

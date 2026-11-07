@@ -1,0 +1,1 @@
+{ "path": "notes", "texts": { "en": { "label": "Notes" } }, "handlers": [{ "class": "/TRHTTP/NOTES_API" }] }
