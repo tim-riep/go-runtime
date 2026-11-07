@@ -66,7 +66,7 @@ func TestCLI(t *testing.T) {
 				{[]string{"show", "/TRFIN/PAYMENTS"}, exitOK, "data class application"},
 				{[]string{"setting", "list"}, exitOK, "/TRFIN/COMPANIES  TRFIN"},
 				{[]string{"setting", "show", "/TRFIN/COMPANIES"}, exitOK, "parent /TROTTO/OTTO_CONNECTIONS through CONNECTION"},
-				{[]string{"setting", "show", "/TRFIN/COMPANIES", "--json"}, exitOK, `"formatVersion": 2`},
+				{[]string{"setting", "show", "/TRFIN/COMPANIES", "--json"}, exitOK, `"formatVersion": 3`},
 				{[]string{"setting", "show", "NOPE"}, exitError, "not found"},
 				{[]string{"language", "add", "xx"}, exitError, "ISO 639-1"},
 				{[]string{"language", "list"}, exitOK, "English"},

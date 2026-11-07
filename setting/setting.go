@@ -37,7 +37,7 @@ import (
 )
 
 // FormatVersion is the version of the structure of Definition.
-const FormatVersion = 2
+const FormatVersion = 3
 
 // Definition is the resolved definition of a setting.
 type Definition struct {
@@ -106,7 +106,11 @@ type Field struct {
 	LocalName   string                 `json:"localName"` // name as declared
 	Description model.Optional[string] `json:"description"`
 	Owner       model.PackageID        `json:"owner"`
-	Origin      model.FieldOrigin      `json:"origin"` // TABLE or EXTENSION
+	Origin      model.FieldOrigin      `json:"origin"` // TABLE, EXTENSION or INCLUDE
+	// Include is the include of the table that brings an included field,
+	// Source the structure or table that declares it.
+	Include model.Optional[string] `json:"include"`
+	Source  model.Optional[string] `json:"source"`
 	// DataElement carries the labels; nil means the field has none and is
 	// shown with its technical name.
 	DataElement *DataElement       `json:"dataElement,omitempty"`
@@ -264,7 +268,7 @@ func resolveTable(phys *model.Physical, pt *model.Table, n model.SettingNode, la
 		}
 		dom := phys.Domain(&f)
 		rf := Field{Name: f.Name, LocalName: f.LocalName, Description: f.Description, Owner: f.Owner, Origin: f.Origin,
-			Domain: f.Domain, NotNull: f.NotNull, Key: pt.IsKey(f.Name), Default: f.ResolvedDefault, FromParent: fromParent[f.Name]}
+			Include: f.Included, Source: f.Source, Domain: f.Domain, NotNull: f.NotNull, Key: pt.IsKey(f.Name), Default: f.ResolvedDefault, FromParent: fromParent[f.Name]}
 		if dom != nil {
 			rf.Type, rf.FixedValues = dom.Type, slices.Clone(dom.Values)
 			if dom.Type.IsString() {

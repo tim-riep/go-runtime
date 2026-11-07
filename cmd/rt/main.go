@@ -39,6 +39,7 @@ import (
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/setting"
+	"github.com/tim-riep/go-runtime/structure"
 )
 
 // Exit codes.
@@ -61,7 +62,8 @@ Commands:
   upgrade <package>        upgrade an installed package
   uninstall <id>           remove a package and its data (needs --yes)
   list                     list installed packages
-  show <object>            show a package, table, domain or data element (kind:name to disambiguate)
+  show <object>            show a package, table, domain, data element, structure or array type
+                           (kind:name to disambiguate)
   check                    compare the repository with the database schema
   log                      show the operation log
   tenant create <id>       create a tenant (--description)
@@ -392,7 +394,14 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 				key = "yes"
 			}
 			def := f.ResolvedDefault.String() // empty without default, <null>, or a quoted value
-			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%v\t%s\t%s\t%s\n", f.Name, f.DataElement, f.Domain, key, f.NotNull, def, f.Owner, f.Origin)
+			origin := string(f.Origin)
+			if src, ok := f.Source.Get(); ok {
+				origin += " via " + src
+				if inc := f.Included.Or(""); inc != src {
+					origin += " (include " + inc + ")"
+				}
+			}
+			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%v\t%s\t%s\t%s\n", f.Name, f.DataElement, f.Domain, key, f.NotNull, def, f.Owner, origin)
 		}
 		w.Flush()
 		for _, fk := range t.ForeignKeys {
@@ -405,6 +414,22 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		for _, r := range d.ReferencedBy {
 			fmt.Fprintf(c.stdout, "  referenced by %s\n", r)
 		}
+		for _, inc := range d.Includes {
+			fmt.Fprintf(c.stdout, "  includes %s after %d fields\n", inc.Name, inc.After)
+		}
+		for _, u := range d.UsedBy {
+			fmt.Fprintf(c.stdout, "  used by %s %s (%s)\n", u.Kind, u.Name, u.Via)
+		}
+	case kernel.KindStructure, kernel.KindArrayType:
+		d, err := k.Structure(ctx, name)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(d)
+			return exitOK
+		}
+		printStructure(c.stdout, d)
 	case kernel.KindDataElement:
 		d, err := k.DataElement(ctx, name)
 		if err != nil {
@@ -794,6 +819,93 @@ func ops(o setting.Operations) string {
 }
 
 // printSetting renders a resolved setting as a tree with English labels.
+// printStructure prints a resolved definition as a tree with the type,
+// key data and origin of every component, then its uses.
+func printStructure(out io.Writer, d *kernel.StructureDetail) {
+	def := d.Definition
+	shape := "flat"
+	if !def.Flat {
+		shape = "deep"
+	}
+	if def.Kind == structure.KindArrayType {
+		shape = "array"
+	}
+	fmt.Fprintf(out, "%s %s (owner %s, %s)\n", strings.ToUpper(string(def.Kind[:1]))+strings.ReplaceAll(string(def.Kind[1:]), "-", " "), def.Name, def.Owner, shape)
+	if t, ok := def.Texts[model.DefaultLanguage]; ok {
+		fmt.Fprintf(out, "  %s\n", t.Label)
+	}
+	if len(def.Extensions) > 0 {
+		fmt.Fprintf(out, "  extended by %s\n", joinIDs(def.Extensions))
+	}
+	fmt.Fprintln(out)
+	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "  COMPONENT\tTYPE\tNOT NULL\tDEFAULT\tORIGIN")
+	var walk func(d *structure.Definition, indent string)
+	row := func(c structure.Component, indent string) {
+		typ := ""
+		switch c.Kind {
+		case structure.Elementary:
+			typ = c.Domain + " " + string(c.Type)
+			if c.Length > 0 {
+				typ += fmt.Sprintf("(%d", c.Length)
+				if c.Decimals > 0 {
+					typ += fmt.Sprintf(",%d", c.Decimals)
+				}
+				typ += ")"
+			}
+			if c.DataElement != nil {
+				typ = c.DataElement.Name + " = " + typ
+			}
+		case structure.Nested:
+			typ = "structure " + c.Structure.Name
+		case structure.Array:
+			typ = "array " + c.ArrayType.Name
+		}
+		origin := ""
+		if o := c.Origin; o != nil {
+			origin = o.Declared
+			if len(o.Includes) > 0 {
+				origin = "include " + strings.Join(o.Includes, " > ")
+			}
+			if ext, ok := o.Extension.Get(); ok {
+				origin += ", extension " + string(ext)
+			}
+		}
+		name := c.Name
+		if name == "" {
+			name = "(row)"
+		}
+		fmt.Fprintf(w, "  %s%s\t%s\t%v\t%s\t%s\n", indent, name, typ, c.NotNull, c.Default, origin)
+		switch c.Kind {
+		case structure.Nested:
+			walk(c.Structure, indent+"  ")
+		case structure.Array:
+			walk(c.ArrayType, indent+"  ")
+		}
+	}
+	walk = func(d *structure.Definition, indent string) {
+		if d.Array != nil {
+			row(d.Array.Row, indent)
+			return
+		}
+		for _, c := range d.Components {
+			row(c, indent)
+		}
+	}
+	walk(def, "")
+	w.Flush()
+	if a := def.Array; a != nil && a.Key != nil {
+		kind := "non-unique"
+		if a.Key.Unique {
+			kind = "unique"
+		}
+		fmt.Fprintf(out, "  %s key %s\n", kind, strings.Join(a.Key.Fields, ", "))
+	}
+	for _, u := range d.UsedBy {
+		fmt.Fprintf(out, "  used by %s %s (%s)\n", u.Kind, u.Name, u.Via)
+	}
+}
+
 func printSetting(w io.Writer, d *setting.Definition) {
 	fmt.Fprintf(w, "Setting %s: %s\n", d.ID, d.Texts[model.DefaultLanguage].Label)
 	fmt.Fprintf(w, "  owner %s, data class %s, tenant-specific %v", d.Owner, d.DataClass, d.TenantSpecific)

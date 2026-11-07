@@ -16,11 +16,13 @@ package kernel
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/structure"
 )
 
 // LogEntry is one entry of the operation log.
@@ -89,6 +91,8 @@ func (k *Kernel) Package(ctx context.Context, id model.PackageID) (*PackageDetai
 type TableDetail struct {
 	Table        *model.Table           `json:"table"` // physical layout incl. tenant and extension fields
 	Extensions   []*model.Extension     `json:"extensions,omitempty"`
+	Includes     []model.TableInclude   `json:"includes,omitempty"`
+	UsedBy       []model.Use            `json:"usedBy,omitempty"`       // structures, tables and array types using the table
 	ReferencedBy []string               `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
 	Setting      model.Optional[string] `json:"setting"`                // setting the table belongs to
 }
@@ -104,7 +108,7 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 	if !ok {
 		return nil, &rterr.NotFound{Kind: "table", Name: name}
 	}
-	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Setting: settingOf(s, name)}
+	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Includes: s.Tables[name].Includes, UsedBy: s.UsesOf(name), Setting: settingOf(s, name)}
 	for _, other := range p.TableNames() {
 		for _, fk := range p.Tables[other].ForeignKeys {
 			if fk.Target == name {
@@ -179,13 +183,16 @@ const (
 	KindTable       = "table"
 	KindDomain      = "domain"
 	KindDataElement = "data-element"
+	KindStructure   = "structure"
+	KindArrayType   = "array-type"
 )
 
 // Resolve determines which kind of object a name refers to. A prefix
-// "package:", "table:", "domain:" or "data-element:" selects the kind explicitly; a bare name
+// "package:", "table:", "domain:", "data-element:", "structure:" or
+// "array-type:" selects the kind explicitly; a bare name
 // that matches several kinds is reported as rterr.Ambiguous.
 func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, err error) {
-	if kd, n, ok := strings.Cut(ref, ":"); ok && (kd == KindPackage || kd == KindTable || kd == KindDomain || kd == KindDataElement) {
+	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType}, kd) {
 		return kd, n, nil
 	}
 	s, err := k.Schema(ctx)
@@ -205,6 +212,12 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	if _, ok := s.DataElements[ref]; ok {
 		kinds = append(kinds, KindDataElement)
 	}
+	if _, ok := s.Structures[ref]; ok {
+		kinds = append(kinds, KindStructure)
+	}
+	if _, ok := s.ArrayTypes[ref]; ok {
+		kinds = append(kinds, KindArrayType)
+	}
 	switch len(kinds) {
 	case 0:
 		return "", "", &rterr.NotFound{Kind: "object", Name: ref}
@@ -212,6 +225,36 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 		return kinds[0], ref, nil
 	}
 	return "", "", &rterr.Ambiguous{Name: ref, Kinds: kinds}
+}
+
+// StructureDetail is the resolved definition of a structure, table or
+// array type with its direct uses.
+type StructureDetail struct {
+	Definition *structure.Definition `json:"definition"`
+	UsedBy     []model.Use           `json:"usedBy"`
+}
+
+// Structure returns the resolved definition of a structure, table or array
+// type with texts in all languages set up in the database, and where it is
+// used.
+func (k *Kernel) Structure(ctx context.Context, name string) (*StructureDetail, error) {
+	s, err := k.Schema(ctx)
+	if err != nil {
+		return nil, err
+	}
+	langs, err := k.languageCodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d, err := structure.Resolve(s, langs, name)
+	if err != nil {
+		return nil, err
+	}
+	uses := s.UsesOf(name)
+	if uses == nil {
+		uses = []model.Use{}
+	}
+	return &StructureDetail{Definition: d, UsedBy: uses}, nil
 }
 
 func settingOf(s *model.Schema, table string) model.Optional[string] {

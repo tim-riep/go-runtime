@@ -317,3 +317,33 @@ func (s *Schema) Cycles() []string {
 	}
 	return out
 }
+
+// Use is a direct use of a structure, table or array type by another one.
+type Use struct {
+	Kind string `json:"kind"` // "structure", "table", "array-type" or "structure-extension"
+	Name string `json:"name"` // the using object; the package for extensions
+	Via  string `json:"via"`  // "include", "component SEAT", "row type", "extension"
+}
+
+// UsesOf lists the structures, tables and array types that include an
+// object or use it as type, and the packages that extend it, ordered by
+// kind and name.
+func (s *Schema) UsesOf(name string) []Use {
+	var out []Use
+	add := func(kind string, names []string) {
+		for _, n := range names {
+			for _, e := range s.Edges(n) {
+				if e.To == name {
+					out = append(out, Use{Kind: kind, Name: n, Via: e.Via})
+				}
+			}
+		}
+	}
+	add("array-type", s.ArrayTypeNames())
+	add("structure", s.StructureNames())
+	for _, e := range s.ExtensionsOfStructure(name) {
+		out = append(out, Use{Kind: "structure-extension", Name: string(e.Package), Via: "extension"})
+	}
+	add("table", s.TableNames())
+	return out
+}
