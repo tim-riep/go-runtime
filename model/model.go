@@ -385,21 +385,22 @@ type Source struct {
 
 // Package is a loaded package.
 type Package struct {
-	Manifest            Manifest
-	Domains             []Domain
-	DataElements        []DataElement
-	Tables              []Table
-	Extensions          []Extension
-	Settings            []Setting
-	SettingExtensions   []SettingExtension
-	AssetRepositories   []AssetRepository
-	Structures          []Structure
-	ArrayTypes          []ArrayType
-	StructureExtensions []StructureExtension
-	Sources             []Source
-	Transformations     []Transformation
-	HTTPServices        []HTTPService
-	Origin              string // where the package was loaded from
+	Manifest             Manifest
+	Domains              []Domain
+	DataElements         []DataElement
+	Tables               []Table
+	Extensions           []Extension
+	Settings             []Setting
+	SettingExtensions    []SettingExtension
+	AssetRepositories    []AssetRepository
+	Structures           []Structure
+	ArrayTypes           []ArrayType
+	StructureExtensions  []StructureExtension
+	Sources              []Source
+	Transformations      []Transformation
+	HTTPServices         []HTTPService
+	AuthorizationObjects []AuthorizationObject
+	Origin               string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

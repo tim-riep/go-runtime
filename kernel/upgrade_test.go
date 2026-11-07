@@ -37,6 +37,11 @@ func withData(t *testing.T, k *kernel.Kernel) {
 	if k.TargetVersion() < 5 {
 		pkgs = legacyExamples(t)
 	}
+	if k.TargetVersion() < 11 { // before authorization objects
+		for _, p := range pkgs {
+			p.AuthorizationObjects = nil
+		}
+	}
 	if _, err := k.Install(context.Background(), pkgs, kernel.Options{}); err != nil {
 		t.Fatal(err)
 	}

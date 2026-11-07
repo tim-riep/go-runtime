@@ -86,6 +86,10 @@ const (
 	DropArrayType         ChangeKind = "drop-array-type"
 	AlterArrayType        ChangeKind = "alter-array-type"
 
+	CreateAuthorizationObject ChangeKind = "create-authorization-object"
+	DropAuthorizationObject   ChangeKind = "drop-authorization-object"
+	AlterAuthorizationObject  ChangeKind = "alter-authorization-object"
+
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
 	AlterAssetRepository ChangeKind = "alter-asset-repository"
@@ -110,7 +114,8 @@ func (k ChangeKind) Physical() bool {
 		CreateStructure, DropStructure, AlterStructure, AddStructureExtension, DropStructureExtension, AlterStructureExtension,
 		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage, CompileTransformation,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
-		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant:
+		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant,
+		CreateAuthorizationObject, DropAuthorizationObject, AlterAuthorizationObject:
 		return false
 	}
 	return true

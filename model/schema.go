@@ -45,25 +45,28 @@ type Schema struct {
 	Transformations map[string]*Transformation
 	// HTTPServices are the service nodes of the packages by full path.
 	HTTPServices map[string]*HTTPService
+	// AuthorizationObjects are the authorization objects by name.
+	AuthorizationObjects map[string]*AuthorizationObject
 }
 
 // NewSchema returns an empty schema.
 func NewSchema() *Schema {
 	return &Schema{
-		Packages:            map[PackageID]*PackageInfo{},
-		Domains:             map[string]*Domain{},
-		DataElements:        map[string]*DataElement{},
-		Tables:              map[string]*Table{},
-		Extensions:          map[ExtensionKey]*Extension{},
-		Settings:            map[string]*Setting{},
-		SettingExtensions:   map[SettingExtensionKey]*SettingExtension{},
-		AssetRepositories:   map[AssetRepositoryKey]*AssetRepository{},
-		Structures:          map[string]*Structure{},
-		ArrayTypes:          map[string]*ArrayType{},
-		StructureExtensions: map[StructureExtensionKey]*StructureExtension{},
-		Sources:             map[PackageID][]Source{},
-		Transformations:     map[string]*Transformation{},
-		HTTPServices:        map[string]*HTTPService{},
+		Packages:             map[PackageID]*PackageInfo{},
+		Domains:              map[string]*Domain{},
+		DataElements:         map[string]*DataElement{},
+		Tables:               map[string]*Table{},
+		Extensions:           map[ExtensionKey]*Extension{},
+		Settings:             map[string]*Setting{},
+		SettingExtensions:    map[SettingExtensionKey]*SettingExtension{},
+		AssetRepositories:    map[AssetRepositoryKey]*AssetRepository{},
+		Structures:           map[string]*Structure{},
+		ArrayTypes:           map[string]*ArrayType{},
+		StructureExtensions:  map[StructureExtensionKey]*StructureExtension{},
+		Sources:              map[PackageID][]Source{},
+		Transformations:      map[string]*Transformation{},
+		HTTPServices:         map[string]*HTTPService{},
+		AuthorizationObjects: map[string]*AuthorizationObject{},
 	}
 }
 
@@ -75,6 +78,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.HTTPServices {
 		c.HTTPServices[k] = cloneHTTPService(v)
+	}
+	for k, v := range s.AuthorizationObjects {
+		c.AuthorizationObjects[k] = cloneAuthorizationObject(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -277,6 +283,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.HTTPServices[h.FullPath()] = h
 	}
+	for i := range p.AuthorizationObjects {
+		o := cloneAuthorizationObject(&p.AuthorizationObjects[i])
+		o.Owner = id
+		if old, ok := s.AuthorizationObjects[o.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "authorization object", Name: o.Name, Owner: string(old.Owner), Package: string(id), Location: o.Src})
+			continue
+		}
+		s.AuthorizationObjects[o.Name] = o
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -347,6 +362,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, o := range s.AuthorizationObjects {
+		if _, ok := o.Texts[code]; ok {
+			delete(o.Texts, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -381,6 +402,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for path, h := range s.HTTPServices {
 		if h.Owner == id {
 			delete(s.HTTPServices, path)
+		}
+	}
+	for name, o := range s.AuthorizationObjects {
+		if o.Owner == id {
+			delete(s.AuthorizationObjects, name)
 		}
 	}
 	for name, d := range s.Domains {

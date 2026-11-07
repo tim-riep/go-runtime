@@ -71,6 +71,12 @@ func (p *Package) WithLanguages(keep func(lang string) bool) *Package {
 		maps.DeleteFunc(h.Texts, func(l string, _ Label) bool { return !ok(l) })
 		c.HTTPServices[i] = h
 	}
+	c.AuthorizationObjects = make([]AuthorizationObject, len(p.AuthorizationObjects))
+	for i, o := range p.AuthorizationObjects {
+		o.Texts = maps.Clone(o.Texts)
+		maps.DeleteFunc(o.Texts, func(l string, _ Label) bool { return !ok(l) })
+		c.AuthorizationObjects[i] = o
+	}
 	c.AssetRepositories = make([]AssetRepository, len(p.AssetRepositories))
 	for i, r := range p.AssetRepositories {
 		r.Description = filter(r.Description)

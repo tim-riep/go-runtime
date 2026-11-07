@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/authorization-object.schema.json",
+  "title": "Authorization object",
+  "description": "An authorization object (schema/authorization-objects/<name without namespace>.json): the fields whose values grants name, and with the field ACTIVITY the activities that can be granted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "texts",
+    "fields"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "fields": {
+      "description": "The fields in their order. Each has exactly one of dataElement and domain, except the field ACTIVITY, whose type the kernel gives.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "maxLength": 30
+          },
+          "dataElement": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "Data element of the field."
+          },
+          "domain": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "Domain of the field."
+          }
+        }
+      }
+    },
+    "activities": {
+      "description": "Codes of the activities that can be granted, required with the field ACTIVITY and not allowed without it.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      }
+    }
+  }
+}

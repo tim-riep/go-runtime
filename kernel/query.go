@@ -126,7 +126,7 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 // DomainDetail describes a domain and where it is used.
 type DomainDetail struct {
 	Domain   *model.Domain `json:"domain"`
-	UsedBy   []string      `json:"usedBy,omitempty"` // "TABLE.FIELD"
+	UsedBy   []string      `json:"usedBy,omitempty"` // "TABLE.FIELD" or "AUTHORIZATION_OBJECT.FIELD"
 	CodeUses []CodeUse     `json:"codeUses"`
 }
 
@@ -149,17 +149,32 @@ func (k *Kernel) Domain(ctx context.Context, name string) (*DomainDetail, error)
 			}
 		}
 	}
+	d.UsedBy = append(d.UsedBy, authorizationUses(s, func(f model.AuthorizationField) bool { return f.Domain == model.Some(name) })...)
 	if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
+// authorizationUses returns the fields of authorization objects that use
+// a data element or domain, as "OBJECT.FIELD".
+func authorizationUses(s *model.Schema, uses func(f model.AuthorizationField) bool) []string {
+	var out []string
+	for _, name := range s.AuthorizationObjectNames() {
+		for _, f := range s.AuthorizationObjects[name].Fields {
+			if uses(f) {
+				out = append(out, name+"."+f.Name)
+			}
+		}
+	}
+	return out
+}
+
 // DataElementDetail describes a data element and where it is used.
 type DataElementDetail struct {
 	DataElement *model.DataElement `json:"dataElement"`
 	Domain      *model.Domain      `json:"domain"`
-	UsedBy      []string           `json:"usedBy,omitempty"` // "TABLE.FIELD"
+	UsedBy      []string           `json:"usedBy,omitempty"` // "TABLE.FIELD" or "AUTHORIZATION_OBJECT.FIELD"
 	CodeUses    []CodeUse          `json:"codeUses"`
 }
 
@@ -183,6 +198,9 @@ func (k *Kernel) DataElement(ctx context.Context, name string) (*DataElementDeta
 			}
 		}
 	}
+	d.UsedBy = append(d.UsedBy, authorizationUses(s, func(f model.AuthorizationField) bool {
+		return f.DataElement == model.Some(name) || name == model.ActivityDomain && f.IsActivity() && !f.DataElement.Valid() && !f.Domain.Valid()
+	})...)
 	if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
 		return nil, err
 	}

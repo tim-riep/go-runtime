@@ -1,0 +1,13 @@
+{
+  "name": "/TRFIN/COMPANY",
+  "texts": {
+    "en": { "label": "Company master data", "description": "Reading and changing companies by company and country" },
+    "de": { "label": "Stammdaten Firma", "description": "Firmen nach Firma und Land lesen und ändern" }
+  },
+  "fields": [
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" },
+    { "name": "ACTIVITY" }
+  ],
+  "activities": ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT"]
+}

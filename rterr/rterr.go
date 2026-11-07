@@ -59,6 +59,7 @@ const (
 	CodeAsset           Code = "asset"            // invalid asset repository, folder or asset
 	CodeStructure       Code = "structure"        // invalid structure, array type, include or structure extension
 	CodeSource          Code = "source"           // invalid source file or language version
+	CodeAuthorization   Code = "authorization"    // invalid authorization object
 )
 
 // Location points at the place in a package that caused an error.

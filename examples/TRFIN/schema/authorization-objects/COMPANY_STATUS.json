@@ -1,0 +1,10 @@
+{
+  "name": "/TRFIN/COMPANY_STATUS",
+  "texts": {
+    "en": { "label": "Companies by status" }
+  },
+  "fields": [
+    { "name": "STATUS", "domain": "/TRFIN/COMPANY_STATUS" },
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }
+  ]
+}
