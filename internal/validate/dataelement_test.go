@@ -43,7 +43,7 @@ func TestDataElementResolvesDomain(t *testing.T) {
 	if f.DataElement != model.Some("/TRBASE/COUNTRY") || f.Domain != "/TRBASE/COUNTRY_CODE" {
 		t.Fatalf("physical field: %+v", f)
 	}
-	if s.Tables["/TRFIN/COMPANIES"].Field("COUNTRY").Domain != "" {
+	if s.Tables["/TRFIN/COMPANIES"].Field("COMPANY_ID").Domain != "" {
 		t.Fatal("the declaration must not carry the domain")
 	}
 	if ext := s.Physical().Tables["/TRFIN/COMPANIES"].Field("/TROTTO/OTTO_ID"); ext.Domain != "/TROTTO/OTTO_ID" {
@@ -71,7 +71,7 @@ func TestUnknownDataElement(t *testing.T) {
 
 func TestDataElementNotVisible(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[0].DataElement = model.Some("/TROTTO/OTTO_PARTNER") // TRFIN does not require TROTTO
+	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[0].DataElement = model.Some("/TROTTO/OTTO_PARTNER") // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "data element /TROTTO/OTTO_PARTNER")
 }
 

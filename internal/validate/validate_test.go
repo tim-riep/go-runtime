@@ -97,7 +97,7 @@ func TestPhysicalTenantLayout(t *testing.T) {
 
 func TestSystemClassReserved(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].DataClass = model.System
+	tableOf(e.fin, "/TRFIN/COUNTRIES").DataClass = model.System
 	expect(t, e.schema(t), rterr.CodeDataClass, "reserved for the kernel")
 }
 
@@ -120,8 +120,8 @@ func TestUnknownDomain(t *testing.T) {
 
 func TestDomainNotVisible(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[1].DataElement = model.None[string]() // /TRFIN/COUNTRIES.NAME
-	e.fin.Tables[2].Fields[1].Domain = "/TROTTO/OTTO_ID"         // TRFIN does not require TROTTO
+	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[1].DataElement = model.None[string]() // /TRFIN/COUNTRIES.NAME
+	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[1].Domain = "/TROTTO/OTTO_ID"         // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "OTTO_ID")
 }
 
@@ -137,7 +137,7 @@ func TestErrorLocation(t *testing.T) {
 
 func TestSharedTableCannotReferenceTenantTable(t *testing.T) {
 	e := load(t)
-	countries := &e.fin.Tables[2]
+	countries := tableOf(e.fin, "/TRFIN/COUNTRIES")
 	countries.Fields = append(countries.Fields, model.Field{Name: "OWNER", LocalName: "OWNER", Domain: "/TRFIN/COMPANY_ID", Origin: model.OriginTable})
 	countries.ForeignKeys = append(countries.ForeignKeys, model.ForeignKey{Name: "OWNER", Target: "/TRFIN/COMPANIES", Origin: model.OriginTable,
 		Columns: []model.ColumnPair{{Field: "OWNER", References: "COMPANY_ID"}}})
@@ -227,7 +227,7 @@ func TestFixedValuesOnlyForSomeTypes(t *testing.T) {
 
 func TestPrimaryKeyFieldMissing(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].PrimaryKey = []string{"NOPE"}
+	tableOf(e.fin, "/TRFIN/COUNTRIES").PrimaryKey = []string{"NOPE"}
 	expect(t, e.schema(t), rterr.CodePrimaryKey, "NOPE")
 }
 

@@ -1,0 +1,23 @@
+{
+  "name": "/TRFIN/COMPANIES_ARCHIVE",
+  "description": "Archived versions of companies",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "ARCHIVE_NO",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "ARCHIVED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "include": "/TRFIN/COMPANIES"
+    }
+  ],
+  "primaryKey": [
+    "ARCHIVE_NO"
+  ]
+}

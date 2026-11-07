@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/STREET",
+  "description": "Street and house number",
+  "type": "CHAR",
+  "length": 60
+}

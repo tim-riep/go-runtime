@@ -117,7 +117,8 @@ func TestStructureLifecycle(t *testing.T) {
 				t.Errorf("%s.%s source %v", c.table, c.field, s)
 			}
 		}
-		if n := count(t, k, "/RT/STRUCTURE_ELEMENTS"); n != 3+1+3 {
+		var n int
+		if err := k.DB().QueryRowContext(ctx, `SELECT count(*) FROM "/RT/STRUCTURE_ELEMENTS" WHERE "PACKAGE_ID" IN ('TRS', 'TRX')`).Scan(&n); err != nil || n != 3+1+3 {
 			t.Fatalf("structure elements: %d", n)
 		}
 
@@ -183,7 +184,7 @@ func TestStructureLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 		s, _ := k.Schema(ctx)
-		if s.Physical().Tables["/TRS/SITES"].Field("/TRX/PICKUP") != nil || len(s.StructureExtensions) != 0 {
+		if s.Physical().Tables["/TRS/SITES"].Field("/TRX/PICKUP") != nil || len(s.ExtensionsOfStructure("/TRS/ADDRESS")) != 0 {
 			t.Fatal("extension column left after uninstall")
 		}
 		consistent(t, k)

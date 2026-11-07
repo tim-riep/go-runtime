@@ -196,7 +196,13 @@ func (r *Resolver) tableComponents(t *Table) ([]ResolvedComponent, bool) {
 		if !addIncludes(i) {
 			return nil, false
 		}
-		out = append(out, ResolvedComponent{Component: fieldComponent(f, ComponentStructure), Declared: t.Name})
+		c := fieldComponent(f, ComponentStructure)
+		// Key fields are NOT NULL because of the key, which is not taken
+		// over; the repository does not keep a separate declaration.
+		if t.IsKey(f.Name) {
+			c.NotNull = false
+		}
+		out = append(out, ResolvedComponent{Component: c, Declared: t.Name})
 	}
 	if !addIncludes(len(t.Fields)) {
 		return nil, false

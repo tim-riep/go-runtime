@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/diff"
@@ -58,6 +59,35 @@ func initialized(t *testing.T, k *kernel.Kernel) {
 
 func examples(t *testing.T) []*model.Package {
 	return []*model.Package{testutil.Example(t, "TROTTO"), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN")}
+}
+
+// legacyExample loads an example package without structures, array types
+// and includes, for kernel versions before 5: the address included into
+// /TRFIN/COMPANIES becomes its former COUNTRY field.
+func legacyExample(t *testing.T, name string) *model.Package {
+	p := testutil.Example(t, name)
+	p.Structures, p.ArrayTypes, p.StructureExtensions = nil, nil, nil
+	var tables []model.Table
+	for _, tb := range p.Tables {
+		if tb.Name == "/TRFIN/COMPANIES_ARCHIVE" {
+			continue
+		}
+		for _, inc := range tb.Includes {
+			country := model.Field{Name: "COUNTRY", LocalName: "COUNTRY", Owner: p.Manifest.ID, Origin: model.OriginTable,
+				DataElement: model.Some("/TRBASE/COUNTRY"), NotNull: true}
+			if inc.Name == "/TRBASE/ADDRESS" {
+				tb.Fields = slices.Insert(slices.Clone(tb.Fields), inc.After, country)
+			}
+		}
+		tb.Includes = nil
+		tables = append(tables, tb)
+	}
+	p.Tables = tables
+	return p
+}
+
+func legacyExamples(t *testing.T) []*model.Package {
+	return []*model.Package{legacyExample(t, "TROTTO"), legacyExample(t, "TRBASE"), legacyExample(t, "TRFIN")}
 }
 
 // sameSchema fails if the repository differs from want.

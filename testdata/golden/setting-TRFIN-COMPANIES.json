@@ -108,13 +108,118 @@
         "allowEmpty": true
       },
       {
+        "name": "STREET",
+        "localName": "STREET",
+        "description": null,
+        "owner": "TRBASE",
+        "origin": "INCLUDE",
+        "include": "/TRBASE/ADDRESS",
+        "source": "/TRBASE/ADDRESS",
+        "dataElement": {
+          "name": "/TRBASE/STREET",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Straße",
+              "medium": "Straße",
+              "long": "Straße und Hausnummer",
+              "heading": "Straße",
+              "description": null
+            },
+            "en": {
+              "short": "Street",
+              "medium": "Street",
+              "long": "Street and house number",
+              "heading": "Street",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/STREET",
+        "type": "CHAR",
+        "length": 60,
+        "notNull": false,
+        "key": false,
+        "allowEmpty": true
+      },
+      {
+        "name": "POSTAL_CODE",
+        "localName": "POSTAL_CODE",
+        "description": null,
+        "owner": "TRBASE",
+        "origin": "INCLUDE",
+        "include": "/TRBASE/ADDRESS",
+        "source": "/TRBASE/ADDRESS",
+        "dataElement": {
+          "name": "/TRBASE/POSTAL_CODE",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "PLZ",
+              "medium": "Postleitzahl",
+              "long": "Postleitzahl",
+              "heading": "PLZ",
+              "description": null
+            },
+            "en": {
+              "short": "Postcode",
+              "medium": "Postal code",
+              "long": "Postal code",
+              "heading": "Postcode",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/POSTAL_CODE",
+        "type": "CHAR",
+        "length": 10,
+        "notNull": false,
+        "key": false,
+        "allowEmpty": true
+      },
+      {
+        "name": "CITY",
+        "localName": "CITY",
+        "description": null,
+        "owner": "TRBASE",
+        "origin": "INCLUDE",
+        "include": "/TRBASE/ADDRESS",
+        "source": "/TRBASE/ADDRESS",
+        "dataElement": {
+          "name": "/TRBASE/CITY",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Ort",
+              "medium": "Ort",
+              "long": "Ort",
+              "heading": "Ort",
+              "description": null
+            },
+            "en": {
+              "short": "City",
+              "medium": "City",
+              "long": "City",
+              "heading": "City",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/CITY",
+        "type": "CHAR",
+        "length": 40,
+        "notNull": false,
+        "key": false,
+        "allowEmpty": true
+      },
+      {
         "name": "COUNTRY",
         "localName": "COUNTRY",
         "description": null,
-        "owner": "TRFIN",
-        "origin": "TABLE",
-        "include": null,
-        "source": null,
+        "owner": "TRBASE",
+        "origin": "INCLUDE",
+        "include": "/TRBASE/ADDRESS",
+        "source": "/TRBASE/ADDRESS",
         "dataElement": {
           "name": "/TRBASE/COUNTRY",
           "owner": "TRBASE",
@@ -138,7 +243,7 @@
         "domain": "/TRBASE/COUNTRY_CODE",
         "type": "CHAR",
         "length": 2,
-        "notNull": true,
+        "notNull": false,
         "key": false,
         "allowEmpty": true,
         "valueHelps": [
@@ -153,6 +258,41 @@
             ]
           }
         ]
+      },
+      {
+        "name": "/TROTTO/PICKUP_POINT",
+        "localName": "/TROTTO/PICKUP_POINT",
+        "description": null,
+        "owner": "TROTTO",
+        "origin": "INCLUDE",
+        "include": "/TRBASE/ADDRESS",
+        "source": "/TRBASE/ADDRESS",
+        "dataElement": {
+          "name": "/TROTTO/PICKUP_POINT",
+          "owner": "TROTTO",
+          "texts": {
+            "de": {
+              "short": "Abholung",
+              "medium": "Abholstation",
+              "long": "Abholstation des Marktplatzes",
+              "heading": "Abholung",
+              "description": null
+            },
+            "en": {
+              "short": "Pickup",
+              "medium": "Pickup point",
+              "long": "Marketplace pickup point",
+              "heading": "Pickup",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TROTTO/PICKUP_POINT",
+        "type": "CHAR",
+        "length": 20,
+        "notNull": false,
+        "key": false,
+        "allowEmpty": true
       },
       {
         "name": "STATUS",

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/POSTAL_CODE",
+  "domain": "/TRBASE/POSTAL_CODE",
+  "texts": {
+    "en": {
+      "short": "Postcode",
+      "medium": "Postal code",
+      "long": "Postal code",
+      "heading": "Postcode"
+    },
+    "de": {
+      "short": "PLZ",
+      "medium": "Postleitzahl",
+      "long": "Postleitzahl",
+      "heading": "PLZ"
+    }
+  }
+}

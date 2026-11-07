@@ -14,6 +14,9 @@
 
 package kernel
 
+// TargetVersion returns the kernel schema version the kernel works with.
+func (k *Kernel) TargetVersion() int { return k.target }
+
 // SetTargetVersion makes the kernel work with an older kernel schema
 // version, so tests can create databases that need a migration.
 func (k *Kernel) SetTargetVersion(v int) {

@@ -166,7 +166,7 @@ func TestMigrateFromVersion2(t *testing.T) {
 		ctx := context.Background()
 		k.SetTargetVersion(2)
 		initialized(t, k)
-		if _, err := k.Install(ctx, examples(t), kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, legacyExamples(t), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		k.SetTargetVersion(3)
@@ -176,7 +176,7 @@ func TestMigrateFromVersion2(t *testing.T) {
 		consistent(t, k)
 		// The assets of packages installed before arrive with the next
 		// upgrade.
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{}); err != nil {
+		if _, err := k.Upgrade(ctx, legacyExample(t, "TRFIN"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		s, _ := k.Schema(ctx)

@@ -31,9 +31,18 @@ func domainOf(p *model.Package, name string) *model.Domain {
 	return nil
 }
 
+func tableOf(p *model.Package, name string) *model.Table {
+	for i := range p.Tables {
+		if p.Tables[i].Name == name {
+			return &p.Tables[i]
+		}
+	}
+	return nil
+}
+
 func TestThreeDefaultKinds(t *testing.T) {
 	e := load(t)
-	f := e.fin.Tables[2].Fields // COUNTRIES: COUNTRY_CODE, NAME, CURRENCY
+	f := tableOf(e.fin, "/TRFIN/COUNTRIES").Fields // COUNTRIES: COUNTRY_CODE, NAME, CURRENCY
 	f[2].DefaultJSON = json.RawMessage(`null`)
 	s := e.schema(t)
 	if err := Schema(s, Options{}); err != nil {
@@ -44,7 +53,7 @@ func TestThreeDefaultKinds(t *testing.T) {
 		t.Fatalf("defaults: %+v %+v", c.Field("CURRENCY").Default, c.Field("NAME").Default)
 	}
 	e = load(t)
-	e.fin.Tables[2].Fields[2].DefaultJSON = json.RawMessage(`""`)
+	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[2].DefaultJSON = json.RawMessage(`""`)
 	s = e.schema(t)
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
@@ -56,7 +65,7 @@ func TestThreeDefaultKinds(t *testing.T) {
 
 func TestDefaultNullOnNotNullField(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[1].DefaultJSON = json.RawMessage(`null`) // COUNTRIES.NAME is notNull
+	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[1].DefaultJSON = json.RawMessage(`null`) // COUNTRIES.NAME is notNull
 	expect(t, e.schema(t), rterr.CodeDefault, "cannot have the default null")
 }
 

@@ -1,0 +1,26 @@
+{
+  "name": "/TRFIN/COMPANY_GROUP",
+  "texts": {
+    "en": {
+      "label": "Company group"
+    },
+    "de": {
+      "label": "Firmengruppe"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME"
+    },
+    {
+      "name": "SEAT",
+      "structure": "/TRBASE/ADDRESS",
+      "description": "Registered office"
+    },
+    {
+      "name": "MEMBERS",
+      "arrayType": "/TRFIN/COMPANY_ARRAY"
+    }
+  ]
+}

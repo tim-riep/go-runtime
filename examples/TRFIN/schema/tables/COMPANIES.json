@@ -14,9 +14,7 @@
       "notNull": true
     },
     {
-      "name": "COUNTRY",
-      "dataElement": "/TRBASE/COUNTRY",
-      "notNull": true
+      "include": "/TRBASE/ADDRESS"
     },
     {
       "name": "STATUS",

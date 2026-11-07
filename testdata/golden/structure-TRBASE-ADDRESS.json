@@ -1,0 +1,221 @@
+{
+  "definition": {
+    "formatVersion": 1,
+    "kind": "structure",
+    "name": "/TRBASE/ADDRESS",
+    "owner": "TRBASE",
+    "texts": {
+      "de": {
+        "label": "Adresse",
+        "description": "Postanschrift"
+      },
+      "en": {
+        "label": "Address",
+        "description": "Postal address"
+      }
+    },
+    "flat": true,
+    "components": [
+      {
+        "name": "STREET",
+        "description": null,
+        "origin": {
+          "declared": "/TRBASE/ADDRESS",
+          "includes": [],
+          "extension": null,
+          "package": "TRBASE"
+        },
+        "kind": "elementary",
+        "dataElement": {
+          "name": "/TRBASE/STREET",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Straße",
+              "medium": "Straße",
+              "long": "Straße und Hausnummer",
+              "heading": "Straße",
+              "description": null
+            },
+            "en": {
+              "short": "Street",
+              "medium": "Street",
+              "long": "Street and house number",
+              "heading": "Street",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/STREET",
+        "type": "CHAR",
+        "length": 60,
+        "allowEmpty": true,
+        "notNull": false
+      },
+      {
+        "name": "POSTAL_CODE",
+        "description": null,
+        "origin": {
+          "declared": "/TRBASE/ADDRESS",
+          "includes": [],
+          "extension": null,
+          "package": "TRBASE"
+        },
+        "kind": "elementary",
+        "dataElement": {
+          "name": "/TRBASE/POSTAL_CODE",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "PLZ",
+              "medium": "Postleitzahl",
+              "long": "Postleitzahl",
+              "heading": "PLZ",
+              "description": null
+            },
+            "en": {
+              "short": "Postcode",
+              "medium": "Postal code",
+              "long": "Postal code",
+              "heading": "Postcode",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/POSTAL_CODE",
+        "type": "CHAR",
+        "length": 10,
+        "allowEmpty": true,
+        "notNull": false
+      },
+      {
+        "name": "CITY",
+        "description": null,
+        "origin": {
+          "declared": "/TRBASE/ADDRESS",
+          "includes": [],
+          "extension": null,
+          "package": "TRBASE"
+        },
+        "kind": "elementary",
+        "dataElement": {
+          "name": "/TRBASE/CITY",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Ort",
+              "medium": "Ort",
+              "long": "Ort",
+              "heading": "Ort",
+              "description": null
+            },
+            "en": {
+              "short": "City",
+              "medium": "City",
+              "long": "City",
+              "heading": "City",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TRBASE/CITY",
+        "type": "CHAR",
+        "length": 40,
+        "allowEmpty": true,
+        "notNull": false
+      },
+      {
+        "name": "COUNTRY",
+        "description": null,
+        "origin": {
+          "declared": "/TRBASE/ADDRESS",
+          "includes": [],
+          "extension": null,
+          "package": "TRBASE"
+        },
+        "kind": "elementary",
+        "dataElement": {
+          "name": "/TRBASE/COUNTRY",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Land",
+              "medium": "Land",
+              "long": "Länderschlüssel",
+              "heading": "Land",
+              "description": "Code nach ISO 3166-1 alpha-2"
+            },
+            "en": {
+              "short": "Country",
+              "medium": "Country",
+              "long": "Country key",
+              "heading": "Country",
+              "description": "ISO 3166-1 alpha-2 code"
+            }
+          }
+        },
+        "domain": "/TRBASE/COUNTRY_CODE",
+        "type": "CHAR",
+        "length": 2,
+        "allowEmpty": true,
+        "notNull": false
+      },
+      {
+        "name": "/TROTTO/PICKUP_POINT",
+        "description": null,
+        "origin": {
+          "declared": "/TRBASE/ADDRESS",
+          "includes": [],
+          "extension": "TROTTO",
+          "package": "TROTTO"
+        },
+        "kind": "elementary",
+        "dataElement": {
+          "name": "/TROTTO/PICKUP_POINT",
+          "owner": "TROTTO",
+          "texts": {
+            "de": {
+              "short": "Abholung",
+              "medium": "Abholstation",
+              "long": "Abholstation des Marktplatzes",
+              "heading": "Abholung",
+              "description": null
+            },
+            "en": {
+              "short": "Pickup",
+              "medium": "Pickup point",
+              "long": "Marketplace pickup point",
+              "heading": "Pickup",
+              "description": null
+            }
+          }
+        },
+        "domain": "/TROTTO/PICKUP_POINT",
+        "type": "CHAR",
+        "length": 20,
+        "allowEmpty": true,
+        "notNull": false
+      }
+    ],
+    "extensions": [
+      "TROTTO"
+    ]
+  },
+  "usedBy": [
+    {
+      "kind": "structure",
+      "name": "/TRFIN/COMPANY_GROUP",
+      "via": "component SEAT"
+    },
+    {
+      "kind": "structure-extension",
+      "name": "TROTTO",
+      "via": "extension"
+    },
+    {
+      "kind": "table",
+      "name": "/TRFIN/COMPANIES",
+      "via": "include"
+    }
+  ]
+}

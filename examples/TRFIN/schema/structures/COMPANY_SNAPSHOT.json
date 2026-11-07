@@ -1,0 +1,22 @@
+{
+  "name": "/TRFIN/COMPANY_SNAPSHOT",
+  "texts": {
+    "en": {
+      "label": "Company snapshot"
+    },
+    "de": {
+      "label": "Firmenstand"
+    }
+  },
+  "components": [
+    {
+      "name": "TAKEN_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "structure": "/TRFIN/COMPANIES"
+    }
+  ]
+}

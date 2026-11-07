@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/CITY",
+  "description": "City",
+  "type": "CHAR",
+  "length": 40
+}

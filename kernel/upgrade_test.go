@@ -33,7 +33,11 @@ const tenantA = "ACME"
 func withData(t *testing.T, k *kernel.Kernel) {
 	t.Helper()
 	initialized(t, k)
-	if _, err := k.Install(context.Background(), examples(t), kernel.Options{}); err != nil {
+	pkgs := examples(t)
+	if k.TargetVersion() < 5 {
+		pkgs = legacyExamples(t)
+	}
+	if _, err := k.Install(context.Background(), pkgs, kernel.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	mustInsert(t, k, model.TenantTable, values{"TENANT": tenantA, "CREATED_AT": testutil.Epoch})
@@ -107,7 +111,13 @@ func TestUpgradeDestructive(t *testing.T) {
 				next.Domains[i].Length = 10
 			}
 		}
-		next.Domains = next.Domains[:1]
+		var doms []model.Domain
+		for _, d := range next.Domains {
+			if d.Name != "/TROTTO/OTTO_SHOP_ID" {
+				doms = append(doms, d)
+			}
+		}
+		next.Domains = doms
 
 		_, err := k.Upgrade(ctx, next, kernel.Options{})
 		var dc *rterr.DestructiveChange
@@ -164,6 +174,7 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 			}
 		}
 		fin.Tables = tables
+		fin.Structures, fin.ArrayTypes = nil, nil
 		_, err := k.Upgrade(context.Background(), fin, kernel.Options{AllowDestructive: true})
 		var v *rterr.ValidationError
 		if !errors.As(err, &v) || v.Code != rterr.CodeUnknownTable {

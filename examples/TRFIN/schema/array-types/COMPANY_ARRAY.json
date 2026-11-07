@@ -1,0 +1,20 @@
+{
+  "name": "/TRFIN/COMPANY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Companies"
+    },
+    "de": {
+      "label": "Firmen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/COMPANIES"
+  },
+  "key": {
+    "fields": [
+      "COMPANY_ID"
+    ],
+    "unique": true
+  }
+}

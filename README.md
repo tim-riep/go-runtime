@@ -41,6 +41,15 @@ transaction together with its own bookkeeping.
   runtime.
 - **Setting**: tables that together form one configuration, as a tree below a root table
   connected through foreign keys. Other packages can add dependent tables to a setting.
+- **Structure**: named components without database table. A component has a data element, a
+  domain, a structure or an array type. A structure is flat when all its components are
+  elementary (data element or domain), otherwise deep. Every table is a flat structure as
+  well: its fields without tenant field, keys and foreign keys.
+- **Array type**: rows of a structure, table, data element or domain, optionally with a key.
+- **Include**: an entry in the components of a structure or the fields of a table whose
+  place is taken by all components of an included structure or table.
+- **Structure extension**: additional components for a structure of a required package. They
+  appear wherever the structure is used, including every table that includes it.
 
 ## Package format
 
@@ -54,6 +63,9 @@ TRFIN/
     extensions/*.json          one extension per extended table
     settings/*.json            one setting per file, named <ID>.json
     setting-extensions/*.json  one extension per extended setting, named <ID>.json
+    structures/*.json          one structure per file, named <NAME>.json
+    array-types/*.json         one array type per file, named <NAME>.json
+    structure-extensions/*.json  one extension per extended structure
   assets/
     <repository>/asset.json    every folder below assets/ is an asset repository
     <repository>/...           its files and folders
@@ -169,11 +181,58 @@ correctly. The price is a maximum precision of 18 digits, which applies to both 
 packages stay portable. Values in text form would be exact too, but sort incorrectly and need
 normalization (`1.0` vs `1.00`).
 
+Structure (`schema/structures/ADDRESS.json`), a table including it, an array type and a
+structure extension in another package. Every component has exactly one of `dataElement`,
+`domain`, `structure` (a structure or a table) and `arrayType`; elementary components may
+have `notNull`, `default` and `description`. An include is an entry `{ "include": ... }` at the
+place where the components go, in `components` as in `fields`.
+
+```json
+{
+  "name": "/TRBASE/ADDRESS",
+  "texts": { "en": { "label": "Address" }, "de": { "label": "Adresse" } },
+  "components": [
+    { "name": "STREET", "dataElement": "/TRBASE/STREET" },
+    { "name": "CITY", "dataElement": "/TRBASE/CITY" },
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }
+  ]
+}
+```
+
+```json
+{
+  "name": "/TRFIN/COMPANIES",
+  "fields": [
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "include": "/TRBASE/ADDRESS" },
+    { "name": "STATUS", "domain": "/TRFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" }
+  ],
+  "primaryKey": ["COMPANY_ID"],
+  "foreignKeys": [
+    { "name": "COUNTRY", "table": "/TRFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
+  ]
+}
+```
+
+```json
+{
+  "name": "/TRFIN/COMPANY_ARRAY",
+  "texts": { "en": { "label": "Companies" } },
+  "rowType": { "structure": "/TRFIN/COMPANIES" },
+  "key": { "fields": ["COMPANY_ID"], "unique": true }
+}
+```
+
+```json
+{ "structure": "/TRBASE/ADDRESS", "components": [{ "name": "/TROTTO/PICKUP_POINT", "dataElement": "/TROTTO/PICKUP_POINT" }] }
+```
+
 ## Rules
 
 - Names of objects of a package are `/<PACKAGE-ID>/<NAME>`, where `<NAME>` consists of
   upper-case letters, digits and underscores and starts with a letter. Table, domain, data
-  element and setting names are unique in the database. Names are always quoted in SQL.
+  element and setting names are unique in the database; tables, structures and array types
+  share one set of names, because a component of kind `structure` may name either. Names are always quoted in SQL.
 - The loader checks namespaces on import, right after the JSON Schema check and before any
   object is built: definitions must carry the namespace of the package, references that of
   the package, of a package listed in its manifest, or the kernel's. All violations are
@@ -312,6 +371,44 @@ labels in all languages, domain, type, length, decimals, fixed values, nullabili
 origin, whether the parent key fills it and the value helps. The tenant field never appears.
 `Definition.JSON` serializes it; `FormatVersion` identifies the structure.
 
+### Structures and array types
+
+- Component names are unique after all includes and extensions are resolved. A collision
+  names both origins, e.g. `component CITY of /X/SITES collides with component CITY from
+  include /TRBASE/ADDRESS`. `/RT/TENANT` is reserved and cannot be a component.
+- Structures, tables and array types must not contain themselves, through any mix of
+  includes, nested components, array components and row types. The error shows the full
+  chain, e.g. `/X/A -> include /X/B -> component C /X/C -> row type /X/A`.
+- Referenced objects belong to the own package, a required one or the kernel.
+- Structures may include flat and deep structures and tables; tables include only flat ones.
+  A structure extension that would make a structure deep is rejected when a table includes
+  that structure.
+- An included table brings only its fields, including the fields of its table extensions:
+  not its tenant field, primary key, foreign keys or data class. Its key fields come without
+  their NOT NULL, which follows from the key. The including table may use included columns
+  in its primary key and foreign keys, and foreign keys may reference included key columns.
+- Components of structure extensions follow the components of the structure, ordered by
+  package. Structure extensions follow the rules of table extensions: names in the namespace
+  of the extending package, nullable or with a default, no includes.
+- `default` and `notNull` exist only for elementary components.
+- Array keys consist of elementary top-level components of a structure or table row type.
+- A change of a structure changes the columns of every table that includes it, in every
+  package; the plan shows the structure, e.g. `add-column /TRFIN/COMPANIES.REGION (CHAR(80))
+  via /TRBASE/ADDRESS`. A removed or narrowed component is destructive. A change that makes an
+  object of another package invalid is rejected and names that object. Uninstalling a package
+  removes its structures, array types and structure extensions with their columns, after
+  confirmation.
+- The repository stores structures, array types, extensions and includes, and for every
+  column the include it comes from (`INCLUDE_NAME`) and the declaring structure or table
+  (`SOURCE_NAME`) with origin `INCLUDE`. `rt check` compares the stored columns with the
+  resolved includes.
+
+`kernel.Structure` (and `rt show`) returns the resolved definition from package
+[structure](structure) with its uses: components in their final order with type, labels,
+effective default and origin (declaring object, include chain, extending package); nested
+structures and array types are resolved as well. Setting fields name the include and the
+source of included columns.
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -409,6 +506,9 @@ rt setting list
 rt setting show /TRFIN/COMPANIES
 rt setting show /TRFIN/COMPANIES --json
 rt show data-element:/TRBASE/COUNTRY
+rt show /TRBASE/ADDRESS
+rt show /TRFIN/COMPANY_ARRAY --json
+rt show /TRFIN/COMPANIES_ARCHIVE
 rt asset repos
 rt asset list TRFIN templates invoice
 rt asset show TRFIN templates invoice/invoice.xsl
@@ -439,7 +539,7 @@ works in its own schema that is dropped afterwards. The generated DDL per dialec
 with golden files in `testdata/golden`; after an intended change, update them with:
 
 ```bash
-go test ./internal/planner ./setting -update
+go test ./internal/planner ./setting ./kernel -update
 ```
 
 ## Not included yet
@@ -450,7 +550,8 @@ loader already works on `fs.FS`), a data access layer that restricts queries to 
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, serving
 assets over HTTP, assets uploaded at runtime or per tenant, extending asset repositories of
-other packages, references to assets from other objects, compression and image processing.
+other packages, references to assets from other objects, compression and image processing,
+the runtime meaning of `notNull` for nested and array components, includes in extensions.
 
 ## License
 

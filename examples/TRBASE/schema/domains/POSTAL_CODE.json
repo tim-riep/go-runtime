@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/POSTAL_CODE",
+  "description": "Postal code",
+  "type": "CHAR",
+  "length": 10
+}

@@ -190,7 +190,7 @@ func TestDataElementChanges(t *testing.T) {
 			}
 		}
 	}
-	if n != 2 { // /TRFIN/COMPANIES.NAME and /TRFIN/COUNTRIES.NAME
+	if n != 3 { // NAME of /TRFIN/COMPANIES, /TRFIN/COMPANIES_ARCHIVE and /TRFIN/COUNTRIES
 		t.Fatalf("expected a type change per field, got %v", p.Changes)
 	}
 }
