@@ -71,7 +71,7 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 			pkg = &model.Package{Manifest: s.Packages[id].Manifest, Sources: dir.Sources}
 		}
 	}
-	r := build.CheckPackage(pkg, schema)
+	r := build.CheckPackageWith(pkg, schema, k.natives)
 	if !r.OK() {
 		return nil, compileError(id, "test", r.Diagnostics)
 	}

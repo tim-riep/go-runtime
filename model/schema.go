@@ -70,6 +70,7 @@ func (s *Schema) Clone() *Schema {
 	for k, v := range s.Packages {
 		p := *v
 		p.Manifest.Requires = slices.Clone(v.Manifest.Requires)
+		p.Manifest.Capabilities = slices.Clone(v.Manifest.Capabilities)
 		c.Packages[k] = &p
 	}
 	for k, v := range s.Domains {

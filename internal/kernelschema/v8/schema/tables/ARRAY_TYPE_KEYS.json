@@ -1,0 +1,37 @@
+{
+  "name": "/RT/ARRAY_TYPE_KEYS",
+  "description": "Key fields of array types",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ARRAY_TYPE",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ARRAY_TYPE",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ARRAY_TYPE",
+      "table": "/RT/ARRAY_TYPES",
+      "fields": [
+        {
+          "field": "ARRAY_TYPE",
+          "references": "ARRAY_TYPE"
+        }
+      ]
+    }
+  ]
+}

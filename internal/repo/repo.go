@@ -41,6 +41,7 @@ import (
 const (
 	TPackages          = model.KernelNamespace + "PACKAGES"
 	TPackageDeps       = model.KernelNamespace + "PACKAGE_DEPS"
+	TPackageCaps       = model.KernelNamespace + "PACKAGE_CAPABILITIES"
 	TDomains           = model.KernelNamespace + "DOMAINS"
 	TDomainValues      = model.KernelNamespace + "DOMAIN_VALUES"
 	TTables            = model.KernelNamespace + "TABLES"
@@ -344,14 +345,15 @@ func (r *Repo) AddMigration(ctx context.Context, q dialect.Querier, version int,
 func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, error) {
 	s := model.NewSchema()
 
-	pkgs, err := r.selectRows(ctx, q, TPackages, []string{"PACKAGE_ID", "VERSION", "DESCRIPTION", "INSTALLED_AT", "UPDATED_AT", "LANGUAGE_VERSION"})
+	pkgs, err := r.selectRows(ctx, q, TPackages, []string{"PACKAGE_ID", "VERSION", "DESCRIPTION", "INSTALLED_AT", "UPDATED_AT", "LANGUAGE_VERSION", "KERNEL_PACKAGE"})
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range pkgs {
 		id := owner(p["PACKAGE_ID"])
 		s.Packages[id] = &model.PackageInfo{
-			Manifest:    model.Manifest{ID: id, Version: str(p["VERSION"]), Description: opt(p["DESCRIPTION"]), LanguageVersion: num(p["LANGUAGE_VERSION"])},
+			Manifest: model.Manifest{ID: id, Version: str(p["VERSION"]), Description: opt(p["DESCRIPTION"]), LanguageVersion: num(p["LANGUAGE_VERSION"]),
+				KernelPackage: flag(p["KERNEL_PACKAGE"])},
 			InstalledAt: tm(p["INSTALLED_AT"]), UpdatedAt: tm(p["UPDATED_AT"]),
 		}
 	}
@@ -362,6 +364,15 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	for _, d := range deps {
 		if p := s.Packages[owner(d["PACKAGE_ID"])]; p != nil {
 			p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(str(d["REQUIRED_ID"])), Constraint: opt(d["VERSION_CONSTRAINT"])})
+		}
+	}
+	caps, err := r.selectRows(ctx, q, TPackageCaps, []string{"PACKAGE_ID", "CAPABILITY"}, "PACKAGE_ID", "CAPABILITY")
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range caps {
+		if p := s.Packages[owner(c["PACKAGE_ID"])]; p != nil {
+			p.Manifest.Capabilities = append(p.Manifest.Capabilities, str(c["CAPABILITY"]))
 		}
 	}
 
@@ -645,7 +656,7 @@ func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 // deleteOrder lists the repository tables children first.
 var deleteOrder = []string{TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
-	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
+	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageCaps, TPackageDeps, TPackages}
 
 // Clear deletes all rows that describe the schema. Log, migrations,
 // languages and tenants are kept.
@@ -675,8 +686,15 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		p := s.Packages[id]
 		if err := r.insert(ctx, q, TPackages, row{"PACKAGE_ID": string(id), "VERSION": p.Manifest.Version,
 			"DESCRIPTION": val(p.Manifest.Description), "INSTALLED_AT": p.InstalledAt, "UPDATED_AT": p.UpdatedAt,
-			"LANGUAGE_VERSION": nullableInt(p.Manifest.LanguageVersion, p.Manifest.LanguageVersion > 0)}); err != nil {
+			"LANGUAGE_VERSION": nullableInt(p.Manifest.LanguageVersion, p.Manifest.LanguageVersion > 0), "KERNEL_PACKAGE": p.Manifest.KernelPackage}); err != nil {
 			return err
+		}
+		if r.has(TPackageCaps, "") {
+			for _, c := range slices.Sorted(slices.Values(p.Manifest.Capabilities)) {
+				if err := r.insert(ctx, q, TPackageCaps, row{"PACKAGE_ID": string(id), "CAPABILITY": c}); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	for _, id := range s.PackageIDs() {

@@ -43,6 +43,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/internal/validate"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 )
@@ -71,6 +72,8 @@ type Kernel struct {
 	// code is the linked code of the newest generation that an execution
 	// loaded.
 	code atomic.Pointer[generation]
+	// natives are the native methods of the kernel binary.
+	natives *native.Registry
 }
 
 // Open connects to a database. The connection string selects the dialect:
@@ -112,7 +115,8 @@ func Open(ctx context.Context, dsn string) (*Kernel, error) {
 // must come from the dialect's Open so every connection enforces foreign
 // keys.
 func New(db *sql.DB, d dialect.Dialect) *Kernel {
-	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize}
+	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
+		natives: native.Default}
 }
 
 // Close closes the connection pool if Open created it.

@@ -258,7 +258,7 @@ func (k *Kernel) compileSet(ctx context.Context, q dialect.Querier, want *model.
 		}
 		info := want.Packages[id]
 		pkg := &model.Package{Manifest: info.Manifest, Sources: sources}
-		r := build.CheckPackage(pkg, want)
+		r := build.CheckPackageWith(pkg, want, k.natives)
 		if !r.OK() {
 			return nil, nil, compileError(id, reasons[id], r.Diagnostics)
 		}

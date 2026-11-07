@@ -22,6 +22,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/pkgload"
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/syntax"
+	"github.com/tim-riep/go-runtime/native"
 )
 
 // schemaFiles is the schema of the test package TRT.
@@ -50,6 +51,13 @@ var schemaFiles = map[string]string{
 // which are formatted first.
 func compile(t *testing.T, sources map[string]string) *build.Result {
 	t.Helper()
+	return compileWith(t, sources, nil)
+}
+
+// compileWith compiles as a kernel package with the native methods of
+// natives when natives is not nil.
+func compileWith(t *testing.T, sources map[string]string, natives *native.Registry) *build.Result {
+	t.Helper()
 	fsys := fstest.MapFS{}
 	for p, s := range schemaFiles {
 		fsys[p] = &fstest.MapFile{Data: []byte(s)}
@@ -71,7 +79,11 @@ func compile(t *testing.T, sources map[string]string) *build.Result {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return build.Package(pkg, nil)
+	if natives == nil {
+		return build.Package(pkg, nil)
+	}
+	pkg.Manifest.KernelPackage = true
+	return build.PackageWith(pkg, nil, natives)
 }
 
 // class wraps method bodies into a class /TRT/C.
@@ -306,8 +318,53 @@ func TestInterfaces(t *testing.T) {
 		"src/IMPL.class": "public class /TRT/IMPL implements /TRT/RATER\npublic method RESET()\nend\npublic method RATE(o: /TRT/ORDER_INFO) returns /TRT/RATING\nreturn /TRT/RATING.HIGH\nend\npublic static method USE(r: /TRT/RATER)\nr.RESET()\nend\nend\n"})
 }
 
-func TestNotYet(t *testing.T) {
-	expectError(t, class("public method NOW() returns TIMESTAMP executed by kernel"), "not-yet", "methods executed by kernel are not available yet")
+func TestNativeMethods(t *testing.T) {
+	expectError(t, class("public static method NOW() returns TIMESTAMP executed by kernel"), "native", "methods executed by kernel are only allowed in kernel packages")
+
+	reg := native.NewRegistry()
+	add := func(name string, static bool, sig string) {
+		var fn any = func(*native.Context) error { return nil }
+		if !static {
+			fn = func(*native.Context, *struct{}) error { return nil }
+		}
+		reg.Register(native.Method{Package: "TRT", Class: "/TRT/C", Method: name, Static: static, Signature: sig, Func: fn})
+	}
+	add("HASH", true, "(data: BYTES, salt: STRING?) returns BYTES raises /TRT/FAILED")
+	add("NOW", true, "() returns TIMESTAMP")
+	add("RATE", false, "(o: /TRT/ORDER_INFO) returns /TRT/RATING")
+	expectNative := func(member, contains string) {
+		t.Helper()
+		r := compileWith(t, class(member), reg)
+		for _, d := range r.Errors() {
+			if d.Code == "native" && strings.Contains(d.String(), contains) {
+				return
+			}
+		}
+		t.Errorf("%s: expected native error containing %q, got %v", member, contains, r.Diagnostics)
+	}
+	ok := func(members string) {
+		t.Helper()
+		if r := compileWith(t, class(members), reg); !r.OK() {
+			t.Errorf("%s: %v", members, r.Diagnostics)
+		}
+	}
+	ok(`public static method HASH(bytes: BYTES, salt: STRING?) returns BYTES raises /TRT/FAILED executed by kernel
+
+public static method NOW() returns TIMESTAMP executed by kernel
+
+public method RATE(order: /TRT/ORDER_INFO) returns /TRT/RATING executed by kernel
+
+public static method TWICE() returns array of TIMESTAMP
+  return [NOW(), NOW()]
+end`)
+	expectNative("public static method MISSING() executed by kernel", "no implementation of /TRT/C.MISSING is registered in the kernel")
+	expectNative("public static method HASH(data: STRING, salt: STRING?) returns BYTES raises /TRT/FAILED executed by kernel",
+		"declared static (STRING, STRING?) returns BYTES raises /TRT/FAILED; registered static (BYTES, STRING?) returns BYTES raises /TRT/FAILED")
+	expectNative("public static method HASH(data: BYTES, salt: STRING) returns BYTES raises /TRT/FAILED executed by kernel", "declared static (BYTES, STRING)")
+	expectNative("public static method HASH(data: BYTES, salt: STRING?) returns BYTES? raises /TRT/FAILED executed by kernel", "returns BYTES?")
+	expectNative("public static method HASH(data: BYTES, salt: STRING?) returns BYTES executed by kernel", "declared static (BYTES, STRING?) returns BYTES;")
+	expectNative("public method NOW() returns TIMESTAMP executed by kernel", "declared () returns TIMESTAMP; registered static")
+	expectNative("public open method RATE(o: /TRT/ORDER_INFO) returns /TRT/RATING executed by kernel", "cannot be open")
 }
 
 func TestDatabase(t *testing.T) {

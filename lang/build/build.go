@@ -37,6 +37,7 @@ import (
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/types"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -141,6 +142,11 @@ func (m includes) Include(name string) (*types.Unit, bool) {
 // Package checks the sources of a loaded package. deps are the packages it
 // requires, in installation order.
 func Package(pkg *model.Package, deps []*model.Package) *Result {
+	return PackageWith(pkg, deps, native.Default)
+}
+
+// PackageWith is Package with the native methods of a registry.
+func PackageWith(pkg *model.Package, deps []*model.Package, natives *native.Registry) *Result {
 	r := &Result{Package: pkg}
 	schema, err := Schema(pkg, deps)
 	if err != nil {
@@ -153,7 +159,7 @@ func Package(pkg *model.Package, deps []*model.Package) *Result {
 		}
 		return r
 	}
-	return CheckPackage(pkg, schema)
+	return CheckPackageWith(pkg, schema, natives)
 }
 
 // Schema returns the valid schema of the kernel with deps and pkg.
@@ -251,6 +257,11 @@ func KernelProgram() (*bytecode.Program, error) {
 // classes of required packages are taken from their sources in the
 // schema, includes from all packages.
 func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
+	return CheckPackageWith(pkg, schema, native.Default)
+}
+
+// CheckPackageWith is CheckPackage with the native methods of a registry.
+func CheckPackageWith(pkg *model.Package, schema *model.Schema, natives *native.Registry) *Result {
 	r := &Result{Package: pkg, Schema: schema}
 	id := pkg.Manifest.ID
 	if _, err := KernelProgram(); err != nil {
@@ -310,7 +321,9 @@ func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
 		}
 	}
 	var visible []model.PackageID
+	kernelPackage := pkg.Manifest.KernelPackage
 	if info := schema.Packages[id]; info != nil {
+		kernelPackage = info.Manifest.KernelPackage
 		for _, req := range info.Manifest.Requires {
 			visible = append(visible, req.ID)
 		}
@@ -319,7 +332,8 @@ func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
 			visible = append(visible, req.ID)
 		}
 	}
-	prog, diags := types.Check(types.Config{Package: id, Schema: schema, Units: units, Libraries: libraries, Visible: visible, Includes: incs})
+	prog, diags := types.Check(types.Config{Package: id, Schema: schema, Units: units, Libraries: libraries, Visible: visible, Includes: incs,
+		KernelPackage: kernelPackage, Natives: natives})
 	r.Program = prog
 	r.Diagnostics = append(r.Diagnostics, diags...)
 	for name, u := range incs {

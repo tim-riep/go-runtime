@@ -41,6 +41,18 @@
         }
       }
     },
+    "kernelPackage": {
+      "description": "Marks a package embedded in the kernel. Such packages are installed only by the kernel itself; packages from directories or archives must not set it.",
+      "type": "boolean"
+    },
+    "capabilities": {
+      "description": "Capabilities beyond computing and the database that the code uses through native methods.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["clock"]
+      }
+    },
     "languageVersion": {
       "description": "Version of the language of the source files in src/. Required when the package has source files.",
       "type": "integer",

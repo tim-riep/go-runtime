@@ -52,6 +52,18 @@ type Config struct {
 	// requires. The package itself and the kernel always are.
 	Visible  []model.PackageID
 	Includes IncludeSource
+	// KernelPackage tells that the package is a kernel package, the only
+	// kind of package with methods executed by kernel.
+	KernelPackage bool
+	// Natives are the native methods registered in the kernel.
+	Natives Natives
+}
+
+// Natives looks up the registrations of native methods.
+type Natives interface {
+	// NativeMethod returns whether a native method is registered, whether
+	// it is static and its signature after the method name.
+	NativeMethod(pkg model.PackageID, class, method string) (static bool, signature string, ok bool)
 }
 
 // Program is a checked program.

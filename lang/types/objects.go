@@ -327,6 +327,7 @@ const (
 	CodeReturn     = "return"
 	CodeInclude    = "include"
 	CodeNotYet     = "not-yet"
+	CodeNative     = "native"
 	CodeConstant   = "constant"
 	CodeTest       = "test"
 	CodeStatement  = "statement"

@@ -177,7 +177,7 @@ func isConstExpr(info *Info, x syntax.Expr) bool {
 
 func (c *checker) method(k *Class, m *Method) {
 	if m.Native {
-		c.errorf(m.Site.Pos, CodeNotYet, "methods executed by kernel are not available yet; they come with native methods in a later language part")
+		c.nativeMethod(k, m)
 		return
 	}
 	if m.Decl == nil || m.Decl.Body == nil {

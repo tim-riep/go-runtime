@@ -1,0 +1,59 @@
+{
+  "name": "/RT/BYTECODE",
+  "description": "Compiled code of packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "FORMAT_VERSION",
+      "domain": "/RT/KERNEL_VERSION",
+      "notNull": true,
+      "description": "Format version of the bytecode"
+    },
+    {
+      "name": "LANGUAGE_VERSION",
+      "domain": "/RT/LANGUAGE_VERSION",
+      "notNull": true
+    },
+    {
+      "name": "CODE",
+      "domain": "/RT/BYTECODE",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    },
+    {
+      "name": "GENERATION",
+      "domain": "/RT/GENERATION",
+      "notNull": true,
+      "description": "Generation in which the code was compiled"
+    },
+    {
+      "name": "COMPILED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

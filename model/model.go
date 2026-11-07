@@ -349,7 +349,21 @@ type Manifest struct {
 	// LanguageVersion is the version of the language of the source files
 	// in src/; 0 when the package has none.
 	LanguageVersion int `json:"languageVersion,omitempty"`
+	// KernelPackage marks a package that is embedded in the kernel and
+	// installed only from there. Only kernel packages have native methods.
+	KernelPackage bool `json:"kernelPackage,omitempty"`
+	// Capabilities are the effects beyond computing and the database that
+	// the code of the package uses through native methods, such as clock.
+	Capabilities []string `json:"capabilities,omitempty"`
 }
+
+// Capabilities that native methods declare.
+const (
+	CapabilityClock = "clock" // the current date and time
+)
+
+// KnownCapabilities lists the capabilities of this kernel.
+var KnownCapabilities = []string{CapabilityClock}
 
 // SourceKind is the kind of a source file, given by its extension.
 type SourceKind string
