@@ -1,0 +1,5 @@
+{
+  "name": "VALUE",
+  "description": "Value in canonical text form",
+  "type": "STRING"
+}

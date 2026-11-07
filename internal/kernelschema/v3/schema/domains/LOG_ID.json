@@ -1,0 +1,5 @@
+{
+  "name": "LOG_ID",
+  "description": "Log entry ID",
+  "type": "UUID"
+}

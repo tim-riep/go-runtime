@@ -1,0 +1,6 @@
+{
+  "name": "ASSET_PATH",
+  "description": "Path of a folder or asset in an asset repository",
+  "type": "CHAR",
+  "length": 255
+}

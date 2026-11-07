@@ -1,0 +1,5 @@
+{
+  "name": "BYTE_SIZE",
+  "description": "Size in bytes",
+  "type": "INT8"
+}

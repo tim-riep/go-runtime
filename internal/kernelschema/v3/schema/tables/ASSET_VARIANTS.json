@@ -1,0 +1,90 @@
+{
+  "name": "ASSET_VARIANTS",
+  "description": "Language variants of assets",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "domain": "ASSET_REPOSITORY_ID"
+    },
+    {
+      "name": "PATH",
+      "domain": "ASSET_PATH"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "LANGUAGE"
+    },
+    {
+      "name": "SOURCE_PATH",
+      "domain": "ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "domain": "SHA256",
+      "notNull": true
+    },
+    {
+      "name": "SIZE",
+      "domain": "BYTE_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "MODIFIED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REPOSITORY_ID",
+    "PATH",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTRY",
+      "table": "ASSET_ENTRIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        },
+        {
+          "field": "PATH",
+          "references": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    },
+    {
+      "name": "BLOB",
+      "table": "ASSET_BLOBS",
+      "fields": [
+        {
+          "field": "SHA256",
+          "references": "SHA256"
+        }
+      ]
+    }
+  ]
+}

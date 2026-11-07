@@ -1,0 +1,34 @@
+{
+  "name": "PACKAGES",
+  "description": "Installed packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "VERSION",
+      "domain": "VERSION",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION"
+    },
+    {
+      "name": "INSTALLED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "UPDATED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID"
+  ]
+}

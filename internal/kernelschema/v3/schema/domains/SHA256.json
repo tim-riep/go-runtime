@@ -1,0 +1,6 @@
+{
+  "name": "SHA256",
+  "description": "SHA-256 hash in lower-case hex",
+  "type": "CHAR",
+  "length": 64
+}

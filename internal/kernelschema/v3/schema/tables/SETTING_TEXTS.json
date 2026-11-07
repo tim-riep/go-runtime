@@ -1,0 +1,51 @@
+{
+  "name": "SETTING_TEXTS",
+  "description": "Labels of settings per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SETTING_ID",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "domain": "SETTING_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "SETTING_ID",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SETTING",
+      "table": "SETTINGS",
+      "fields": [
+        {
+          "field": "SETTING_ID",
+          "references": "SETTING_ID"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

@@ -443,6 +443,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadSettings(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadAssets(ctx, q, s); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
@@ -556,7 +559,7 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
+var deleteOrder = []string{TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
 
 // Clear deletes all rows that describe the schema. Log, migrations,
@@ -657,7 +660,10 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			}
 		}
 	}
-	return r.writeSettings(ctx, q, s)
+	if err := r.writeSettings(ctx, q, s); err != nil {
+		return err
+	}
+	return r.writeAssets(ctx, q, s)
 }
 
 // LogPackage is a package affected by a logged operation.

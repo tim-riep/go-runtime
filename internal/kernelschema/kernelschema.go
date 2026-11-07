@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2
+//go:embed v1 v2 v3
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -44,6 +44,7 @@ type Migration struct {
 var Migrations = []Migration{
 	{Version: 1, Dir: "v1"},
 	{Version: 2, Dir: "v2"}, // data classes, languages, data elements, settings
+	{Version: 3, Dir: "v3"}, // asset repositories
 }
 
 // Latest returns the newest version.

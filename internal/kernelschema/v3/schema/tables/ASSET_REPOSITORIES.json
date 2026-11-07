@@ -1,0 +1,32 @@
+{
+  "name": "ASSET_REPOSITORIES",
+  "description": "Asset repositories: folders of files brought by packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "domain": "ASSET_REPOSITORY_ID"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REPOSITORY_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

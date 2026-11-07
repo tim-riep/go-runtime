@@ -1,0 +1,100 @@
+{
+  "name": "ASSET_ENTRIES",
+  "description": "Folders and assets of asset repositories",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "domain": "ASSET_REPOSITORY_ID"
+    },
+    {
+      "name": "PATH",
+      "domain": "ASSET_PATH"
+    },
+    {
+      "name": "KIND",
+      "domain": "ASSET_KIND",
+      "notNull": true
+    },
+    {
+      "name": "PARENT_PATH",
+      "domain": "ASSET_PATH",
+      "description": "Containing folder, empty on the top level"
+    },
+    {
+      "name": "MIME_TYPE",
+      "domain": "MIME_TYPE"
+    },
+    {
+      "name": "SHA256",
+      "domain": "SHA256",
+      "description": "Language-independent content, empty for folders and assets with variants only"
+    },
+    {
+      "name": "SIZE",
+      "domain": "BYTE_SIZE"
+    },
+    {
+      "name": "SOURCE_PATH",
+      "domain": "ASSET_PATH"
+    },
+    {
+      "name": "MODIFIED_AT",
+      "domain": "TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REPOSITORY_ID",
+    "PATH"
+  ],
+  "foreignKeys": [
+    {
+      "name": "REPOSITORY",
+      "table": "ASSET_REPOSITORIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        }
+      ]
+    },
+    {
+      "name": "PARENT",
+      "table": "ASSET_ENTRIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        },
+        {
+          "field": "PARENT_PATH",
+          "references": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "BLOB",
+      "table": "ASSET_BLOBS",
+      "fields": [
+        {
+          "field": "SHA256",
+          "references": "SHA256"
+        }
+      ]
+    }
+  ]
+}

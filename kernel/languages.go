@@ -112,7 +112,7 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 		}
 		p := &plan.Plan{Operation: plan.LanguageRemove, Dialect: k.d.Name(), Target: code}
 		texts := 0
-		for _, table := range []string{repo.TDataElementTexts, repo.TSettingTexts} {
+		for _, table := range repo.TextTables {
 			if n := counts[table]; n > 0 {
 				texts += n
 				p.Changes = append(p.Changes, plan.Change{Kind: plan.DeleteRows, Table: table, Destructive: true, Detail: fmt.Sprintf("%d texts", n)})
@@ -132,7 +132,7 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 				return err
 			}
 			s.RemoveLanguage(code)
-			if err := k.repo.Write(ctx, q, s); err != nil {
+			if err := k.persist(ctx, q, s); err != nil {
 				return err
 			}
 		}

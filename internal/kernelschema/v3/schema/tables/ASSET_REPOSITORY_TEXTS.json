@@ -1,0 +1,56 @@
+{
+  "name": "ASSET_REPOSITORY_TEXTS",
+  "description": "Labels of asset repositories per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "domain": "ASSET_REPOSITORY_ID"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "LANGUAGE"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REPOSITORY_ID",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "REPOSITORY",
+      "table": "ASSET_REPOSITORIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

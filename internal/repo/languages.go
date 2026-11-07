@@ -32,7 +32,7 @@ func (r *Repo) HasLanguages() bool { return r.has(TLanguages, "") }
 // CountTexts returns the number of texts in a language per text table.
 func (r *Repo) CountTexts(ctx context.Context, q dialect.Querier, code string) (map[string]int, error) {
 	out := map[string]int{}
-	for _, t := range []string{TDataElementTexts, TSettingTexts} {
+	for _, t := range TextTables {
 		if !r.has(t, "") {
 			continue
 		}
@@ -45,6 +45,10 @@ func (r *Repo) CountTexts(ctx context.Context, q dialect.Querier, code string) (
 	}
 	return out, nil
 }
+
+// TextTables are the tables with language-dependent rows: texts and asset
+// variants.
+var TextTables = []string{TDataElementTexts, TSettingTexts, TAssetRepositoryTexts, TAssetEntryTexts, TAssetVariants}
 
 // InsertLanguage adds a language.
 func (r *Repo) InsertLanguage(ctx context.Context, q dialect.Querier, l Language) error {

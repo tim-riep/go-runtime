@@ -1,0 +1,6 @@
+{
+  "name": "SETTING_LABEL",
+  "description": "Label of a setting",
+  "type": "CHAR",
+  "length": 60
+}

@@ -106,3 +106,36 @@ func Golden(t testing.TB, name, got string) {
 		t.Errorf("output differs from %s (run with -update to accept):\n%s", name, got)
 	}
 }
+
+// CopyExample copies an example package into a temporary directory, so a
+// test can change its files, and returns the directory.
+func CopyExample(t testing.TB, name string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), filepath.Base(name))
+	if err := os.CopyFS(dir, os.DirFS(filepath.Join(ModuleRoot(t), "examples", name))); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// WriteFile writes a file below dir, creating its folders.
+func WriteFile(t testing.TB, dir, rel string, data []byte) {
+	t.Helper()
+	p := filepath.Join(dir, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// LoadDir loads a package from a directory.
+func LoadDir(t testing.TB, dir string) *model.Package {
+	t.Helper()
+	pkg, err := pkgload.Load(os.DirFS(dir), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pkg
+}

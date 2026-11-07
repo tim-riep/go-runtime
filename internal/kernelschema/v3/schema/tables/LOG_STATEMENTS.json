@@ -1,0 +1,42 @@
+{
+  "name": "LOG_STATEMENTS",
+  "description": "Statements executed by a logged operation",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "LOG_ID",
+      "domain": "LOG_ID"
+    },
+    {
+      "name": "POSITION",
+      "domain": "POSITION"
+    },
+    {
+      "name": "STATEMENT",
+      "domain": "STATEMENT",
+      "notNull": true
+    },
+    {
+      "name": "DESTRUCTIVE",
+      "domain": "FLAG",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LOG_ID",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LOG",
+      "table": "LOG",
+      "fields": [
+        {
+          "field": "LOG_ID",
+          "references": "LOG_ID"
+        }
+      ]
+    }
+  ]
+}

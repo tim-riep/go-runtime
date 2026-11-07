@@ -69,6 +69,20 @@ const (
 	AddSettingExtension   ChangeKind = "add-setting-extension"
 	DropSettingExtension  ChangeKind = "drop-setting-extension"
 	AlterSettingExtension ChangeKind = "alter-setting-extension"
+
+	AddAssetRepository   ChangeKind = "add-asset-repository"
+	DropAssetRepository  ChangeKind = "drop-asset-repository"
+	AlterAssetRepository ChangeKind = "alter-asset-repository"
+	AddAssetFolder       ChangeKind = "add-asset-folder"
+	DropAssetFolder      ChangeKind = "drop-asset-folder"
+	AlterAssetFolder     ChangeKind = "alter-asset-folder"
+	AddAsset             ChangeKind = "add-asset"
+	ReplaceAsset         ChangeKind = "replace-asset" // content changed
+	DropAsset            ChangeKind = "drop-asset"
+	AlterAsset           ChangeKind = "alter-asset" // media type or description changed
+	AddAssetVariant      ChangeKind = "add-asset-variant"
+	ReplaceAssetVariant  ChangeKind = "replace-asset-variant"
+	DropAssetVariant     ChangeKind = "drop-asset-variant"
 )
 
 // Physical reports whether the change alters the database layout. Other
@@ -76,7 +90,9 @@ const (
 func (k ChangeKind) Physical() bool {
 	switch k {
 	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
-		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension:
+		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension,
+		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
+		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant:
 		return false
 	}
 	return true
@@ -84,12 +100,18 @@ func (k ChangeKind) Physical() bool {
 
 // Change is one logical change.
 type Change struct {
-	Kind        ChangeKind `json:"kind"`
-	Table       string     `json:"table,omitempty"`
-	Column      string     `json:"column,omitempty"`
-	Name        string     `json:"name,omitempty"` // domain or foreign key name
-	Detail      string     `json:"detail,omitempty"`
-	Destructive bool       `json:"destructive"`
+	Kind   ChangeKind `json:"kind"`
+	Table  string     `json:"table,omitempty"`
+	Column string     `json:"column,omitempty"`
+	Name   string     `json:"name,omitempty"` // domain or foreign key name
+	// Asset changes name the package, the repository and the path
+	// separately; Language is set for variants.
+	Package     string `json:"package,omitempty"`
+	Repository  string `json:"repository,omitempty"`
+	Path        string `json:"path,omitempty"`
+	Language    string `json:"language,omitempty"`
+	Detail      string `json:"detail,omitempty"`
+	Destructive bool   `json:"destructive"`
 	// Notice marks changes that are not destructive but need attention,
 	// such as a changed data class.
 	Notice bool `json:"notice,omitempty"`
@@ -97,6 +119,16 @@ type Change struct {
 
 // Object names the affected object.
 func (c Change) Object() string {
+	if c.Repository != "" {
+		s := "package " + c.Package + ", repository " + c.Repository
+		if c.Path != "" {
+			s += ", path " + c.Path
+		}
+		if c.Language != "" {
+			s += ", language " + c.Language
+		}
+		return s
+	}
 	switch {
 	case c.Column != "":
 		return c.Table + "." + c.Column

@@ -64,7 +64,9 @@ type Kernel struct {
 	repo   *repo.Repo
 	target int // kernel schema version this kernel works with
 	ownsDB bool
-	now    func() time.Time
+	// maxAssetSize limits the size of one asset in bytes.
+	maxAssetSize int64
+	now          func() time.Time
 }
 
 // Open connects to a database. The connection string selects the dialect:
@@ -102,7 +104,7 @@ func Open(ctx context.Context, dsn string) (*Kernel, error) {
 // must come from the dialect's Open so every connection enforces foreign
 // keys.
 func New(db *sql.DB, d dialect.Dialect) *Kernel {
-	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now}
+	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize}
 }
 
 // Close closes the connection pool if Open created it.
@@ -118,6 +120,10 @@ func (k *Kernel) DB() *sql.DB { return k.db }
 
 // Dialect returns the dialect of the database.
 func (k *Kernel) Dialect() dialect.Dialect { return k.d }
+
+// SetMaxAssetSize sets the maximum size of one asset in bytes for later
+// installations and upgrades. The default is model.DefaultMaxAssetSize.
+func (k *Kernel) SetMaxAssetSize(n int64) { k.maxAssetSize = n }
 
 // timestamp returns the current time in the precision the kernel stores.
 func (k *Kernel) timestamp() time.Time { return k.now().UTC().Truncate(time.Microsecond) }
@@ -189,7 +195,7 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
-		if err := k.repo.Write(ctx, q, want); err != nil {
+		if err := k.persist(ctx, q, want); err != nil {
 			return err
 		}
 		for v := version + 1; v <= latest; v++ {
@@ -235,7 +241,7 @@ var migrationHooks = map[int]func(ctx context.Context, k *Kernel, q dialect.Quer
 // set up in the database. Kernel versions without languages skip that
 // check.
 func (k *Kernel) validate(ctx context.Context, q dialect.Querier, s *model.Schema) error {
-	var opts validate.Options
+	opts := validate.Options{MaxAssetSize: k.maxAssetSize}
 	if k.repo.HasLanguages() {
 		langs, err := k.repo.LanguageCodes(ctx, q)
 		if err != nil {
@@ -298,6 +304,7 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err != nil {
 			return err
 		}
+		stampAssets(cur, want, started)
 		if err := k.validate(ctx, q, want); err != nil {
 			return err
 		}
@@ -317,7 +324,7 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
-		if err := k.repo.Write(ctx, q, want); err != nil {
+		if err := k.persist(ctx, q, want); err != nil {
 			return err
 		}
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
@@ -338,6 +345,57 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 	}
 	result.Executed = true
 	return result, nil
+}
+
+// persist stores the contents of new assets, writes the repository and
+// removes contents that are no longer referenced.
+func (k *Kernel) persist(ctx context.Context, q dialect.Querier, want *model.Schema) error {
+	if k.repo.HasAssets() {
+		for _, r := range want.SortedAssetRepositories() {
+			for _, p := range r.Paths() {
+				for _, c := range r.Entries[p].Contents() {
+					if err := k.repo.StoreContent(ctx, q, c); err != nil {
+						return fmt.Errorf("storing asset %s in repository %s of package %s: %w", p, r.ID, r.Package, err)
+					}
+				}
+			}
+		}
+	}
+	if err := k.repo.Write(ctx, q, want); err != nil {
+		return err
+	}
+	return k.repo.DeleteUnusedContents(ctx, q)
+}
+
+// stampAssets sets the time of the last change of every asset content:
+// contents that are unchanged keep their time, all others get now.
+func stampAssets(cur, want *model.Schema, now time.Time) {
+	for key, w := range want.AssetRepositories {
+		c := cur.AssetRepositories[key]
+		for p, we := range w.Entries {
+			var ce *model.AssetEntry
+			if c != nil {
+				ce = c.Entries[p]
+			}
+			stamp := func(wc, cc *model.AssetContent) {
+				if wc == nil {
+					return
+				}
+				if cc != nil && cc.SHA256 == wc.SHA256 && ce.MimeType == we.MimeType {
+					wc.ModifiedAt = cc.ModifiedAt
+				} else {
+					wc.ModifiedAt = now
+				}
+			}
+			if ce == nil {
+				ce = &model.AssetEntry{}
+			}
+			stamp(we.Content, ce.Content)
+			for l, v := range we.Variants {
+				stamp(v, ce.Variants[l])
+			}
+		}
+	}
 }
 
 // execute runs the statements of a plan.

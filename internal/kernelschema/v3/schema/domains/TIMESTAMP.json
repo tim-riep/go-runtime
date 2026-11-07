@@ -1,0 +1,5 @@
+{
+  "name": "TIMESTAMP",
+  "description": "Point in time in UTC",
+  "type": "TIMESTAMP"
+}

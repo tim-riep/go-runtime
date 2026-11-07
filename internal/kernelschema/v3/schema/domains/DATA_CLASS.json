@@ -1,0 +1,24 @@
+{
+  "name": "DATA_CLASS",
+  "description": "Kind of data a table holds",
+  "type": "CHAR",
+  "length": 20,
+  "values": [
+    {
+      "value": "configuration",
+      "description": "Configuration that defines the behavior of the application"
+    },
+    {
+      "value": "application",
+      "description": "Master and transactional data of the running business"
+    },
+    {
+      "value": "runtimeConfiguration",
+      "description": "Configuration maintained during operation"
+    },
+    {
+      "value": "system",
+      "description": "Native tables of the kernel"
+    }
+  ]
+}

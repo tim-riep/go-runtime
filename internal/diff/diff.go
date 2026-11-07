@@ -23,6 +23,7 @@ package diff
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -38,6 +39,7 @@ func Diff(cur, want *model.Schema) []plan.Change {
 	out = append(out, domains(cur, want)...)
 	out = append(out, dataElements(cur, want)...)
 	out = append(out, settings(cur, want)...)
+	out = append(out, assets(cur, want)...)
 	out = append(out, tables(cur.Physical(), want.Physical())...)
 	return out
 }
@@ -145,6 +147,112 @@ func settings(cur, want *model.Schema) []plan.Change {
 		}
 	}
 	return out
+}
+
+// assets lists the changes of asset repositories, one per repository,
+// folder, asset and variant. They never touch the database layout and are
+// never destructive.
+func assets(cur, want *model.Schema) []plan.Change {
+	var out []plan.Change
+	ch := func(kind plan.ChangeKind, k model.AssetRepositoryKey, p, lang, detail string) {
+		out = append(out, plan.Change{Kind: kind, Package: string(k.Package), Repository: k.ID, Path: p, Language: lang, Detail: detail})
+	}
+	for _, w := range want.SortedAssetRepositories() {
+		k := w.Key()
+		c := cur.AssetRepositories[k]
+		if c == nil {
+			ch(plan.AddAssetRepository, k, "", "", fmt.Sprintf("%d entries", len(w.Entries)))
+			c = &model.AssetRepository{Entries: map[string]*model.AssetEntry{}}
+		} else if !maps.Equal(c.Description, w.Description) {
+			ch(plan.AlterAssetRepository, k, "", "", "label")
+		}
+		for _, p := range w.Paths() {
+			we, ce := w.Entries[p], c.Entries[p]
+			if ce != nil && ce.Folder != we.Folder {
+				ch(dropKind(ce), k, p, "", "")
+				ce = nil
+			}
+			if ce == nil {
+				if we.Folder {
+					ch(plan.AddAssetFolder, k, p, "", "")
+				} else {
+					ch(plan.AddAsset, k, p, "", describeAsset(we))
+				}
+				continue
+			}
+			if we.Folder {
+				if !maps.Equal(ce.Description, we.Description) {
+					ch(plan.AlterAssetFolder, k, p, "", "description")
+				}
+				continue
+			}
+			switch {
+			case we.Content != nil && ce.Content == nil:
+				ch(plan.AddAsset, k, p, "", "language-independent version, "+describeContent(we.Content))
+			case we.Content == nil && ce.Content != nil:
+				ch(plan.DropAsset, k, p, "", "language-independent version")
+			case we.Content != nil && we.Content.SHA256 != ce.Content.SHA256:
+				ch(plan.ReplaceAsset, k, p, "", describeContent(ce.Content)+" -> "+describeContent(we.Content))
+			}
+			var parts []string
+			if ce.MimeType != we.MimeType {
+				parts = append(parts, "media type "+ce.MimeType+" -> "+we.MimeType)
+			}
+			if !maps.Equal(ce.Description, we.Description) {
+				parts = append(parts, "description")
+			}
+			if len(parts) > 0 {
+				ch(plan.AlterAsset, k, p, "", strings.Join(parts, "; "))
+			}
+			for _, l := range we.Languages() {
+				wv, cv := we.Variants[l], ce.Variants[l]
+				switch {
+				case cv == nil:
+					ch(plan.AddAssetVariant, k, p, l, describeContent(wv))
+				case cv.SHA256 != wv.SHA256:
+					ch(plan.ReplaceAssetVariant, k, p, l, describeContent(cv)+" -> "+describeContent(wv))
+				}
+			}
+			for _, l := range ce.Languages() {
+				if we.Variants[l] == nil {
+					ch(plan.DropAssetVariant, k, p, l, "")
+				}
+			}
+		}
+		for _, p := range c.Paths() {
+			if w.Entries[p] == nil {
+				ch(dropKind(c.Entries[p]), k, p, "", "")
+			}
+		}
+	}
+	for _, c := range cur.SortedAssetRepositories() {
+		if want.AssetRepositories[c.Key()] == nil {
+			ch(plan.DropAssetRepository, c.Key(), "", "", fmt.Sprintf("%d entries", len(c.Entries)))
+		}
+	}
+	return out
+}
+
+func dropKind(e *model.AssetEntry) plan.ChangeKind {
+	if e.Folder {
+		return plan.DropAssetFolder
+	}
+	return plan.DropAsset
+}
+
+func describeContent(c *model.AssetContent) string {
+	return fmt.Sprintf("%d bytes, sha256 %s", c.Size, c.SHA256[:min(12, len(c.SHA256))])
+}
+
+func describeAsset(e *model.AssetEntry) string {
+	parts := []string{e.MimeType}
+	if e.Content != nil {
+		parts = append(parts, describeContent(e.Content))
+	}
+	if len(e.Variants) > 0 {
+		parts = append(parts, "languages "+strings.Join(e.Languages(), ", "))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func describeReference(f *model.Field) string {

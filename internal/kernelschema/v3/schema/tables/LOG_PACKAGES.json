@@ -1,0 +1,40 @@
+{
+  "name": "LOG_PACKAGES",
+  "description": "Packages affected by a logged operation",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "LOG_ID",
+      "domain": "LOG_ID"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "VERSION_FROM",
+      "domain": "VERSION"
+    },
+    {
+      "name": "VERSION_TO",
+      "domain": "VERSION"
+    }
+  ],
+  "primaryKey": [
+    "LOG_ID",
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LOG",
+      "table": "LOG",
+      "fields": [
+        {
+          "field": "LOG_ID",
+          "references": "LOG_ID"
+        }
+      ]
+    }
+  ]
+}

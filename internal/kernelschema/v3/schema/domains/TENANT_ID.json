@@ -1,0 +1,6 @@
+{
+  "name": "TENANT_ID",
+  "description": "Tenant key",
+  "type": "CHAR",
+  "length": 16
+}
