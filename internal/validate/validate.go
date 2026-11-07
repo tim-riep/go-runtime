@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Schema checks s and converts field defaults written in packages into

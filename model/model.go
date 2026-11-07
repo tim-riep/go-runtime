@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // PackageID identifies a package. It consists of upper-case letters and

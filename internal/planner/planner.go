@@ -16,10 +16,10 @@
 package planner
 
 import (
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/internal/diff"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/internal/diff"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 )
 
 // Build compares cur and want and lets the dialect turn the changes into

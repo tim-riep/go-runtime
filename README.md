@@ -202,7 +202,7 @@ representation.
 ## Command line
 
 ```bash
-go install github.com/timriep/go-runtime/cmd/rt@latest
+go install github.com/tim-riep/go-runtime/cmd/rt@latest
 ```
 
 ```bash

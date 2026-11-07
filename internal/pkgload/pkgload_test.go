@@ -19,8 +19,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 func file(s string) *fstest.MapFile { return &fstest.MapFile{Data: []byte(s)} }

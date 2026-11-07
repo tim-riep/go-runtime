@@ -31,10 +31,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/timriep/go-runtime/kernel"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Exit codes.

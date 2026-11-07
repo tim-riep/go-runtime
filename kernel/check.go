@@ -21,7 +21,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/timriep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/dialect"
 )
 
 // Discrepancy is a difference between the repository and the actual

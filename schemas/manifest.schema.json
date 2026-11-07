@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/timriep/go-runtime/schemas/manifest.schema.json",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/manifest.schema.json",
   "title": "Package manifest",
   "description": "Identity, version and requirements of a package (manifest.json).",
   "type": "object",

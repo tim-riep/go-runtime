@@ -22,8 +22,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 )
 
 // Querier is satisfied by *sql.DB, *sql.Conn and *sql.Tx.

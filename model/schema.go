@@ -19,7 +19,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Schema is the complete set of objects in one database: the kernel's native

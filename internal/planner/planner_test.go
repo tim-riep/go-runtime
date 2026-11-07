@@ -18,13 +18,13 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/dialect/postgres"
-	"github.com/timriep/go-runtime/dialect/sqlite"
-	"github.com/timriep/go-runtime/internal/testutil"
-	"github.com/timriep/go-runtime/internal/validate"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/dialect/postgres"
+	"github.com/tim-riep/go-runtime/dialect/sqlite"
+	"github.com/tim-riep/go-runtime/internal/testutil"
+	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 )
 
 var dialects = []dialect.Dialect{sqlite.New(), postgres.New()}

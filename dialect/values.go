@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/timriep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 // Canonicalize converts a Go value into the canonical text form of the

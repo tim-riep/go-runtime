@@ -22,9 +22,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timriep/go-runtime/internal/kernelschema"
-	"github.com/timriep/go-runtime/internal/pkgload"
-	"github.com/timriep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
+	"github.com/tim-riep/go-runtime/internal/pkgload"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 // ModuleRoot returns the directory containing go.mod.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/timriep/go-runtime/schemas/table.schema.json",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/table.schema.json",
   "title": "Table",
   "description": "A table with fields, primary key and foreign keys (schema/tables/<NAME>.json).",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/timriep/go-runtime/schemas/domain.schema.json",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/domain.schema.json",
   "title": "Domain",
   "description": "A technical type: base type, length, decimals and optional fixed values (schema/domains/<NAME>.json).",
   "type": "object",

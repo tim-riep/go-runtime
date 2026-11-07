@@ -18,9 +18,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/timriep/go-runtime/internal/repo"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/internal/repo"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // LogEntry is one entry of the operation log.

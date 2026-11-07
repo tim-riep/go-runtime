@@ -26,8 +26,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 )
 
 // Diff returns the changes that turn cur into want.

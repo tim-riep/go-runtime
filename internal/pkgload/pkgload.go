@@ -41,9 +41,9 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
-	"github.com/timriep/go-runtime/schemas"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/schemas"
 )
 
 // Paths inside a package.

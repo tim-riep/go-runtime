@@ -23,7 +23,7 @@ import "embed"
 var FS embed.FS
 
 // BaseURL is the common prefix of the schema IDs.
-const BaseURL = "https://github.com/timriep/go-runtime/schemas/"
+const BaseURL = "https://github.com/tim-riep/go-runtime/schemas/"
 
 // Schema file names.
 const (

@@ -19,12 +19,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/timriep/go-runtime/internal/diff"
-	"github.com/timriep/go-runtime/internal/testutil"
-	"github.com/timriep/go-runtime/internal/validate"
-	"github.com/timriep/go-runtime/kernel"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/internal/diff"
+	"github.com/tim-riep/go-runtime/internal/testutil"
+	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // forEachDB runs fn against a fresh database of every available dialect.

@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 func pkg(id, version string, reqs ...string) *model.Package {

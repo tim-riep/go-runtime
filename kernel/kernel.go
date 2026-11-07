@@ -32,17 +32,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/dialect/postgres"
-	"github.com/timriep/go-runtime/dialect/sqlite"
-	"github.com/timriep/go-runtime/internal/kernelschema"
-	"github.com/timriep/go-runtime/internal/pkgload"
-	"github.com/timriep/go-runtime/internal/planner"
-	"github.com/timriep/go-runtime/internal/repo"
-	"github.com/timriep/go-runtime/internal/validate"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/dialect/postgres"
+	"github.com/tim-riep/go-runtime/dialect/sqlite"
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
+	"github.com/tim-riep/go-runtime/internal/pkgload"
+	"github.com/tim-riep/go-runtime/internal/planner"
+	"github.com/tim-riep/go-runtime/internal/repo"
+	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Options control an operation.

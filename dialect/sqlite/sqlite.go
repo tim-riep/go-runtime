@@ -41,10 +41,10 @@ import (
 
 	"modernc.org/sqlite"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Dialect is the SQLite dialect.

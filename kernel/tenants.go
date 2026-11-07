@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/internal/repo"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/internal/repo"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Tenant is a tenant of the database.

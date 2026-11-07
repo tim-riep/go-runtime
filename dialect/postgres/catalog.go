@@ -18,8 +18,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 const tablesQuery = `

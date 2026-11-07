@@ -1,4 +1,4 @@
-module github.com/timriep/go-runtime
+module github.com/tim-riep/go-runtime
 
 go 1.26.4
 

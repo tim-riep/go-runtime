@@ -21,9 +21,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timriep/go-runtime/dialect"
-	"github.com/timriep/go-runtime/kernel"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 type values map[string]any

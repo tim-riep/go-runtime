@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timriep/go-runtime/internal/testutil"
+	"github.com/tim-riep/go-runtime/internal/testutil"
 )
 
 func TestCLI(t *testing.T) {

@@ -19,9 +19,9 @@ package resolve
 import (
 	"slices"
 
-	"github.com/timriep/go-runtime/internal/semver"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/internal/semver"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Resolve checks the dependencies of the package set that results from

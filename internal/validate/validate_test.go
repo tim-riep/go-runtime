@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timriep/go-runtime/internal/testutil"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/internal/testutil"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 type examples struct{ base, fin, otto *model.Package }

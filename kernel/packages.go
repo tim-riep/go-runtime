@@ -18,11 +18,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/timriep/go-runtime/internal/resolve"
-	"github.com/timriep/go-runtime/internal/semver"
-	"github.com/timriep/go-runtime/model"
-	"github.com/timriep/go-runtime/plan"
-	"github.com/timriep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/internal/resolve"
+	"github.com/tim-riep/go-runtime/internal/semver"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 func manifests(s *model.Schema) map[model.PackageID]model.Manifest {

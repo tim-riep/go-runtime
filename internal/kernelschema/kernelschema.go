@@ -26,8 +26,8 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/timriep/go-runtime/internal/pkgload"
-	"github.com/timriep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/internal/pkgload"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 //go:embed v1
