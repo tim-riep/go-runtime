@@ -508,6 +508,7 @@ func (p *Physical) Domain(f *Field) *Domain { return p.Domains[f.Domain] }
 // Physical computes the database layout of the schema.
 func (s *Schema) Physical() *Physical {
 	p := &Physical{Tables: map[string]*Table{}, Domains: s.Domains, DataElements: s.DataElements}
+	r := s.Resolver()
 	tenant := func(name string) bool {
 		t, ok := s.Tables[name]
 		return ok && t.TenantSpecific
@@ -535,7 +536,7 @@ func (s *Schema) Physical() *Physical {
 				Columns: []ColumnPair{{Field: TenantField, References: TenantTableKey}},
 			})
 		}
-		t.Fields = append(t.Fields, cloneFields(base.Fields)...)
+		t.Fields = append(t.Fields, s.columns(r, base)...)
 		t.PrimaryKey = append(t.PrimaryKey, base.PrimaryKey...)
 		for _, fk := range base.ForeignKeys {
 			t.ForeignKeys = append(t.ForeignKeys, augment(base, fk))
@@ -556,4 +557,51 @@ func (s *Schema) Physical() *Physical {
 		p.Tables[name] = t
 	}
 	return p
+}
+
+// columns returns the own fields of a table with the components of its
+// includes at their places. Included components become columns of origin
+// INCLUDE that remember the include and the declaring structure. Includes
+// that cannot be resolved, e.g. because of a cycle, and non-elementary
+// components are left out; the validation reports them.
+func (s *Schema) columns(r *Resolver, t *Table) []Field {
+	var out []Field
+	includes := slices.Clone(t.Includes)
+	slices.SortStableFunc(includes, func(a, b TableInclude) int { return a.After - b.After })
+	next := 0
+	add := func(upTo int) {
+		for ; next < len(includes) && includes[next].After <= upTo; next++ {
+			inc := includes[next].Name
+			comps, ok := r.Components(inc)
+			if !ok {
+				continue
+			}
+			for _, c := range comps {
+				if f, ok := includedField(c, inc); ok {
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	for i, f := range cloneFields(t.Fields) {
+		add(i)
+		out = append(out, f)
+	}
+	add(len(t.Fields))
+	return out
+}
+
+func includedField(c ResolvedComponent, inc string) (Field, bool) {
+	f := Field{Name: c.Name, LocalName: c.Name, Description: c.Description, Owner: c.Owner, Origin: OriginInclude,
+		NotNull: c.NotNull, Default: c.Default, DefaultJSON: slices.Clone(c.DefaultJSON),
+		Included: Some(inc), Source: Some(c.Declared), Src: c.Src}
+	switch c.Type.Kind {
+	case TypeDataElement:
+		f.DataElement = Some(c.Type.Name)
+	case TypeDomain:
+		f.Domain = c.Type.Name
+	default:
+		return Field{}, false
+	}
+	return f, true
 }

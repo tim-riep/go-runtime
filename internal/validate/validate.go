@@ -50,6 +50,7 @@ func Schema(s *model.Schema, opts Options) error {
 	for _, name := range s.DataElementNames() {
 		v.dataElement(s.DataElements[name])
 	}
+	v.structures()
 	for _, name := range s.TableNames() {
 		v.table(s.Tables[name])
 	}
@@ -63,7 +64,24 @@ func Schema(s *model.Schema, opts Options) error {
 	return v.errs.Err()
 }
 
+// physical returns the physical layout of the schema, computed once.
+func (v *validator) physical() *model.Physical {
+	if v.phys == nil {
+		v.phys = v.s.Physical()
+	}
+	return v.phys
+}
+
+// physicalField returns a column of a table, including included columns.
+func (v *validator) physicalField(table, name string) *model.Field {
+	if t := v.physical().Tables[table]; t != nil {
+		return t.Field(name)
+	}
+	return nil
+}
+
 type validator struct {
+	phys    *model.Physical
 	s       *model.Schema
 	opts    Options
 	errs    rterr.List
@@ -349,7 +367,15 @@ func (v *validator) table(t *model.Table) {
 		names[f.Name] = true
 		v.field(t.Name, f, t.Owner)
 	}
-	if t.TenantSpecific {
+	// Included columns count as fields of the table for keys.
+	keyFields := slices.Clone(t.Fields)
+	if pt := v.physical().Tables[t.Name]; pt != nil {
+		for _, f := range pt.Fields {
+			if f.Origin == model.OriginInclude {
+				names[f.Name] = true
+				keyFields = append(keyFields, f)
+			}
+		}
 	}
 	if len(t.PrimaryKey) == 0 {
 		v.fail(rterr.CodePrimaryKey, t.Src.At("/primaryKey"), obj, "table has no primary key")
@@ -372,7 +398,7 @@ func (v *validator) table(t *model.Table) {
 			v.fail(rterr.CodeDuplicate, fk.Src.At("/name"), obj, "foreign key %s is declared twice", fk.Name)
 		}
 		fkNames[fk.Name] = true
-		v.foreignKey(t, fk, t.Owner, t.Fields)
+		v.foreignKey(t, fk, t.Owner, keyFields)
 	}
 }
 
@@ -454,7 +480,7 @@ func (v *validator) foreignKey(src *model.Table, fk *model.ForeignKey, owner mod
 			v.fail(rterr.CodeForeignKey, loc.At("/field"), obj, "field %s is used twice", c.Field)
 		}
 		used[c.Field] = true
-		tf := target.Field(c.References)
+		tf := v.physicalField(target.Name, c.References)
 		if tf == nil || !target.IsKey(c.References) {
 			v.fail(rterr.CodeForeignKey, loc.At("/references"), obj, "%s is not a key field of %s", c.References, target.Name)
 			continue
