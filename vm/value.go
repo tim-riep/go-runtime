@@ -248,6 +248,11 @@ func (m *Machine) newRecord(class *LinkedClass, p *bytecode.Program, l *bytecode
 		if f.Kind == bytecode.FRef && !f.Optional {
 			r.Refs[f.Ref] = m.zero(p, f.Type).R
 		}
+		if f.HasDefault {
+			if v, err := m.fromCanonical(p, f.Type, f.Default); err == nil {
+				m.setField(r, f, v)
+			}
+		}
 	}
 	return r
 }

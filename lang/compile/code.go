@@ -236,8 +236,17 @@ func (f *fn) stmt(s syntax.Stmt) {
 	info := f.c.info
 	switch s := s.(type) {
 	case *syntax.VarStmt:
-		f.valueOwn(s.Value)
-		f.storeLocal(info.Vars[s][0], true)
+		l := info.Vars[s][0]
+		if s.Value == nil {
+			f.emit(ZERO, f.c.typeDesc(l.Type))
+		} else {
+			f.valueOwn(s.Value)
+		}
+		f.storeLocal(l, true)
+	case *syntax.RowStmt:
+		f.rowStmt(s)
+	case *syntax.DatabaseStmt:
+		f.sessionStmt(s)
 	case *syntax.AssignStmt:
 		f.assign(s)
 	case *syntax.ExprStmt:
@@ -469,6 +478,10 @@ func (f *fn) fieldOp(fd bytecode.Field, set int) {
 
 func (f *fn) forStmt(s *syntax.ForStmt) {
 	info := f.c.info
+	if info.Cursors[s] {
+		f.cursorLoop(s)
+		return
+	}
 	vars := info.Vars[s]
 	if s.In != nil {
 		t := types.NonOpt(info.Types[s.In])
@@ -845,6 +858,8 @@ func (f *fn) expr0(x syntax.Expr) {
 		f.emit(MAP_LIT, f.c.typeDesc(t), len(x.Keys))
 	case *syntax.FuncExpr:
 		f.funcExpr(x)
+	case *syntax.QueryExpr, *syntax.UpdateExpr, *syntax.DeleteExpr, *syntax.OpenSessionExpr:
+		f.dbExpr(x)
 	default:
 		f.c.failf("cannot compile %T", x)
 	}

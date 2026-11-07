@@ -1,0 +1,8 @@
+# A row with the same primary key or unique key exists.
+public class /RT/DUPLICATE_ROW extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

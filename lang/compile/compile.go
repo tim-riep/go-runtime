@@ -28,6 +28,7 @@ import (
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/types"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 // Options control compilation.
@@ -529,7 +530,13 @@ func (c *compiler) structLayout(s *types.Struct) int {
 	for _, f := range s.Fields {
 		fields = append(fields, fieldSpec{f.Name, f.Type})
 	}
-	c.out.Layouts[idx] = buildLayout(c, s.Name, nil, fields)
+	l := buildLayout(c, s.Name, nil, fields)
+	for i, f := range s.Fields {
+		if f.Default.Kind == model.DefaultValue {
+			l.Fields[i].Default, l.Fields[i].HasDefault = f.Default.Value, true
+		}
+	}
+	c.out.Layouts[idx] = l
 	return idx
 }
 

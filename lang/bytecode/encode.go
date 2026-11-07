@@ -46,6 +46,12 @@ func (w *writer) bool(v bool) {
 		w.int(0)
 	}
 }
+func (w *writer) strs(ss []string) {
+	w.int(len(ss))
+	for _, s := range ss {
+		w.str(s)
+	}
+}
 func (w *writer) ints(ns []int) {
 	w.int(len(ns))
 	for _, n := range ns {
@@ -128,6 +134,8 @@ func Encode(p *Program) []byte {
 			w.int(f.PresBit)
 			w.int(f.Ref)
 			w.bool(f.Optional)
+			w.str(f.Default)
+			w.bool(f.HasDefault)
 		}
 	}
 	w.int(len(p.Enums))
@@ -202,6 +210,30 @@ func Encode(p *Program) []byte {
 		w.ints(f.ParamTypes)
 		w.int(f.Result)
 	}
+	w.int(len(p.Queries))
+	for _, q := range p.Queries {
+		w.int(int(q.Kind))
+		w.str(q.Table)
+		w.int(q.Row)
+		w.strs(q.Key)
+		w.strs(q.Sets)
+		w.int(q.Where)
+		w.int(len(q.Conds))
+		for _, c := range q.Conds {
+			w.int(int(c.Op))
+			w.ints(c.Kids)
+			w.str(c.Field)
+			w.str(c.Other)
+			w.int(c.Param)
+		}
+		w.int(len(q.Order))
+		for _, o := range q.Order {
+			w.str(o.Field)
+			w.bool(o.Descending)
+		}
+		w.bool(q.Limit)
+		w.ints(q.Params)
+	}
 	return w.b.Bytes()
 }
 
@@ -266,6 +298,17 @@ func (r *reader) raw() []byte {
 
 func (r *reader) str() string { return string(r.raw()) }
 func (r *reader) bool() bool  { return r.int() != 0 }
+func (r *reader) strs() []string {
+	n := r.count()
+	if n == 0 {
+		return nil
+	}
+	out := make([]string, n)
+	for i := range out {
+		out[i] = r.str()
+	}
+	return out
+}
 func (r *reader) ints() []int {
 	n := r.count()
 	if n == 0 {
@@ -327,7 +370,7 @@ func Decode(b []byte) (*Program, error) {
 		l.Fields = make([]Field, r.count())
 		for j := range l.Fields {
 			l.Fields[j] = Field{Name: r.str(), Type: r.int(), Kind: FieldKind(r.int()), Offset: r.int(), Bit: r.int(), Size: r.int(),
-				Present: r.int(), PresBit: r.int(), Ref: r.int(), Optional: r.bool()}
+				Present: r.int(), PresBit: r.int(), Ref: r.int(), Optional: r.bool(), Default: r.str(), HasDefault: r.bool()}
 		}
 		p.Layouts[i] = l
 	}
@@ -377,6 +420,21 @@ func Decode(b []byte) (*Program, error) {
 		f.ParamTypes = r.ints()
 		f.Result = r.int()
 		p.Funcs[i] = f
+	}
+	p.Queries = make([]Query, r.count())
+	for i := range p.Queries {
+		q := Query{Kind: QueryKind(r.int()), Table: r.str(), Row: r.int(), Key: r.strs(), Sets: r.strs(), Where: r.int()}
+		q.Conds = make([]Cond, r.count())
+		for j := range q.Conds {
+			q.Conds[j] = Cond{Op: CondOp(r.int()), Kids: r.ints(), Field: r.str(), Other: r.str(), Param: r.int()}
+		}
+		q.Order = make([]OrderKey, r.count())
+		for j := range q.Order {
+			q.Order[j] = OrderKey{Field: r.str(), Descending: r.bool()}
+		}
+		q.Limit = r.bool()
+		q.Params = r.ints()
+		p.Queries[i] = q
 	}
 	if r.err != nil {
 		return nil, r.err
@@ -437,6 +495,10 @@ func (p *Program) Verify() error {
 				ok = ref(arg(0), len(p.Funcs))
 			case MAKE_FN:
 				ok = in(arg(0), len(p.Funcs))
+			case DB_QUERY, DB_CURSOR:
+				ok = in(arg(0), len(p.Queries))
+			case DB_NEXT:
+				ok = in(arg(0), len(f.Code)+1)
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -447,6 +509,21 @@ func (p *Program) Verify() error {
 			if !in(h.Target, len(f.Code)) || h.Class != -1 && !ref(h.Class, len(p.Classes)) {
 				return fmt.Errorf("bytecode: %s: invalid exception handler", f.Name)
 			}
+		}
+	}
+	for _, q := range p.Queries {
+		ok := in(q.Row, len(p.Types)) && p.Types[q.Row].Kind == TStruct && !p.Types[q.Row].Optional && q.Kind >= QSelect && q.Kind <= QDeleteWhere && (q.Where == -1 || in(q.Where, len(q.Conds)))
+		for _, c := range q.Conds {
+			for _, k := range c.Kids {
+				ok = ok && in(k, len(q.Conds))
+			}
+			ok = ok && (c.Param == -1 || in(c.Param, len(q.Params)))
+		}
+		for _, t := range q.Params {
+			ok = ok && in(t, len(p.Types))
+		}
+		if !ok {
+			return fmt.Errorf("bytecode: invalid query on %s", q.Table)
 		}
 	}
 	for _, c := range p.Classes {

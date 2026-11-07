@@ -1,0 +1,7 @@
+public class /TRDB/MISSING extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

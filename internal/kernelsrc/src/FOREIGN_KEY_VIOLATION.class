@@ -1,0 +1,8 @@
+# A foreign key refers to a row that does not exist, or a row is still referred to.
+public class /RT/FOREIGN_KEY_VIOLATION extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

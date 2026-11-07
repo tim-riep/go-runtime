@@ -420,6 +420,9 @@ func (p *printer) stmt(s Stmt, ind int) {
 			p.w(": ")
 			p.typ(s.Type)
 		}
+		if s.Value == nil {
+			break
+		}
 		p.w(" =")
 		p.brkOrSpace(s.Break)
 		p.expr(s.Value)
@@ -536,6 +539,14 @@ func (p *printer) stmt(s Stmt, ind int) {
 		}
 	case *DatabaseStmt:
 		p.w(s.Keyword)
+		if s.Session != nil {
+			p.w(" ")
+			p.expr(s.Session)
+		}
+	case *RowStmt:
+		p.w(s.Op + " ")
+		p.expr(s.Row)
+		p.using(s.Using)
 	}
 	p.endLine(trailing)
 }
@@ -713,6 +724,50 @@ func (p *printer) expr(x Expr) {
 		}
 		p.listClose(x.List)
 		p.w("]")
+	case *QueryExpr:
+		p.w("select ")
+		if x.Mode != "" {
+			p.w(x.Mode + " ")
+		}
+		p.w("from " + x.Table.Name)
+		p.where(x.Where)
+		for i, o := range x.Order {
+			if i == 0 {
+				p.w(" order by ")
+			} else {
+				p.w(", ")
+			}
+			p.w(o.Field.Name)
+			if o.Explicit {
+				if o.Descending {
+					p.w(" descending")
+				} else {
+					p.w(" ascending")
+				}
+			}
+		}
+		if x.Limit != nil {
+			p.w(" limit ")
+			p.expr(x.Limit)
+		}
+		p.using(x.Using)
+	case *UpdateExpr:
+		p.w("update " + x.Table.Name + " set ")
+		for i, s := range x.Sets {
+			if i > 0 {
+				p.w(", ")
+			}
+			p.w(s.Field.Name + " = ")
+			p.expr(s.Value)
+		}
+		p.where(x.Where)
+		p.using(x.Using)
+	case *DeleteExpr:
+		p.w("delete from " + x.Table.Name)
+		p.where(x.Where)
+		p.using(x.Using)
+	case *OpenSessionExpr:
+		p.w("open session")
 	case *FuncExpr:
 		p.w("function ")
 		p.params(x.Params, x.List)
@@ -762,4 +817,18 @@ func escape(s string) string {
 		}
 	}
 	return b.String()
+}
+
+func (p *printer) where(x Expr) {
+	if x != nil {
+		p.w(" where ")
+		p.expr(x)
+	}
+}
+
+func (p *printer) using(x Expr) {
+	if x != nil {
+		p.w(" using ")
+		p.expr(x)
+	}
 }

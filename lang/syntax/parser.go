@@ -641,6 +641,11 @@ func (p *parser) stmt() Stmt {
 			if p.isOp(":") {
 				p.next()
 				s.Type = p.typ()
+				// var x: T alone starts with the initial values of T.
+				if p.tok.Kind == NEWLINE || p.tok.Kind == EOF {
+					s.Doc.Trailing = p.lineEnd()
+					return s
+				}
 			}
 			p.expectOp("=")
 			s.Break = p.brk()
@@ -721,8 +726,26 @@ func (p *parser) stmt() Stmt {
 		case "commit", "rollback":
 			s := &DatabaseStmt{StmtBase: base, Keyword: p.tok.Text}
 			p.next()
+			if p.tok.Kind != NEWLINE && p.tok.Kind != EOF {
+				s.Session = p.expr(0)
+			}
 			s.Doc.Trailing = p.lineEnd()
 			return s
+		case "insert", "update", "delete":
+			// update /PKG/T set ... and delete from ... are expressions.
+			setForm := p.tok.Text == "update" && p.i+2 < len(p.toks) && p.toks[p.i+1].Kind == GLOBAL && p.toks[p.i+2].Kind == IDENT && p.toks[p.i+2].Text == "set"
+			fromForm := p.tok.Text == "delete" && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == KEYWORD && p.toks[p.i+1].Text == "from"
+			if !setForm && !fromForm {
+				s := &RowStmt{StmtBase: base, Op: p.tok.Text}
+				p.next()
+				s.Row = p.expr(0)
+				if p.isKw("using") {
+					p.next()
+					s.Using = p.expr(0)
+				}
+				s.Doc.Trailing = p.lineEnd()
+				return s
+			}
 		}
 		if !p.startsOperand() {
 			p.errorf(pos, "unexpected %s at the start of a statement", p.tok)
@@ -747,7 +770,7 @@ func (p *parser) stmt() Stmt {
 
 func (p *parser) startsOperand() bool {
 	switch p.tok.Text {
-	case "me", "super", "new", "null", "true", "false", "function":
+	case "me", "super", "new", "null", "true", "false", "function", "select", "update", "delete", "open":
 		return true
 	}
 	return false
@@ -869,7 +892,7 @@ func (p *parser) tryStmt(base StmtBase) *TryStmt {
 // Binding powers of binary operators.
 var precedence = map[string]int{
 	"default": 1, "or": 2, "and": 3,
-	"=": 5, "<>": 5, "<": 5, ">": 5, "<=": 5, ">=": 5, "is": 5,
+	"=": 5, "<>": 5, "<": 5, ">": 5, "<=": 5, ">=": 5, "is": 5, "in": 5,
 	"+": 6, "-": 6, "*": 7, "/": 7, "mod": 7, "as": 9,
 }
 
@@ -974,6 +997,20 @@ func (p *parser) primary() Expr {
 			return p.newExpr()
 		case "function":
 			return p.funcExpr()
+		case "select":
+			return p.selectExpr()
+		case "update":
+			return p.updateExpr()
+		case "delete":
+			return p.deleteExpr()
+		case "open":
+			p.next()
+			if !p.isKw("session") {
+				p.errorf(p.tok.Pos, `expected "session" after "open", found %s`, p.tok)
+				return p.bad(t.Pos)
+			}
+			p.next()
+			return &OpenSessionExpr{Pos: t.Pos}
 		}
 	case OP:
 		switch t.Text {
@@ -1264,4 +1301,94 @@ func (p *parser) subExpr(src string, base Pos) Expr {
 	}
 	p.errs = append(p.errs, sub.errs...)
 	return x
+}
+
+// using reads an optional "using session".
+func (p *parser) using() Expr {
+	if !p.isKw("using") {
+		return nil
+	}
+	p.next()
+	return p.expr(0)
+}
+
+// where reads an optional where condition.
+func (p *parser) where() Expr {
+	if !p.isKw("where") {
+		return nil
+	}
+	p.next()
+	return p.expr(0)
+}
+
+func (p *parser) selectExpr() Expr {
+	e := &QueryExpr{Pos: p.tok.Pos}
+	p.next()
+	if p.isWord("single") || p.isWord("count") {
+		e.Mode = p.tok.Text
+		p.next()
+	}
+	p.expectKw("from")
+	e.Table = p.global()
+	e.Where = p.where()
+	if p.isWord("order") {
+		p.next()
+		if !p.isWord("by") {
+			p.errorf(p.tok.Pos, `expected "by" after "order"`)
+		} else {
+			p.next()
+		}
+		for {
+			item := OrderItem{Field: p.memberName()}
+			if p.isWord("ascending") || p.isWord("descending") {
+				item.Explicit, item.Descending = true, p.tok.Text == "descending"
+				p.next()
+			}
+			e.Order = append(e.Order, item)
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
+	}
+	if p.isWord("limit") {
+		p.next()
+		e.Limit = p.expr(0)
+	}
+	e.Using = p.using()
+	return e
+}
+
+func (p *parser) updateExpr() Expr {
+	e := &UpdateExpr{Pos: p.tok.Pos}
+	p.next()
+	e.Table = p.global()
+	if !p.isWord("set") {
+		p.errorf(p.tok.Pos, `expected "set" after the table`)
+		return e
+	}
+	p.next()
+	for {
+		item := SetItem{Field: p.memberName()}
+		p.expectOp("=")
+		item.Value = p.expr(0)
+		e.Sets = append(e.Sets, item)
+		if !p.isOp(",") {
+			break
+		}
+		p.next()
+	}
+	e.Where = p.where()
+	e.Using = p.using()
+	return e
+}
+
+func (p *parser) deleteExpr() Expr {
+	e := &DeleteExpr{Pos: p.tok.Pos}
+	p.next()
+	p.expectKw("from")
+	e.Table = p.global()
+	e.Where = p.where()
+	e.Using = p.using()
+	return e
 }

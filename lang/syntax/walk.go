@@ -62,6 +62,19 @@ func Inspect(x Expr, fn func(Expr)) {
 		}
 	case *FuncExpr:
 		Inspect(x.Short, fn)
+	case *QueryExpr:
+		Inspect(x.Where, fn)
+		Inspect(x.Limit, fn)
+		Inspect(x.Using, fn)
+	case *UpdateExpr:
+		for _, s := range x.Sets {
+			Inspect(s.Value, fn)
+		}
+		Inspect(x.Where, fn)
+		Inspect(x.Using, fn)
+	case *DeleteExpr:
+		Inspect(x.Where, fn)
+		Inspect(x.Using, fn)
 	}
 }
 
@@ -91,6 +104,10 @@ func Includes(f *File, fn func(name Name, ifFound bool)) {
 				fn(s.Name, s.IfFound)
 			case *VarStmt:
 				exprs(s.Value)
+			case *RowStmt:
+				exprs(s.Row, s.Using)
+			case *DatabaseStmt:
+				exprs(s.Session)
 			case *AssignStmt:
 				exprs(s.Target, s.Value)
 			case *ExprStmt:

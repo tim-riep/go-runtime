@@ -167,13 +167,27 @@ func (st *schemaTypes) structType(name string, pos syntax.Pos) *Struct {
 	if t, ok := st.s.Tables[name]; ok {
 		s.Table = true
 		keys = t.PrimaryKey
+		s.Key = slices.Clone(keys)
 	}
 	for _, comp := range comps {
 		t := st.typeRef(comp.Type, pos)
 		if !comp.NotNull && !slices.Contains(keys, comp.Name) {
 			t = Opt(t)
 		}
-		s.Fields = append(s.Fields, &Field{Name: comp.Name, Type: t})
+		def := comp.Default
+		if def.IsZero() {
+			switch x := NonOpt(t).(type) {
+			case *Named:
+				if x.Domain != nil {
+					def = x.Domain.Default
+				}
+			case *Enum:
+				if x.Domain != nil {
+					def = x.Domain.Default
+				}
+			}
+		}
+		s.Fields = append(s.Fields, &Field{Name: comp.Name, Type: t, Default: def})
 	}
 	return s
 }

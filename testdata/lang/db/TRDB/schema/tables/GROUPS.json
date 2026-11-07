@@ -1,0 +1,3 @@
+{ "name": "/TRDB/GROUPS", "tenantSpecific": true, "dataClass": "application",
+  "fields": [{ "name": "GROUP_ID", "domain": "/TRDB/CODE" }],
+  "primaryKey": ["GROUP_ID"] }

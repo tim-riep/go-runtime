@@ -1,0 +1,155 @@
+# Database statements on /TRDB/ITEMS, called by the kernel tests.
+public class /TRDB/STORE
+
+  public static method ADD(id: STRING, name: STRING, amount: DEC(15,2)) returns /TRDB/ITEMS
+    var item: /TRDB/ITEMS
+    item.ITEM_ID = id
+    item.NAME = name
+    item.AMOUNT = amount
+    insert item
+    return item
+  end
+
+  public static method ADD_NOTE(id: STRING, note: STRING?) raises /TRDB/MISSING
+    var item = select single from /TRDB/ITEMS where ITEM_ID = id
+    if item is null
+      raise /TRDB/MISSING with id
+    end
+    item.NOTE = note
+    update item
+  end
+
+  public static method GET(id: STRING) returns /TRDB/ITEMS?
+    return select single from /TRDB/ITEMS where ITEM_ID = id
+  end
+
+  public static method ALL() returns array of /TRDB/ITEMS
+    return select from /TRDB/ITEMS
+  end
+
+  public static method TOP(n: INT8) returns array of STRING
+    var out = new array of STRING
+    for item in select from /TRDB/ITEMS where ACTIVE = false order by AMOUNT descending, ITEM_ID limit n
+      out.APPEND(item.ITEM_ID)
+    end
+    return out
+  end
+
+  public static method WITHOUT_NOTE() returns array of STRING
+    var out = new array of STRING
+    for item in select from /TRDB/ITEMS where NOTE is null
+      out.APPEND(item.ITEM_ID)
+    end
+    return out
+  end
+
+  public static method EMPTY_NOTE() returns array of STRING
+    var out = new array of STRING
+    for item in select from /TRDB/ITEMS where NOTE is empty
+      out.APPEND(item.ITEM_ID)
+    end
+    return out
+  end
+
+  public static method NOTE_IS(note: STRING) returns INT8
+    return select count from /TRDB/ITEMS where NOTE = note
+  end
+
+  public static method AMONG(ids: array of STRING) returns INT8
+    return select count from /TRDB/ITEMS where ITEM_ID in ids and not (AMOUNT < 1.00)
+  end
+
+  public static method ACTIVATE(min: DEC(15,2)) returns INT8
+    return update /TRDB/ITEMS set ACTIVE = true, NOTE = null where AMOUNT >= min
+  end
+
+  public static method TOUCH_ALL() returns INT8
+    var n = 0
+    for item in select from /TRDB/ITEMS
+      item.NAME = item.NAME + "!"
+      update item
+      n = n + 1
+    end
+    return n
+  end
+
+  public static method REMOVE(id: STRING)
+    var item: /TRDB/ITEMS
+    item.ITEM_ID = id
+    delete item
+  end
+
+  public static method REMOVE_SMALL() returns INT8
+    return delete from /TRDB/ITEMS where AMOUNT < 1.00
+  end
+
+  public static method COUNT() returns INT8
+    return select count from /TRDB/ITEMS
+  end
+
+  public static method DUPLICATE(id: STRING) returns STRING
+    try
+      ADD(id, "again", 1.00)
+    catch e: /RT/DUPLICATE_ROW
+      return "duplicate on {e.TABLE_NAME}"
+    end
+    return "inserted"
+  end
+
+  public static method BAD_GROUP(id: STRING) returns STRING
+    var item: /TRDB/ITEMS
+    item.ITEM_ID = id
+    item.GROUP_ID = "NOPE"
+    try
+      insert item
+    catch e: /RT/FOREIGN_KEY_VIOLATION
+      return "foreign key"
+    end
+    return "inserted"
+  end
+
+  public static method MISSING_ROW(id: STRING) returns STRING
+    try
+      REMOVE(id)
+    catch e: /RT/ROW_NOT_FOUND
+      return e.TEXT
+    end
+    return "deleted"
+  end
+
+  public static method ADD_THEN_FAIL(id: STRING) raises /TRDB/MISSING
+    ADD(id, "lost", 1.00)
+    raise /TRDB/MISSING with id
+  end
+
+  public static method ADD_COMMIT_ROLLBACK(a: STRING, b: STRING)
+    ADD(a, "kept", 1.00)
+    commit
+    ADD(b, "dropped", 1.00)
+    rollback
+  end
+
+  public static method EXCEPTION_IN_LOOP() returns INT8
+    var n = 0
+    try
+      for item in select from /TRDB/ITEMS
+        raise /TRDB/MISSING with item.ITEM_ID
+      end
+    catch e: /TRDB/MISSING
+      n = 1
+    end
+    commit
+    return n
+  end
+
+  public static method BREAK_IN_LOOP() returns INT8
+    var n = 0
+    for item in select from /TRDB/ITEMS
+      n = n + 1
+      break
+    end
+    commit
+    return n
+  end
+
+end

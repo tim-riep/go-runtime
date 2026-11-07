@@ -48,9 +48,10 @@ const (
 	Bytes
 	Null
 	Void
+	Session // a database session
 )
 
-var basicNames = [...]string{"invalid", "STRING", "INT4", "INT8", "DEC", "DATE", "TIMESTAMP", "BOOL", "UUID", "BYTES", "null", "no result"}
+var basicNames = [...]string{"invalid", "STRING", "INT4", "INT8", "DEC", "DATE", "TIMESTAMP", "BOOL", "UUID", "BYTES", "null", "no result", "SESSION"}
 
 // MaxPrecision is the largest precision of DEC.
 const MaxPrecision = 38
@@ -82,6 +83,7 @@ var (
 	TypBytes     = &Basic{Kind: Bytes}
 	TypNull      = &Basic{Kind: Null}
 	TypVoid      = &Basic{Kind: Void}
+	TypSession   = &Basic{Kind: Session}
 )
 
 // DecType returns DEC(p,s).
@@ -128,13 +130,15 @@ func (e *Enum) Index(name string) int {
 type Struct struct {
 	Name   string
 	Table  bool
+	Key    []string // primary key of a table
 	Fields []*Field
 }
 
 // Field is a component of a struct.
 type Field struct {
-	Name string
-	Type Type // optional types are *Optional
+	Name    string
+	Type    Type          // optional types are *Optional
+	Default model.Default // of the component or its domain
 }
 
 func (s *Struct) String() string { return s.Name }
@@ -313,7 +317,7 @@ func Identical(a, b Type) bool {
 func Serializable(t Type) bool {
 	switch x := NonOpt(t).(type) {
 	case *Basic:
-		return x.Kind != Void && x.Kind != Invalid
+		return x.Kind != Void && x.Kind != Invalid && x.Kind != Session
 	case *Named, *Enum:
 		return true
 	case *Struct:

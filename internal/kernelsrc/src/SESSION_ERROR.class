@@ -1,0 +1,8 @@
+# A rule of database sessions was violated.
+public class /RT/SESSION_ERROR extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

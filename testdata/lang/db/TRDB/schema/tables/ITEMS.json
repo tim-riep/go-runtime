@@ -1,0 +1,12 @@
+{ "name": "/TRDB/ITEMS", "tenantSpecific": true, "dataClass": "application",
+  "fields": [
+    { "name": "ITEM_ID", "domain": "/TRDB/CODE" },
+    { "name": "NAME", "domain": "/TRDB/TEXT", "notNull": true },
+    { "name": "NOTE", "domain": "/TRDB/TEXT" },
+    { "name": "AMOUNT", "domain": "/TRDB/AMOUNT", "notNull": true },
+    { "name": "ACTIVE", "domain": "/TRDB/FLAG", "notNull": true },
+    { "name": "DUE", "domain": "/TRDB/DAY" },
+    { "name": "COUNTRY", "domain": "/TRDB/COUNTRY", "notNull": true },
+    { "name": "GROUP_ID", "domain": "/TRDB/CODE" }],
+  "primaryKey": ["ITEM_ID"],
+  "foreignKeys": [{ "name": "GROUP", "table": "/TRDB/GROUPS", "fields": [{ "field": "GROUP_ID", "references": "GROUP_ID" }] }] }

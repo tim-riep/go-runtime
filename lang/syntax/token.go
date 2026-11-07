@@ -114,7 +114,7 @@ func init() {
 
 // BuiltinTypes are the names of the built-in types.
 var BuiltinTypes = map[string]bool{"STRING": true, "INT4": true, "INT8": true, "DEC": true, "DATE": true, "TIMESTAMP": true,
-	"BOOL": true, "UUID": true, "BYTES": true}
+	"BOOL": true, "UUID": true, "BYTES": true, "SESSION": true}
 
 // LogLevels are the levels of the log statement.
 var LogLevels = []string{"debug", "info", "warning", "error"}

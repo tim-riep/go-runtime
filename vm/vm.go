@@ -43,6 +43,12 @@ type Options struct {
 	MaxCollectionLength int
 	// Log receives log statements; nil discards them.
 	Log LogSink
+	// Database gives access to the database; without it database
+	// statements end the execution with an error.
+	Database Database
+	// MaxRows limits the rows a select reads into an array; 0 means
+	// 10 000. Cursors of for ... in select have no limit.
+	MaxRows int
 }
 
 // LogSink receives log statements.
@@ -107,6 +113,8 @@ type Machine struct {
 	mem     int64
 	ctx     context.Context
 	steps   int
+
+	defaultSession *session
 }
 
 // New prepares an image for execution and runs the initial values of
@@ -123,6 +131,9 @@ func New(image *Image, opts Options) (*Machine, error) {
 	}
 	if opts.MaxCollectionLength <= 0 {
 		opts.MaxCollectionLength = 10_000_000
+	}
+	if opts.MaxRows <= 0 {
+		opts.MaxRows = 10_000
 	}
 	m := &Machine{image: image, opts: opts, statics: map[*LinkedClass]*Record{}, ctx: context.Background()}
 	m.budget = opts.Budget
@@ -266,6 +277,17 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 	pc := 0
 	start := 0 // pc of the current instruction
 
+	// Cursors opened by this call are closed when it ends, also by return
+	// or an exception.
+	var cursors []*cursor
+	defer func() {
+		for _, c := range cursors {
+			if cerr := c.close(); cerr != nil && err == nil {
+				err = cerr
+			}
+		}
+	}()
+
 	defer func() {
 		if r := recover(); r != nil {
 			switch x := r.(type) {
@@ -303,6 +325,12 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 					}
 					t.pc = at
 					pending[t.obj] = t
+				}
+				// Cursors of loops inside the try end with them.
+				for _, c := range cursors {
+					if c.pc >= h.Start && c.pc < h.End {
+						c.close()
+					}
 				}
 				stack = stack[:0]
 				push(Value{R: t.obj})
@@ -849,6 +877,38 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 				break
 			}
 			locals[arg(0)] = Int(n)
+		case DB_QUERY, DB_CURSOR:
+			var res Value
+			var ok bool
+			var c *cursor
+			stack, res, ok, c, t, err = m.dbQuery(p, &p.Queries[arg(0)], stack, op == DB_CURSOR)
+			if c != nil {
+				c.pc = start
+				cursors = append(cursors, c)
+			}
+			if ok && t == nil && err == nil {
+				push(res)
+			}
+		case DB_NEXT:
+			c := pop().R.(*cursor)
+			var row Value
+			var ok bool
+			row, ok, t, err = m.next(c)
+			if ok {
+				push(row)
+			} else if t == nil {
+				pc = arg(0)
+			}
+		case DB_CLOSE:
+			err = pop().R.(*cursor).close()
+		case DB_END:
+			t, err = m.endSession(pop(), arg(0) == 1)
+		case DB_OPEN:
+			var s Value
+			s, t, err = m.openSession()
+			if t == nil && err == nil {
+				push(s)
+			}
 		default:
 			return Value{}, nil, fmt.Errorf("vm: unknown instruction %s at %d in %s", op, start, f.Name)
 		}

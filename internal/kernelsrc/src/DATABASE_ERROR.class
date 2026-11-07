@@ -1,0 +1,14 @@
+# Root of the errors of database statements. Like all runtime errors they
+# are not checked; code catches them only by naming them. TABLE_NAME and
+# CONSTRAINT_NAME tell where the error happened when the database reports
+# it.
+public open class /RT/DATABASE_ERROR extends /RT/RUNTIME_ERROR
+
+  public attribute TABLE_NAME: STRING
+  public attribute CONSTRAINT_NAME: STRING
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

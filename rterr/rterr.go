@@ -360,6 +360,13 @@ func (e *ConstraintViolation) Error() string {
 
 func (e *ConstraintViolation) Unwrap() error { return e.Err }
 
+// LockTimeout reports a statement that waited too long for a lock.
+type LockTimeout struct{ Err error }
+
+func (e *LockTimeout) Error() string { return "lock timeout: " + e.Err.Error() }
+
+func (e *LockTimeout) Unwrap() error { return e.Err }
+
 // TenantReferenced reports that a tenant cannot be deleted because tables
 // that are not tenant-specific still reference it.
 type TenantReferenced struct {

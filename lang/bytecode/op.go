@@ -154,6 +154,16 @@ const (
 	FOR_TEST // i to step exit: leave the counting loop when i is past to
 	FOR_STEP // i to step exit int4: i += step, leaving the loop on overflow
 
+	// Database. The session is on top of the stack, null for the default
+	// session; below it the limit, if any, and below that the parameters
+	// of the query, or the row of row statements.
+	DB_QUERY  // q: run query q and push its result, nothing for row statements
+	DB_CURSOR // q: run select q and push a cursor over its rows
+	DB_NEXT   // exit: pop a cursor; push its next row or close it and jump to exit
+	DB_CLOSE  // pop a cursor and close it
+	DB_END    // rollback: pop a session and commit it, or roll it back if rollback is 1
+	DB_OPEN   // push a new session
+
 	opCount
 )
 
@@ -183,6 +193,7 @@ var opInfo = [opCount]struct {
 	CALL: {"CALL", 2}, CALL_VIRT: {"CALL_VIRT", 2}, CALL_IFACE: {"CALL_IFACE", 3}, CALL_FN: {"CALL_FN", 1}, CALL_BUILTIN: {"CALL_BUILTIN", 4},
 	MAKE_FN: {"MAKE_FN", 2}, RETURN: {"RETURN", 0}, RETURN_VALUE: {"RETURN_VALUE", 0}, RAISE: {"RAISE", 0}, ASSERT: {"ASSERT", 1},
 	LOG: {"LOG", 1}, FOR_TEST: {"FOR_TEST", 4}, FOR_STEP: {"FOR_STEP", 5},
+	DB_QUERY: {"DB_QUERY", 1}, DB_CURSOR: {"DB_CURSOR", 1}, DB_NEXT: {"DB_NEXT", 1}, DB_CLOSE: {"DB_CLOSE", 0}, DB_END: {"DB_END", 1}, DB_OPEN: {"DB_OPEN", 0},
 }
 
 func (o Op) String() string {

@@ -91,6 +91,13 @@ type Info struct {
 	// include it inserts or skips.
 	References  []Reference
 	IncludeRefs []IncludeRef
+	// Database access: fields in conditions, sets and orders, the table of
+	// select, update and delete, the table of row statements and the
+	// loops that stream rows from a cursor.
+	Fields    map[syntax.Expr]*FieldRef
+	Tables    map[syntax.Expr]*Struct
+	RowTables map[*syntax.RowStmt]*Struct
+	Cursors   map[*syntax.ForStmt]bool
 }
 
 // Reference is the use of an object of the schema or of a class by code.
@@ -187,7 +194,8 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 	c.info = &Info{Types: map[syntax.Expr]Type{}, Conv: map[syntax.Expr]Type{}, Uses: map[*syntax.Ident]any{},
 		Globals: map[*syntax.GlobalExpr]any{}, Selects: map[*syntax.SelectExpr]*Selection{}, Calls: map[*syntax.CallExpr]*Call{},
 		TypeExprs: map[*syntax.Type]Type{}, Funcs: map[*syntax.FuncExpr]*FuncInfo{}, Vars: map[syntax.Stmt][]*Local{},
-		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{}}
+		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
+		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)
 	c.declareClasses()
 	c.hierarchy()
@@ -500,6 +508,8 @@ func (c *checker) typeOf(t *syntax.Type) Type {
 			out = TypUUID
 		case "BYTES":
 			out = TypBytes
+		case "SESSION":
+			out = TypSession
 		case "DEC":
 			if t.Precision < 1 || t.Precision > MaxPrecision || t.Scale > t.Precision {
 				c.errorf(t.Pos, CodeType, "DEC(%d,%d) is not valid: precision 1 to %d, scale at most the precision", t.Precision, t.Scale, MaxPrecision)
@@ -514,13 +524,17 @@ func (c *checker) typeOf(t *syntax.Type) Type {
 			return TypInvalid
 		}
 	case syntax.ArrayType:
-		return &Array{Elem: c.resolveType(t.Elem)}
+		elem := c.resolveType(t.Elem)
+		c.noSession(elem, t.Elem.Pos, "an array")
+		return &Array{Elem: elem}
 	case syntax.MapType:
 		key := c.resolveType(t.Key)
 		if !mapKey(key) {
 			c.errorf(t.Key.Pos, CodeType, "%s cannot be a map key; keys are built-in types except BYTES, or enums, and never optional", key)
 		}
-		return &Map{Key: key, Elem: c.resolveType(t.Elem)}
+		elem := c.resolveType(t.Elem)
+		c.noSession(elem, t.Elem.Pos, "a map")
+		return &Map{Key: key, Elem: elem}
 	case syntax.FuncType:
 		f := &Func{Result: TypVoid}
 		for _, p := range t.Params {
@@ -613,11 +627,13 @@ func (c *checker) classMembers(k *Class, ms []syntax.Member, stack []string) {
 		case *syntax.ConstantDecl:
 			c.checkMemberName(m.Name, "constant")
 			ct := &Constant{Name: m.Name.Name, Type: c.resolveType(m.Type), Visibility: m.Visibility, Owner: k, Value: m.Value, Site: c.site(m.Pos)}
+			c.noSession(ct.Type, m.Type.Pos, "a constant")
 			c.addMember(k, ct.Name, ct, m.Name.Pos)
 			k.Constants = append(k.Constants, ct)
 		case *syntax.AttributeDecl:
 			c.checkMemberName(m.Name, "attribute")
 			a := &Attribute{Name: m.Name.Name, Type: c.resolveType(m.Type), Static: m.Static, Visibility: m.Visibility, Owner: k, Init: m.Value, Site: c.site(m.Pos)}
+			c.noSession(a.Type, m.Type.Pos, "an attribute")
 			c.addMember(k, a.Name, a, m.Name.Pos)
 			k.Attributes = append(k.Attributes, a)
 		case *syntax.MethodDecl:
@@ -965,5 +981,13 @@ func (c *checker) useField(pos syntax.Pos, st *Struct, field string) {
 		c.use(pos, "field", st.Name, field)
 	} else {
 		c.use(pos, "component", st.Name, field)
+	}
+}
+
+// noSession rejects SESSION in places that outlive a call: attributes,
+// constants, arrays and maps.
+func (c *checker) noSession(t Type, pos syntax.Pos, where string) {
+	if IsKind(NonOpt(t), Session) {
+		c.errorf(pos, CodeType, "a SESSION cannot be kept in %s; pass it as parameter instead", where)
 	}
 }

@@ -36,6 +36,7 @@ type fnCtx struct {
 	scope    *scope // scope in the enclosing function where a closure was created
 	handlers [][]*Class
 	loops    int
+	cursors  []string // sessions of the enclosing loops over select
 }
 
 type scope struct {
@@ -269,6 +270,21 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 		if s.Type != nil {
 			want = c.resolveType(s.Type)
 		}
+		if s.Value == nil {
+			// var x: T starts with the initial values of T.
+			switch NonOpt(want).(type) {
+			case *Class, *Func:
+				if !IsOptional(want) {
+					c.errorf(s.Name.Pos, CodeNullCheck, "%s of type %s needs an initial value or an optional type", s.Name.Name, want)
+				}
+			}
+			if IsKind(want, Session) {
+				c.errorf(s.Name.Pos, CodeType, "a SESSION comes from open session")
+			}
+			c.info.Vars[s] = []*Local{c.declare(f, sc, s.Name, want)}
+			e.invalidate(s.Name.Name)
+			break
+		}
 		t := c.expr(f, sc, s.Value, e, want)
 		if want == nil {
 			switch {
@@ -292,7 +308,9 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 	case *syntax.AssignStmt:
 		c.assignStmt(f, sc, s, e)
 	case *syntax.ExprStmt:
-		if _, ok := s.X.(*syntax.CallExpr); !ok {
+		switch s.X.(type) {
+		case *syntax.CallExpr, *syntax.UpdateExpr, *syntax.DeleteExpr:
+		default:
 			c.errorf(s.X.Start(), CodeStatement, "the value of the expression is not used")
 		}
 		c.expr(f, sc, s.X, e, nil)
@@ -367,7 +385,9 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 	case *syntax.IncludeStmt:
 		return c.includeStmt(f, sc, s, e)
 	case *syntax.DatabaseStmt:
-		c.errorf(s.Pos, CodeNotYet, "%s is a database statement, which is not available yet; database access comes in a later language part", s.Keyword)
+		c.sessionStmt(f, sc, s, e)
+	case *syntax.RowStmt:
+		c.rowStmt(f, sc, s, e)
 	}
 	return false
 }
@@ -561,6 +581,14 @@ func (c *checker) declaredType(x syntax.Expr, known Type) Type {
 func (c *checker) forStmt(f *fnCtx, sc *scope, s *syntax.ForStmt, e env) {
 	inner := &scope{vars: map[string]*Local{}, parent: sc, fn: f}
 	var locals []*Local
+	if q, ok := s.In.(*syntax.QueryExpr); ok && q.Mode == "" {
+		// The loop streams the rows through a cursor.
+		c.info.Cursors[s] = true
+		if key, ok := sessionKey(q.Using); ok {
+			f.cursors = append(f.cursors, key)
+			defer func() { f.cursors = f.cursors[:len(f.cursors)-1] }()
+		}
+	}
 	if s.In != nil {
 		t := c.expr(f, sc, s.In, e, nil)
 		c.notNull(s.In, t)

@@ -348,10 +348,20 @@ type (
 		Name    Name
 		IfFound bool
 	}
-	// DatabaseStmt is commit or rollback, reserved for database access.
+	// DatabaseStmt is commit or rollback of the default session or of
+	// Session.
 	DatabaseStmt struct {
 		StmtBase
 		Keyword string
+		Session Expr // nil for the default session
+	}
+	// RowStmt is insert, update or delete of one row, given as value of the
+	// row type of a table.
+	RowStmt struct {
+		StmtBase
+		Op    string // insert, update or delete
+		Row   Expr
+		Using Expr
 	}
 )
 
@@ -468,6 +478,58 @@ type (
 		Head    *Comment // comment at the end of the first line of a block function
 	}
 )
+
+// Database expressions.
+type (
+	// QueryExpr is select: it reads the rows of a table, all (Mode ""),
+	// one ("single") or their number ("count").
+	QueryExpr struct {
+		Pos   Pos
+		Mode  string
+		Table Name
+		Where Expr // nil without where
+		Order []OrderItem
+		Limit Expr
+		Using Expr
+	}
+	// UpdateExpr changes the rows of a table that match Where and yields
+	// their number.
+	UpdateExpr struct {
+		Pos   Pos
+		Table Name
+		Sets  []SetItem
+		Where Expr
+		Using Expr
+	}
+	// DeleteExpr deletes the rows of a table that match Where and yields
+	// their number.
+	DeleteExpr struct {
+		Pos   Pos
+		Table Name
+		Where Expr
+		Using Expr
+	}
+	// OpenSessionExpr opens another database session.
+	OpenSessionExpr struct{ Pos Pos }
+)
+
+// OrderItem is a field to sort by.
+type OrderItem struct {
+	Field      Ident
+	Descending bool
+	Explicit   bool // ascending or descending was written
+}
+
+// SetItem is FIELD = value of an update.
+type SetItem struct {
+	Field Ident
+	Value Expr
+}
+
+func (e *QueryExpr) Start() Pos       { return e.Pos }
+func (e *UpdateExpr) Start() Pos      { return e.Pos }
+func (e *DeleteExpr) Start() Pos      { return e.Pos }
+func (e *OpenSessionExpr) Start() Pos { return e.Pos }
 
 // Arg is an argument, possibly named (NAME: value).
 type Arg struct {

@@ -1,0 +1,8 @@
+# Update or delete of a row found no row with its primary key.
+public class /RT/ROW_NOT_FOUND extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

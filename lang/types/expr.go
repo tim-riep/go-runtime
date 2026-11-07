@@ -190,6 +190,14 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		return &Map{Key: kt, Elem: vt}
 	case *syntax.FuncExpr:
 		return c.funcExpr(f, sc, x, e, want)
+	case *syntax.QueryExpr:
+		return c.query(f, sc, x, e)
+	case *syntax.UpdateExpr:
+		return c.update(f, sc, x, e)
+	case *syntax.DeleteExpr:
+		return c.delete(f, sc, x, e)
+	case *syntax.OpenSessionExpr:
+		return TypSession
 	}
 	return TypInvalid
 }

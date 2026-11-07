@@ -402,6 +402,9 @@ func (*Dialect) ClassifyError(err error) error {
 	if !errors.As(err, &pe) {
 		return err
 	}
+	if pe.Code == "55P03" { // lock_not_available
+		return &rterr.LockTimeout{Err: err}
+	}
 	cv := &rterr.ConstraintViolation{Table: pe.TableName, Constraint: pe.ConstraintName, Err: err}
 	switch pe.Code {
 	case "23503":

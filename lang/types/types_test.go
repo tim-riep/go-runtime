@@ -40,6 +40,9 @@ var schemaFiles = map[string]string{
 		{"name":"NOTE","domain":"/TRT/TEXT"},{"name":"PAID","domain":"/TRT/FLAG","notNull":true},{"name":"CODE","domain":"/TRT/CODE"}]}`,
 	"schema/array-types/ORDER_ARRAY.json": `{"name":"/TRT/ORDER_ARRAY","texts":{"en":{"label":"Orders"}},
 		"rowType":{"structure":"/TRT/ORDER_INFO"},"key":{"fields":["ID"],"unique":true}}`,
+	"schema/tables/ORDERS.json": `{"name":"/TRT/ORDERS","tenantSpecific":true,"dataClass":"application","fields":[
+		{"name":"ID","domain":"/TRT/ID"},{"name":"AMOUNT","domain":"/TRT/AMOUNT","notNull":true},
+		{"name":"NOTE","domain":"/TRT/TEXT"},{"name":"PAID","domain":"/TRT/FLAG","notNull":true}],"primaryKey":["ID"]}`,
 	"src/FAILED.class": "public class /TRT/FAILED extends /RT/EXCEPTION\npublic constructor(text: STRING)\nsuper(text)\nend\nend\n",
 }
 
@@ -305,8 +308,48 @@ func TestInterfaces(t *testing.T) {
 
 func TestNotYet(t *testing.T) {
 	expectError(t, class("public method NOW() returns TIMESTAMP executed by kernel"), "not-yet", "methods executed by kernel are not available yet")
-	expectError(t, class("public method M()\ncommit\nend"), "not-yet", "commit is a database statement")
-	expectError(t, class("public method M()\nrollback\nend"), "not-yet", "rollback is a database statement")
+}
+
+func TestDatabase(t *testing.T) {
+	expectOK(t, class(`public static method M(id: STRING, ids: array of STRING) returns INT8
+  var s = open session
+  var total = 0
+  for o in select from /TRT/ORDERS where AMOUNT > 1.00 and NOTE is null order by AMOUNT descending limit 10 using s
+    o.PAID = true
+    update o
+    total = total + 1
+  end
+  var one = select single from /TRT/ORDERS where ID = id
+  var n = select count from /TRT/ORDERS where ID in ids
+  var row: /TRT/ORDERS
+  row.ID = "1"
+  insert row using s
+  delete row
+  commit s
+  var changed = update /TRT/ORDERS set NOTE = null, PAID = false where NOTE is empty
+  delete from /TRT/ORDERS where ID <> ""
+  rollback
+  if one is not null
+    return n + changed
+  end
+  return total
+end`))
+	expectError(t, class("public static method M()\nvar x = select from /TRT/ORDER_INFO\nend"), "unknown", "/TRT/ORDER_INFO is not a table")
+	expectError(t, class("public static method M()\nvar x = select from /TRT/ORDERS where COLOR = 1\nend"), "unknown", "/TRT/ORDERS has no field COLOR")
+	expectError(t, class("public static method M(n: STRING?)\nvar x = select from /TRT/ORDERS where NOTE = n\nend"), "null-check", "")
+	expectError(t, class("public static method M()\nvar x = select from /TRT/ORDERS where NOTE = null\nend"), "null-check", "is null")
+	expectError(t, class("public static method M()\nvar x = select from /TRT/ORDERS where PAID is empty\nend"), "type", "is empty applies to STRING fields")
+	expectError(t, class("public static method M()\nvar x = select from /TRT/ORDERS where 1 = 1\nend"), "type", "needs a field")
+	expectError(t, class("public static method M(a: array of INT4)\nvar x = select from /TRT/ORDERS where ID in a\nend"), "type", "in needs an array of")
+	expectError(t, class("public static method M()\nvar x = select single from /TRT/ORDERS limit 1\nend"), "type", "takes no order by or limit")
+	expectError(t, class("public static method M()\nvar x = update /TRT/ORDERS set PAID = 1\nend"), "type", "")
+	expectError(t, class("public static method M(o: /TRT/ORDER_INFO)\ninsert o\nend"), "type", "insert needs a row of a table")
+	expectError(t, class("public static method M()\ninsert new /TRT/ORDERS(ID: \"1\", AMOUNT: 1.00, PAID: false) using 1\nend"), "type", "using needs a SESSION")
+	expectError(t, class("public static method M()\nfor o in select from /TRT/ORDERS\ncommit\nend\nend"), "statement", "open cursor")
+	expectError(t, class("public static method M()\nvar s = open session\nfor o in select from /TRT/ORDERS using s\nrollback s\nend\nend"), "statement", "open cursor")
+	expectOK(t, class("public static method M()\nvar s = open session\nfor o in select from /TRT/ORDERS using s\ncommit\nend\nend"))
+	expectError(t, class("private attribute S: SESSION?"), "type", "SESSION")
+	expectError(t, class("public static method M()\nvar a = new array of SESSION\nend"), "type", "SESSION")
 }
 
 func TestTypes(t *testing.T) {

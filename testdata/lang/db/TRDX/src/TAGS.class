@@ -1,0 +1,15 @@
+public class /TRDX/TAGS
+
+  public static method TAG(id: STRING, tag: STRING) returns INT8
+    return update /TRDB/ITEMS set /TRDX/TAG = tag where ITEM_ID = id
+  end
+
+  public static method TAGGED(tag: STRING) returns array of STRING
+    var out = new array of STRING
+    for item in select from /TRDB/ITEMS where /TRDX/TAG = tag order by ITEM_ID
+      out.APPEND(item.ITEM_ID + ":" + (item./TRDX/TAG default "-"))
+    end
+    return out
+  end
+
+end

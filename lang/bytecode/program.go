@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 2
+const FormatVersion = 3
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -56,7 +56,8 @@ type Program struct {
 	Enums   []Enum
 	Classes []Class
 	Funcs   []Func
-	Tests   bool // contains test classes
+	Queries []Query // database statements
+	Tests   bool    // contains test classes
 }
 
 // File is a source file.
@@ -148,6 +149,10 @@ type Field struct {
 	PresBit  int
 	Ref      int // FRef slot
 	Optional bool
+	// Default is the initial value of fields of tables and structures
+	// with a default in the schema, in canonical text form.
+	Default    string
+	HasDefault bool
 }
 
 // Layout is the memory layout of objects of a class or values of a struct.

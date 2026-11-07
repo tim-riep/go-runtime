@@ -1,0 +1,8 @@
+# A statement waited too long for a lock.
+public class /RT/LOCK_TIMEOUT extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

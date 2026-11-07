@@ -74,7 +74,11 @@ func (l *lexer) advance(n int) {
 func (l *lexer) emit(k Kind, text string, p Pos) {
 	l.toks = append(l.toks, Token{Kind: k, Text: text, Pos: p})
 	switch k {
-	case IDENT, GLOBAL, INT, DEC, STRING:
+	case IDENT:
+		// After the contextual words of update ... set and order by a
+		// global name may follow, such as an extension field.
+		l.operand = text != "set" && text != "by"
+	case GLOBAL, INT, DEC, STRING:
 		l.operand = true
 	case KEYWORD:
 		l.operand = text == "null" || text == "true" || text == "false" || text == "me" || text == "end"

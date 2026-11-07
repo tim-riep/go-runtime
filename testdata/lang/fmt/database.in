@@ -1,0 +1,25 @@
+public class /TRX/DB
+  public static method SYNC(country: STRING) returns INT4
+    var audit=open session
+    var count=0
+    for company in select from /TRX/COMPANIES where COUNTRY=country and /TROTTO/OTTO_ID is null order by NAME descending,COMPANY_ID limit 10 using audit
+      company./TROTTO/OTTO_ID="X"   # extension field
+      update company
+      count=count+1
+    end
+    var entry:/TRX/AUDIT_LOG
+    entry.TEXT="Synced {count}"
+    insert entry using audit
+    delete entry
+    commit audit
+    var one=select single from /TRX/COMPANIES where COMPANY_ID in ids
+    var n=select count from /TRX/COMPANIES
+    var changed=update /TRX/COMPANIES set NAME="x",STATUS=null where NOTE is empty using audit
+    delete from /TRX/COMPANIES where NAME<>""
+    if count>1000
+      rollback
+      return 0
+    end
+    return count
+  end
+end

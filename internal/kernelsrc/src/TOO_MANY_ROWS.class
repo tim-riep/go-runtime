@@ -1,0 +1,8 @@
+# A select that reads all rows into an array found more rows than allowed.
+public class /RT/TOO_MANY_ROWS extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

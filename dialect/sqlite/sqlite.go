@@ -463,6 +463,7 @@ func (*Dialect) Decode(d *model.Domain, v any) (any, error) {
 const (
 	codeCheck      = 275
 	codeForeignKey = 787
+	codeBusy       = 5
 	codeNotNull    = 1299
 	codePrimaryKey = 1555
 	codeUnique     = 2067
@@ -473,6 +474,9 @@ func (*Dialect) ClassifyError(err error) error {
 	var se *sqlite.Error
 	if !errors.As(err, &se) {
 		return err
+	}
+	if se.Code()&0xff == codeBusy {
+		return &rterr.LockTimeout{Err: err}
 	}
 	cv := &rterr.ConstraintViolation{Err: err}
 	msg := se.Error()

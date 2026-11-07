@@ -1,0 +1,8 @@
+# A column that must have a value got null.
+public class /RT/NOT_NULL_VIOLATION extends /RT/DATABASE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

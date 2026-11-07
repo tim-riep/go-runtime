@@ -1,0 +1,145 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kernel
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/vm"
+)
+
+// EndMode decides what happens to the default session at the end of an
+// execution.
+type EndMode int
+
+// End modes.
+const (
+	// CommitOnSuccess commits the default session unless an exception
+	// ended the execution, and rolls it back otherwise.
+	CommitOnSuccess EndMode = iota
+	// RollbackUnlessCommitted rolls back whatever the code did not commit.
+	RollbackUnlessCommitted
+)
+
+// ExecOptions control an execution of code.
+type ExecOptions struct {
+	// Tenant is the tenant whose rows the code reads and writes; it must
+	// exist.
+	Tenant string
+	// Language is the language of texts for the execution.
+	Language string
+	End      EndMode
+	// MaxSessions limits the sessions of an execution including the
+	// default session; 0 means 4.
+	MaxSessions int
+	// LockTimeout is how long a statement waits for a lock; 0 means 2
+	// seconds.
+	LockTimeout time.Duration
+	// MaxRows limits the rows a select reads into an array; 0 means 10 000.
+	MaxRows int
+	// VM are the limits and the log of the VM; its Database is set by the
+	// kernel.
+	VM vm.Options
+}
+
+func (o *ExecOptions) defaults() {
+	if o.MaxSessions <= 0 {
+		o.MaxSessions = 4
+	}
+	if o.LockTimeout <= 0 {
+		o.LockTimeout = 2 * time.Second
+	}
+	if o.MaxRows <= 0 {
+		o.MaxRows = 10_000
+	}
+}
+
+// Run executes a public static method of an installed package with
+// arguments in JSON and returns its result in JSON.
+func (k *Kernel) Run(ctx context.Context, opts ExecOptions, class, method string, args []json.RawMessage) ([]byte, error) {
+	var out []byte
+	err := k.Execute(ctx, opts, func(m *vm.Machine) error {
+		var err error
+		out, err = m.CallJSON(ctx, class, method, args)
+		return err
+	})
+	return out, err
+}
+
+// Execute prepares a machine with the code of all installed packages and
+// the database access for a tenant, and runs fn on it. At the end it
+// commits or rolls back the default session as opts.End says and rolls
+// back the other sessions.
+func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(m *vm.Machine) error) (err error) {
+	opts.defaults()
+	if err := k.requireInit(ctx, k.db); err != nil {
+		return err
+	}
+	tenants, err := k.Tenants().List(ctx)
+	if err != nil {
+		return err
+	}
+	if !slices.ContainsFunc(tenants, func(t Tenant) bool { return t.ID == opts.Tenant }) {
+		return &rterr.NotFound{Kind: "tenant", Name: opts.Tenant}
+	}
+	s, err := k.repo.Load(ctx, k.db)
+	if err != nil {
+		return err
+	}
+	image, err := k.loadImage(ctx, k.db)
+	if err != nil {
+		return err
+	}
+	x := &execution{k: k, d: k.d, phys: s.Physical(), tenant: opts.Tenant, opts: opts}
+	x.sessions = []*session{{x: x, n: 1}}
+	defer func() { err = errors.Join(err, x.finish(err)) }()
+	vo := opts.VM
+	vo.Database = x
+	vo.MaxRows = opts.MaxRows
+	m, err := vm.New(image, vo)
+	if err != nil {
+		return err
+	}
+	return fn(m)
+}
+
+// finish ends the sessions of an execution.
+func (x *execution) finish(failure error) error {
+	ctx := context.Background()
+	var errs []error
+	for _, s := range x.sessions {
+		switch {
+		case s.n == 1 && failure == nil && x.opts.End == CommitOnSuccess:
+			if err := s.Commit(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("commit at the end of the execution: %w", err))
+			}
+		case s.open:
+			if s.n > 1 && x.opts.VM.Log != nil {
+				x.opts.VM.Log.Log("warning", fmt.Sprintf("session %d rolled back at the end of the execution", s.n))
+			}
+			if err := s.Rollback(ctx); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		s.close()
+	}
+	return errors.Join(errs...)
+}
