@@ -210,3 +210,27 @@ func (s *Schema) AssetHashes() map[string]bool {
 	}
 	return out
 }
+
+// ChooseAssetContent picks the version of an asset for a language: the
+// requested language, then English, then the language-independent version.
+// Without a language it prefers the language-independent version, then
+// English.
+func ChooseAssetContent(e *AssetEntry, lang Optional[string]) (*AssetContent, Optional[string]) {
+	en := Some(DefaultLanguage)
+	if l, ok := lang.Get(); ok {
+		if v := e.Variants[l]; v != nil {
+			return v, lang
+		}
+		if v := e.Variants[DefaultLanguage]; v != nil {
+			return v, en
+		}
+		return e.Content, None[string]()
+	}
+	if e.Content != nil {
+		return e.Content, None[string]()
+	}
+	if v := e.Variants[DefaultLanguage]; v != nil {
+		return v, en
+	}
+	return nil, None[string]()
+}

@@ -20,8 +20,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
-	"io/fs"
-	"path"
 	"time"
 
 	"github.com/tim-riep/go-runtime/internal/xslt"
@@ -90,40 +88,6 @@ func init() {
 			out, err := self.s.Transform(c, string(input), nil, c.MaxInput)
 			return out, xsltFailed(err)
 		}})
-
-	read := func(c *native.Context, owner, repo, file string, lang model.Optional[string]) ([]byte, error) {
-		notFound := native.Raise("/TRBASE/ASSET_NOT_FOUND", owner, repo, file)
-		fsys, err := c.Assets(model.PackageID(owner), repo, lang)
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, notFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		if !fs.ValidPath(file) || path.Clean(file) != file {
-			return nil, notFound
-		}
-		data, err := fs.ReadFile(fsys, file)
-		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, fs.ErrInvalid) {
-			return nil, notFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		if err := c.CheckSize("the asset", len(data)); err != nil {
-			return nil, err
-		}
-		return data, nil
-	}
-	const assetRaises = " returns BYTES raises /TRBASE/ASSET_NOT_FOUND"
-	static("/TRBASE/ASSETS", "READ", "(pkg: STRING, repository: STRING, path: STRING)"+assetRaises,
-		func(c *native.Context, owner, repo, file string) ([]byte, error) {
-			return read(c, owner, repo, file, model.None[string]())
-		})
-	static("/TRBASE/ASSETS", "READ_IN_LANGUAGE", "(pkg: STRING, repository: STRING, path: STRING, language: STRING)"+assetRaises,
-		func(c *native.Context, owner, repo, file, lang string) ([]byte, error) {
-			return read(c, owner, repo, file, model.Some(lang))
-		})
 
 	static("/TRBASE/CLOCK", "NOW", "() returns TIMESTAMP", func(c *native.Context) (time.Time, error) {
 		return c.Now().UTC().Truncate(time.Microsecond), nil

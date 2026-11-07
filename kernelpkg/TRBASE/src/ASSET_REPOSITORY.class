@@ -1,0 +1,42 @@
+# Reads one asset repository of a package: its folders and assets with
+# their metadata, and their contents in the language of the execution or
+# a given one. Objects come from OPEN. Code reads the repositories of its
+# own package and of the packages it requires; the check is made by OPEN
+# against the package of the calling code. Paths follow the rules of asset
+# repositories, "" being the top level.
+public class /TRBASE/ASSET_REPOSITORY executed by kernel
+
+  public static method OPEN(pkg: STRING, repository: STRING) returns /TRBASE/ASSET_REPOSITORY raises /TRBASE/ASSET_REPOSITORY_NOT_FOUND, /TRBASE/ASSET_ACCESS_DENIED executed by kernel
+
+  # The asset repositories of a package, ordered by ID, with their label
+  # in the language of the execution.
+  public static method LIST_REPOSITORIES(pkg: STRING) returns /TRBASE/ASSET_REPOSITORY_ARRAY raises /TRBASE/ASSET_ACCESS_DENIED executed by kernel
+
+  public method PACKAGE_ID() returns STRING executed by kernel
+
+  public method ID() returns STRING executed by kernel
+
+  # Whether there is a folder or an asset at the path.
+  public method EXISTS(path: STRING) returns BOOL raises /TRBASE/ASSET_PATH_INVALID executed by kernel
+
+  # The metadata of a folder or asset; for an asset of the version GET
+  # returns.
+  public method INFO(path: STRING) returns /TRBASE/ASSET_INFO raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID executed by kernel
+
+  # The entries of a folder, ordered by path.
+  public method LIST(path: STRING) returns /TRBASE/ASSET_ENTRY_ARRAY raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID executed by kernel
+
+  # All entries below a folder at any depth, ordered by path.
+  public method LIST_TREE(path: STRING) returns /TRBASE/ASSET_ENTRY_ARRAY raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID executed by kernel
+
+  # The content of an asset in the language of the execution, else in
+  # English, else its language-independent version.
+  public method GET(path: STRING) returns BYTES raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID, /TRBASE/ASSET_TOO_LARGE executed by kernel
+
+  # Like GET, starting from the given language.
+  public method GET_IN_LANGUAGE(path: STRING, language: STRING) returns BYTES raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID, /TRBASE/ASSET_TOO_LARGE executed by kernel
+
+  # Like GET, decoded as UTF-8.
+  public method GET_TEXT(path: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID, /TRBASE/ASSET_TOO_LARGE, /TRBASE/ASSET_ENCODING_INVALID executed by kernel
+
+end

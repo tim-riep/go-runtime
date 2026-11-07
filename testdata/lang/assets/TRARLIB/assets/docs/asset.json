@@ -1,0 +1,13 @@
+{
+  "description": { "en": "Documents", "de": "Dokumente" },
+  "folders": {
+    "empty": { "description": { "en": "" } },
+    "sub": { "description": { "en": "Subfolder", "de": "Unterordner" } }
+  },
+  "files": {
+    "a.txt": { "description": { "en": "First file", "de": "Erste Datei" } },
+    "hello.txt": { "languages": { "en": "hello_en.txt", "de": "hello_de.txt" } },
+    "only.txt": { "languages": { "en": "only_en.txt" } },
+    "empty.txt": { "description": { "en": "" } }
+  }
+}

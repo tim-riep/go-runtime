@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"runtime/debug"
 	"time"
@@ -137,23 +136,55 @@ func (k *Kernel) RetryEffect(ctx context.Context, id string) error {
 	return &rterr.NotFound{Kind: "effect", Name: id}
 }
 
-func (x *execution) Assets(caller, pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
-	allowed := caller == pkg
-	if info := x.schema.Packages[caller]; info != nil {
+func (x *execution) KernelPackage(id model.PackageID) bool {
+	info := x.schema.Packages[id]
+	return info != nil && info.Manifest.KernelPackage
+}
+
+// mayRead reports whether code of a package may read the asset
+// repositories of another: its own, those of the packages it requires,
+// and all for kernel packages.
+func (x *execution) mayRead(reader, pkg model.PackageID) bool {
+	if reader == pkg || x.KernelPackage(reader) {
+		return true
+	}
+	if info := x.schema.Packages[reader]; info != nil {
 		for _, r := range info.Manifest.Requires {
-			allowed = allowed || r.ID == pkg
+			if r.ID == pkg {
+				return true
+			}
 		}
 	}
-	if !allowed {
-		return nil, fs.ErrNotExist
+	return false
+}
+
+func (x *execution) AssetRepository(reader, pkg model.PackageID, repoID string) (native.AssetSource, error) {
+	if !x.mayRead(reader, pkg) {
+		return nil, &native.AssetAccessDenied{Reader: reader, Package: pkg}
 	}
-	fsys, err := x.k.AssetFS(x.ctx, pkg, repo, lang)
-	var nf *rterr.NotFound
+	r, err := x.k.assetRepository(x.ctx, pkg, repoID)
 	var anf *rterr.AssetNotFound
-	if errors.As(err, &nf) || errors.As(err, &anf) {
-		return nil, fs.ErrNotExist
+	if errors.As(err, &anf) {
+		return nil, native.ErrAssetRepositoryNotFound
 	}
-	return fsys, err
+	if err != nil {
+		return nil, err
+	}
+	return &assetSource{x: x, r: r}, nil
+}
+
+func (x *execution) AssetRepositories(reader, pkg model.PackageID) ([]*model.AssetRepository, error) {
+	if !x.mayRead(reader, pkg) {
+		return nil, &native.AssetAccessDenied{Reader: reader, Package: pkg}
+	}
+	if err := x.k.requireInit(x.ctx, x.k.db); err != nil {
+		return nil, err
+	}
+	all, err := x.k.repo.AssetRepositoriesOf(x.ctx, x.k.db, pkg)
+	if err != nil {
+		return nil, err
+	}
+	return all, nil
 }
 
 // SetClock replaces the clock of the kernel, for tests of code with the

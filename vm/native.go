@@ -21,6 +21,7 @@ import (
 	"io"
 	"log/slog"
 	"reflect"
+	"slices"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -415,6 +416,7 @@ func (m *Machine) callNative(fn *LinkedFunc, me Value, args []Value) (result Val
 	c := &native.Context{Context: ctx, Host: m.opts.Host, MaxInput: m.opts.MaxNativeInput}
 	if len(m.callers) > 0 {
 		c.Caller = m.callers[len(m.callers)-1]
+		c.Callers = slices.Clone(m.callers)
 	}
 	in := []reflect.Value{reflect.ValueOf(c)}
 	if fn.Def.Instance {

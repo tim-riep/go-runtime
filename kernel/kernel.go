@@ -82,6 +82,13 @@ type Kernel struct {
 	maxFailedLogins int
 	// httpStates caches the activation of the service nodes.
 	httpStates atomic.Pointer[httpState]
+	// maxAssetRead limits the size of an asset that code loads into the
+	// memory of an execution.
+	maxAssetRead int64
+	// contents caches small asset contents by their hash; contentReads
+	// counts the contents read from the database.
+	contents     *contentCache
+	contentReads atomic.Int64
 	// httpLog receives the log statements of requests; nil writes them
 	// to slog.
 	httpLog vm.LogSink
@@ -165,7 +172,11 @@ func New(db *sql.DB, d dialect.Dialect) *Kernel {
 // NewConfig is New with a configuration.
 func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
-		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins}
+		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
+		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry)}
+	if k.maxAssetRead <= 0 {
+		k.maxAssetRead = DefaultMaxAssetRead
+	}
 	if k.maxFailedLogins <= 0 {
 		k.maxFailedLogins = 5
 	}
@@ -199,6 +210,18 @@ func (k *Kernel) Dialect() dialect.Dialect { return k.d }
 // SetMaxAssetSize sets the maximum size of one asset in bytes for later
 // installations and upgrades. The default is model.DefaultMaxAssetSize.
 func (k *Kernel) SetMaxAssetSize(n int64) { k.maxAssetSize = n }
+
+// DefaultMaxAssetRead is the default of Config.MaxAssetRead.
+const DefaultMaxAssetRead = 16 << 20
+
+// SetMaxAssetRead sets the largest asset in bytes that code loads into
+// the memory of an execution with /TRBASE/ASSET_REPOSITORY; see
+// Config.MaxAssetRead.
+func (k *Kernel) SetMaxAssetRead(n int64) {
+	if n > 0 {
+		k.maxAssetRead = n
+	}
+}
 
 // timestamp returns the current time in the precision the kernel stores.
 func (k *Kernel) timestamp() time.Time { return k.now().UTC().Truncate(time.Microsecond) }

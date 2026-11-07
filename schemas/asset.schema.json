@@ -19,6 +19,16 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "descriptions": {
+      "description": "Description by language code. The empty string is a description; a language without entry has none.",
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/language"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
     }
   },
   "properties": {
@@ -37,7 +47,7 @@
         "additionalProperties": false,
         "properties": {
           "description": {
-            "$ref": "#/$defs/texts"
+            "$ref": "#/$defs/descriptions"
           }
         }
       }
@@ -55,7 +65,7 @@
             "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$"
           },
           "description": {
-            "$ref": "#/$defs/texts"
+            "$ref": "#/$defs/descriptions"
           },
           "languages": {
             "description": "File per language code.",

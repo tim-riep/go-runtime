@@ -64,7 +64,7 @@ func TestTRBASENatives(t *testing.T) {
 		}
 		expectCall(t, k, "ACME", U, "READ", `"not found: missing.xsl"`, `"TRUSE"`, `"missing.xsl"`)
 		// TRUSE does not require TRFIN, so it cannot read its assets.
-		expectCall(t, k, "ACME", U, "READ", `"not found: invoice/invoice.xsl"`, `"TRFIN"`, `"invoice/invoice.xsl"`)
+		expectCall(t, k, "ACME", U, "READ", `"denied: TRUSE"`, `"TRFIN"`, `"invoice/invoice.xsl"`)
 
 		expectCall(t, k, "ACME", U, "RUN", `"upper:ACME"`, `"acme"`)
 		expectCall(t, k, "ACME", U, "MANY", `["upper:A","upper:B","upper:C"]`, `["a","b","c"]`)

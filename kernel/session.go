@@ -44,6 +44,9 @@ type execution struct {
 	// savepoint that rollback returns to, and everything is rolled back
 	// at the end.
 	test bool
+	// contents are the asset contents that code of the execution loaded,
+	// by hash.
+	contents map[string][]byte
 }
 
 // session is a database session: its own connection and a transaction

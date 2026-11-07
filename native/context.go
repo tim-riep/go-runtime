@@ -43,11 +43,45 @@ type Host interface {
 	// AfterCommit registers an effect that runs after the next commit of
 	// a session: 0 is the default session.
 	AfterCommit(session int, e Effect) error
-	// Assets returns the asset repository repo of a package for reading,
-	// with lang as language, if the package of caller may read it: its
-	// own and those of the packages it requires. It returns fs.ErrNotExist
-	// otherwise and when there is no such repository.
-	Assets(caller, pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error)
+	// KernelPackage reports whether a package is a kernel package.
+	KernelPackage(id model.PackageID) bool
+	// AssetRepository opens an asset repository of a package for reading
+	// by code of the package reader: its own, those of the packages it
+	// requires, and all for kernel packages. It returns
+	// ErrAssetRepositoryNotFound or an *AssetAccessDenied.
+	AssetRepository(reader, pkg model.PackageID, repo string) (AssetSource, error)
+	// AssetRepositories returns the asset repositories of a package, by
+	// ID, under the same rule.
+	AssetRepositories(reader, pkg model.PackageID) ([]*model.AssetRepository, error)
+}
+
+// AssetSource is an asset repository opened for reading. Its metadata
+// stays the same for the rest of the execution.
+type AssetSource interface {
+	Repository() *model.AssetRepository
+	// Read returns a content completely. Contents are addressed by their
+	// hash and may come from a cache.
+	Read(ctx context.Context, c *model.AssetContent) ([]byte, error)
+	// FS returns the repository as file system with a language, for
+	// streaming; it reads with the context ctx.
+	FS(ctx context.Context, lang model.Optional[string]) fs.FS
+	// MaxRead is the largest content Read may load into the memory of
+	// the execution.
+	MaxRead() int64
+}
+
+// ErrAssetRepositoryNotFound tells that a package has no such asset
+// repository.
+var ErrAssetRepositoryNotFound = errors.New("native: no such asset repository")
+
+// AssetAccessDenied tells that a package may not read the asset
+// repositories of another one.
+type AssetAccessDenied struct {
+	Reader, Package model.PackageID
+}
+
+func (e *AssetAccessDenied) Error() string {
+	return fmt.Sprintf("package %s may not read the asset repositories of package %s", e.Reader, e.Package)
 }
 
 // Context is passed to every call of a native method. Its context.Context
@@ -55,9 +89,29 @@ type Host interface {
 // implementations that work long must respect it.
 type Context struct {
 	context.Context
-	Host     Host
-	Caller   Caller
+	Host   Host
+	Caller Caller
+	// Callers are the methods that run, the outermost first and Caller
+	// last.
+	Callers  []Caller
 	MaxInput int64 // largest input in bytes a method should accept
+}
+
+// Reader returns the package whose rules apply to reading assets: that of
+// the innermost calling method outside of kernel packages, so that code
+// of kernel packages does not lend its rights to other packages. If only
+// kernel packages run, the kernel itself called them, and it is that of
+// the caller.
+func (c *Context) Reader() model.PackageID {
+	if c.Host == nil {
+		return c.Caller.Package
+	}
+	for i := len(c.Callers) - 1; i >= 0; i-- {
+		if p := c.Callers[i].Package; !c.Host.KernelPackage(p) {
+			return p
+		}
+	}
+	return c.Caller.Package
 }
 
 // Tenant returns the tenant of the execution, "" without kernel.
@@ -112,13 +166,13 @@ func (c *Context) AfterCommit(session int, e Effect) error {
 	return c.Host.AfterCommit(session, e)
 }
 
-// Assets returns an asset repository of a package for reading, if the
-// package of the caller may read it.
-func (c *Context) Assets(pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
+// AssetRepository opens an asset repository of a package for reading, if
+// the Reader may read it.
+func (c *Context) AssetRepository(pkg model.PackageID, repo string) (AssetSource, error) {
 	if c.Host == nil {
 		return nil, errors.New("native: assets need the kernel")
 	}
-	return c.Host.Assets(c.Caller.Package, pkg, repo, lang)
+	return c.Host.AssetRepository(c.Reader(), pkg, repo)
 }
 
 // Effect is an effect outside of the VM and the database. It is

@@ -1,0 +1,77 @@
+# Reads asset repositories with /TRBASE/ASSET_REPOSITORY for the tests.
+public class /TRAREPO/READER
+
+  public static method INFO(pkg: STRING, repository: STRING, path: STRING) returns /TRBASE/ASSET_INFO raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).INFO(path)
+  end
+
+  public static method LIST(pkg: STRING, repository: STRING, path: STRING) returns array of STRING raises /TRBASE/ASSET_ERROR
+    var out = new array of STRING
+    for entry in /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).LIST(path)
+      out.APPEND(entry.PATH)
+    end
+    return out
+  end
+
+  public static method TREE(pkg: STRING, repository: STRING, path: STRING) returns /TRBASE/ASSET_ENTRY_ARRAY raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).LIST_TREE(path)
+  end
+
+  public static method EXISTS(pkg: STRING, repository: STRING, path: STRING) returns BOOL raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).EXISTS(path)
+  end
+
+  public static method TEXT(pkg: STRING, repository: STRING, path: STRING) returns STRING raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).GET_TEXT(path)
+  end
+
+  public static method DATA(pkg: STRING, repository: STRING, path: STRING) returns BYTES raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).GET(path)
+  end
+
+  public static method TEXT_IN(pkg: STRING, repository: STRING, path: STRING, language: STRING) returns STRING raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).GET_IN_LANGUAGE(path, language) as STRING
+  end
+
+  public static method REPOSITORIES(pkg: STRING) returns /TRBASE/ASSET_REPOSITORY_ARRAY raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.LIST_REPOSITORIES(pkg)
+  end
+
+  public static method IDS() returns STRING raises /TRBASE/ASSET_ERROR
+    var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRARLIB", "docs")
+    return "{repo.PACKAGE_ID()} {repo.ID()}"
+  end
+
+  # Reads the same asset twice in one execution.
+  public static method TWICE() returns STRING raises /TRBASE/ASSET_ERROR
+    var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRARLIB", "docs")
+    var first = repo.GET_TEXT("a.txt")
+    return first + repo.GET_TEXT("a.txt")
+  end
+
+  # Reads through a kernel package, which keeps the rights of this package.
+  public static method VIA_KERNEL(pkg: STRING, repository: STRING, path: STRING) returns STRING raises /TRBASE/ASSET_ERROR
+    return /TRAKERNEL/ANY.READ(pkg, repository, path)
+  end
+
+  # The example of the language reference.
+  public static method EXAMPLE() raises /TRBASE/ASSET_ERROR
+    var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRARLIB", "docs")
+
+    if repo.EXISTS("hello.txt")
+      var info = repo.INFO("hello.txt")
+      var text = repo.GET_TEXT("hello.txt")
+      var media_type = info.MIME_TYPE default "none"
+      log info "Loaded {info.PATH} ({info.SIZE} bytes, {media_type}): {text}"
+    end
+
+    for entry in repo.LIST("")
+      if entry.IS_FOLDER
+        continue
+      end
+      var languages = entry.LANGUAGES default []
+      log info "{entry.PATH} {languages.LENGTH()} language variants"
+    end
+  end
+
+end

@@ -32,6 +32,10 @@ func (k *Kernel) SetTargetVersion(v int) {
 	k.repo = k.repo.At(v)
 }
 
+// ContentReads returns the number of asset contents that code read from
+// the database.
+func (k *Kernel) ContentReads() int64 { return k.contentReads.Load() }
+
 // SetHTTPLog replaces the sink for the log statements of requests.
 func (k *Kernel) SetHTTPLog(s vm.LogSink) { k.httpLog = s }
 

@@ -52,13 +52,15 @@ func serveAsset(c *native.Context, req *HTTPRequest, resp *HTTPResponse, pkg, re
 	if name == "" || !fs.ValidPath(name) || path.Clean(name) != name {
 		return false, nil
 	}
-	fsys, err := c.Host.Assets(req.Package, model.PackageID(pkg), repo, model.Some(c.Language()))
-	if errors.Is(err, fs.ErrNotExist) {
+	src, err := c.Host.AssetRepository(req.Package, model.PackageID(pkg), repo)
+	var denied *native.AssetAccessDenied
+	if errors.Is(err, native.ErrAssetRepositoryNotFound) || errors.As(err, &denied) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
+	fsys := src.FS(c, model.Some(c.Language()))
 	info, err := fs.Stat(fsys, name)
 	if errors.Is(err, fs.ErrNotExist) || err == nil && info.IsDir() {
 		return false, nil

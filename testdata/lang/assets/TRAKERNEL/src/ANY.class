@@ -1,0 +1,8 @@
+# A kernel package that reads assets of any package for its callers.
+public class /TRAKERNEL/ANY
+
+  public static method READ(pkg: STRING, repository: STRING, path: STRING) returns STRING raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, repository).GET_TEXT(path)
+  end
+
+end

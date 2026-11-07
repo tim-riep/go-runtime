@@ -116,29 +116,6 @@ func (k *Kernel) assetRepository(ctx context.Context, pkg model.PackageID, id st
 	return r, nil
 }
 
-// chooseContent picks the version of an asset for a language: the
-// requested language, then English, then the language-independent version.
-// Without a language it prefers the language-independent version, then
-// English.
-func chooseContent(e *model.AssetEntry, lang model.Optional[string]) (*model.AssetContent, model.Optional[string]) {
-	en := model.Some(model.DefaultLanguage)
-	if l, ok := lang.Get(); ok {
-		if v := e.Variants[l]; v != nil {
-			return v, lang
-		}
-		if v := e.Variants[model.DefaultLanguage]; v != nil {
-			return v, en
-		}
-		return e.Content, model.None[string]()
-	}
-	if e.Content != nil {
-		return e.Content, model.None[string]()
-	}
-	if v := e.Variants[model.DefaultLanguage]; v != nil {
-		return v, en
-	}
-	return nil, model.None[string]()
-}
 
 // assetInfo describes an entry; for assets in the version chosen for lang.
 // It returns nil if the asset has no version for lang.
@@ -148,7 +125,7 @@ func assetInfo(r *model.AssetRepository, e *model.AssetEntry, lang model.Optiona
 	if e.Folder {
 		return info
 	}
-	c, l := chooseContent(e, lang)
+	c, l := model.ChooseAssetContent(e, lang)
 	if c == nil {
 		return nil
 	}

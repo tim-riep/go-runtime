@@ -259,6 +259,16 @@ func (r *Repo) DeleteUnusedContents(ctx context.Context, q dialect.Querier) erro
 	return nil
 }
 
+// AssetRepositoriesOf reads the asset repositories of a package, ordered
+// by ID.
+func (r *Repo) AssetRepositoriesOf(ctx context.Context, q dialect.Querier, pkg model.PackageID) ([]*model.AssetRepository, error) {
+	s := model.NewSchema()
+	if err := r.loadAssetsWhere(ctx, q, s, row{"PACKAGE_ID": string(pkg)}); err != nil {
+		return nil, err
+	}
+	return s.SortedAssetRepositories(), nil
+}
+
 // ReadChunk returns one part of a stored content, numbered from 1.
 func (r *Repo) ReadChunk(ctx context.Context, q dialect.Querier, sha string, seq int64) ([]byte, error) {
 	var data []byte

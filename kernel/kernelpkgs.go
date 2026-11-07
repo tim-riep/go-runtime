@@ -42,6 +42,11 @@ type Config struct {
 	// MaxFailedLogins locks a user after this many failed logins; 0 means
 	// 5.
 	MaxFailedLogins int
+	// MaxAssetRead is the largest asset in bytes that code loads into the
+	// memory of an execution; larger ones raise /TRBASE/ASSET_TOO_LARGE.
+	// 0 means DefaultMaxAssetRead. Streaming to an HTTP response has no
+	// limit.
+	MaxAssetRead int64
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

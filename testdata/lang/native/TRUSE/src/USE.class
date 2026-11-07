@@ -19,23 +19,27 @@ public class /TRUSE/USE
 
   public static method READ(pkg: STRING, path: STRING) returns STRING
     try
-      return /TRBASE/ASSETS.READ(pkg, "xsl", path) as STRING
+      return /TRBASE/ASSET_REPOSITORY.OPEN(pkg, "xsl").GET_TEXT(path)
     catch e: /TRBASE/ASSET_NOT_FOUND
       return "not found: {e.PATH}"
+    catch e: /TRBASE/ASSET_ACCESS_DENIED
+      return "denied: {e.CALLER}"
+    catch e: /TRBASE/ASSET_ERROR
+      return "error: {e.TEXT}"
     end
   end
 
-  public static method READ_DE(path: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND
-    return /TRBASE/ASSETS.READ_IN_LANGUAGE("TRUSE", "xsl", path, "de") as STRING
+  public static method READ_DE(path: STRING) returns STRING raises /TRBASE/ASSET_ERROR
+    return /TRBASE/ASSET_REPOSITORY.OPEN("TRUSE", "xsl").GET_IN_LANGUAGE(path, "de") as STRING
   end
 
-  public static method RUN(name: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
-    var sheet = /TRBASE/ASSETS.READ("TRUSE", "xsl", "upper.xsl")
+  public static method RUN(name: STRING) returns STRING raises /TRBASE/ASSET_ERROR, /TRBASE/XSLT_FAILED
+    var sheet = /TRBASE/ASSET_REPOSITORY.OPEN("TRUSE", "xsl").GET("upper.xsl")
     return /TRBASE/XSLT_UTILITIES.RUN(sheet, "<name>{name}</name>" as BYTES) as STRING
   end
 
-  public static method MANY(names: array of STRING) returns array of STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
-    var sheet = /TRBASE/XSLT_STYLESHEET.COMPILE(/TRBASE/ASSETS.READ("TRUSE", "xsl", "upper.xsl"))
+  public static method MANY(names: array of STRING) returns array of STRING raises /TRBASE/ASSET_ERROR, /TRBASE/XSLT_FAILED
+    var sheet = /TRBASE/XSLT_STYLESHEET.COMPILE(/TRBASE/ASSET_REPOSITORY.OPEN("TRUSE", "xsl").GET("upper.xsl"))
     var out = new array of STRING
     for name in names
       out.APPEND(sheet.TRANSFORM("<name>{name}</name>" as BYTES) as STRING)

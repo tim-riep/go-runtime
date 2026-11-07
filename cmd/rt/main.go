@@ -143,6 +143,7 @@ type cli struct {
 	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
+	maxAssetRead   int64
 	check          bool
 	serve          server.Config
 }
@@ -184,6 +185,16 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		maxSize = n
 	}
 	c.fs.Int64Var(&c.maxAssetSize, "max-asset-size", maxSize, "maximum size of one asset in bytes (default $RT_MAX_ASSET_SIZE or 16 MiB)")
+	maxRead := int64(kernel.DefaultMaxAssetRead)
+	if env := os.Getenv("RT_MAX_ASSET_READ"); env != "" {
+		n, err := strconv.ParseInt(env, 10, 64)
+		if err != nil || n <= 0 {
+			fmt.Fprintln(stderr, "error: RT_MAX_ASSET_READ must be a positive number of bytes")
+			return exitUsage
+		}
+		maxRead = n
+	}
+	c.fs.Int64Var(&c.maxAssetRead, "max-asset-read", maxRead, "largest asset in bytes that code loads into memory (default $RT_MAX_ASSET_READ or 16 MiB)")
 	c.fs.Usage = func() {
 		fmt.Fprint(stderr, usage)
 		c.fs.PrintDefaults()
@@ -218,6 +229,11 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	k.SetMaxAssetSize(c.maxAssetSize)
+	if c.maxAssetRead <= 0 {
+		fmt.Fprintln(stderr, "error: --max-asset-read must be positive")
+		return exitUsage
+	}
+	k.SetMaxAssetRead(c.maxAssetRead)
 	return c.dispatch(ctx, k, pos[0], pos[1:])
 }
 
