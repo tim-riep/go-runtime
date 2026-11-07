@@ -63,6 +63,9 @@ Commands:
   tenant create <id>       create a tenant (--description)
   tenant list              list tenants
   tenant delete <id>       delete a tenant and all its data (needs --yes)
+  language add <code>      set up a language (ISO 639-1, --name)
+  language list            list languages
+  language remove <code>   remove a language; texts in it need --yes
 
 Flags (anywhere on the command line):
 `
@@ -76,6 +79,7 @@ type cli struct {
 	allowDestr     bool
 	yes            bool
 	description    string
+	name           string
 }
 
 func main() {
@@ -91,6 +95,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.BoolVar(&c.allowDestr, "allow-destructive", false, "permit destructive changes")
 	c.fs.BoolVar(&c.yes, "yes", false, "confirm deleting data")
 	c.fs.StringVar(&c.description, "description", "", "description of a new tenant")
+	c.fs.StringVar(&c.name, "name", "", "name of a new language (default: English name of the code)")
 	c.fs.Usage = func() {
 		fmt.Fprint(stderr, usage)
 		c.fs.PrintDefaults()
@@ -238,6 +243,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.log(ctx, k)
 	case "tenant":
 		return c.tenant(ctx, k, args)
+	case "language":
+		return c.language(ctx, k, args)
 	}
 	fmt.Fprintf(c.stderr, "error: unknown command %q\n", cmd)
 	c.fs.Usage()
@@ -445,6 +452,57 @@ func (c *cli) tenant(ctx context.Context, k *kernel.Kernel, args []string) int {
 		return c.printPlan(p)
 	}
 	fmt.Fprintf(c.stderr, "error: unknown tenant command %q\n", args[0])
+	return exitUsage
+}
+
+func (c *cli) language(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(c.stderr, "usage: rt language add|list|remove")
+		return exitUsage
+	}
+	langs := k.Languages()
+	switch args[0] {
+	case "add":
+		if !c.need(args[1:], 1, "language add <code> [--name text]") {
+			return exitUsage
+		}
+		l, err := langs.Add(ctx, args[1], c.name)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(l)
+		} else {
+			fmt.Fprintf(c.stdout, "Language %s (%s) added.\n", l.Code, l.Name)
+		}
+		return exitOK
+	case "list":
+		list, err := langs.List(ctx)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "LANGUAGE\tNAME")
+		for _, l := range list {
+			fmt.Fprintf(w, "%s\t%s\n", l.Code, l.Name)
+		}
+		w.Flush()
+		return exitOK
+	case "remove":
+		if !c.need(args[1:], 1, "language remove <code> [--yes]") {
+			return exitUsage
+		}
+		p, err := langs.Remove(ctx, args[1], c.opts())
+		if err != nil {
+			return c.fail(err)
+		}
+		return c.printPlan(p)
+	}
+	fmt.Fprintf(c.stderr, "error: unknown language command %q\n", args[0])
 	return exitUsage
 }
 

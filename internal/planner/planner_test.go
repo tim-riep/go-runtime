@@ -31,7 +31,7 @@ var dialects = []dialect.Dialect{sqlite.New(), postgres.New()}
 
 func valid(t *testing.T, s *model.Schema) *model.Schema {
 	t.Helper()
-	if err := validate.Schema(s); err != nil {
+	if err := validate.Schema(s, validate.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	return s

@@ -52,6 +52,9 @@ const (
 	CodeReservedObject  Code = "reserved-object"  // kernel object may not be used this way
 	CodeManifestMissing Code = "manifest-missing" // package has no manifest
 	CodeDataClass       Code = "data-class"       // invalid or reserved data class
+	CodeText            Code = "text"             // missing or invalid translatable text
+	CodeDataElement     Code = "data-element"     // invalid data element or field reference
+	CodeSetting         Code = "setting"          // invalid setting or setting extension
 )
 
 // Location points at the place in a package that caused an error.
@@ -356,6 +359,18 @@ type TenantReferenced struct {
 
 func (e *TenantReferenced) Error() string {
 	return fmt.Sprintf("tenant %s is still referenced by %s", e.Tenant, strings.Join(e.Tables, ", "))
+}
+
+// MissingLanguages reports texts in languages that are not set up in the
+// database.
+type MissingLanguages struct {
+	Languages []string // missing language codes
+	Objects   []string // objects with texts in these languages
+}
+
+func (e *MissingLanguages) Error() string {
+	return fmt.Sprintf("texts in languages that are not set up: %s (used by %s); add the languages first",
+		strings.Join(e.Languages, ", "), strings.Join(e.Objects, ", "))
 }
 
 // UnsupportedDatabase reports an unknown connection string.

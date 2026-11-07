@@ -37,7 +37,7 @@ func (e examples) schema(t *testing.T) *model.Schema {
 
 func expect(t *testing.T, s *model.Schema, code rterr.Code, contains string) {
 	t.Helper()
-	err := Schema(s)
+	err := Schema(s, Options{})
 	for _, v := range rterr.All[*rterr.ValidationError](err) {
 		if v.Code == code && strings.Contains(v.Error(), contains) {
 			return
@@ -47,28 +47,28 @@ func expect(t *testing.T, s *model.Schema, code rterr.Code, contains string) {
 }
 
 func TestKernelSchemaIsValid(t *testing.T) {
-	if err := Schema(testutil.KernelSchema(t)); err != nil {
+	if err := Schema(testutil.KernelSchema(t), Options{}); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestExamplesAreValid(t *testing.T) {
 	s := load(t).schema(t)
-	if err := Schema(s); err != nil {
+	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
 	if def := s.Tables["COMPANIES"].Field("STATUS").Default; def == nil || *def != "ACTIVE" {
 		t.Fatalf("default not normalized: %v", def)
 	}
 	up := testutil.AddPackages(t, testutil.KernelSchema(t), load(t).base, load(t).fin, testutil.Example(t, "upgrade/TROTTO"))
-	if err := Schema(up); err != nil {
+	if err := Schema(up, Options{}); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPhysicalTenantLayout(t *testing.T) {
 	s := testutil.AddPackages(t, testutil.KernelSchema(t), load(t).base, load(t).fin, testutil.Example(t, "upgrade/TROTTO"))
-	if err := Schema(s); err != nil {
+	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
 	p := s.Physical()
@@ -127,7 +127,7 @@ func TestDomainNotVisible(t *testing.T) {
 func TestErrorLocation(t *testing.T) {
 	e := load(t)
 	e.fin.Tables[0].Fields[1].Domain = "NOPE" // BANK_ACCOUNTS.ACCOUNT_NO
-	err := Schema(e.schema(t))
+	err := Schema(e.schema(t), Options{})
 	var v *rterr.ValidationError
 	if !errors.As(err, &v) || v.Location.Package != "TRFIN" || v.Location.File != "schema/tables/BANK_ACCOUNTS.json" || v.Location.Pointer != "/fields/1/domain" {
 		t.Fatalf("location: %+v", v)
@@ -170,7 +170,7 @@ func TestExtensionOfRepositoryTable(t *testing.T) {
 func TestExtensionOfTenantTableAllowed(t *testing.T) {
 	e := load(t)
 	e.otto.Extensions[0].Table = model.TenantTable
-	if err := Schema(e.schema(t)); err != nil {
+	if err := Schema(e.schema(t), Options{}); err != nil {
 		t.Fatal(err)
 	}
 }

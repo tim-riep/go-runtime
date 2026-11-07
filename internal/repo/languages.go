@@ -26,6 +26,26 @@ type Language struct {
 	Name string `json:"name"`
 }
 
+// HasLanguages reports whether the version has the language table.
+func (r *Repo) HasLanguages() bool { return r.has(TLanguages, "") }
+
+// CountTexts returns the number of texts in a language per text table.
+func (r *Repo) CountTexts(ctx context.Context, q dialect.Querier, code string) (map[string]int, error) {
+	out := map[string]int{}
+	for _, t := range []string{TDataElementTexts, TSettingTexts} {
+		if !r.has(t, "") {
+			continue
+		}
+		var n int
+		err := q.QueryRowContext(ctx, "SELECT count(*) FROM "+r.d.QuoteIdent(t)+" WHERE "+r.d.QuoteIdent("LANGUAGE")+" = "+r.d.Placeholder(1), code).Scan(&n)
+		if err != nil {
+			return nil, err
+		}
+		out[t] = n
+	}
+	return out, nil
+}
+
 // InsertLanguage adds a language.
 func (r *Repo) InsertLanguage(ctx context.Context, q dialect.Querier, l Language) error {
 	return r.insert(ctx, q, TLanguages, row{"LANGUAGE": l.Code, "NAME": l.Name})

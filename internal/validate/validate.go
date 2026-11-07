@@ -27,10 +27,17 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
+// Options control validation.
+type Options struct {
+	// Languages are the languages set up in the database. Texts in other
+	// languages are reported as rterr.MissingLanguages. Nil skips the check.
+	Languages map[string]bool
+}
+
 // Schema checks s and converts field defaults written in packages into
 // their canonical form (Field.DefaultJSON into Field.Default).
-func Schema(s *model.Schema) error {
-	v := &validator{s: s}
+func Schema(s *model.Schema, opts Options) error {
+	v := &validator{s: s, opts: opts, missing: map[string][]string{}}
 	for _, name := range s.DomainNames() {
 		v.domain(s.Domains[name])
 	}
@@ -40,12 +47,51 @@ func Schema(s *model.Schema) error {
 	for _, e := range s.SortedExtensions() {
 		v.extension(e)
 	}
+	v.reportMissingLanguages()
 	return v.errs.Err()
 }
 
 type validator struct {
-	s    *model.Schema
-	errs rterr.List
+	s       *model.Schema
+	opts    Options
+	errs    rterr.List
+	missing map[string][]string // missing language -> objects using it
+}
+
+// languages checks the languages of an object's texts. English is
+// mandatory.
+func (v *validator) languages(object string, loc rterr.Location, langs []string) {
+	if !slices.Contains(langs, model.DefaultLanguage) {
+		v.fail(rterr.CodeText, loc.At("/texts"), object, "texts in English (%s) are mandatory", model.DefaultLanguage)
+	}
+	if v.opts.Languages == nil {
+		return
+	}
+	for _, l := range langs {
+		if !v.opts.Languages[l] {
+			v.missing[l] = append(v.missing[l], object)
+		}
+	}
+}
+
+func (v *validator) reportMissingLanguages() {
+	if len(v.missing) == 0 {
+		return
+	}
+	err := &rterr.MissingLanguages{}
+	seen := map[string]bool{}
+	for l, objs := range v.missing {
+		err.Languages = append(err.Languages, l)
+		for _, o := range objs {
+			if !seen[o] {
+				seen[o] = true
+				err.Objects = append(err.Objects, o)
+			}
+		}
+	}
+	slices.Sort(err.Languages)
+	slices.Sort(err.Objects)
+	v.errs = append(v.errs, err)
 }
 
 func (v *validator) fail(code rterr.Code, loc rterr.Location, object, format string, args ...any) {

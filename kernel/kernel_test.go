@@ -59,7 +59,7 @@ func sameSchema(t *testing.T, k *kernel.Kernel, want *model.Schema) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := validate.Schema(want); err != nil {
+	if err := validate.Schema(want, validate.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	if ch := diff.Diff(got, want); len(ch) > 0 {

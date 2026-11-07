@@ -26,11 +26,12 @@ type Operation string
 
 // Operations.
 const (
-	Install      Operation = "install"
-	Upgrade      Operation = "upgrade"
-	Uninstall    Operation = "uninstall"
-	Migrate      Operation = "migrate"
-	TenantDelete Operation = "tenant-delete"
+	Install        Operation = "install"
+	Upgrade        Operation = "upgrade"
+	Uninstall      Operation = "uninstall"
+	Migrate        Operation = "migrate"
+	TenantDelete   Operation = "tenant-delete"
+	LanguageRemove Operation = "language-remove"
 )
 
 // ChangeKind classifies a logical change.

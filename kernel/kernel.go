@@ -158,7 +158,8 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		if err != nil {
 			return err
 		}
-		if err := k.validate(ctx, q, want); err != nil {
+		// Languages are created by the migration itself.
+		if err := validate.Schema(want, validate.Options{}); err != nil {
 			return err
 		}
 		p, err := planner.Build(k.d, plan.Migrate, cur, want, nil)
@@ -230,9 +231,19 @@ var migrationHooks = map[int]func(ctx context.Context, k *Kernel, q dialect.Quer
 	},
 }
 
-// validate checks the target schema of an operation.
+// validate checks the target schema of an operation against the languages
+// set up in the database. Kernel versions without languages skip that
+// check.
 func (k *Kernel) validate(ctx context.Context, q dialect.Querier, s *model.Schema) error {
-	return validate.Schema(s)
+	var opts validate.Options
+	if k.repo.HasLanguages() {
+		langs, err := k.repo.LanguageCodes(ctx, q)
+		if err != nil {
+			return err
+		}
+		opts.Languages = langs
+	}
+	return validate.Schema(s, opts)
 }
 
 // requireInit fails unless the kernel tables have the version of this
@@ -381,6 +392,8 @@ func logOperation(op plan.Operation) string {
 		return "UNINSTALL"
 	case plan.TenantDelete:
 		return "TENANT_DELETE"
+	case plan.LanguageRemove:
+		return "LANGUAGE_REMOVE"
 	}
 	return "MIGRATE"
 }

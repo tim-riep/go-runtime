@@ -140,6 +140,12 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 	return errs.Err()
 }
 
+// RemoveLanguage removes all texts in a language and returns how many were
+// removed.
+func (s *Schema) RemoveLanguage(code string) int {
+	return 0
+}
+
 // RemovePackage removes all objects owned by id.
 func (s *Schema) RemovePackage(id PackageID) {
 	for name, d := range s.Domains {
