@@ -244,7 +244,13 @@ func (d *Dialect) PlanChanges(cur, want *model.Physical, changes []plan.Change) 
 			f := want.Tables[t].Field(ch.Column)
 			typ := d.ColumnType(want.Domain(f))
 			col := dialect.QuoteIdent(ch.Column)
-			step.Statements = []string{alterTable(t, "ALTER COLUMN "+col+" TYPE "+typ+" USING "+col+"::"+typ)}
+			action := "ALTER COLUMN " + col + " TYPE " + typ
+			// An explicit cast would silently truncate strings, so USING is
+			// only added when the base type changes.
+			if cur.Domain(cur.Tables[t].Field(ch.Column)).Type != want.Domain(f).Type {
+				action += " USING " + col + "::" + typ
+			}
+			step.Statements = []string{alterTable(t, action)}
 			alters = append(alters, step)
 		case plan.AlterValues:
 			f := want.Tables[t].Field(ch.Column)
@@ -406,6 +412,8 @@ func (*Dialect) ClassifyError(err error) error {
 		cv.Kind = rterr.ViolationNotNull
 	case "23505":
 		cv.Kind = rterr.ViolationUnique
+	case "22001", "22003": // value too long for the type, numeric overflow
+		cv.Kind = rterr.ViolationCheck
 	default:
 		return err
 	}
