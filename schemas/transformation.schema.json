@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/transformation.schema.json",
+  "title": "Transformation description",
+  "description": "Optional description of a transformation (transformations/<name without namespace>.json next to the stylesheet transformations/<name without namespace>.xsl).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "Name of the transformation; it must match the file names."
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "output": {
+      "description": "What the stylesheet produces; informative.",
+      "enum": ["xml", "html", "text"]
+    }
+  }
+}

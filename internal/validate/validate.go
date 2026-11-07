@@ -51,6 +51,7 @@ func Schema(s *model.Schema, opts Options) error {
 		v.dataElement(s.DataElements[name])
 	}
 	v.structures()
+	v.transformations()
 	for _, name := range s.TableNames() {
 		v.table(s.Tables[name])
 	}

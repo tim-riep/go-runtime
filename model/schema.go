@@ -41,6 +41,8 @@ type Schema struct {
 	// Sources holds the source files of each package, the only source for
 	// compiling its code.
 	Sources map[PackageID][]Source
+	// Transformations are the XSLT stylesheets of the packages by name.
+	Transformations map[string]*Transformation
 }
 
 // NewSchema returns an empty schema.
@@ -58,12 +60,16 @@ func NewSchema() *Schema {
 		ArrayTypes:          map[string]*ArrayType{},
 		StructureExtensions: map[StructureExtensionKey]*StructureExtension{},
 		Sources:             map[PackageID][]Source{},
+		Transformations:     map[string]*Transformation{},
 	}
 }
 
 // Clone returns a deep copy of s.
 func (s *Schema) Clone() *Schema {
 	c := NewSchema()
+	for k, v := range s.Transformations {
+		c.Transformations[k] = cloneTransformation(v)
+	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
 	}
@@ -247,6 +253,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.ArrayTypes[a.Name] = a
 	}
+	for i := range p.Transformations {
+		t := cloneTransformation(&p.Transformations[i])
+		t.Owner = id
+		if old, ok := s.Transformations[t.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "transformation", Name: t.Name, Owner: string(old.Owner), Package: string(id), Location: t.Src})
+			continue
+		}
+		s.Transformations[t.Name] = t
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -331,6 +346,11 @@ func (s *Schema) RemoveLanguage(code string) int {
 // RemovePackage removes all objects owned by id.
 func (s *Schema) RemovePackage(id PackageID) {
 	delete(s.Sources, id)
+	for name, t := range s.Transformations {
+		if t.Owner == id {
+			delete(s.Transformations, name)
+		}
+	}
 	for name, d := range s.Domains {
 		if d.Owner == id {
 			delete(s.Domains, name)

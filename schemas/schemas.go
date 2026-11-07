@@ -39,4 +39,5 @@ const (
 	Structure          = "structure.schema.json"
 	ArrayType          = "array-type.schema.json"
 	StructureExtension = "structure-extension.schema.json"
+	Transformation     = "transformation.schema.json"
 )

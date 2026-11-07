@@ -16,6 +16,7 @@ package validate
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -313,5 +314,17 @@ func (v *validator) tableIncludes(r *model.Resolver, t *model.Table, onCycle boo
 	}
 	if !onCycle {
 		v.collisions(r, t.Name, obj, t.Src)
+	}
+}
+
+// transformations checks the texts of transformations, which are
+// optional.
+func (v *validator) transformations() {
+	for _, name := range slices.Sorted(maps.Keys(v.s.Transformations)) {
+		t := v.s.Transformations[name]
+		if len(t.Texts) == 0 {
+			continue
+		}
+		v.labels("transformation "+name, t.Src, t.Texts, slices.Sorted(maps.Keys(t.Texts)))
 	}
 }

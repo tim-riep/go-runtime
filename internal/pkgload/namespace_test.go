@@ -123,7 +123,8 @@ func TestUnknownFiles(t *testing.T) {
 // TestEveryObjectTypeChecksNamespaces makes sure every registered object
 // type takes part in the namespace check: each one must reject a document
 // with a name in a foreign namespace. Only asset repositories, which have
-// no names, are exempt.
+// no names, and stylesheets, whose names come from their file names in the
+// own namespace, are exempt.
 func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 	foreign := map[string]struct{ path, doc string }{
 		"domain":       {"schema/domains/X.json", `{"name":"/TRZ/X","type":"BOOL"}`},
@@ -133,12 +134,13 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"extension": {"schema/extensions/X.json", `{"table":"/TRZ/X","fields":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
 		"setting": {"schema/settings/X.json", `{"id":"/TRZ/X","texts":{"en":{"label":"X"}},
 			"root":{"table":"/TRX/ORDERS","operations":{"create":true,"update":true,"delete":true}}}`},
-		"structure":           {"schema/structures/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"components":[{"name":"A","domain":"/TRX/QTY"}]}`},
-		"array type":          {"schema/array-types/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"rowType":{"domain":"/TRX/QTY"}}`},
-		"structure extension": {"schema/structure-extensions/X.json", `{"structure":"/TRZ/X","components":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
-		"class":               {"src/X.class", "public class /TRZ/X\nend\n"},
-		"interface":           {"src/X.interface", "public interface /TRZ/X\nend\n"},
-		"include":             {"src/X.include", "statements include /TRX/X\n  log info \"{/TRZ/Y.A}\"\nend\n"},
+		"structure":                  {"schema/structures/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"components":[{"name":"A","domain":"/TRX/QTY"}]}`},
+		"array type":                 {"schema/array-types/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"rowType":{"domain":"/TRX/QTY"}}`},
+		"structure extension":        {"schema/structure-extensions/X.json", `{"structure":"/TRZ/X","components":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
+		"class":                      {"src/X.class", "public class /TRZ/X\nend\n"},
+		"interface":                  {"src/X.interface", "public interface /TRZ/X\nend\n"},
+		"include":                    {"src/X.include", "statements include /TRX/X\n  log info \"{/TRZ/Y.A}\"\nend\n"},
+		"transformation description": {"transformations/X.json", `{"name":"/TRZ/X"}`},
 		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
 			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}
@@ -148,7 +150,7 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		}
 		sample, ok := foreign[typ.Kind]
 		if !ok {
-			if typ.Kind != "asset repository" {
+			if typ.Kind != "asset repository" && typ.Kind != "transformation" {
 				t.Errorf("object type %s has no namespace test; add a sample with a foreign namespace", typ.Kind)
 			}
 			continue

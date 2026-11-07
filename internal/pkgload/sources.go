@@ -127,6 +127,9 @@ func (l *loader) readSource(t *ObjectType, file string) (any, bool) {
 		return nil, false
 	}
 	doc, errs := t.Parse(file, data)
+	if d, ok := doc.(interface{ setPackage(id string) }); ok {
+		d.setPackage(l.id)
+	}
 	for _, e := range errs {
 		e.Location.Package = l.id
 		l.errs = append(l.errs, e)
@@ -138,7 +141,7 @@ func (l *loader) readSource(t *ObjectType, file string) (any, bool) {
 // package has source files.
 func (l *loader) checkLanguageVersion(v int, docs []loadedDoc) {
 	for _, d := range docs {
-		if d.typ.Parse == nil {
+		if _, ok := d.doc.(*sourceDoc); !ok {
 			continue
 		}
 		switch {

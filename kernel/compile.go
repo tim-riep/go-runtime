@@ -19,13 +19,16 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/internal/repo"
+	"github.com/tim-riep/go-runtime/internal/xslt"
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/types"
@@ -95,11 +98,40 @@ func (k *Kernel) compile(ctx context.Context, q dialect.Querier, cur, want *mode
 	if !k.repo.HasCode() {
 		return &compiled{}, nil, nil
 	}
+	sheets, err := compileTransformations(cur, want)
+	if err != nil {
+		return nil, nil, err
+	}
 	codes, err := k.repo.LoadCode(ctx, q)
 	if err != nil {
 		return nil, nil, err
 	}
-	return k.compileSet(ctx, q, want, recompileSet(cur, want, codes), now)
+	c, changes, err := k.compileSet(ctx, q, want, recompileSet(cur, want, codes), now)
+	return c, append(sheets, changes...), err
+}
+
+// compileTransformations compiles the stylesheets that are new or changed
+// with go-xslt; an error stops the operation.
+func compileTransformations(cur, want *model.Schema) ([]plan.Change, error) {
+	var changes []plan.Change
+	for _, name := range slices.Sorted(maps.Keys(want.Transformations)) {
+		t := want.Transformations[name]
+		if old, ok := cur.Transformations[name]; ok && old.Text == t.Text {
+			continue
+		}
+		if _, err := xslt.Compile(t.Text); err != nil {
+			e := &rterr.CompileError{Package: string(t.Owner), Reason: "has the transformation " + name}
+			d := rterr.CompileDiagnostic{File: t.File, Code: "xslt", Message: err.Error()}
+			var xe *xslt.Error
+			if errors.As(err, &xe) {
+				d.Line, d.Message = xe.Line, xe.Text
+			}
+			e.Diagnostics = append(e.Diagnostics, d)
+			return nil, e
+		}
+		changes = append(changes, plan.Change{Kind: plan.CompileTransformation, Table: name, Detail: t.File})
+	}
+	return changes, nil
 }
 
 // recompileSet returns the packages whose code may change through an
@@ -219,6 +251,12 @@ func changedObjects(cur, want *model.Schema) map[string]bool {
 	}
 	for name := range b {
 		if _, ok := a[name]; !ok {
+			out[name] = true
+		}
+	}
+	// Code checks the parameters of the transformations it runs.
+	for name, t := range cur.Transformations {
+		if w, ok := want.Transformations[name]; !ok || !slices.Equal(w.Params, t.Params) {
 			out[name] = true
 		}
 	}

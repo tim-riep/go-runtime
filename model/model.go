@@ -397,6 +397,7 @@ type Package struct {
 	ArrayTypes          []ArrayType
 	StructureExtensions []StructureExtension
 	Sources             []Source
+	Transformations     []Transformation
 	Origin              string // where the package was loaded from
 }
 

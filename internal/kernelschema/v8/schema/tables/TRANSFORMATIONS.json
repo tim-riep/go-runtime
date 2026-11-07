@@ -1,0 +1,51 @@
+{
+  "name": "/RT/TRANSFORMATIONS",
+  "description": "XSLT stylesheets of packages, which code runs with transform",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TRANSFORMATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "TEXT",
+      "domain": "/RT/SOURCE_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    },
+    {
+      "name": "OUTPUT",
+      "domain": "/RT/TRANSFORMATION_OUTPUT"
+    }
+  ],
+  "primaryKey": [
+    "TRANSFORMATION_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

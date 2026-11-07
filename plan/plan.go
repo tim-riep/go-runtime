@@ -79,9 +79,12 @@ const (
 	DropStructureExtension  ChangeKind = "drop-structure-extension"
 	AlterStructureExtension ChangeKind = "alter-structure-extension"
 	CompilePackage          ChangeKind = "compile-package" // the code of a package is compiled
-	CreateArrayType         ChangeKind = "create-array-type"
-	DropArrayType           ChangeKind = "drop-array-type"
-	AlterArrayType          ChangeKind = "alter-array-type"
+	// CompileTransformation: an XSLT stylesheet is new or changed and is
+	// compiled to check it.
+	CompileTransformation ChangeKind = "compile-transformation"
+	CreateArrayType       ChangeKind = "create-array-type"
+	DropArrayType         ChangeKind = "drop-array-type"
+	AlterArrayType        ChangeKind = "alter-array-type"
 
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
@@ -105,7 +108,7 @@ func (k ChangeKind) Physical() bool {
 	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
 		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension,
 		CreateStructure, DropStructure, AlterStructure, AddStructureExtension, DropStructureExtension, AlterStructureExtension,
-		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage,
+		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage, CompileTransformation,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant:
 		return false
