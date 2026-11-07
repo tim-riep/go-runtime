@@ -1,5 +1,5 @@
 {
-  "name": "VERSION",
+  "name": "/RT/VERSION",
   "description": "Semantic version",
   "type": "CHAR",
   "length": 64

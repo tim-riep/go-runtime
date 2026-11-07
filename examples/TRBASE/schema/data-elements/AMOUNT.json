@@ -1,6 +1,6 @@
 {
-  "name": "AMOUNT",
-  "domain": "AMOUNT",
+  "name": "/TRBASE/AMOUNT",
+  "domain": "/TRBASE/AMOUNT",
   "texts": {
     "en": {
       "short": "Amount",

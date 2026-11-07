@@ -63,7 +63,7 @@ func TestSettingLifecycle(t *testing.T) {
 		}
 
 		// The resolved definition is the same in every dialect.
-		d, err := k.Setting(ctx, "TRFIN_COMPANIES")
+		d, err := k.Setting(ctx, "/TRFIN/COMPANIES")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -71,7 +71,7 @@ func TestSettingLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		testutil.Golden(t, "setting-TRFIN_COMPANIES.json", string(b))
+		testutil.Golden(t, "setting-TRFIN-COMPANIES.json", string(b))
 		list, err := k.Settings(ctx)
 		if err != nil || len(list) != 1 || list[0].Tables != 3 || list[0].Label != "Companies" {
 			t.Fatalf("settings: %v %+v", err, list)
@@ -81,46 +81,46 @@ func TestSettingLifecycle(t *testing.T) {
 		// and names the setting.
 		fin := testutil.Example(t, "TRFIN")
 		fin.Manifest.Version = "1.1.0"
-		tableOf(fin, "COMPANIES").DataClass = model.RuntimeConfiguration
-		tableOf(fin, "BANK_ACCOUNTS").DataClass = model.RuntimeConfiguration
+		tableOf(fin, "/TRFIN/COMPANIES").DataClass = model.RuntimeConfiguration
+		tableOf(fin, "/TRFIN/BANK_ACCOUNTS").DataClass = model.RuntimeConfiguration
 		_, err = k.Upgrade(ctx, fin, kernel.Options{AllowDestructive: true})
-		rejectedFor(t, err, "TRFIN_COMPANIES")
-		if !strings.Contains(err.Error(), "OTTO_CONNECTIONS has the data class configuration") {
+		rejectedFor(t, err, "/TRFIN/COMPANIES")
+		if !strings.Contains(err.Error(), "/TROTTO/OTTO_CONNECTIONS has the data class configuration") {
 			t.Errorf("message should name the table of TROTTO: %v", err)
 		}
 
 		// Dropping the foreign key a dependent table hangs on is rejected.
 		fin = testutil.Example(t, "TRFIN")
 		fin.Manifest.Version = "1.1.0"
-		tableOf(fin, "BANK_ACCOUNTS").ForeignKeys = nil
-		tableOf(fin, "PAYMENTS").ForeignKeys = nil
+		tableOf(fin, "/TRFIN/BANK_ACCOUNTS").ForeignKeys = nil
+		tableOf(fin, "/TRFIN/PAYMENTS").ForeignKeys = nil
 		_, err = k.Upgrade(ctx, fin, kernel.Options{AllowDestructive: true})
-		rejectedFor(t, err, "TRFIN_COMPANIES")
+		rejectedFor(t, err, "/TRFIN/COMPANIES")
 
 		// A valid class change is applied and shown as notice.
 		fin = testutil.Example(t, "TRFIN")
 		fin.Manifest.Version = "1.1.0"
-		tableOf(fin, "EXCHANGE_RATES").DataClass = model.Configuration
+		tableOf(fin, "/TRFIN/EXCHANGE_RATES").DataClass = model.Configuration
 		p, err := k.Upgrade(ctx, fin, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n := p.Notices(); len(n) != 1 || n[0].Kind != plan.AlterDataClass || n[0].Table != "EXCHANGE_RATES" || len(p.Steps) != 0 {
+		if n := p.Notices(); len(n) != 1 || n[0].Kind != plan.AlterDataClass || n[0].Table != "/TRFIN/EXCHANGE_RATES" || len(p.Steps) != 0 {
 			t.Fatalf("class change: %+v, %d steps", p.Changes, len(p.Steps))
 		}
 		if !strings.Contains(p.Text(), "[DATA CLASS]") {
 			t.Errorf("plan text:\n%s", p.Text())
 		}
-		if got, _ := k.Table(ctx, "EXCHANGE_RATES"); got.Table.DataClass != model.Configuration || got.Setting != "" {
-			t.Fatalf("EXCHANGE_RATES: %+v", got.Table)
+		if got, _ := k.Table(ctx, "/TRFIN/EXCHANGE_RATES"); got.Table.DataClass != model.Configuration || got.Setting != "" {
+			t.Fatalf("/TRFIN/EXCHANGE_RATES: %+v", got.Table)
 		}
 
 		// Upgrading TROTTO adds a table below its own extension table.
 		if _, err := k.Upgrade(ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		d, _ = k.Setting(ctx, "TRFIN_COMPANIES")
-		if got := tables(d); !slices.Equal(got, []string{"COMPANIES", "BANK_ACCOUNTS", "OTTO_CONNECTIONS", "OTTO_SHOPS"}) {
+		d, _ = k.Setting(ctx, "/TRFIN/COMPANIES")
+		if got := tables(d); !slices.Equal(got, []string{"/TRFIN/COMPANIES", "/TRFIN/BANK_ACCOUNTS", "/TROTTO/OTTO_CONNECTIONS", "/TROTTO/OTTO_SHOPS"}) {
 			t.Fatalf("after upgrade: %v", got)
 		}
 		consistent(t, k)
@@ -129,11 +129,11 @@ func TestSettingLifecycle(t *testing.T) {
 		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		d, err = k.Setting(ctx, "TRFIN_COMPANIES")
+		d, err = k.Setting(ctx, "/TRFIN/COMPANIES")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := tables(d); !slices.Equal(got, []string{"COMPANIES", "BANK_ACCOUNTS"}) || len(d.Extensions) != 0 {
+		if got := tables(d); !slices.Equal(got, []string{"/TRFIN/COMPANIES", "/TRFIN/BANK_ACCOUNTS"}) || len(d.Extensions) != 0 {
 			t.Fatalf("after uninstall: %v %v", got, d.Extensions)
 		}
 		for _, f := range d.Root.Fields {

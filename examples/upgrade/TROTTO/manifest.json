@@ -4,6 +4,10 @@
   "description": "Connection of companies to the OTTO marketplace",
   "requires": [
     {
+      "id": "TRBASE",
+      "version": ">=1.0.0"
+    },
+    {
       "id": "TRFIN",
       "version": ">=1.0.0"
     }

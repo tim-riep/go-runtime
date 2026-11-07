@@ -1,43 +1,43 @@
 {
-  "name": "ASSET_VARIANTS",
+  "name": "/RT/ASSET_VARIANTS",
   "description": "Language variants of assets",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "REPOSITORY_ID",
-      "domain": "ASSET_REPOSITORY_ID"
+      "domain": "/RT/ASSET_REPOSITORY_ID"
     },
     {
       "name": "PATH",
-      "domain": "ASSET_PATH"
+      "domain": "/RT/ASSET_PATH"
     },
     {
       "name": "LANGUAGE",
-      "domain": "LANGUAGE"
+      "domain": "/RT/LANGUAGE"
     },
     {
       "name": "SOURCE_PATH",
-      "domain": "ASSET_PATH",
+      "domain": "/RT/ASSET_PATH",
       "notNull": true
     },
     {
       "name": "SHA256",
-      "domain": "SHA256",
+      "domain": "/RT/SHA256",
       "notNull": true
     },
     {
       "name": "SIZE",
-      "domain": "BYTE_SIZE",
+      "domain": "/RT/BYTE_SIZE",
       "notNull": true
     },
     {
       "name": "MODIFIED_AT",
-      "domain": "TIMESTAMP",
+      "domain": "/RT/TIMESTAMP",
       "notNull": true
     }
   ],
@@ -50,7 +50,7 @@
   "foreignKeys": [
     {
       "name": "ENTRY",
-      "table": "ASSET_ENTRIES",
+      "table": "/RT/ASSET_ENTRIES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -68,7 +68,7 @@
     },
     {
       "name": "LANGUAGE",
-      "table": "LANGUAGES",
+      "table": "/RT/LANGUAGES",
       "fields": [
         {
           "field": "LANGUAGE",
@@ -78,7 +78,7 @@
     },
     {
       "name": "BLOB",
-      "table": "ASSET_BLOBS",
+      "table": "/RT/ASSET_BLOBS",
       "fields": [
         {
           "field": "SHA256",

@@ -888,6 +888,7 @@ func (c *cli) fail(err error) int {
 		ee   *rterr.ExecError
 		ml   *rterr.MissingLanguages
 		anf  *rterr.AssetNotFound
+		nsv  *rterr.NamespaceViolation
 	)
 	switch {
 	case errors.As(err, &dc):
@@ -901,7 +902,7 @@ func (c *cli) fail(err error) int {
 	case errors.As(err, &ml):
 		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
 		return exitInvalid
-	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc):
+	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv):
 		return exitInvalid
 	case errors.As(err, &ee):
 		return exitExec

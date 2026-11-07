@@ -1,5 +1,5 @@
 {
-  "name": "SHORT_LABEL",
+  "name": "/RT/SHORT_LABEL",
   "description": "Short field label",
   "type": "CHAR",
   "length": 10

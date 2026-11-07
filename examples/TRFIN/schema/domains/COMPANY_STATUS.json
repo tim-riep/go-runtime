@@ -1,5 +1,5 @@
 {
-  "name": "COMPANY_STATUS",
+  "name": "/TRFIN/COMPANY_STATUS",
   "description": "Lifecycle status of a company",
   "type": "CHAR",
   "length": 10,

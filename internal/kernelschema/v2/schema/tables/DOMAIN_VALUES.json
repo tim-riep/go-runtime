@@ -1,25 +1,25 @@
 {
-  "name": "DOMAIN_VALUES",
+  "name": "/RT/DOMAIN_VALUES",
   "description": "Fixed values of domains",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "DOMAIN_NAME",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "POSITION",
-      "domain": "POSITION"
+      "domain": "/RT/POSITION"
     },
     {
       "name": "VALUE",
-      "domain": "VALUE",
+      "domain": "/RT/VALUE",
       "notNull": true
     },
     {
       "name": "DESCRIPTION",
-      "domain": "DESCRIPTION"
+      "domain": "/RT/DESCRIPTION"
     }
   ],
   "primaryKey": [
@@ -29,7 +29,7 @@
   "foreignKeys": [
     {
       "name": "DOMAIN",
-      "table": "DOMAINS",
+      "table": "/RT/DOMAINS",
       "fields": [
         {
           "field": "DOMAIN_NAME",

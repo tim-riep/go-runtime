@@ -1,5 +1,5 @@
 {
-  "name": "EXCHANGE_RATE",
+  "name": "/TRFIN/EXCHANGE_RATE",
   "description": "Exchange rate",
   "type": "DEC",
   "length": 15,

@@ -15,6 +15,8 @@
 package model
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"regexp"
 	"strings"
 )
@@ -93,21 +95,64 @@ const TenantIDLength = 16
 // Namespace returns the namespace prefix of a package, e.g. "/TROTTO/".
 func Namespace(id PackageID) string { return "/" + string(id) + "/" }
 
+// SplitName splits a name with namespace into package ID and the part after
+// the namespace. It reports false for names without namespace.
+func SplitName(name string) (PackageID, string, bool) {
+	if !strings.HasPrefix(name, "/") {
+		return "", "", false
+	}
+	pkg, local, ok := strings.Cut(name[1:], "/")
+	if !ok {
+		return "", "", false
+	}
+	return PackageID(pkg), local, true
+}
+
+// OwnerNamespace returns the namespace of an owner; kernel objects live in
+// KernelNamespace.
+func OwnerNamespace(owner PackageID) string {
+	if owner == Kernel {
+		return KernelNamespace
+	}
+	return Namespace(owner)
+}
+
 // Qualify prefixes a local name with the namespace of id.
 func Qualify(id PackageID, local string) string { return Namespace(id) + local }
 
 // IsKernelName reports whether name lies in the kernel namespace.
 func IsKernelName(name string) bool { return strings.HasPrefix(name, KernelNamespace) }
 
-// PrimaryKeyName returns the name of the primary key constraint of a table.
-func PrimaryKeyName(table string) string { return table + constraintSep + "PK" }
+// GeneratedName returns the SQL name the kernel generates for a logical
+// name such as "/TRFIN/COMPANIES#FK#COUNTRY". A logical name that fits into
+// MaxIdentifierBytes is used as it is. A longer one keeps its first 52
+// bytes, followed by "~" and the first 10 hex digits of its SHA-256, which
+// makes exactly MaxIdentifierBytes. The result is deterministic; "#" and "~"
+// never occur in object names, so generated names cannot collide with
+// them.
+func GeneratedName(logical string) string {
+	if len(logical) <= MaxIdentifierBytes {
+		return logical
+	}
+	sum := sha256.Sum256([]byte(logical))
+	const hashLen = 10
+	return logical[:MaxIdentifierBytes-hashLen-1] + "~" + hex.EncodeToString(sum[:])[:hashLen]
+}
+
+// PrimaryKeyName returns the name of the primary key constraint of a table,
+// which is also the name of its index.
+func PrimaryKeyName(table string) string { return GeneratedName(table + constraintSep + "PK") }
 
 // ForeignKeyName returns the constraint name of a foreign key.
 func ForeignKeyName(table, fk string) string {
-	return table + constraintSep + "FK" + constraintSep + fk
+	return GeneratedName(table + constraintSep + "FK" + constraintSep + fk)
 }
 
 // CheckName returns the name of the check constraint of a column.
 func CheckName(table, field string) string {
-	return table + constraintSep + "CK" + constraintSep + field
+	return GeneratedName(table + constraintSep + "CK" + constraintSep + field)
 }
+
+// RebuildName returns the name of the temporary table used while a table is
+// rebuilt.
+func RebuildName(table string) string { return GeneratedName(table + constraintSep + "NEW") }

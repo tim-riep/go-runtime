@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "TRFIN_COMPANIES",
+  "id": "/TRFIN/COMPANIES",
   "owner": "TRFIN",
   "texts": {
     "de": {
@@ -22,7 +22,7 @@
     "en"
   ],
   "root": {
-    "name": "COMPANIES",
+    "name": "/TRFIN/COMPANIES",
     "description": "Companies of a tenant",
     "owner": "TRFIN",
     "origin": "TRFIN",
@@ -43,7 +43,7 @@
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
-          "name": "COMPANY",
+          "name": "/TRFIN/COMPANY",
           "owner": "TRFIN",
           "texts": {
             "de": {
@@ -60,7 +60,7 @@
             }
           }
         },
-        "domain": "COMPANY_ID",
+        "domain": "/TRFIN/COMPANY_ID",
         "type": "CHAR",
         "length": 10,
         "notNull": true,
@@ -72,7 +72,7 @@
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
-          "name": "NAME",
+          "name": "/TRBASE/NAME",
           "owner": "TRBASE",
           "texts": {
             "de": {
@@ -89,7 +89,7 @@
             }
           }
         },
-        "domain": "NAME",
+        "domain": "/TRBASE/NAME",
         "type": "CHAR",
         "length": 80,
         "notNull": true,
@@ -101,7 +101,7 @@
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
-          "name": "COUNTRY",
+          "name": "/TRBASE/COUNTRY",
           "owner": "TRBASE",
           "texts": {
             "de": {
@@ -120,7 +120,7 @@
             }
           }
         },
-        "domain": "COUNTRY_CODE",
+        "domain": "/TRBASE/COUNTRY_CODE",
         "type": "CHAR",
         "length": 2,
         "notNull": true,
@@ -128,7 +128,7 @@
         "valueHelps": [
           {
             "foreignKey": "COUNTRY",
-            "table": "COUNTRIES",
+            "table": "/TRFIN/COUNTRIES",
             "fields": [
               {
                 "field": "COUNTRY",
@@ -143,7 +143,7 @@
         "localName": "STATUS",
         "owner": "TRFIN",
         "origin": "TABLE",
-        "domain": "COMPANY_STATUS",
+        "domain": "/TRFIN/COMPANY_STATUS",
         "type": "CHAR",
         "length": 10,
         "fixedValues": [
@@ -169,7 +169,7 @@
         "localName": "CAPITAL",
         "owner": "TRFIN",
         "origin": "TABLE",
-        "domain": "AMOUNT",
+        "domain": "/TRBASE/AMOUNT",
         "type": "DEC",
         "length": 15,
         "decimals": 2,
@@ -181,19 +181,19 @@
         "localName": "FOUNDED_ON",
         "owner": "TRFIN",
         "origin": "TABLE",
-        "domain": "DATE",
+        "domain": "/TRBASE/DATE",
         "type": "DATE",
         "notNull": false,
         "key": false
       },
       {
         "name": "/TROTTO/OTTO_ID",
-        "localName": "OTTO_ID",
+        "localName": "/TROTTO/OTTO_ID",
         "description": "Partner ID of the company",
         "owner": "TROTTO",
         "origin": "EXTENSION",
         "dataElement": {
-          "name": "OTTO_PARTNER",
+          "name": "/TROTTO/OTTO_PARTNER",
           "owner": "TROTTO",
           "texts": {
             "de": {
@@ -210,7 +210,7 @@
             }
           }
         },
-        "domain": "OTTO_ID",
+        "domain": "/TROTTO/OTTO_ID",
         "type": "CHAR",
         "length": 20,
         "notNull": false,
@@ -219,7 +219,7 @@
     ],
     "children": [
       {
-        "name": "BANK_ACCOUNTS",
+        "name": "/TRFIN/BANK_ACCOUNTS",
         "description": "Bank accounts of a company",
         "owner": "TRFIN",
         "origin": "TRFIN",
@@ -227,7 +227,7 @@
         "tenantSpecific": true,
         "parentKey": {
           "name": "COMPANY",
-          "table": "COMPANIES",
+          "table": "/TRFIN/COMPANIES",
           "fields": [
             {
               "field": "COMPANY_ID",
@@ -251,7 +251,7 @@
             "owner": "TRFIN",
             "origin": "TABLE",
             "dataElement": {
-              "name": "COMPANY",
+              "name": "/TRFIN/COMPANY",
               "owner": "TRFIN",
               "texts": {
                 "de": {
@@ -268,7 +268,7 @@
                 }
               }
             },
-            "domain": "COMPANY_ID",
+            "domain": "/TRFIN/COMPANY_ID",
             "type": "CHAR",
             "length": 10,
             "notNull": true,
@@ -277,7 +277,7 @@
             "valueHelps": [
               {
                 "foreignKey": "COMPANY",
-                "table": "COMPANIES",
+                "table": "/TRFIN/COMPANIES",
                 "fields": [
                   {
                     "field": "COMPANY_ID",
@@ -292,7 +292,7 @@
             "localName": "ACCOUNT_NO",
             "owner": "TRFIN",
             "origin": "TABLE",
-            "domain": "ACCOUNT_NO",
+            "domain": "/TRFIN/ACCOUNT_NO",
             "type": "INT4",
             "notNull": true,
             "key": true
@@ -302,7 +302,7 @@
             "localName": "IBAN",
             "owner": "TRFIN",
             "origin": "TABLE",
-            "domain": "IBAN",
+            "domain": "/TRFIN/IBAN",
             "type": "CHAR",
             "length": 34,
             "notNull": true,
@@ -314,7 +314,7 @@
             "owner": "TRFIN",
             "origin": "TABLE",
             "dataElement": {
-              "name": "AMOUNT",
+              "name": "/TRBASE/AMOUNT",
               "owner": "TRBASE",
               "texts": {
                 "de": {
@@ -331,7 +331,7 @@
                 }
               }
             },
-            "domain": "AMOUNT",
+            "domain": "/TRBASE/AMOUNT",
             "type": "DEC",
             "length": 15,
             "decimals": 2,
@@ -344,7 +344,7 @@
             "localName": "OPENED_AT",
             "owner": "TRFIN",
             "origin": "TABLE",
-            "domain": "TIMESTAMP",
+            "domain": "/TRBASE/TIMESTAMP",
             "type": "TIMESTAMP",
             "notNull": false,
             "key": false
@@ -352,7 +352,7 @@
         ]
       },
       {
-        "name": "OTTO_CONNECTIONS",
+        "name": "/TROTTO/OTTO_CONNECTIONS",
         "description": "Connection of a company to the OTTO marketplace",
         "owner": "TROTTO",
         "origin": "TROTTO",
@@ -360,7 +360,7 @@
         "tenantSpecific": true,
         "parentKey": {
           "name": "COMPANY",
-          "table": "COMPANIES",
+          "table": "/TRFIN/COMPANIES",
           "fields": [
             {
               "field": "COMPANY_ID",
@@ -383,7 +383,7 @@
             "owner": "TROTTO",
             "origin": "TABLE",
             "dataElement": {
-              "name": "COMPANY",
+              "name": "/TRFIN/COMPANY",
               "owner": "TRFIN",
               "texts": {
                 "de": {
@@ -400,7 +400,7 @@
                 }
               }
             },
-            "domain": "COMPANY_ID",
+            "domain": "/TRFIN/COMPANY_ID",
             "type": "CHAR",
             "length": 10,
             "notNull": true,
@@ -409,7 +409,7 @@
             "valueHelps": [
               {
                 "foreignKey": "COMPANY",
-                "table": "COMPANIES",
+                "table": "/TRFIN/COMPANIES",
                 "fields": [
                   {
                     "field": "COMPANY_ID",
@@ -424,7 +424,7 @@
             "localName": "ENDPOINT",
             "owner": "TROTTO",
             "origin": "TABLE",
-            "domain": "TEXT",
+            "domain": "/TRBASE/TEXT",
             "type": "STRING",
             "notNull": true,
             "key": false
@@ -434,7 +434,7 @@
             "localName": "ACTIVE",
             "owner": "TROTTO",
             "origin": "TABLE",
-            "domain": "FLAG",
+            "domain": "/TRBASE/FLAG",
             "type": "BOOL",
             "notNull": true,
             "key": false,

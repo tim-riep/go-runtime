@@ -1,5 +1,5 @@
 {
-  "name": "DATA_CLASS",
+  "name": "/RT/DATA_CLASS",
   "description": "Kind of data a table holds",
   "type": "CHAR",
   "length": 20,

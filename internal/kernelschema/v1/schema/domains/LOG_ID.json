@@ -1,5 +1,5 @@
 {
-  "name": "LOG_ID",
+  "name": "/RT/LOG_ID",
   "description": "Log entry ID",
   "type": "UUID"
 }

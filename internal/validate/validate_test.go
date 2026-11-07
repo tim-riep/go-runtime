@@ -57,7 +57,7 @@ func TestExamplesAreValid(t *testing.T) {
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if def := s.Tables["COMPANIES"].Field("STATUS").Default; def == nil || *def != "ACTIVE" {
+	if def := s.Tables["/TRFIN/COMPANIES"].Field("STATUS").Default; def == nil || *def != "ACTIVE" {
 		t.Fatalf("default not normalized: %v", def)
 	}
 	up := testutil.AddPackages(t, testutil.KernelSchema(t), load(t).base, load(t).fin, testutil.Example(t, "upgrade/TROTTO"))
@@ -72,7 +72,7 @@ func TestPhysicalTenantLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := s.Physical()
-	c := p.Tables["COMPANIES"]
+	c := p.Tables["/TRFIN/COMPANIES"]
 	if c.Fields[0].Name != model.TenantField || c.PrimaryKey[0] != model.TenantField || c.PrimaryKey[1] != "COMPANY_ID" {
 		t.Fatalf("tenant field missing: %+v", c.PrimaryKey)
 	}
@@ -90,7 +90,7 @@ func TestPhysicalTenantLayout(t *testing.T) {
 	if tk := c.ForeignKey(model.TenantForeignKey); tk == nil || tk.Target != model.TenantTable {
 		t.Errorf("tenant foreign key missing")
 	}
-	if p.Tables["COUNTRIES"].Field(model.TenantField) != nil {
+	if p.Tables["/TRFIN/COUNTRIES"].Field(model.TenantField) != nil {
 		t.Error("shared table has a tenant field")
 	}
 }
@@ -114,20 +114,20 @@ func TestKernelTablesAreSystem(t *testing.T) {
 
 func TestUnknownDomain(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].Fields[2].Domain = "NOPE" // BANK_ACCOUNTS.IBAN
+	e.fin.Tables[0].Fields[2].Domain = "NOPE" // /TRFIN/BANK_ACCOUNTS.IBAN
 	expect(t, e.schema(t), rterr.CodeUnknownDomain, "NOPE")
 }
 
 func TestDomainNotVisible(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[1].DataElement = ""   // COUNTRIES.NAME
-	e.fin.Tables[2].Fields[1].Domain = "OTTO_ID" // TRFIN does not require TROTTO
+	e.fin.Tables[2].Fields[1].DataElement = ""           // /TRFIN/COUNTRIES.NAME
+	e.fin.Tables[2].Fields[1].Domain = "/TROTTO/OTTO_ID" // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "OTTO_ID")
 }
 
 func TestErrorLocation(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].Fields[1].Domain = "NOPE" // BANK_ACCOUNTS.ACCOUNT_NO
+	e.fin.Tables[0].Fields[1].Domain = "NOPE" // /TRFIN/BANK_ACCOUNTS.ACCOUNT_NO
 	err := Schema(e.schema(t), Options{})
 	var v *rterr.ValidationError
 	if !errors.As(err, &v) || v.Location.Package != "TRFIN" || v.Location.File != "schema/tables/BANK_ACCOUNTS.json" || v.Location.Pointer != "/fields/1/domain" {
@@ -138,22 +138,22 @@ func TestErrorLocation(t *testing.T) {
 func TestSharedTableCannotReferenceTenantTable(t *testing.T) {
 	e := load(t)
 	countries := &e.fin.Tables[2]
-	countries.Fields = append(countries.Fields, model.Field{Name: "OWNER", LocalName: "OWNER", Domain: "COMPANY_ID", Origin: model.OriginTable})
-	countries.ForeignKeys = append(countries.ForeignKeys, model.ForeignKey{Name: "OWNER", Target: "COMPANIES", Origin: model.OriginTable,
+	countries.Fields = append(countries.Fields, model.Field{Name: "OWNER", LocalName: "OWNER", Domain: "/TRFIN/COMPANY_ID", Origin: model.OriginTable})
+	countries.ForeignKeys = append(countries.ForeignKeys, model.ForeignKey{Name: "OWNER", Target: "/TRFIN/COMPANIES", Origin: model.OriginTable,
 		Columns: []model.ColumnPair{{Field: "OWNER", References: "COMPANY_ID"}}})
-	expect(t, e.schema(t), rterr.CodeTenant, "COMPANIES")
+	expect(t, e.schema(t), rterr.CodeTenant, "/TRFIN/COMPANIES")
 }
 
 func TestForeignKeyMustCoverKey(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].ForeignKeys[0].Columns = nil // BANK_ACCOUNTS.COMPANY
+	e.fin.Tables[0].ForeignKeys[0].Columns = nil // /TRFIN/BANK_ACCOUNTS.COMPANY
 	expect(t, e.schema(t), rterr.CodeForeignKey, "COMPANY_ID")
 }
 
 func TestForeignKeyTypeMismatch(t *testing.T) {
 	e := load(t)
 	e.fin.Tables[0].Fields[0].DataElement = ""
-	e.fin.Tables[0].Fields[0].Domain = "IBAN" // CHAR(34) referencing CHAR(10)
+	e.fin.Tables[0].Fields[0].Domain = "/TRFIN/IBAN" // CHAR(34) referencing CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(34)")
 }
 
@@ -180,7 +180,7 @@ func TestExtensionOfTenantTableAllowed(t *testing.T) {
 func TestExtensionNotRequired(t *testing.T) {
 	e := load(t)
 	e.otto.Manifest.Requires = []model.Dependency{{ID: "TRBASE"}}
-	e.otto.Domains[0].Name = "OTTO_ID"
+	e.otto.Domains[0].Name = "/TROTTO/OTTO_ID"
 	expect(t, e.schema(t), rterr.CodeNotVisible, "does not require")
 }
 
@@ -199,13 +199,13 @@ func TestNameTooLong(t *testing.T) {
 
 func TestDefaultNotFixedValue(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[1].Fields[3].DefaultJSON = json.RawMessage(`"GONE"`) // COMPANIES.STATUS
+	e.fin.Tables[1].Fields[3].DefaultJSON = json.RawMessage(`"GONE"`) // /TRFIN/COMPANIES.STATUS
 	expect(t, e.schema(t), rterr.CodeDefault, "GONE")
 }
 
 func TestInvalidDefault(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].Fields[3].DefaultJSON = json.RawMessage(`"1.234"`) // BANK_ACCOUNTS.BALANCE DEC(15,2)
+	e.fin.Tables[0].Fields[3].DefaultJSON = json.RawMessage(`"1.234"`) // /TRFIN/BANK_ACCOUNTS.BALANCE DEC(15,2)
 	expect(t, e.schema(t), rterr.CodeDefault, "decimal places")
 }
 
@@ -218,7 +218,7 @@ func TestDecimalPrecisionLimit(t *testing.T) {
 func TestFixedValuesOnlyForSomeTypes(t *testing.T) {
 	e := load(t)
 	for i := range e.base.Domains {
-		if e.base.Domains[i].Name == "FLAG" {
+		if e.base.Domains[i].Name == "/TRBASE/FLAG" {
 			e.base.Domains[i].Values = []model.FixedValue{{Value: "true"}}
 		}
 	}
@@ -234,7 +234,7 @@ func TestPrimaryKeyFieldMissing(t *testing.T) {
 func TestNameConflict(t *testing.T) {
 	e := load(t)
 	s := e.schema(t)
-	other := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0"}, Tables: []model.Table{{Name: "COMPANIES"}}}
+	other := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0"}, Tables: []model.Table{{Name: "/TRFIN/COMPANIES"}}}
 	var conflict *rterr.NameConflict
 	if err := s.AddPackage(other, testutil.Epoch, testutil.Epoch); !errors.As(err, &conflict) || conflict.Owner != "TRFIN" {
 		t.Fatalf("got %v", err)

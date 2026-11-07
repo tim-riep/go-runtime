@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pkgload reads packages from a file system and validates every file
-// against its JSON Schema.
+// Package pkgload reads packages from a file system.
 //
 // A package is a directory tree:
 //
 //	manifest.json
 //	schema/domains/*.json
+//	schema/data-elements/*.json
 //	schema/tables/*.json
 //	schema/extensions/*.json
+//	schema/settings/*.json
+//	schema/setting-extensions/*.json
+//	assets/<repository>/asset.json and its files
+//
+// Every file must belong to a registered object type (see ObjectType).
+// Loading validates each document against its JSON Schema, then checks the
+// namespaces of all defined and referenced names of the whole package, and
+// builds objects only if every check passed.
 //
 // The loader works on fs.FS, so a directory (os.DirFS) and an archive
 // (zip.Reader) are read the same way.
@@ -60,9 +68,8 @@ const (
 
 // Options control loading.
 type Options struct {
-	// Kernel loads the kernel's own definitions: all table and domain names
-	// and references receive the kernel namespace and the owner is the
-	// kernel.
+	// Kernel loads the kernel's own definitions: the package ID of the
+	// kernel is allowed and the owner of all objects is the kernel.
 	Kernel bool
 }
 
@@ -198,69 +205,58 @@ func (l *loader) load() *model.Package {
 		pkg.Manifest.Requires = append(pkg.Manifest.Requires, model.Dependency{ID: model.PackageID(r.ID), Constraint: r.Version})
 	}
 	l.checkLayout()
-	l.checkSymlinks()
 
-	for _, file := range l.files(DomainsDir) {
-		var d domainDoc
-		if l.readDoc(file, schemas.Domain, &d) {
-			pkg.Domains = append(pkg.Domains, l.domain(file, &d))
+	// Every file must belong to a registered object type.
+	var docs []loadedDoc
+	_ = fs.WalkDir(l.fsys, ".", func(p string, d fs.DirEntry, err error) error {
+		switch {
+		case err != nil:
+			l.fail(rterr.CodeFile, l.loc(p), "cannot read: %v", err)
+			return nil
+		case d.Type()&fs.ModeSymlink != 0:
+			l.fail(rterr.CodeFile, l.loc(p), "symbolic links are not allowed in packages")
+			return nil
+		case d.IsDir() || p == ManifestFile:
+			return nil
 		}
-	}
-	for _, file := range l.files(DataElementsDir) {
-		var d dataElementDoc
-		if l.readDoc(file, schemas.DataElement, &d) {
-			l.checkFileName(file, d.Name, l.loc(file))
-			pkg.DataElements = append(pkg.DataElements, model.DataElement{Name: d.Name, Owner: l.owner(), Domain: l.ref(d.Domain), Texts: d.Texts, Src: l.loc(file)})
-		}
-	}
-	for _, file := range l.files(TablesDir) {
-		var t tableDoc
-		if l.readDoc(file, schemas.Table, &t) {
-			pkg.Tables = append(pkg.Tables, l.table(file, &t))
-		}
-	}
-	for _, file := range l.files(ExtensionsDir) {
-		var e extensionDoc
-		if l.readDoc(file, schemas.Extension, &e) {
-			pkg.Extensions = append(pkg.Extensions, l.extension(file, &e))
-		}
-	}
-	for _, file := range l.files(SettingsDir) {
-		var d settingDoc
-		if l.readDoc(file, schemas.Setting, &d) {
-			loc := l.loc(file)
-			if want := d.ID + ".json"; path.Base(file) != want {
-				l.fail(rterr.CodeFile, loc.At("/id"), "file must be named %s", want)
+		t, isDoc := typeOf(p)
+		switch {
+		case t == nil && path.Dir(p) == AssetsDir:
+			l.fail(rterr.CodeAsset, l.loc(p), "files directly below assets/ are not allowed; every folder below assets/ is an asset repository")
+		case t == nil:
+			l.fail(rterr.CodeFile, l.loc(p), "the file does not belong to any known object type")
+		case isDoc:
+			doc := t.NewDoc()
+			if l.readDoc(p, t.Schema, doc) {
+				docs = append(docs, loadedDoc{typ: t, file: p, doc: doc})
 			}
-			st := model.Setting{ID: d.ID, Owner: l.owner(), Texts: d.Texts, Root: l.settingTable(d.Root, loc.At("/root")), Src: loc}
-			for i, t := range d.Tables {
-				st.Tables = append(st.Tables, l.settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
-			}
-			pkg.Settings = append(pkg.Settings, st)
+		}
+		return nil
+	})
+	for i := range objectTypes {
+		if c := objectTypes[i].Check; c != nil {
+			c(l)
 		}
 	}
-	for _, file := range l.files(SettingExtensionsDir) {
-		var d settingExtensionDoc
-		if l.readDoc(file, schemas.SettingExtension, &d) {
-			loc := l.loc(file)
-			if want := d.Setting + ".json"; path.Base(file) != want {
-				l.fail(rterr.CodeFile, loc.At("/setting"), "file must be named %s", want)
-			}
-			e := model.SettingExtension{Package: l.owner(), Setting: d.Setting, Src: loc}
-			for i, t := range d.Tables {
-				e.Tables = append(e.Tables, l.settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
-			}
-			pkg.SettingExtensions = append(pkg.SettingExtensions, e)
+	for _, d := range docs {
+		if want, ok := d.typ.FileName(d.doc); ok && path.Base(d.file) != want {
+			l.fail(rterr.CodeFile, l.loc(d.file), "a %s file must be named %s", d.typ.Kind, want)
 		}
 	}
-	if !l.opts.Kernel {
-		l.assets(pkg)
+	// The namespace check runs on all documents before any object is
+	// built; a package with violations is not processed further.
+	l.checkNamespaces(docs, pkg.Manifest.Requires)
+	if len(l.errs) > 0 {
+		return pkg
+	}
+	for i := range objectTypes {
+		for _, d := range docs {
+			if d.typ == &objectTypes[i] {
+				d.typ.Build(l, d.file, d.doc, pkg)
+			}
+		}
 	}
 	return pkg
-}
-
-func (l *loader) settingTable(d settingTableDoc, loc rterr.Location) model.SettingTable {
-	return model.SettingTable{Table: l.ref(d.Table), Parent: l.ref(d.Parent), ForeignKey: d.ForeignKey, Operations: d.Operations, Src: loc}
 }
 
 // checkLayout rejects unexpected entries below schema/, which are usually
@@ -277,27 +273,6 @@ func (l *loader) checkLayout() {
 			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/ and setting-extensions/")
 		}
 	}
-}
-
-func (l *loader) files(dir string) []string {
-	entries, err := fs.ReadDir(l.fsys, dir)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			l.fail(rterr.CodeFile, l.loc(dir), "cannot read directory: %v", err)
-		}
-		return nil
-	}
-	var out []string
-	for _, e := range entries {
-		p := path.Join(dir, e.Name())
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; only *.json files are allowed here")
-			continue
-		}
-		out = append(out, p)
-	}
-	slices.Sort(out)
-	return out
 }
 
 // readDoc reads file, validates it against the named schema and decodes it
@@ -395,7 +370,11 @@ func compiled(name string) (*jsonschema.Schema, error) {
 			}
 		}
 		compiledMap = map[string]*jsonschema.Schema{}
-		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension, schemas.Setting, schemas.SettingExtension, schemas.Asset} {
+		names := []string{schemas.Manifest}
+		for _, t := range objectTypes {
+			names = append(names, t.Schema)
+		}
+		for _, n := range names {
 			s, err := c.Compile(schemas.BaseURL + n)
 			if err != nil {
 				compileErr = err
@@ -410,22 +389,6 @@ func compiled(name string) (*jsonschema.Schema, error) {
 	return compiledMap[name], nil
 }
 
-// name qualifies a declared table or domain name in kernel mode.
-func (l *loader) name(n string) string {
-	if l.opts.Kernel {
-		return model.Qualify(model.KernelPackageID, n)
-	}
-	return n
-}
-
-// ref qualifies a reference to a table or domain in kernel mode.
-func (l *loader) ref(n string) string {
-	if l.opts.Kernel && n != "" && !strings.HasPrefix(n, "/") {
-		return model.Qualify(model.KernelPackageID, n)
-	}
-	return n
-}
-
 func (l *loader) owner() model.PackageID {
 	if l.opts.Kernel {
 		return model.Kernel
@@ -436,10 +399,9 @@ func (l *loader) owner() model.PackageID {
 func (l *loader) domain(file string, doc *domainDoc) model.Domain {
 	loc := l.loc(file)
 	d := model.Domain{
-		Name: l.name(doc.Name), Owner: l.owner(), Description: doc.Description,
+		Name: doc.Name, Owner: l.owner(), Description: doc.Description,
 		Type: model.BaseType(doc.Type), Length: doc.Length, Decimals: doc.Decimals, Src: loc,
 	}
-	l.checkFileName(file, doc.Name, loc)
 	for i, v := range doc.Values {
 		canon, err := d.ParseJSON(v.Value)
 		if err != nil {
@@ -451,43 +413,28 @@ func (l *loader) domain(file string, doc *domainDoc) model.Domain {
 	return d
 }
 
-func (l *loader) checkFileName(file, name string, loc rterr.Location) {
-	if want := name + ".json"; path.Base(file) != want {
-		l.fail(rterr.CodeFile, loc.At("/name"), "file must be named %s", want)
-	}
-}
-
 func (l *loader) field(doc fieldDoc, ext bool, loc rterr.Location) model.Field {
 	f := model.Field{
 		Name: doc.Name, LocalName: doc.Name, Description: doc.Description, Owner: l.owner(),
 		Origin: model.OriginTable, NotNull: doc.NotNull, Src: loc,
 	}
-	if doc.Domain != "" {
-		f.Domain = l.ref(doc.Domain)
-	}
-	f.DataElement = doc.DataElement
+	f.Domain, f.DataElement = doc.Domain, doc.DataElement
 	if len(doc.Default) > 0 {
 		f.DefaultJSON = doc.Default
 	}
 	if ext {
-		f.Name = model.Qualify(model.PackageID(l.id), doc.Name)
 		f.Origin = model.OriginExtension
 	}
 	return f
 }
 
 func (l *loader) foreignKey(doc fkDoc, ext bool, loc rterr.Location) model.ForeignKey {
-	fk := model.ForeignKey{Name: doc.Name, Owner: l.owner(), Origin: model.OriginTable, Target: l.ref(doc.Table), Src: loc}
+	fk := model.ForeignKey{Name: doc.Name, Owner: l.owner(), Origin: model.OriginTable, Target: doc.Table, Src: loc}
 	if ext {
-		fk.Name = model.Qualify(model.PackageID(l.id), doc.Name)
 		fk.Origin = model.OriginExtension
 	}
 	for _, c := range doc.Fields {
-		field := c.Field
-		if ext {
-			field = model.Qualify(model.PackageID(l.id), field)
-		}
-		fk.Columns = append(fk.Columns, model.ColumnPair{Field: field, References: c.References})
+		fk.Columns = append(fk.Columns, model.ColumnPair{Field: c.Field, References: c.References})
 	}
 	return fk
 }
@@ -495,10 +442,9 @@ func (l *loader) foreignKey(doc fkDoc, ext bool, loc rterr.Location) model.Forei
 func (l *loader) table(file string, doc *tableDoc) model.Table {
 	loc := l.loc(file)
 	t := model.Table{
-		Name: l.name(doc.Name), Owner: l.owner(), Description: doc.Description,
+		Name: doc.Name, Owner: l.owner(), Description: doc.Description,
 		TenantSpecific: doc.TenantSpecific, DataClass: model.DataClass(doc.DataClass), PrimaryKey: doc.PrimaryKey, Src: loc,
 	}
-	l.checkFileName(file, doc.Name, loc)
 	for i, f := range doc.Fields {
 		t.Fields = append(t.Fields, l.field(f, false, loc.At(fmt.Sprintf("/fields/%d", i))))
 	}
@@ -510,7 +456,7 @@ func (l *loader) table(file string, doc *tableDoc) model.Table {
 
 func (l *loader) extension(file string, doc *extensionDoc) model.Extension {
 	loc := l.loc(file)
-	e := model.Extension{Package: l.owner(), Table: l.ref(doc.Table), Description: doc.Description, Src: loc}
+	e := model.Extension{Package: l.owner(), Table: doc.Table, Description: doc.Description, Src: loc}
 	for i, f := range doc.Fields {
 		e.Fields = append(e.Fields, l.field(f, true, loc.At(fmt.Sprintf("/fields/%d", i))))
 	}

@@ -1,21 +1,21 @@
 {
-  "name": "SETTINGS",
+  "name": "/RT/SETTINGS",
   "description": "Settings: tables that form one configuration",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "SETTING_ID",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
       "notNull": true
     },
     {
       "name": "ROOT_TABLE",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true
     }
   ],
@@ -25,7 +25,7 @@
   "foreignKeys": [
     {
       "name": "PACKAGE",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -35,7 +35,7 @@
     },
     {
       "name": "ROOT_TABLE",
-      "table": "TABLES",
+      "table": "/RT/TABLES",
       "fields": [
         {
           "field": "ROOT_TABLE",

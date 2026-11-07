@@ -1,6 +1,6 @@
 {
-  "name": "COMPANY",
-  "domain": "COMPANY_ID",
+  "name": "/TRFIN/COMPANY",
+  "domain": "/TRFIN/COMPANY_ID",
   "texts": {
     "en": {
       "short": "Company",

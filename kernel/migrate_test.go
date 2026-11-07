@@ -50,7 +50,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 				notices[c.Table] = c.Detail
 			}
 		}
-		if notices["COMPANIES"] != "none -> application, provisional until package TRFIN is applied again" || notices[model.TenantTable] != "" {
+		if notices["/TRFIN/COMPANIES"] != "none -> application, provisional until package TRFIN is applied again" || notices[model.TenantTable] != "" {
 			t.Fatalf("migration notices: %v", notices)
 		}
 		consistent(t, k)
@@ -59,8 +59,8 @@ func TestMigrateFromVersion1(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if c := s.Tables["COMPANIES"].DataClass; c != model.Application {
-			t.Errorf("provisional class of COMPANIES = %q", c)
+		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Application {
+			t.Errorf("provisional class of /TRFIN/COMPANIES = %q", c)
 		}
 		if c := s.Tables[model.TenantTable].DataClass; c != model.System {
 			t.Errorf("class of the tenant table = %q", c)
@@ -68,7 +68,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 		if len(s.Packages) != 3 || s.Packages["TRFIN"].InstalledAt.IsZero() {
 			t.Fatalf("packages after migration: %v", s.PackageIDs())
 		}
-		if v := scalar(t, k, "COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("data lost: %v", v)
 		}
 
@@ -88,7 +88,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 			t.Fatalf("class changes must be notices: %+v", up.Changes)
 		}
 		s, _ = k.Schema(ctx)
-		if c := s.Tables["COMPANIES"].DataClass; c != model.Configuration {
+		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Configuration {
 			t.Errorf("class after upgrade = %q", c)
 		}
 		consistent(t, k)

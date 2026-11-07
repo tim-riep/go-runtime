@@ -1,5 +1,5 @@
 {
-  "name": "MEDIUM_LABEL",
+  "name": "/RT/MEDIUM_LABEL",
   "description": "Medium field label",
   "type": "CHAR",
   "length": 20

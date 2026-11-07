@@ -1,5 +1,5 @@
 {
-  "name": "LANGUAGE_NAME",
+  "name": "/RT/LANGUAGE_NAME",
   "description": "Name of a language",
   "type": "CHAR",
   "length": 60

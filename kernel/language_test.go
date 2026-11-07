@@ -100,7 +100,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		d, err := k.DataElement(ctx, "COUNTRY")
+		d, err := k.DataElement(ctx, "/TRBASE/COUNTRY")
 		if err != nil {
 			t.Fatal(err)
 		}

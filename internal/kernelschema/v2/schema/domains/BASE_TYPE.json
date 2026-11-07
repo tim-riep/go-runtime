@@ -1,5 +1,5 @@
 {
-  "name": "BASE_TYPE",
+  "name": "/RT/BASE_TYPE",
   "description": "Base type of a domain",
   "type": "CHAR",
   "length": 10,

@@ -1,6 +1,6 @@
 {
-  "name": "CURRENCY",
-  "domain": "CURRENCY",
+  "name": "/TRBASE/CURRENCY",
+  "domain": "/TRBASE/CURRENCY",
   "texts": {
     "en": {
       "short": "Currency",

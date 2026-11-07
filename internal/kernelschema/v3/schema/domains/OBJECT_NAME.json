@@ -1,5 +1,5 @@
 {
-  "name": "OBJECT_NAME",
+  "name": "/RT/OBJECT_NAME",
   "description": "Name of a table, domain, field or constraint",
   "type": "CHAR",
   "length": 63

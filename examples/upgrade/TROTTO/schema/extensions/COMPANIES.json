@@ -1,32 +1,32 @@
 {
-  "table": "COMPANIES",
+  "table": "/TRFIN/COMPANIES",
   "description": "OTTO partner data of a company",
   "fields": [
     {
-      "name": "OTTO_ID",
-      "dataElement": "OTTO_PARTNER",
+      "name": "/TROTTO/OTTO_ID",
+      "dataElement": "/TROTTO/OTTO_PARTNER",
       "description": "Partner ID of the company"
     },
     {
-      "name": "ACTIVE",
-      "domain": "FLAG",
+      "name": "/TROTTO/ACTIVE",
+      "domain": "/TRBASE/FLAG",
       "notNull": true,
       "default": false,
       "description": "Whether the connection is active"
     },
     {
-      "name": "MAIN_SHOP",
-      "domain": "OTTO_SHOP_ID",
+      "name": "/TROTTO/MAIN_SHOP",
+      "domain": "/TROTTO/OTTO_SHOP_ID",
       "description": "Default shop of the company"
     }
   ],
   "foreignKeys": [
     {
-      "name": "MAIN_SHOP",
-      "table": "OTTO_SHOPS",
+      "name": "/TROTTO/MAIN_SHOP",
+      "table": "/TROTTO/OTTO_SHOPS",
       "fields": [
         {
-          "field": "MAIN_SHOP",
+          "field": "/TROTTO/MAIN_SHOP",
           "references": "SHOP_ID"
         }
       ]

@@ -1,5 +1,5 @@
 {
-  "name": "AMOUNT",
+  "name": "/TRBASE/AMOUNT",
   "description": "Monetary amount",
   "type": "DEC",
   "length": 15,

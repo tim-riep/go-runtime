@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/data-element.schema.json",
   "title": "Data element",
-  "description": "A domain with field labels per language (schema/data-elements/<NAME>.json).",
+  "description": "A domain with field labels per language (schema/data-elements/<name without namespace>.json).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -12,10 +12,10 @@
   ],
   "properties": {
     "name": {
-      "$ref": "common.schema.json#/$defs/localName"
+      "$ref": "common.schema.json#/$defs/objectName"
     },
     "domain": {
-      "$ref": "common.schema.json#/$defs/reference"
+      "$ref": "common.schema.json#/$defs/objectName"
     },
     "texts": {
       "description": "Labels by language code. English (en) is mandatory.",

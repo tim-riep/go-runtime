@@ -43,7 +43,7 @@ func TestTenants(t *testing.T) {
 			t.Fatalf("list: %v %+v", err, list)
 		}
 
-		mustInsert(t, k, "COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "C1", "NAME": "Globex", "COUNTRY": "DE"})
+		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "C1", "NAME": "Globex", "COUNTRY": "DE"})
 
 		var conf *rterr.ConfirmationRequired
 		if _, err := ten.Delete(ctx, tenantA, kernel.Options{}); !errors.As(err, &conf) {
@@ -57,7 +57,7 @@ func TestTenants(t *testing.T) {
 		for _, c := range dry.Changes {
 			order = append(order, c.Table+" "+c.Detail)
 		}
-		if got := strings.Join(order, ", "); got != "PAYMENTS 0 rows, OTTO_CONNECTIONS 0 rows, BANK_ACCOUNTS 1 rows, COMPANIES 1 rows, /RT/TENANTS tenant ACME" {
+		if got := strings.Join(order, ", "); got != "/TROTTO/OTTO_CONNECTIONS 0 rows, /TRFIN/PAYMENTS 0 rows, /TRFIN/BANK_ACCOUNTS 1 rows, /TRFIN/COMPANIES 1 rows, /RT/TENANTS tenant ACME" {
 			t.Fatalf("dependent tables must be emptied first: %s", got)
 		}
 		if !strings.Contains(dry.SQL(), "DELETE FROM") {
@@ -66,10 +66,10 @@ func TestTenants(t *testing.T) {
 		if _, err := ten.Delete(ctx, tenantA, kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		if n := count(t, k, "COMPANIES"); n != 1 {
+		if n := count(t, k, "/TRFIN/COMPANIES"); n != 1 {
 			t.Errorf("companies left: %d, want only the one of GLOBEX", n)
 		}
-		if n := count(t, k, "BANK_ACCOUNTS"); n != 0 {
+		if n := count(t, k, "/TRFIN/BANK_ACCOUNTS"); n != 0 {
 			t.Errorf("bank accounts left: %d", n)
 		}
 		list, _ = ten.List(ctx)
@@ -94,7 +94,7 @@ func TestTenantReferencedBySharedTable(t *testing.T) {
 		notes := &model.Package{
 			Manifest: model.Manifest{ID: "TRNOTES", Version: "1.0.0"},
 			Tables: []model.Table{{
-				Name: "TENANT_NOTES", TenantSpecific: false, DataClass: model.Application,
+				Name: "/TRNOTES/TENANT_NOTES", TenantSpecific: false, DataClass: model.Application,
 				Fields: []model.Field{
 					{Name: "NOTE_ID", LocalName: "NOTE_ID", Domain: model.TenantDomain, Origin: model.OriginTable},
 					{Name: "OWNER", LocalName: "OWNER", Domain: model.TenantDomain, Origin: model.OriginTable},
@@ -107,9 +107,9 @@ func TestTenantReferencedBySharedTable(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{notes}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		mustInsert(t, k, "TENANT_NOTES", values{"NOTE_ID": "N1", "OWNER": tenantA})
+		mustInsert(t, k, "/TRNOTES/TENANT_NOTES", values{"NOTE_ID": "N1", "OWNER": tenantA})
 		var ref *rterr.TenantReferenced
-		if _, err := k.Tenants().Delete(ctx, tenantA, kernel.Options{Confirm: true}); !errors.As(err, &ref) || ref.Tables[0] != "TENANT_NOTES" {
+		if _, err := k.Tenants().Delete(ctx, tenantA, kernel.Options{Confirm: true}); !errors.As(err, &ref) || ref.Tables[0] != "/TRNOTES/TENANT_NOTES" {
 			t.Fatalf("expected TenantReferenced, got %v", err)
 		}
 		// The plain foreign key also blocks deleting the tenant row directly.
@@ -126,9 +126,9 @@ func TestCheck(t *testing.T) {
 			t.Fatalf("fresh install: %v %v", err, d)
 		}
 		for _, stmt := range []string{
-			`ALTER TABLE "COUNTRIES" ADD COLUMN "EXTRA" TEXT`,
+			`ALTER TABLE "/TRFIN/COUNTRIES" ADD COLUMN "EXTRA" TEXT`,
 			`CREATE TABLE "STRAY" ("X" INTEGER)`,
-			`DROP TABLE "PAYMENTS"`,
+			`DROP TABLE "/TRFIN/PAYMENTS"`,
 		} {
 			if _, err := k.DB().ExecContext(ctx, stmt); err != nil {
 				t.Fatal(err)
@@ -139,8 +139,8 @@ func TestCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := []string{
-			"COUNTRIES.EXTRA: column is not in the repository",
-			"PAYMENTS: table is missing in the database",
+			"/TRFIN/COUNTRIES.EXTRA: column is not in the repository",
+			"/TRFIN/PAYMENTS: table is missing in the database",
 			"STRAY: table is not in the repository",
 		}
 		if len(d) != len(want) {

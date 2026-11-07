@@ -28,7 +28,6 @@ import (
 	"github.com/tim-riep/go-runtime/internal/mimetype"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
-	"github.com/tim-riep/go-runtime/schemas"
 )
 
 // Paths of asset repositories.
@@ -49,25 +48,8 @@ type assetDoc struct {
 	} `json:"files"`
 }
 
-// checkSymlinks rejects symbolic links anywhere in the package. They are
-// never followed.
-func (l *loader) checkSymlinks() {
-	_ = fs.WalkDir(l.fsys, ".", func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.Type()&fs.ModeSymlink != 0 {
-			l.fail(rterr.CodeFile, l.loc(p), "symbolic links are not allowed in packages")
-			if d.IsDir() {
-				return fs.SkipDir
-			}
-		}
-		return nil
-	})
-}
-
-// assets reads all asset repositories below assets/.
-func (l *loader) assets(pkg *model.Package) {
+// checkAssetLayout rejects folders below assets/ without asset.json.
+func checkAssetLayout(l *loader) {
 	entries, err := fs.ReadDir(l.fsys, AssetsDir)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -76,30 +58,18 @@ func (l *loader) assets(pkg *model.Package) {
 		return
 	}
 	for _, e := range entries {
-		dir := path.Join(AssetsDir, e.Name())
-		switch {
-		case e.Type()&fs.ModeSymlink != 0:
-			continue // reported by checkSymlinks
-		case !e.IsDir():
-			l.fail(rterr.CodeAsset, l.loc(dir), "files directly below assets/ are not allowed; every folder below assets/ is an asset repository")
-			continue
+		if !e.IsDir() {
+			continue // reported as file directly below assets/
 		}
+		dir := path.Join(AssetsDir, e.Name())
 		if _, err := fs.Stat(l.fsys, path.Join(dir, AssetDescriptor)); err != nil {
 			l.fail(rterr.CodeAsset, l.loc(dir), "asset repository %s has no %s", e.Name(), AssetDescriptor)
-			continue
-		}
-		if r := l.assetRepository(e.Name(), dir); r != nil {
-			pkg.AssetRepositories = append(pkg.AssetRepositories, *r)
 		}
 	}
 }
 
-func (l *loader) assetRepository(id, dir string) *model.AssetRepository {
+func (l *loader) assetRepository(id, dir string, doc *assetDoc) *model.AssetRepository {
 	descFile := path.Join(dir, AssetDescriptor)
-	var doc assetDoc
-	if !l.readDoc(descFile, schemas.Asset, &doc) {
-		return nil
-	}
 	repo := &model.AssetRepository{Package: model.PackageID(l.id), ID: id, Description: doc.Description,
 		Entries: map[string]*model.AssetEntry{}, Src: l.loc(descFile)}
 	entryLoc := func(p string) rterr.Location { return l.loc(path.Join(dir, p)) }

@@ -1,51 +1,51 @@
 {
-  "name": "ASSET_ENTRIES",
+  "name": "/RT/ASSET_ENTRIES",
   "description": "Folders and assets of asset repositories",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "REPOSITORY_ID",
-      "domain": "ASSET_REPOSITORY_ID"
+      "domain": "/RT/ASSET_REPOSITORY_ID"
     },
     {
       "name": "PATH",
-      "domain": "ASSET_PATH"
+      "domain": "/RT/ASSET_PATH"
     },
     {
       "name": "KIND",
-      "domain": "ASSET_KIND",
+      "domain": "/RT/ASSET_KIND",
       "notNull": true
     },
     {
       "name": "PARENT_PATH",
-      "domain": "ASSET_PATH",
+      "domain": "/RT/ASSET_PATH",
       "description": "Containing folder, empty on the top level"
     },
     {
       "name": "MIME_TYPE",
-      "domain": "MIME_TYPE"
+      "domain": "/RT/MIME_TYPE"
     },
     {
       "name": "SHA256",
-      "domain": "SHA256",
+      "domain": "/RT/SHA256",
       "description": "Language-independent content, empty for folders and assets with variants only"
     },
     {
       "name": "SIZE",
-      "domain": "BYTE_SIZE"
+      "domain": "/RT/BYTE_SIZE"
     },
     {
       "name": "SOURCE_PATH",
-      "domain": "ASSET_PATH"
+      "domain": "/RT/ASSET_PATH"
     },
     {
       "name": "MODIFIED_AT",
-      "domain": "TIMESTAMP"
+      "domain": "/RT/TIMESTAMP"
     }
   ],
   "primaryKey": [
@@ -56,7 +56,7 @@
   "foreignKeys": [
     {
       "name": "REPOSITORY",
-      "table": "ASSET_REPOSITORIES",
+      "table": "/RT/ASSET_REPOSITORIES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -70,7 +70,7 @@
     },
     {
       "name": "PARENT",
-      "table": "ASSET_ENTRIES",
+      "table": "/RT/ASSET_ENTRIES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -88,7 +88,7 @@
     },
     {
       "name": "BLOB",
-      "table": "ASSET_BLOBS",
+      "table": "/RT/ASSET_BLOBS",
       "fields": [
         {
           "field": "SHA256",

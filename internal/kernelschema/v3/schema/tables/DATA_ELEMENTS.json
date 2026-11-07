@@ -1,21 +1,21 @@
 {
-  "name": "DATA_ELEMENTS",
+  "name": "/RT/DATA_ELEMENTS",
   "description": "Data elements: a domain with field labels",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "DATA_ELEMENT",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
       "notNull": true
     },
     {
       "name": "DOMAIN_NAME",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true
     }
   ],
@@ -25,7 +25,7 @@
   "foreignKeys": [
     {
       "name": "PACKAGE",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -35,7 +35,7 @@
     },
     {
       "name": "DOMAIN",
-      "table": "DOMAINS",
+      "table": "/RT/DOMAINS",
       "fields": [
         {
           "field": "DOMAIN_NAME",

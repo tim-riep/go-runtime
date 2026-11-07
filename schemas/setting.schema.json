@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/setting.schema.json",
   "title": "Setting",
-  "description": "Tables that together form one configuration, as a tree below a root table connected through foreign keys (schema/settings/<ID>.json). A setting always covers all fields of its tables.",
+  "description": "Tables that together form one configuration, as a tree below a root table connected through foreign keys (schema/settings/<name without namespace>.json). A setting always covers all fields of its tables.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -12,10 +12,8 @@
   ],
   "properties": {
     "id": {
-      "description": "Setting ID: upper-case letters, digits and underscores, starting with a letter; unique in the database.",
-      "type": "string",
-      "pattern": "^[A-Z][A-Z0-9_]*$",
-      "maxLength": 63
+      "description": "Setting ID with the namespace of the package, e.g. /TRFIN/COMPANIES; the part after the namespace consists of upper-case letters, digits and underscores and starts with a letter.",
+      "$ref": "common.schema.json#/$defs/objectName"
     },
     "texts": {
       "description": "Label by language code. English (en) is mandatory.",
@@ -54,7 +52,7 @@
       ],
       "properties": {
         "table": {
-          "$ref": "common.schema.json#/$defs/reference"
+          "$ref": "common.schema.json#/$defs/objectName"
         },
         "operations": {
           "$ref": "common.schema.json#/$defs/operations"

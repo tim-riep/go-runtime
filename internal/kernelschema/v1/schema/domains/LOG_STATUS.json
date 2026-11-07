@@ -1,5 +1,5 @@
 {
-  "name": "LOG_STATUS",
+  "name": "/RT/LOG_STATUS",
   "description": "Outcome of a logged operation",
   "type": "CHAR",
   "length": 10,

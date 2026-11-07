@@ -1,5 +1,5 @@
 {
-  "name": "OPERATION",
+  "name": "/RT/OPERATION",
   "description": "Logged operation",
   "type": "CHAR",
   "length": 16,

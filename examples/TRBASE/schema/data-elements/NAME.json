@@ -1,6 +1,6 @@
 {
-  "name": "NAME",
-  "domain": "NAME",
+  "name": "/TRBASE/NAME",
+  "domain": "/TRBASE/NAME",
   "texts": {
     "en": {
       "short": "Name",

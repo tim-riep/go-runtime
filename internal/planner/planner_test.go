@@ -112,18 +112,20 @@ func TestDestructiveClassification(t *testing.T) {
 		return p.Destructive()
 	}
 	cases := map[string]func(s *model.Schema){
-		"shorter char":        func(s *model.Schema) { s.Domains["OTTO_ID"].Length = 10 },
-		"removed fixed value": func(s *model.Schema) { s.Domains["COMPANY_STATUS"].Values = s.Domains["COMPANY_STATUS"].Values[:2] },
-		"new fixed values":    func(s *model.Schema) { s.Domains["IBAN"].Values = []model.FixedValue{{Value: "X"}} },
-		"removed table":       func(s *model.Schema) { delete(s.Tables, "BANK_ACCOUNTS") },
-		"tenant flag":         func(s *model.Schema) { s.Tables["COUNTRIES"].TenantSpecific = true },
-		"type change":         func(s *model.Schema) { s.Domains["ACCOUNT_NO"].Type = model.Int8 },
-		"primary key":         func(s *model.Schema) { s.Tables["COUNTRIES"].PrimaryKey = []string{"COUNTRY_CODE", "NAME"} },
-		"set not null":        func(s *model.Schema) { s.Tables["COMPANIES"].Fields[4].NotNull = true },
-		"removed field":       func(s *model.Schema) { s.Tables["COUNTRIES"].Fields = s.Tables["COUNTRIES"].Fields[:2] },
-		"removed foreign key": func(s *model.Schema) { s.Tables["COMPANIES"].ForeignKeys = nil },
+		"shorter char": func(s *model.Schema) { s.Domains["/TROTTO/OTTO_ID"].Length = 10 },
+		"removed fixed value": func(s *model.Schema) {
+			s.Domains["/TRFIN/COMPANY_STATUS"].Values = s.Domains["/TRFIN/COMPANY_STATUS"].Values[:2]
+		},
+		"new fixed values":    func(s *model.Schema) { s.Domains["/TRFIN/IBAN"].Values = []model.FixedValue{{Value: "X"}} },
+		"removed table":       func(s *model.Schema) { delete(s.Tables, "/TRFIN/BANK_ACCOUNTS") },
+		"tenant flag":         func(s *model.Schema) { s.Tables["/TRFIN/COUNTRIES"].TenantSpecific = true },
+		"type change":         func(s *model.Schema) { s.Domains["/TRFIN/ACCOUNT_NO"].Type = model.Int8 },
+		"primary key":         func(s *model.Schema) { s.Tables["/TRFIN/COUNTRIES"].PrimaryKey = []string{"COUNTRY_CODE", "NAME"} },
+		"set not null":        func(s *model.Schema) { s.Tables["/TRFIN/COMPANIES"].Fields[4].NotNull = true },
+		"removed field":       func(s *model.Schema) { s.Tables["/TRFIN/COUNTRIES"].Fields = s.Tables["/TRFIN/COUNTRIES"].Fields[:2] },
+		"removed foreign key": func(s *model.Schema) { s.Tables["/TRFIN/COMPANIES"].ForeignKeys = nil },
 		"not null without def": func(s *model.Schema) {
-			s.Tables["COUNTRIES"].Fields = append(s.Tables["COUNTRIES"].Fields, model.Field{Name: "X", Domain: "NAME", NotNull: true})
+			s.Tables["/TRFIN/COUNTRIES"].Fields = append(s.Tables["/TRFIN/COUNTRIES"].Fields, model.Field{Name: "X", Domain: "/TRBASE/NAME", NotNull: true})
 		},
 	}
 	for name, f := range cases {
@@ -132,12 +134,12 @@ func TestDestructiveClassification(t *testing.T) {
 		}
 	}
 	safe := map[string]func(s *model.Schema){
-		"data class":  func(s *model.Schema) { s.Tables["COUNTRIES"].DataClass = model.Application },
-		"longer char": func(s *model.Schema) { s.Domains["NAME"].Length = 100 },
+		"data class":  func(s *model.Schema) { s.Tables["/TRFIN/COUNTRIES"].DataClass = model.Application },
+		"longer char": func(s *model.Schema) { s.Domains["/TRBASE/NAME"].Length = 100 },
 		"new fixed value": func(s *model.Schema) {
-			s.Domains["COMPANY_STATUS"].Values = append(s.Domains["COMPANY_STATUS"].Values, model.FixedValue{Value: "MERGED"})
+			s.Domains["/TRFIN/COMPANY_STATUS"].Values = append(s.Domains["/TRFIN/COMPANY_STATUS"].Values, model.FixedValue{Value: "MERGED"})
 		},
-		"drop not null": func(s *model.Schema) { s.Tables["COUNTRIES"].Fields[1].NotNull = false },
+		"drop not null": func(s *model.Schema) { s.Tables["/TRFIN/COUNTRIES"].Fields[1].NotNull = false },
 	}
 	for name, f := range safe {
 		if d := shrink(f); len(d) != 0 {
@@ -160,25 +162,25 @@ func TestDataElementChanges(t *testing.T) {
 	// Switching a field to a data element with the same domain changes only
 	// the repository.
 	p := build(func(s *model.Schema) {
-		f := s.Tables["BANK_ACCOUNTS"].Field("IBAN")
-		s.DataElements["IBAN"] = &model.DataElement{Name: "IBAN", Owner: "TRFIN", Domain: "IBAN", Texts: map[string]model.DataElementText{}}
-		f.Domain, f.DataElement = "", "IBAN"
+		f := s.Tables["/TRFIN/BANK_ACCOUNTS"].Field("IBAN")
+		s.DataElements["/TRFIN/IBAN"] = &model.DataElement{Name: "/TRFIN/IBAN", Owner: "TRFIN", Domain: "/TRFIN/IBAN", Texts: map[string]model.DataElementText{}}
+		f.Domain, f.DataElement = "", "/TRFIN/IBAN"
 	})
 	if got := kinds(p); !slices.Equal(got, []plan.ChangeKind{plan.CreateDataElement, plan.AlterFieldReference}) || len(p.Steps) != 0 {
 		t.Fatalf("changes %v, %d steps", got, len(p.Steps))
 	}
 	// Texts never need statements.
 	p = build(func(s *model.Schema) {
-		en := s.DataElements["NAME"].Texts["en"]
+		en := s.DataElements["/TRBASE/NAME"].Texts["en"]
 		en.Long = "Full name"
-		s.DataElements["NAME"].Texts["en"] = en
+		s.DataElements["/TRBASE/NAME"].Texts["en"] = en
 	})
 	if len(p.Steps) != 0 || len(p.Destructive()) != 0 || kinds(p)[0] != plan.AlterDataElement {
 		t.Fatalf("text change: %v", p.Changes)
 	}
 	// A new domain of a data element changes the type of every field using
 	// it and follows the rules of type changes.
-	p = build(func(s *model.Schema) { s.DataElements["NAME"].Domain = "CURRENCY" })
+	p = build(func(s *model.Schema) { s.DataElements["/TRBASE/NAME"].Domain = "/TRBASE/CURRENCY" })
 	n := 0
 	for _, c := range p.Changes {
 		if c.Kind == plan.AlterType {
@@ -188,7 +190,7 @@ func TestDataElementChanges(t *testing.T) {
 			}
 		}
 	}
-	if n != 2 { // COMPANIES.NAME and COUNTRIES.NAME
+	if n != 2 { // /TRFIN/COMPANIES.NAME and /TRFIN/COUNTRIES.NAME
 		t.Fatalf("expected a type change per field, got %v", p.Changes)
 	}
 }

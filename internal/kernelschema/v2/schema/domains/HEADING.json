@@ -1,5 +1,5 @@
 {
-  "name": "HEADING",
+  "name": "/RT/HEADING",
   "description": "Column heading",
   "type": "CHAR",
   "length": 40

@@ -1,5 +1,5 @@
 {
-  "name": "ORIGIN",
+  "name": "/RT/ORIGIN",
   "description": "Origin of a field or foreign key",
   "type": "CHAR",
   "length": 10,

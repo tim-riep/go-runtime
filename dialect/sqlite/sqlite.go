@@ -275,7 +275,7 @@ func (d *Dialect) canAdd(t *model.Table, column string) bool {
 }
 
 func (d *Dialect) rebuild(cur, want *model.Physical, c, w *model.Table) ([]string, error) {
-	tmp := w.Name + "#NEW"
+	tmp := model.RebuildName(w.Name)
 	create, err := d.createTable(want, w, tmp)
 	if err != nil {
 		return nil, err

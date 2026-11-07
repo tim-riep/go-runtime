@@ -5,24 +5,35 @@
   "description": "Identity, version and requirements of a package (manifest.json).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "version"],
+  "required": [
+    "id",
+    "version"
+  ],
   "properties": {
-    "id": { "$ref": "common.schema.json#/$defs/packageId" },
+    "id": {
+      "$ref": "common.schema.json#/$defs/packageId"
+    },
     "version": {
       "description": "Semantic version of the package.",
       "type": "string",
       "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
     },
-    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "description": {
+      "$ref": "common.schema.json#/$defs/description"
+    },
     "requires": {
       "description": "Packages this package needs.",
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
-          "id": { "$ref": "common.schema.json#/$defs/packageId" },
+          "id": {
+            "$ref": "common.schema.json#/$defs/packageId"
+          },
           "version": {
             "description": "Version constraint, e.g. \">=1.0.0\", \"^1.2.0\" or \">=1.0.0, <2.0.0\". Omitted means any version.",
             "type": "string"

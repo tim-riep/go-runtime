@@ -639,7 +639,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	for _, name := range s.TableNames() {
 		t := s.Tables[name]
 		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": nullable(string(t.Owner)), "DESCRIPTION": nullable(t.Description),
-			"TENANT_SPECIFIC": t.TenantSpecific, "DATA_CLASS": string(t.DataClass)}); err != nil {
+			"TENANT_SPECIFIC": t.TenantSpecific, "DATA_CLASS": string(t.DataClass), "PK_NAME": model.PrimaryKeyName(name)}); err != nil {
 			return err
 		}
 	}
@@ -659,13 +659,14 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			}
 			if err := r.insert(ctx, q, TFields, row{"TABLE_NAME": name, "FIELD_NAME": f.Name, "POSITION": int64(i + 1), "LOCAL_NAME": f.LocalName,
 				"DESCRIPTION": nullable(f.Description), "PACKAGE_ID": nullable(string(f.Owner)), "ORIGIN": string(f.Origin), "DOMAIN_NAME": f.Domain,
-				"NOT_NULL": f.NotNull, "DEFAULT_VALUE": def, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": nullable(f.DataElement)}); err != nil {
+				"NOT_NULL": f.NotNull, "DEFAULT_VALUE": def, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": nullable(f.DataElement),
+				"CHECK_NAME": model.CheckName(name, f.Name)}); err != nil {
 				return err
 			}
 		}
 		for _, fk := range t.ForeignKeys {
 			if err := r.insert(ctx, q, TForeignKeys, row{"TABLE_NAME": name, "FK_NAME": fk.Name, "PACKAGE_ID": nullable(string(fk.Owner)),
-				"ORIGIN": string(fk.Origin), "TARGET_TABLE": fk.Target}); err != nil {
+				"ORIGIN": string(fk.Origin), "TARGET_TABLE": fk.Target, "CONSTRAINT_NAME": model.ForeignKeyName(name, fk.Name)}); err != nil {
 				return err
 			}
 			for i, c := range fk.Columns {
@@ -806,6 +807,53 @@ func (r *Repo) Tenants(ctx context.Context, q dialect.Querier) ([]Tenant, error)
 	out := make([]Tenant, 0, len(rows))
 	for _, t := range rows {
 		out = append(out, Tenant{ID: str(t[model.TenantTableKey]), Description: str(t["DESCRIPTION"]), CreatedAt: tm(t["CREATED_AT"])})
+	}
+	return out, nil
+}
+
+// NameProblem is a generated name in the repository that differs from the
+// name the kernel computes.
+type NameProblem struct {
+	Object   string
+	Stored   string
+	Computed string
+}
+
+// CheckGeneratedNames compares the stored generated names of primary keys,
+// foreign keys and checks with the computed ones.
+func (r *Repo) CheckGeneratedNames(ctx context.Context, q dialect.Querier) ([]NameProblem, error) {
+	var out []NameProblem
+	cmp := func(object, stored, computed string) {
+		if stored != computed {
+			out = append(out, NameProblem{object, stored, computed})
+		}
+	}
+	if r.has(TTables, "PK_NAME") {
+		rows, err := r.selectRows(ctx, q, TTables, []string{"TABLE_NAME", "PK_NAME"}, "TABLE_NAME")
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range rows {
+			cmp("table "+str(t["TABLE_NAME"]), str(t["PK_NAME"]), model.PrimaryKeyName(str(t["TABLE_NAME"])))
+		}
+	}
+	if r.has(TForeignKeys, "CONSTRAINT_NAME") {
+		rows, err := r.selectRows(ctx, q, TForeignKeys, []string{"TABLE_NAME", "FK_NAME", "CONSTRAINT_NAME"}, "TABLE_NAME", "FK_NAME")
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range rows {
+			cmp("foreign key "+str(f["TABLE_NAME"])+"."+str(f["FK_NAME"]), str(f["CONSTRAINT_NAME"]), model.ForeignKeyName(str(f["TABLE_NAME"]), str(f["FK_NAME"])))
+		}
+	}
+	if r.has(TFields, "CHECK_NAME") {
+		rows, err := r.selectRows(ctx, q, TFields, []string{"TABLE_NAME", "FIELD_NAME", "CHECK_NAME"}, "TABLE_NAME", "FIELD_NAME")
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range rows {
+			cmp("field "+str(f["TABLE_NAME"])+"."+str(f["FIELD_NAME"]), str(f["CHECK_NAME"]), model.CheckName(str(f["TABLE_NAME"]), str(f["FIELD_NAME"])))
+		}
 	}
 	return out, nil
 }

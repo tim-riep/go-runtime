@@ -147,7 +147,7 @@ func TestFailedInstallRollsBack(t *testing.T) {
 		initialized(t, k)
 		// A table that already exists outside the repository makes CREATE
 		// TABLE fail after other statements have run.
-		if _, err := k.DB().ExecContext(ctx, `CREATE TABLE "COUNTRIES" ("X" INTEGER)`); err != nil {
+		if _, err := k.DB().ExecContext(ctx, `CREATE TABLE "/TRFIN/COUNTRIES" ("X" INTEGER)`); err != nil {
 			t.Fatal(err)
 		}
 		_, err := k.Install(ctx, examples(t), kernel.Options{})
@@ -162,7 +162,7 @@ func TestFailedInstallRollsBack(t *testing.T) {
 		if len(s.Packages) != 0 {
 			t.Fatal("packages recorded after failed install")
 		}
-		for _, name := range []string{"BANK_ACCOUNTS", "COMPANIES"} {
+		for _, name := range []string{"/TRFIN/BANK_ACCOUNTS", "/TRFIN/COMPANIES"} {
 			var n int
 			if err := k.DB().QueryRowContext(ctx, `SELECT count(*) FROM "`+name+`"`).Scan(&n); err == nil {
 				t.Errorf("table %s survived the rollback", name)

@@ -1,0 +1,46 @@
+{
+  "name": "/RT/EXTENSIONS",
+  "description": "Extensions of tables by other packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "TABLE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    },
+    {
+      "name": "TABLE",
+      "table": "/RT/TABLES",
+      "fields": [
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}

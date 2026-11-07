@@ -363,6 +363,29 @@ func (e *TenantReferenced) Error() string {
 	return fmt.Sprintf("tenant %s is still referenced by %s", e.Tenant, strings.Join(e.Tables, ", "))
 }
 
+// NamespaceViolation reports a name that does not carry an allowed
+// namespace. Definitions must carry the namespace of their package;
+// references that of the package, of a package it requires directly, or of
+// the kernel.
+type NamespaceViolation struct {
+	Location  Location
+	Name      string   // name found
+	Expected  []string // allowed namespaces
+	Reference bool     // the name is a reference, not a definition
+}
+
+func (e *NamespaceViolation) Error() string {
+	what := "definition"
+	if e.Reference {
+		what = "reference"
+	}
+	msg := fmt.Sprintf("%s %s: expected namespace %s", what, e.Name, strings.Join(e.Expected, ", "))
+	if !e.Location.IsZero() {
+		msg = e.Location.String() + ": " + msg
+	}
+	return msg
+}
+
 // AssetNotFound reports that an asset repository, a folder or an asset
 // does not exist, or has no version for the requested language. It matches
 // fs.ErrNotExist.

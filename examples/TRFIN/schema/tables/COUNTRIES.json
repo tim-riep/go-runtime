@@ -1,21 +1,21 @@
 {
-  "name": "COUNTRIES",
+  "name": "/TRFIN/COUNTRIES",
   "description": "Countries, shared by all tenants",
   "tenantSpecific": false,
   "dataClass": "configuration",
   "fields": [
     {
       "name": "COUNTRY_CODE",
-      "dataElement": "COUNTRY"
+      "dataElement": "/TRBASE/COUNTRY"
     },
     {
       "name": "NAME",
-      "dataElement": "NAME",
+      "dataElement": "/TRBASE/NAME",
       "notNull": true
     },
     {
       "name": "CURRENCY",
-      "dataElement": "CURRENCY"
+      "dataElement": "/TRBASE/CURRENCY"
     }
   ],
   "primaryKey": [

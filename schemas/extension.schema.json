@@ -2,22 +2,33 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/extension.schema.json",
   "title": "Extension",
-  "description": "Additional fields and foreign keys for a table of a required package (schema/extensions/*.json). Field and key names receive the namespace of the extending package.",
+  "description": "Additional fields and foreign keys for a table of a required package (schema/extensions/*.json). Field and key names carry the namespace of the extending package, e.g. /TROTTO/OTTO_ID.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["table", "fields"],
+  "required": [
+    "table",
+    "fields"
+  ],
   "properties": {
-    "table": { "$ref": "common.schema.json#/$defs/reference" },
-    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "table": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/description"
+    },
     "fields": {
       "description": "Extension fields. They are never key fields and must be nullable or have a default.",
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "common.schema.json#/$defs/field" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/extensionField"
+      }
     },
     "foreignKeys": {
       "type": "array",
-      "items": { "$ref": "common.schema.json#/$defs/foreignKey" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/extensionForeignKey"
+      }
     }
   }
 }

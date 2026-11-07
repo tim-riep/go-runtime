@@ -1,31 +1,31 @@
 {
-  "name": "BANK_ACCOUNTS",
+  "name": "/TRFIN/BANK_ACCOUNTS",
   "description": "Bank accounts of a company",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
     {
       "name": "COMPANY_ID",
-      "dataElement": "COMPANY"
+      "dataElement": "/TRFIN/COMPANY"
     },
     {
       "name": "ACCOUNT_NO",
-      "domain": "ACCOUNT_NO"
+      "domain": "/TRFIN/ACCOUNT_NO"
     },
     {
       "name": "IBAN",
-      "domain": "IBAN",
+      "domain": "/TRFIN/IBAN",
       "notNull": true
     },
     {
       "name": "BALANCE",
-      "dataElement": "AMOUNT",
+      "dataElement": "/TRBASE/AMOUNT",
       "notNull": true,
       "default": "0"
     },
     {
       "name": "OPENED_AT",
-      "domain": "TIMESTAMP"
+      "domain": "/TRBASE/TIMESTAMP"
     }
   ],
   "primaryKey": [
@@ -35,7 +35,7 @@
   "foreignKeys": [
     {
       "name": "COMPANY",
-      "table": "COMPANIES",
+      "table": "/TRFIN/COMPANIES",
       "fields": [
         {
           "field": "COMPANY_ID",

@@ -54,6 +54,7 @@ func Schema(s *model.Schema, opts Options) error {
 	for _, e := range s.SortedExtensions() {
 		v.extension(e)
 	}
+	v.generatedNames()
 	v.settings()
 	v.assetRepositories()
 	v.reportMissingLanguages()
@@ -118,9 +119,54 @@ func (v *validator) identifier(name string, loc rterr.Location, object string) {
 	}
 }
 
+// generatedNames makes sure that the shortened names of primary keys, which
+// share one namespace with tables in PostgreSQL, and of the constraints of
+// each table do not collide.
+func (v *validator) generatedNames() {
+	phys := v.s.Physical()
+	pks := map[string]string{}
+	for _, name := range phys.TableNames() {
+		t := phys.Tables[name]
+		obj := "table " + name
+		pk := model.PrimaryKeyName(name)
+		if other, ok := pks[pk]; ok {
+			v.fail(rterr.CodeNameTooLong, t.Src, obj, "the generated primary key name %s collides with that of table %s", pk, other)
+		}
+		pks[pk] = name
+		seen := map[string]string{}
+		claim := func(gen, what string) {
+			if other, ok := seen[gen]; ok {
+				v.fail(rterr.CodeNameTooLong, t.Src, obj, "the generated name %s of %s collides with that of %s", gen, what, other)
+			}
+			seen[gen] = what
+		}
+		for _, fk := range t.ForeignKeys {
+			claim(model.ForeignKeyName(name, fk.Name), "foreign key "+fk.Name)
+		}
+		for _, f := range t.Fields {
+			claim(model.CheckName(name, f.Name), "the check of field "+f.Name)
+		}
+	}
+}
+
+// objectName checks that the name of an object starts with the namespace
+// of its owner and that the rest follows the character rules. The loader
+// checks this on import already; this protects packages built in Go.
+func (v *validator) objectName(name string, owner model.PackageID, loc rterr.Location, obj string) {
+	v.identifier(name, loc, obj)
+	ns := model.OwnerNamespace(owner)
+	pkg, local, ok := model.SplitName(name)
+	switch {
+	case !ok || model.Namespace(pkg) != ns:
+		v.fail(rterr.CodeName, loc, obj, "the name must start with the namespace %s", ns)
+	case !model.ValidLocalName(local):
+		v.fail(rterr.CodeName, loc, obj, "after the namespace, names consist of upper-case letters, digits and underscores and start with a letter")
+	}
+}
+
 func (v *validator) domain(d *model.Domain) {
 	obj := "domain " + d.Name
-	v.identifier(d.Name, d.Src.At("/name"), obj)
+	v.objectName(d.Name, d.Owner, d.Src.At("/name"), obj)
 	switch {
 	case !d.Type.Valid():
 		v.fail(rterr.CodeTypeParams, d.Src.At("/type"), obj, "unknown base type %q", d.Type)
@@ -189,10 +235,7 @@ func (v *validator) fieldDomain(f *model.Field, owner model.PackageID, obj strin
 // dataElement checks a data element and its texts.
 func (v *validator) dataElement(de *model.DataElement) {
 	obj := "data element " + de.Name
-	v.identifier(de.Name, de.Src.At("/name"), obj)
-	if model.IsKernelName(de.Name) != (de.Owner == model.Kernel) {
-		v.fail(rterr.CodeName, de.Src.At("/name"), obj, "only kernel data elements may use the kernel namespace")
-	}
+	v.objectName(de.Name, de.Owner, de.Src.At("/name"), obj)
 	d, ok := v.s.Domains[de.Domain]
 	switch {
 	case !ok:
@@ -218,10 +261,10 @@ func (v *validator) dataElement(de *model.DataElement) {
 // field checks a field declared by owner and normalizes its default.
 func (v *validator) field(table string, f *model.Field, owner model.PackageID) {
 	obj := "field " + table + "." + f.Name
-	v.identifier(f.Name, f.Src.At("/name"), obj)
-	v.identifier(model.CheckName(table, f.Name), f.Src.At("/name"), obj+" (check constraint)")
-	if model.IsKernelName(f.Name) && owner != model.Kernel {
-		v.fail(rterr.CodeName, f.Src.At("/name"), obj, "names in the kernel namespace are reserved")
+	if f.Origin == model.OriginExtension {
+		v.objectName(f.Name, owner, f.Src.At("/name"), obj)
+	} else if v.identifier(f.Name, f.Src.At("/name"), obj); !model.ValidLocalName(f.Name) {
+		v.fail(rterr.CodeName, f.Src.At("/name"), obj, "fields of a table have no namespace; they consist of upper-case letters, digits and underscores and start with a letter")
 	}
 	d := v.fieldDomain(f, owner, obj)
 	if d == nil {
@@ -247,11 +290,7 @@ func (v *validator) field(table string, f *model.Field, owner model.PackageID) {
 
 func (v *validator) table(t *model.Table) {
 	obj := "table " + t.Name
-	v.identifier(t.Name, t.Src.At("/name"), obj)
-	v.identifier(model.PrimaryKeyName(t.Name), t.Src.At("/name"), obj+" (primary key constraint)")
-	if model.IsKernelName(t.Name) != (t.Owner == model.Kernel) {
-		v.fail(rterr.CodeName, t.Src.At("/name"), obj, "only kernel tables may use the kernel namespace")
-	}
+	v.objectName(t.Name, t.Owner, t.Src.At("/name"), obj)
 	switch {
 	case !t.DataClass.Valid():
 		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "data class %q is not one of configuration, application, runtimeConfiguration", t.DataClass)
@@ -273,8 +312,6 @@ func (v *validator) table(t *model.Table) {
 		v.field(t.Name, f, t.Owner)
 	}
 	if t.TenantSpecific {
-		v.identifier(model.ForeignKeyName(t.Name, model.TenantForeignKey), t.Src.At("/name"), obj+" (tenant foreign key)")
-		v.identifier(model.CheckName(t.Name, model.TenantField), t.Src.At("/name"), obj+" (tenant check constraint)")
 	}
 	if len(t.PrimaryKey) == 0 {
 		v.fail(rterr.CodePrimaryKey, t.Src.At("/primaryKey"), obj, "table has no primary key")
@@ -341,7 +378,11 @@ func (v *validator) extension(e *model.Extension) {
 // extension's fields for extension keys.
 func (v *validator) foreignKey(src *model.Table, fk *model.ForeignKey, owner model.PackageID, own []model.Field) {
 	obj := "foreign key " + src.Name + "." + fk.Name
-	v.identifier(model.ForeignKeyName(src.Name, fk.Name), fk.Src.At("/name"), obj+" (constraint)")
+	if fk.Origin == model.OriginExtension {
+		v.objectName(fk.Name, owner, fk.Src.At("/name"), obj)
+	} else if !model.ValidLocalName(fk.Name) {
+		v.fail(rterr.CodeName, fk.Src.At("/name"), obj, "foreign keys of a table have no namespace")
+	}
 	target, ok := v.s.Tables[fk.Target]
 	if !ok {
 		v.fail(rterr.CodeUnknownTable, fk.Src.At("/table"), obj, "target table %s does not exist", fk.Target)

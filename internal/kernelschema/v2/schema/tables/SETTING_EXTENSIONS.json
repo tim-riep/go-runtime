@@ -1,16 +1,16 @@
 {
-  "name": "SETTING_EXTENSIONS",
+  "name": "/RT/SETTING_EXTENSIONS",
   "description": "Extensions of settings by other packages",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "SETTING_ID",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     }
   ],
   "primaryKey": [
@@ -20,7 +20,7 @@
   "foreignKeys": [
     {
       "name": "PACKAGE",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -30,7 +30,7 @@
     },
     {
       "name": "SETTING",
-      "table": "SETTINGS",
+      "table": "/RT/SETTINGS",
       "fields": [
         {
           "field": "SETTING_ID",

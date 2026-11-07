@@ -2,16 +2,34 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/domain.schema.json",
   "title": "Domain",
-  "description": "A technical type: base type, length, decimals and optional fixed values (schema/domains/<NAME>.json).",
+  "description": "A technical type: base type, length, decimals and optional fixed values (schema/domains/<name without namespace>.json).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "type"],
+  "required": [
+    "name",
+    "type"
+  ],
   "properties": {
-    "name": { "$ref": "common.schema.json#/$defs/localName" },
-    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/description"
+    },
     "type": {
       "description": "Base type.",
-      "enum": ["CHAR", "STRING", "INT4", "INT8", "DEC", "DATE", "TIMESTAMP", "BOOL", "UUID", "BLOB"]
+      "enum": [
+        "CHAR",
+        "STRING",
+        "INT4",
+        "INT8",
+        "DEC",
+        "DATE",
+        "TIMESTAMP",
+        "BOOL",
+        "UUID",
+        "BLOB"
+      ]
     },
     "length": {
       "description": "CHAR: maximum number of characters. DEC: total number of digits (precision).",
@@ -30,23 +48,72 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["value"],
+        "required": [
+          "value"
+        ],
         "properties": {
-          "value": { "type": ["string", "integer"] },
-          "description": { "$ref": "common.schema.json#/$defs/description" }
+          "value": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "description": {
+            "$ref": "common.schema.json#/$defs/description"
+          }
         }
       }
     }
   },
   "allOf": [
     {
-      "if": { "properties": { "type": { "enum": ["CHAR", "DEC"] } } },
-      "then": { "required": ["length"] },
-      "else": { "not": { "anyOf": [ { "required": ["length"] }, { "required": ["decimals"] } ] } }
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "CHAR",
+              "DEC"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "length"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "length"
+              ]
+            },
+            {
+              "required": [
+                "decimals"
+              ]
+            }
+          ]
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "CHAR" } } },
-      "then": { "not": { "required": ["decimals"] } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "CHAR"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "decimals"
+          ]
+        }
+      }
     }
   ]
 }

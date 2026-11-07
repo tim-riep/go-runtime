@@ -1,10 +1,10 @@
 {
-  "table": "COMPANIES",
+  "table": "/TRFIN/COMPANIES",
   "description": "OTTO partner data of a company",
   "fields": [
     {
-      "name": "OTTO_ID",
-      "dataElement": "OTTO_PARTNER",
+      "name": "/TROTTO/OTTO_ID",
+      "dataElement": "/TROTTO/OTTO_PARTNER",
       "description": "Partner ID of the company"
     }
   ]

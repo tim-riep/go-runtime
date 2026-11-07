@@ -58,6 +58,13 @@ func (k *Kernel) Check(ctx context.Context) ([]Discrepancy, error) {
 	if err != nil && len(out) == 0 {
 		return nil, err
 	}
+	names, err := k.repo.CheckGeneratedNames(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	for _, n := range names {
+		out = append(out, Discrepancy{Object: n.Object, Problem: "stored generated name " + n.Stored + " differs from " + n.Computed})
+	}
 	problems, err := k.repo.VerifyContents(ctx, k.db)
 	if err != nil {
 		return nil, err

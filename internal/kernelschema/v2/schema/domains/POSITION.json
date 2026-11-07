@@ -1,5 +1,5 @@
 {
-  "name": "POSITION",
+  "name": "/RT/POSITION",
   "description": "Position in an ordered list, starting at 1",
   "type": "INT4"
 }

@@ -1,34 +1,34 @@
 {
-  "name": "PAYMENTS",
+  "name": "/TRFIN/PAYMENTS",
   "description": "Payments booked on bank accounts",
   "tenantSpecific": true,
   "dataClass": "application",
   "fields": [
     {
       "name": "COMPANY_ID",
-      "domain": "COMPANY_ID"
+      "domain": "/TRFIN/COMPANY_ID"
     },
     {
       "name": "ACCOUNT_NO",
-      "domain": "ACCOUNT_NO"
+      "domain": "/TRFIN/ACCOUNT_NO"
     },
     {
       "name": "PAYMENT_NO",
-      "domain": "COUNTER"
+      "domain": "/TRBASE/COUNTER"
     },
     {
       "name": "AMOUNT",
-      "dataElement": "AMOUNT",
+      "dataElement": "/TRBASE/AMOUNT",
       "notNull": true
     },
     {
       "name": "CURRENCY",
-      "dataElement": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
       "notNull": true
     },
     {
       "name": "BOOKED_AT",
-      "domain": "TIMESTAMP",
+      "domain": "/TRBASE/TIMESTAMP",
       "notNull": true
     }
   ],
@@ -40,7 +40,7 @@
   "foreignKeys": [
     {
       "name": "ACCOUNT",
-      "table": "BANK_ACCOUNTS",
+      "table": "/TRFIN/BANK_ACCOUNTS",
       "fields": [
         {
           "field": "COMPANY_ID",

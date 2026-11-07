@@ -52,8 +52,8 @@ func TestSettingsOfExamplesAreValid(t *testing.T) {
 		if err := Schema(s, Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if got := s.SettingOf("OTTO_CONNECTIONS"); got != "TRFIN_COMPANIES" {
-			t.Fatalf("OTTO_CONNECTIONS belongs to %q", got)
+		if got := s.SettingOf("/TROTTO/OTTO_CONNECTIONS"); got != "/TRFIN/COMPANIES" {
+			t.Fatalf("/TROTTO/OTTO_CONNECTIONS belongs to %q", got)
 		}
 	}
 }
@@ -61,42 +61,42 @@ func TestSettingsOfExamplesAreValid(t *testing.T) {
 func TestSettingWithApplicationTable(t *testing.T) {
 	e := load(t)
 	ext := &e.otto.SettingExtensions[0]
-	ext.Tables = append(ext.Tables, model.SettingTable{Table: "PAYMENTS", Parent: "COMPANIES", ForeignKey: "ACCOUNT", Operations: allOps})
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "data class application")
+	ext.Tables = append(ext.Tables, model.SettingTable{Table: "/TRFIN/PAYMENTS", Parent: "/TRFIN/COMPANIES", ForeignKey: "ACCOUNT", Operations: allOps})
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "data class application")
 }
 
 func TestSettingNeedsOneClass(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].DataClass = model.RuntimeConfiguration // BANK_ACCOUNTS
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "same class")
+	e.fin.Tables[0].DataClass = model.RuntimeConfiguration // /TRFIN/BANK_ACCOUNTS
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "same class")
 }
 
 func TestClassChangeBreaksSetting(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[1].DataClass = model.Application // COMPANIES, the root
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "COMPANIES has the data class application")
+	e.fin.Tables[1].DataClass = model.Application // /TRFIN/COMPANIES, the root
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "/TRFIN/COMPANIES has the data class application")
 }
 
 func TestSettingNeedsOneTenantFlag(t *testing.T) {
 	e := load(t)
 	st := &e.fin.Settings[0]
-	st.Tables = append(st.Tables, model.SettingTable{Table: "COUNTRIES", Parent: "COMPANIES", ForeignKey: "COUNTRY", Operations: allOps})
-	expectSetting(t, e.schema(t), rterr.CodeTenant, "TRFIN_COMPANIES", "same tenant flag")
+	st.Tables = append(st.Tables, model.SettingTable{Table: "/TRFIN/COUNTRIES", Parent: "/TRFIN/COMPANIES", ForeignKey: "COUNTRY", Operations: allOps})
+	expectSetting(t, e.schema(t), rterr.CodeTenant, "/TRFIN/COMPANIES", "same tenant flag")
 }
 
 func TestTableInTwoSettings(t *testing.T) {
 	e := load(t)
-	e.fin.Settings = append(e.fin.Settings, model.Setting{ID: "TRFIN_ACCOUNTS", Texts: map[string]model.SettingText{"en": {Label: "Accounts"}},
-		Root: model.SettingTable{Table: "BANK_ACCOUNTS", Operations: allOps}})
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "already belongs to setting TRFIN_ACCOUNTS")
+	e.fin.Settings = append(e.fin.Settings, model.Setting{ID: "/TRFIN/ACCOUNTS", Texts: map[string]model.SettingText{"en": {Label: "Accounts"}},
+		Root: model.SettingTable{Table: "/TRFIN/BANK_ACCOUNTS", Operations: allOps}})
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "already belongs to setting /TRFIN/ACCOUNTS")
 }
 
 func TestSettingTableNotVisible(t *testing.T) {
 	e := load(t)
 	st := &e.fin.Settings[0]
-	st.Tables = append(st.Tables, model.SettingTable{Table: "OTTO_CONNECTIONS", Parent: "COMPANIES", ForeignKey: "COMPANY", Operations: allOps})
+	st.Tables = append(st.Tables, model.SettingTable{Table: "/TROTTO/OTTO_CONNECTIONS", Parent: "/TRFIN/COMPANIES", ForeignKey: "COMPANY", Operations: allOps})
 	e.otto.SettingExtensions = nil
-	expectSetting(t, e.schema(t), rterr.CodeNotVisible, "TRFIN_COMPANIES", "which TRFIN does not require")
+	expectSetting(t, e.schema(t), rterr.CodeNotVisible, "/TRFIN/COMPANIES", "which TRFIN does not require")
 }
 
 func TestKernelTableInSetting(t *testing.T) {
@@ -104,53 +104,53 @@ func TestKernelTableInSetting(t *testing.T) {
 	e.fin.Settings[0].Root.Table = model.TenantTable
 	e.fin.Settings[0].Tables = nil
 	e.otto.SettingExtensions = nil
-	expectSetting(t, e.schema(t), rterr.CodeReservedObject, "TRFIN_COMPANIES", "kernel table")
+	expectSetting(t, e.schema(t), rterr.CodeReservedObject, "/TRFIN/COMPANIES", "kernel table")
 }
 
 func TestSettingUnknownRoot(t *testing.T) {
 	e := load(t)
 	e.fin.Settings[0].Root.Table = "NOPE"
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "root table NOPE does not exist")
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "root table NOPE does not exist")
 }
 
 func TestSettingForeignKeyMissing(t *testing.T) {
 	e := load(t)
 	e.otto.SettingExtensions[0].Tables[0].ForeignKey = "NOPE"
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "has no foreign key NOPE")
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "has no foreign key NOPE")
 }
 
 func TestSettingForeignKeyToOtherTable(t *testing.T) {
 	e := upgraded(t)
-	e.otto.SettingExtensions[0].Tables[1].Parent = "COMPANIES" // OTTO_SHOPS.CONNECTION references OTTO_CONNECTIONS
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "references OTTO_CONNECTIONS, not the parent COMPANIES")
+	e.otto.SettingExtensions[0].Tables[1].Parent = "/TRFIN/COMPANIES" // /TROTTO/OTTO_SHOPS.CONNECTION references /TROTTO/OTTO_CONNECTIONS
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "references /TROTTO/OTTO_CONNECTIONS, not the parent /TRFIN/COMPANIES")
 }
 
 func TestSettingParentNotInSetting(t *testing.T) {
 	e := load(t)
-	e.otto.SettingExtensions[0].Tables[0].Parent = "COUNTRIES"
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "parent COUNTRIES of table OTTO_CONNECTIONS is not part of the setting")
+	e.otto.SettingExtensions[0].Tables[0].Parent = "/TRFIN/COUNTRIES"
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "parent /TRFIN/COUNTRIES of table /TROTTO/OTTO_CONNECTIONS is not part of the setting")
 }
 
 func TestSettingCycleIsNotConnected(t *testing.T) {
 	e := upgraded(t)
-	e.otto.SettingExtensions[0].Tables[0].Parent = "OTTO_SHOPS" // OTTO_CONNECTIONS <-> OTTO_SHOPS
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "not connected to the root table")
+	e.otto.SettingExtensions[0].Tables[0].Parent = "/TROTTO/OTTO_SHOPS" // /TROTTO/OTTO_CONNECTIONS <-> /TROTTO/OTTO_SHOPS
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "not connected to the root table")
 }
 
 func TestSettingTexts(t *testing.T) {
 	e := load(t)
 	delete(e.fin.Settings[0].Texts, "en")
-	expectSetting(t, e.schema(t), rterr.CodeText, "TRFIN_COMPANIES", "English")
+	expectSetting(t, e.schema(t), rterr.CodeText, "/TRFIN/COMPANIES", "English")
 	e = load(t)
 	e.fin.Settings[0].Texts["de"] = model.SettingText{Label: strings.Repeat("x", model.MaxSettingLabel+1)}
-	expectSetting(t, e.schema(t), rterr.CodeText, "TRFIN_COMPANIES", "label in de")
+	expectSetting(t, e.schema(t), rterr.CodeText, "/TRFIN/COMPANIES", "label in de")
 }
 
 func TestSettingID(t *testing.T) {
 	e := load(t)
-	e.fin.Settings[0].ID = "companies"
+	e.fin.Settings[0].ID = "/TRFIN/companies"
 	e.otto.SettingExtensions = nil
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "companies", "upper-case")
+	expectSetting(t, e.schema(t), rterr.CodeName, "/TRFIN/companies", "after the namespace")
 }
 
 func TestSettingExtensionRules(t *testing.T) {
@@ -159,24 +159,24 @@ func TestSettingExtensionRules(t *testing.T) {
 	expectSetting(t, e.schema(t), rterr.CodeSetting, "NOPE", "does not exist")
 
 	e = load(t)
-	e.fin.SettingExtensions = []model.SettingExtension{{Setting: "TRFIN_COMPANIES",
-		Tables: []model.SettingTable{{Table: "PAYMENTS", Parent: "BANK_ACCOUNTS", ForeignKey: "ACCOUNT", Operations: allOps}}}}
-	expectSetting(t, e.schema(t), rterr.CodeSetting, "TRFIN_COMPANIES", "own setting")
+	e.fin.SettingExtensions = []model.SettingExtension{{Setting: "/TRFIN/COMPANIES",
+		Tables: []model.SettingTable{{Table: "/TRFIN/PAYMENTS", Parent: "/TRFIN/BANK_ACCOUNTS", ForeignKey: "ACCOUNT", Operations: allOps}}}}
+	expectSetting(t, e.schema(t), rterr.CodeSetting, "/TRFIN/COMPANIES", "own setting")
 }
 
-// trx is a package that extends TRFIN_COMPANIES below OTTO_CONNECTIONS,
+// trx is a package that extends /TRFIN/COMPANIES below /TROTTO/OTTO_CONNECTIONS,
 // which TROTTO added.
 func trx(requires ...model.PackageID) *model.Package {
 	p := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0"}}
 	for _, r := range requires {
 		p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: r})
 	}
-	p.Tables = []model.Table{{Name: "X_OPTIONS", TenantSpecific: true, DataClass: model.Configuration,
-		Fields:      []model.Field{{Name: "COMPANY_ID", LocalName: "COMPANY_ID", DataElement: "COMPANY", Origin: model.OriginTable}},
+	p.Tables = []model.Table{{Name: "/TRX/X_OPTIONS", TenantSpecific: true, DataClass: model.Configuration,
+		Fields:      []model.Field{{Name: "COMPANY_ID", LocalName: "COMPANY_ID", DataElement: "/TRFIN/COMPANY", Origin: model.OriginTable}},
 		PrimaryKey:  []string{"COMPANY_ID"},
-		ForeignKeys: []model.ForeignKey{{Name: "CONNECTION", Target: "OTTO_CONNECTIONS", Origin: model.OriginTable, Columns: []model.ColumnPair{{Field: "COMPANY_ID", References: "COMPANY_ID"}}}}}}
-	p.SettingExtensions = []model.SettingExtension{{Setting: "TRFIN_COMPANIES",
-		Tables: []model.SettingTable{{Table: "X_OPTIONS", Parent: "OTTO_CONNECTIONS", ForeignKey: "CONNECTION", Operations: allOps}}}}
+		ForeignKeys: []model.ForeignKey{{Name: "CONNECTION", Target: "/TROTTO/OTTO_CONNECTIONS", Origin: model.OriginTable, Columns: []model.ColumnPair{{Field: "COMPANY_ID", References: "COMPANY_ID"}}}}}}
+	p.SettingExtensions = []model.SettingExtension{{Setting: "/TRFIN/COMPANIES",
+		Tables: []model.SettingTable{{Table: "/TRX/X_OPTIONS", Parent: "/TROTTO/OTTO_CONNECTIONS", ForeignKey: "CONNECTION", Operations: allOps}}}}
 	return p
 }
 
@@ -185,11 +185,11 @@ func TestExtensionBelowOtherExtension(t *testing.T) {
 	if err := Schema(ok, Options{}); err != nil {
 		t.Fatalf("hanging below a table of a required package must work: %v", err)
 	}
-	if ok.SettingOf("X_OPTIONS") != "TRFIN_COMPANIES" {
-		t.Fatal("X_OPTIONS not in the setting")
+	if ok.SettingOf("/TRX/X_OPTIONS") != "/TRFIN/COMPANIES" {
+		t.Fatal("/TRX/X_OPTIONS not in the setting")
 	}
 	bad := testutil.AddPackages(t, load(t).schema(t), trx("TRFIN"))
-	expectSetting(t, bad, rterr.CodeNotVisible, "TRFIN_COMPANIES", "added by package TROTTO, which TRX does not require")
+	expectSetting(t, bad, rterr.CodeNotVisible, "/TRFIN/COMPANIES", "added by package TROTTO, which TRX does not require")
 }
 
 func TestSettingExtensionNeedsOwner(t *testing.T) {
@@ -197,15 +197,15 @@ func TestSettingExtensionNeedsOwner(t *testing.T) {
 	s := testutil.AddPackages(t, testutil.KernelSchema(t), e.base, e.fin)
 	p := trx("TRBASE")
 	p.Tables = nil
-	p.SettingExtensions[0].Tables[0] = model.SettingTable{Table: "PAYMENTS", Parent: "BANK_ACCOUNTS", ForeignKey: "ACCOUNT", Operations: allOps}
+	p.SettingExtensions[0].Tables[0] = model.SettingTable{Table: "/TRFIN/PAYMENTS", Parent: "/TRFIN/BANK_ACCOUNTS", ForeignKey: "ACCOUNT", Operations: allOps}
 	testutil.AddPackages(t, s, p)
-	expectSetting(t, s, rterr.CodeNotVisible, "TRFIN_COMPANIES", "which TRX does not require")
+	expectSetting(t, s, rterr.CodeNotVisible, "/TRFIN/COMPANIES", "which TRX does not require")
 }
 
 func TestSettingNameConflict(t *testing.T) {
 	e := load(t)
 	s := e.schema(t)
-	other := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0"}, Settings: []model.Setting{{ID: "TRFIN_COMPANIES"}}}
+	other := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0"}, Settings: []model.Setting{{ID: "/TRFIN/COMPANIES"}}}
 	var nc *rterr.NameConflict
 	if err := s.AddPackage(other, testutil.Epoch, testutil.Epoch); !errors.As(err, &nc) || nc.Kind != "setting" {
 		t.Fatalf("got %v", err)
@@ -218,7 +218,7 @@ func TestUninstallRemovesSettingExtension(t *testing.T) {
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if len(s.SettingNodes("TRFIN_COMPANIES")) != 2 || len(s.SettingExtensions) != 0 {
-		t.Fatalf("nodes: %+v", s.SettingNodes("TRFIN_COMPANIES"))
+	if len(s.SettingNodes("/TRFIN/COMPANIES")) != 2 || len(s.SettingExtensions) != 0 {
+		t.Fatalf("nodes: %+v", s.SettingNodes("/TRFIN/COMPANIES"))
 	}
 }

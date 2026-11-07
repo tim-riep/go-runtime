@@ -38,7 +38,7 @@ func schema(t *testing.T, otto string) *model.Schema {
 }
 
 func resolve(t *testing.T, s *model.Schema, langs ...string) *setting.Definition {
-	d, err := setting.Resolve(s, langs, "TRFIN_COMPANIES")
+	d, err := setting.Resolve(s, langs, "/TRFIN/COMPANIES")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,12 +59,12 @@ func TestResolveGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testutil.Golden(t, "setting-TRFIN_COMPANIES.json", string(b))
+	testutil.Golden(t, "setting-TRFIN-COMPANIES.json", string(b))
 }
 
 func TestResolveMergesExtensions(t *testing.T) {
 	d := resolve(t, schema(t, "upgrade/TROTTO"), "en", "de")
-	want := []string{"0 COMPANIES TRFIN", "1 BANK_ACCOUNTS TRFIN", "1 OTTO_CONNECTIONS TROTTO", "2 OTTO_SHOPS TROTTO"}
+	want := []string{"0 /TRFIN/COMPANIES TRFIN", "1 /TRFIN/BANK_ACCOUNTS TRFIN", "1 /TROTTO/OTTO_CONNECTIONS TROTTO", "2 /TROTTO/OTTO_SHOPS TROTTO"}
 	if got := tree(d); !slices.Equal(got, want) {
 		t.Fatalf("tree %v, want %v", got, want)
 	}
@@ -82,7 +82,7 @@ func TestResolveMergesExtensions(t *testing.T) {
 	if country.DataElement == nil || country.DataElement.Texts["de"].Long != "Länderschlüssel" || country.Type != model.Char || country.Length != 2 {
 		t.Fatalf("COUNTRY: %+v", country)
 	}
-	if len(country.ValueHelps) != 1 || country.ValueHelps[0].Table != "COUNTRIES" || len(country.ValueHelps[0].Fields) != 1 {
+	if len(country.ValueHelps) != 1 || country.ValueHelps[0].Table != "/TRFIN/COUNTRIES" || len(country.ValueHelps[0].Fields) != 1 {
 		t.Fatalf("value help of COUNTRY: %+v", country.ValueHelps)
 	}
 	status := root.Field("STATUS")
@@ -90,12 +90,12 @@ func TestResolveMergesExtensions(t *testing.T) {
 		t.Fatalf("STATUS: %+v", status)
 	}
 	ext := root.Field("/TROTTO/OTTO_ID")
-	if ext == nil || ext.Origin != model.OriginExtension || ext.Owner != "TROTTO" || ext.Length != 32 || ext.DataElement.Name != "OTTO_PARTNER" {
+	if ext == nil || ext.Origin != model.OriginExtension || ext.Owner != "TROTTO" || ext.Length != 32 || ext.DataElement.Name != "/TROTTO/OTTO_PARTNER" {
 		t.Fatalf("extension field: %+v", ext)
 	}
-	accounts := d.Table("BANK_ACCOUNTS")
+	accounts := d.Table("/TRFIN/BANK_ACCOUNTS")
 	if accounts.Operations.Delete || accounts.ParentKey.Name != "COMPANY" || !slices.Equal(accounts.ParentKey.Fields, []model.ColumnPair{{Field: "COMPANY_ID", References: "COMPANY_ID"}}) {
-		t.Fatalf("BANK_ACCOUNTS: %+v", accounts)
+		t.Fatalf("/TRFIN/BANK_ACCOUNTS: %+v", accounts)
 	}
 	cid := accounts.Field("COMPANY_ID")
 	if !cid.FromParent || !cid.Key || accounts.Field("IBAN").FromParent {
@@ -104,15 +104,15 @@ func TestResolveMergesExtensions(t *testing.T) {
 	if bal := accounts.Field("BALANCE"); bal.Type != model.Dec || bal.Length != 15 || bal.Decimals != 2 {
 		t.Fatalf("BALANCE: %+v", bal)
 	}
-	shops := d.Table("OTTO_SHOPS")
-	if shops.ParentKey.Table != "OTTO_CONNECTIONS" || !shops.Field("COMPANY_ID").FromParent || shops.Field("SHOP_ID").FromParent {
-		t.Fatalf("OTTO_SHOPS: %+v", shops)
+	shops := d.Table("/TROTTO/OTTO_SHOPS")
+	if shops.ParentKey.Table != "/TROTTO/OTTO_CONNECTIONS" || !shops.Field("COMPANY_ID").FromParent || shops.Field("SHOP_ID").FromParent {
+		t.Fatalf("/TROTTO/OTTO_SHOPS: %+v", shops)
 	}
 }
 
 func TestResolveWithoutExtension(t *testing.T) {
 	d := resolve(t, schema(t, ""), "en", "de")
-	if got := tree(d); !slices.Equal(got, []string{"0 COMPANIES TRFIN", "1 BANK_ACCOUNTS TRFIN"}) {
+	if got := tree(d); !slices.Equal(got, []string{"0 /TRFIN/COMPANIES TRFIN", "1 /TRFIN/BANK_ACCOUNTS TRFIN"}) {
 		t.Fatalf("tree %v", got)
 	}
 	if d.Root.Field("/TROTTO/OTTO_ID") != nil || len(d.Extensions) != 0 {

@@ -1,9 +1,9 @@
 {
-  "setting": "TRFIN_COMPANIES",
+  "setting": "/TRFIN/COMPANIES",
   "tables": [
     {
-      "table": "OTTO_CONNECTIONS",
-      "parent": "COMPANIES",
+      "table": "/TROTTO/OTTO_CONNECTIONS",
+      "parent": "/TRFIN/COMPANIES",
       "foreignKey": "COMPANY",
       "operations": {
         "create": true,

@@ -1,21 +1,21 @@
 {
-  "name": "OTTO_SHOPS",
+  "name": "/TROTTO/OTTO_SHOPS",
   "description": "Shops of a tenant on the OTTO marketplace",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
     {
       "name": "SHOP_ID",
-      "domain": "OTTO_SHOP_ID"
+      "domain": "/TROTTO/OTTO_SHOP_ID"
     },
     {
       "name": "COMPANY_ID",
-      "dataElement": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
       "notNull": true
     },
     {
       "name": "NAME",
-      "dataElement": "NAME",
+      "dataElement": "/TRBASE/NAME",
       "notNull": true
     }
   ],
@@ -25,7 +25,7 @@
   "foreignKeys": [
     {
       "name": "CONNECTION",
-      "table": "OTTO_CONNECTIONS",
+      "table": "/TROTTO/OTTO_CONNECTIONS",
       "fields": [
         {
           "field": "COMPANY_ID",

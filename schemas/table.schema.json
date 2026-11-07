@@ -2,36 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/table.schema.json",
   "title": "Table",
-  "description": "A table with fields, primary key and foreign keys (schema/tables/<NAME>.json).",
+  "description": "A table with fields, primary key and foreign keys (schema/tables/<name without namespace>.json).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "tenantSpecific", "dataClass", "fields", "primaryKey"],
+  "required": [
+    "name",
+    "tenantSpecific",
+    "dataClass",
+    "fields",
+    "primaryKey"
+  ],
   "properties": {
-    "name": { "$ref": "common.schema.json#/$defs/localName" },
-    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/description"
+    },
     "tenantSpecific": {
       "description": "Whether rows belong to a tenant. Tenant-specific tables get the tenant field as first key field. There is no default.",
       "type": "boolean"
     },
     "dataClass": {
       "description": "Kind of data the table holds. There is no default. system is reserved for the kernel.",
-      "enum": ["configuration", "application", "runtimeConfiguration", "system"]
+      "enum": [
+        "configuration",
+        "application",
+        "runtimeConfiguration",
+        "system"
+      ]
     },
     "fields": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "common.schema.json#/$defs/field" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/field"
+      }
     },
     "primaryKey": {
       "description": "Names of the key fields in key order, without the tenant field.",
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "$ref": "common.schema.json#/$defs/localName" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/localName"
+      }
     },
     "foreignKeys": {
       "type": "array",
-      "items": { "$ref": "common.schema.json#/$defs/foreignKey" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/foreignKey"
+      }
     }
   }
 }

@@ -1,25 +1,25 @@
 {
-  "name": "SETTING_TEXTS",
+  "name": "/RT/SETTING_TEXTS",
   "description": "Labels of settings per language",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "SETTING_ID",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "LANGUAGE",
-      "domain": "LANGUAGE"
+      "domain": "/RT/LANGUAGE"
     },
     {
       "name": "LABEL",
-      "domain": "SETTING_LABEL",
+      "domain": "/RT/SETTING_LABEL",
       "notNull": true
     },
     {
       "name": "DESCRIPTION",
-      "domain": "DESCRIPTION"
+      "domain": "/RT/DESCRIPTION"
     }
   ],
   "primaryKey": [
@@ -29,7 +29,7 @@
   "foreignKeys": [
     {
       "name": "SETTING",
-      "table": "SETTINGS",
+      "table": "/RT/SETTINGS",
       "fields": [
         {
           "field": "SETTING_ID",
@@ -39,7 +39,7 @@
     },
     {
       "name": "LANGUAGE",
-      "table": "LANGUAGES",
+      "table": "/RT/LANGUAGES",
       "fields": [
         {
           "field": "LANGUAGE",

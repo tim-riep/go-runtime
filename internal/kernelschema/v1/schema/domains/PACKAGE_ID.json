@@ -1,5 +1,5 @@
 {
-  "name": "PACKAGE_ID",
+  "name": "/RT/PACKAGE_ID",
   "description": "Package ID",
   "type": "CHAR",
   "length": 16

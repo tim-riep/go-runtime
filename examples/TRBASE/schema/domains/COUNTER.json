@@ -1,5 +1,5 @@
 {
-  "name": "COUNTER",
+  "name": "/TRBASE/COUNTER",
   "description": "Counter or sequence number",
   "type": "INT8"
 }

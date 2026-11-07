@@ -1,21 +1,21 @@
 {
-  "name": "OTTO_CONNECTIONS",
+  "name": "/TROTTO/OTTO_CONNECTIONS",
   "description": "Connection of a company to the OTTO marketplace",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
     {
       "name": "COMPANY_ID",
-      "dataElement": "COMPANY"
+      "dataElement": "/TRFIN/COMPANY"
     },
     {
       "name": "ENDPOINT",
-      "domain": "TEXT",
+      "domain": "/TRBASE/TEXT",
       "notNull": true
     },
     {
       "name": "ACTIVE",
-      "domain": "FLAG",
+      "domain": "/TRBASE/FLAG",
       "notNull": true,
       "default": true
     }
@@ -26,7 +26,7 @@
   "foreignKeys": [
     {
       "name": "COMPANY",
-      "table": "COMPANIES",
+      "table": "/TRFIN/COMPANIES",
       "fields": [
         {
           "field": "COMPANY_ID",

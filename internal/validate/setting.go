@@ -15,14 +15,11 @@
 package validate
 
 import (
-	"regexp"
 	"unicode/utf8"
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 )
-
-var settingIDPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 
 // settings checks all settings and setting extensions. Problems are
 // reported for the setting they make invalid, so a change of another
@@ -53,10 +50,7 @@ func (v *validator) settingExtension(e *model.SettingExtension) {
 
 func (v *validator) setting(st *model.Setting, phys *model.Physical, owners map[string]string) {
 	obj := "setting " + st.ID
-	if !settingIDPattern.MatchString(st.ID) {
-		v.fail(rterr.CodeSetting, st.Src.At("/id"), obj, "setting IDs consist of upper-case letters, digits and underscores and start with a letter")
-	}
-	v.identifier(st.ID, st.Src.At("/id"), obj)
+	v.objectName(st.ID, st.Owner, st.Src.At("/id"), obj)
 	for _, lang := range st.Languages() {
 		if n := utf8.RuneCountInString(st.Texts[lang].Label); n == 0 || n > model.MaxSettingLabel {
 			v.fail(rterr.CodeText, st.Src.At("/texts/"+lang+"/label"), obj, "label in %s must have 1 to %d characters", lang, model.MaxSettingLabel)

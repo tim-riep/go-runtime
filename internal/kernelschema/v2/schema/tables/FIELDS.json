@@ -1,65 +1,65 @@
 {
-  "name": "FIELDS",
+  "name": "/RT/FIELDS",
   "description": "Physical columns of all tables",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "FIELD_NAME",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "description": "Physical name"
     },
     {
       "name": "POSITION",
-      "domain": "POSITION",
+      "domain": "/RT/POSITION",
       "notNull": true
     },
     {
       "name": "LOCAL_NAME",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true,
       "description": "Name as declared in the package"
     },
     {
       "name": "DESCRIPTION",
-      "domain": "DESCRIPTION"
+      "domain": "/RT/DESCRIPTION"
     },
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
       "description": "Owner package, empty for the kernel"
     },
     {
       "name": "ORIGIN",
-      "domain": "ORIGIN",
+      "domain": "/RT/ORIGIN",
       "notNull": true
     },
     {
       "name": "DOMAIN_NAME",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true
     },
     {
       "name": "NOT_NULL",
-      "domain": "FLAG",
+      "domain": "/RT/FLAG",
       "notNull": true
     },
     {
       "name": "DEFAULT_VALUE",
-      "domain": "VALUE"
+      "domain": "/RT/VALUE"
     },
     {
       "name": "KEY_POSITION",
-      "domain": "POSITION",
+      "domain": "/RT/POSITION",
       "description": "Position in the primary key, empty for non-key fields"
     },
     {
       "name": "DATA_ELEMENT",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "description": "Data element of the field, empty if it references a domain directly"
     }
   ],
@@ -70,7 +70,7 @@
   "foreignKeys": [
     {
       "name": "TABLE",
-      "table": "TABLES",
+      "table": "/RT/TABLES",
       "fields": [
         {
           "field": "TABLE_NAME",
@@ -80,7 +80,7 @@
     },
     {
       "name": "DOMAIN",
-      "table": "DOMAINS",
+      "table": "/RT/DOMAINS",
       "fields": [
         {
           "field": "DOMAIN_NAME",
@@ -90,7 +90,7 @@
     },
     {
       "name": "PACKAGE",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -100,7 +100,7 @@
     },
     {
       "name": "DATA_ELEMENT",
-      "table": "DATA_ELEMENTS",
+      "table": "/RT/DATA_ELEMENTS",
       "fields": [
         {
           "field": "DATA_ELEMENT",

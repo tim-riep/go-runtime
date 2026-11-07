@@ -1,5 +1,5 @@
 {
-  "name": "KERNEL_VERSION",
+  "name": "/RT/KERNEL_VERSION",
   "description": "Version of the kernel tables",
   "type": "INT4"
 }

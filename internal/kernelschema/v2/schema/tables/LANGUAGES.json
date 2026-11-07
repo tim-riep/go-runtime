@@ -1,16 +1,16 @@
 {
-  "name": "LANGUAGES",
+  "name": "/RT/LANGUAGES",
   "description": "Languages of translatable texts",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "LANGUAGE",
-      "domain": "LANGUAGE"
+      "domain": "/RT/LANGUAGE"
     },
     {
       "name": "NAME",
-      "domain": "LANGUAGE_NAME",
+      "domain": "/RT/LANGUAGE_NAME",
       "notNull": true
     }
   ],

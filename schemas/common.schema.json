@@ -11,15 +11,9 @@
       "maxLength": 16
     },
     "localName": {
-      "description": "Name of a table, domain, field or foreign key as written in a package.",
+      "description": "Name of a field or foreign key of a table, without namespace.",
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9_]*$",
-      "maxLength": 63
-    },
-    "reference": {
-      "description": "Reference to a table or domain. Kernel objects carry the kernel namespace, e.g. /RT/TENANTS.",
-      "type": "string",
-      "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
       "maxLength": 63
     },
     "description": {
@@ -41,7 +35,7 @@
           "$ref": "#/$defs/description"
         },
         "domain": {
-          "$ref": "#/$defs/reference",
+          "$ref": "#/$defs/objectName",
           "description": "Domain of the field. Use either domain or dataElement."
         },
         "notNull": {
@@ -58,7 +52,7 @@
           ]
         },
         "dataElement": {
-          "$ref": "#/$defs/reference",
+          "$ref": "#/$defs/objectName",
           "description": "Data element of the field; its domain gives the type. Use either domain or dataElement."
         }
       },
@@ -89,7 +83,7 @@
           "$ref": "#/$defs/localName"
         },
         "table": {
-          "$ref": "#/$defs/reference"
+          "$ref": "#/$defs/objectName"
         },
         "fields": {
           "description": "Mapping of local fields to key fields of the target table. The tenant field is added automatically.",
@@ -152,10 +146,10 @@
       ],
       "properties": {
         "table": {
-          "$ref": "#/$defs/reference"
+          "$ref": "#/$defs/objectName"
         },
         "parent": {
-          "$ref": "#/$defs/reference",
+          "$ref": "#/$defs/objectName",
           "description": "Parent table in the setting."
         },
         "foreignKey": {
@@ -166,6 +160,100 @@
         },
         "operations": {
           "$ref": "#/$defs/operations"
+        }
+      }
+    },
+    "objectName": {
+      "description": "Name of an object of a package, starting with the namespace of the package, e.g. /TRFIN/COMPANIES. The kernel checks the namespace when it imports the package.",
+      "type": "string",
+      "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "extensionField": {
+      "description": "A field added by an extension. Its name carries the namespace of the extending package.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/objectName"
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "domain": {
+          "$ref": "#/$defs/objectName",
+          "description": "Domain of the field. Use either domain or dataElement."
+        },
+        "notNull": {
+          "description": "Whether the field rejects NULL. Primary key fields are always NOT NULL.",
+          "type": "boolean",
+          "default": false
+        },
+        "default": {
+          "description": "Default value. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "type": [
+            "string",
+            "integer",
+            "boolean"
+          ]
+        },
+        "dataElement": {
+          "$ref": "#/$defs/objectName",
+          "description": "Data element of the field; its domain gives the type. Use either domain or dataElement."
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "domain"
+          ]
+        },
+        {
+          "required": [
+            "dataElement"
+          ]
+        }
+      ]
+    },
+    "extensionForeignKey": {
+      "description": "A foreign key added by an extension. Its name and its fields carry the namespace of the extending package.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "table",
+        "fields"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/objectName"
+        },
+        "table": {
+          "$ref": "#/$defs/objectName"
+        },
+        "fields": {
+          "description": "Mapping of local fields to key fields of the target table. The tenant field is added automatically.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "references"
+            ],
+            "properties": {
+              "field": {
+                "$ref": "#/$defs/objectName"
+              },
+              "references": {
+                "$ref": "#/$defs/localName"
+              }
+            }
+          }
         }
       }
     }

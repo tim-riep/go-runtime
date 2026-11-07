@@ -1,5 +1,5 @@
 {
-  "name": "COUNTRY_CODE",
+  "name": "/TRBASE/COUNTRY_CODE",
   "description": "ISO 3166-1 alpha-2 country code",
   "type": "CHAR",
   "length": 2

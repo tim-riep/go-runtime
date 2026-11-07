@@ -1,36 +1,36 @@
 {
-  "name": "COMPANIES",
+  "name": "/TRFIN/COMPANIES",
   "description": "Companies of a tenant",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
     {
       "name": "COMPANY_ID",
-      "dataElement": "COMPANY"
+      "dataElement": "/TRFIN/COMPANY"
     },
     {
       "name": "NAME",
-      "dataElement": "NAME",
+      "dataElement": "/TRBASE/NAME",
       "notNull": true
     },
     {
       "name": "COUNTRY",
-      "dataElement": "COUNTRY",
+      "dataElement": "/TRBASE/COUNTRY",
       "notNull": true
     },
     {
       "name": "STATUS",
-      "domain": "COMPANY_STATUS",
+      "domain": "/TRFIN/COMPANY_STATUS",
       "notNull": true,
       "default": "ACTIVE"
     },
     {
       "name": "CAPITAL",
-      "domain": "AMOUNT"
+      "domain": "/TRBASE/AMOUNT"
     },
     {
       "name": "FOUNDED_ON",
-      "domain": "DATE"
+      "domain": "/TRBASE/DATE"
     }
   ],
   "primaryKey": [
@@ -39,7 +39,7 @@
   "foreignKeys": [
     {
       "name": "COUNTRY",
-      "table": "COUNTRIES",
+      "table": "/TRFIN/COUNTRIES",
       "fields": [
         {
           "field": "COUNTRY",

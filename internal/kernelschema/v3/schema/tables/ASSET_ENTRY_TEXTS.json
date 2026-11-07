@@ -1,28 +1,28 @@
 {
-  "name": "ASSET_ENTRY_TEXTS",
+  "name": "/RT/ASSET_ENTRY_TEXTS",
   "description": "Descriptions of folders and assets per language",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "REPOSITORY_ID",
-      "domain": "ASSET_REPOSITORY_ID"
+      "domain": "/RT/ASSET_REPOSITORY_ID"
     },
     {
       "name": "PATH",
-      "domain": "ASSET_PATH"
+      "domain": "/RT/ASSET_PATH"
     },
     {
       "name": "LANGUAGE",
-      "domain": "LANGUAGE"
+      "domain": "/RT/LANGUAGE"
     },
     {
       "name": "DESCRIPTION",
-      "domain": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION",
       "notNull": true
     }
   ],
@@ -35,7 +35,7 @@
   "foreignKeys": [
     {
       "name": "ENTRY",
-      "table": "ASSET_ENTRIES",
+      "table": "/RT/ASSET_ENTRIES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -53,7 +53,7 @@
     },
     {
       "name": "LANGUAGE",
-      "table": "LANGUAGES",
+      "table": "/RT/LANGUAGES",
       "fields": [
         {
           "field": "LANGUAGE",

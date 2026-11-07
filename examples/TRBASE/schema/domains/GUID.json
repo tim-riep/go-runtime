@@ -1,5 +1,5 @@
 {
-  "name": "GUID",
+  "name": "/TRBASE/GUID",
   "description": "Globally unique identifier",
   "type": "UUID"
 }

@@ -1,20 +1,20 @@
 {
-  "name": "ASSET_CHUNKS",
+  "name": "/RT/ASSET_CHUNKS",
   "description": "Parts of stored contents in order",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "SHA256",
-      "domain": "SHA256"
+      "domain": "/RT/SHA256"
     },
     {
       "name": "SEQ",
-      "domain": "POSITION"
+      "domain": "/RT/POSITION"
     },
     {
       "name": "DATA",
-      "domain": "CHUNK",
+      "domain": "/RT/CHUNK",
       "notNull": true
     }
   ],
@@ -25,7 +25,7 @@
   "foreignKeys": [
     {
       "name": "BLOB",
-      "table": "ASSET_BLOBS",
+      "table": "/RT/ASSET_BLOBS",
       "fields": [
         {
           "field": "SHA256",

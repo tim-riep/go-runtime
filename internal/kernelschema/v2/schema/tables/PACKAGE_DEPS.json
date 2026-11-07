@@ -1,20 +1,20 @@
 {
-  "name": "PACKAGE_DEPS",
+  "name": "/RT/PACKAGE_DEPS",
   "description": "Requirements of installed packages",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "REQUIRED_ID",
-      "domain": "PACKAGE_ID"
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "VERSION_CONSTRAINT",
-      "domain": "VERSION_CONSTRAINT"
+      "domain": "/RT/VERSION_CONSTRAINT"
     }
   ],
   "primaryKey": [
@@ -24,7 +24,7 @@
   "foreignKeys": [
     {
       "name": "PACKAGE",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "PACKAGE_ID",
@@ -34,7 +34,7 @@
     },
     {
       "name": "REQUIRED",
-      "table": "PACKAGES",
+      "table": "/RT/PACKAGES",
       "fields": [
         {
           "field": "REQUIRED_ID",

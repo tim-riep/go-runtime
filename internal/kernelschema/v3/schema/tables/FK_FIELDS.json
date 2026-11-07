@@ -1,29 +1,29 @@
 {
-  "name": "FK_FIELDS",
+  "name": "/RT/FK_FIELDS",
   "description": "Field mapping of foreign keys",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "FK_NAME",
-      "domain": "OBJECT_NAME"
+      "domain": "/RT/OBJECT_NAME"
     },
     {
       "name": "POSITION",
-      "domain": "POSITION"
+      "domain": "/RT/POSITION"
     },
     {
       "name": "FIELD_NAME",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true
     },
     {
       "name": "TARGET_FIELD",
-      "domain": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
       "notNull": true
     }
   ],
@@ -35,7 +35,7 @@
   "foreignKeys": [
     {
       "name": "FOREIGN_KEY",
-      "table": "FOREIGN_KEYS",
+      "table": "/RT/FOREIGN_KEYS",
       "fields": [
         {
           "field": "TABLE_NAME",

@@ -1,20 +1,20 @@
 {
-  "name": "TENANTS",
+  "name": "/RT/TENANTS",
   "description": "Tenants",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "TENANT",
-      "domain": "TENANT_ID"
+      "domain": "/RT/TENANT_ID"
     },
     {
       "name": "DESCRIPTION",
-      "domain": "DESCRIPTION"
+      "domain": "/RT/DESCRIPTION"
     },
     {
       "name": "CREATED_AT",
-      "domain": "TIMESTAMP",
+      "domain": "/RT/TIMESTAMP",
       "notNull": true
     }
   ],

@@ -1,25 +1,25 @@
 {
-  "name": "LOG_STATEMENTS",
+  "name": "/RT/LOG_STATEMENTS",
   "description": "Statements executed by a logged operation",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
     {
       "name": "LOG_ID",
-      "domain": "LOG_ID"
+      "domain": "/RT/LOG_ID"
     },
     {
       "name": "POSITION",
-      "domain": "POSITION"
+      "domain": "/RT/POSITION"
     },
     {
       "name": "STATEMENT",
-      "domain": "STATEMENT",
+      "domain": "/RT/STATEMENT",
       "notNull": true
     },
     {
       "name": "DESTRUCTIVE",
-      "domain": "FLAG",
+      "domain": "/RT/FLAG",
       "notNull": true
     }
   ],
@@ -30,7 +30,7 @@
   "foreignKeys": [
     {
       "name": "LOG",
-      "table": "LOG",
+      "table": "/RT/LOG",
       "fields": [
         {
           "field": "LOG_ID",

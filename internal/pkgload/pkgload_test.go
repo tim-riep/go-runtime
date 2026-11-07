@@ -28,16 +28,16 @@ func file(s string) *fstest.MapFile { return &fstest.MapFile{Data: []byte(s)} }
 func validFS() fstest.MapFS {
 	return fstest.MapFS{
 		"manifest.json": file(`{"id":"TRX","version":"1.0.0","requires":[{"id":"TRBASE","version":">=1.0.0"}]}`),
-		"schema/domains/STATUS.json": file(`{"name":"STATUS","type":"CHAR","length":3,
+		"schema/domains/STATUS.json": file(`{"name":"/TRX/STATUS","type":"CHAR","length":3,
 			"values":[{"value":"NEW"},{"value":"OLD","description":"Old"}]}`),
-		"schema/domains/QTY.json": file(`{"name":"QTY","type":"INT4","values":[{"value":1},{"value":2}]}`),
-		"schema/tables/ORDERS.json": file(`{"name":"ORDERS","tenantSpecific":true,"dataClass":"application",
-			"fields":[{"name":"ORDER_ID","domain":"ID","notNull":true},{"name":"STATUS","domain":"STATUS","default":"NEW"}],
+		"schema/domains/QTY.json": file(`{"name":"/TRX/QTY","type":"INT4","values":[{"value":1},{"value":2}]}`),
+		"schema/tables/ORDERS.json": file(`{"name":"/TRX/ORDERS","tenantSpecific":true,"dataClass":"application",
+			"fields":[{"name":"ORDER_ID","domain":"/TRBASE/ID","notNull":true},{"name":"STATUS","domain":"/TRX/STATUS","default":"NEW"}],
 			"primaryKey":["ORDER_ID"],
-			"foreignKeys":[{"name":"STATUS","table":"OTHER","fields":[{"field":"STATUS","references":"CODE"}]}]}`),
-		"schema/extensions/COMPANIES.json": file(`{"table":"COMPANIES",
-			"fields":[{"name":"EXT_ID","domain":"ID"}],
-			"foreignKeys":[{"name":"EXT","table":"ORDERS","fields":[{"field":"EXT_ID","references":"ORDER_ID"}]}]}`),
+			"foreignKeys":[{"name":"STATUS","table":"/TRBASE/OTHER","fields":[{"field":"STATUS","references":"CODE"}]}]}`),
+		"schema/extensions/COMPANIES.json": file(`{"table":"/TRBASE/COMPANIES",
+			"fields":[{"name":"/TRX/EXT_ID","domain":"/TRBASE/ID"}],
+			"foreignKeys":[{"name":"/TRX/EXT","table":"/TRX/ORDERS","fields":[{"field":"/TRX/EXT_ID","references":"ORDER_ID"}]}]}`),
 	}
 }
 
@@ -53,11 +53,11 @@ func TestLoadValid(t *testing.T) {
 		t.Fatalf("objects: %d domains, %d tables, %d extensions", len(pkg.Domains), len(pkg.Tables), len(pkg.Extensions))
 	}
 	qty := pkg.Domains[0]
-	if qty.Name != "QTY" || qty.Values[1].Value != "2" {
+	if qty.Name != "/TRX/QTY" || qty.Values[1].Value != "2" {
 		t.Errorf("QTY: %+v", qty)
 	}
 	ext := pkg.Extensions[0]
-	if ext.Fields[0].Name != "/TRX/EXT_ID" || ext.Fields[0].LocalName != "EXT_ID" || ext.Fields[0].Origin != model.OriginExtension {
+	if ext.Fields[0].Name != "/TRX/EXT_ID" || ext.Fields[0].LocalName != "/TRX/EXT_ID" || ext.Fields[0].Origin != model.OriginExtension {
 		t.Errorf("extension field: %+v", ext.Fields[0])
 	}
 	if fk := ext.ForeignKeys[0]; fk.Name != "/TRX/EXT" || fk.Columns[0].Field != "/TRX/EXT_ID" || fk.Columns[0].References != "ORDER_ID" {
@@ -125,17 +125,17 @@ func TestLoadErrors(t *testing.T) {
 	})
 	t.Run("file name", func(t *testing.T) {
 		fsys := validFS()
-		fsys["schema/domains/OTHER.json"] = file(`{"name":"QTY2","type":"BOOL"}`)
-		expectError(t, fsys, rterr.CodeFile, "schema/domains/OTHER.json", "/name")
+		fsys["schema/domains/OTHER.json"] = file(`{"name":"/TRX/QTY2","type":"BOOL"}`)
+		expectError(t, fsys, rterr.CodeFile, "schema/domains/OTHER.json", "")
 	})
 	t.Run("char without length", func(t *testing.T) {
 		fsys := validFS()
-		fsys["schema/domains/QTY.json"] = file(`{"name":"QTY","type":"CHAR"}`)
+		fsys["schema/domains/QTY.json"] = file(`{"name":"/TRX/QTY","type":"CHAR"}`)
 		expectError(t, fsys, rterr.CodeSchema, "schema/domains/QTY.json", "")
 	})
 	t.Run("fixed value too long", func(t *testing.T) {
 		fsys := validFS()
-		fsys["schema/domains/STATUS.json"] = file(`{"name":"STATUS","type":"CHAR","length":3,"values":[{"value":"LONG"}]}`)
+		fsys["schema/domains/STATUS.json"] = file(`{"name":"/TRX/STATUS","type":"CHAR","length":3,"values":[{"value":"LONG"}]}`)
 		expectError(t, fsys, rterr.CodeFixedValue, "schema/domains/STATUS.json", "/values/0/value")
 	})
 	t.Run("unexpected directory", func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestLoadErrors(t *testing.T) {
 	})
 	t.Run("errors carry package", func(t *testing.T) {
 		fsys := validFS()
-		fsys["schema/domains/QTY.json"] = file(`{"name":"QTY","type":"NUMBER"}`)
+		fsys["schema/domains/QTY.json"] = file(`{"name":"/TRX/QTY","type":"NUMBER"}`)
 		_, err := Load(fsys, "mem")
 		var v *rterr.ValidationError
 		if !errors.As(err, &v) || v.Location.Package != "TRX" {
@@ -157,8 +157,8 @@ func TestLoadErrors(t *testing.T) {
 func TestLoadKernel(t *testing.T) {
 	fsys := fstest.MapFS{
 		"manifest.json":             file(`{"id":"RT","version":"1.0.0"}`),
-		"schema/domains/NAME.json":  file(`{"name":"NAME","type":"CHAR","length":10}`),
-		"schema/tables/THINGS.json": file(`{"name":"THINGS","tenantSpecific":false,"dataClass":"system","fields":[{"name":"NAME","domain":"NAME"}],"primaryKey":["NAME"],"foreignKeys":[{"name":"SELF","table":"THINGS","fields":[{"field":"NAME","references":"NAME"}]}]}`),
+		"schema/domains/NAME.json":  file(`{"name":"/RT/NAME","type":"CHAR","length":10}`),
+		"schema/tables/THINGS.json": file(`{"name":"/RT/THINGS","tenantSpecific":false,"dataClass":"system","fields":[{"name":"NAME","domain":"/RT/NAME"}],"primaryKey":["NAME"],"foreignKeys":[{"name":"SELF","table":"/RT/THINGS","fields":[{"field":"NAME","references":"NAME"}]}]}`),
 	}
 	pkg, err := LoadWith(fsys, "kernel", Options{Kernel: true})
 	if err != nil {

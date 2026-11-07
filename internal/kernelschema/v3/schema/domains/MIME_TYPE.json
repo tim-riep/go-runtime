@@ -1,5 +1,5 @@
 {
-  "name": "MIME_TYPE",
+  "name": "/RT/MIME_TYPE",
   "description": "Media type",
   "type": "CHAR",
   "length": 127

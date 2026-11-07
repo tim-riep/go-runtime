@@ -1,6 +1,6 @@
 {
-  "name": "COUNTRY",
-  "domain": "COUNTRY_CODE",
+  "name": "/TRBASE/COUNTRY",
+  "domain": "/TRBASE/COUNTRY_CODE",
   "texts": {
     "en": {
       "short": "Country",
