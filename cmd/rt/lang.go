@@ -30,6 +30,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/build"
+	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/testrun"
 	"github.com/tim-riep/go-runtime/lang/types"
@@ -59,8 +60,76 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 			return exitUsage, true
 		}
 		return c.build(args[0]), true
+	case "disasm":
+		if len(args) != 1 && len(args) != 2 {
+			fmt.Fprintln(c.stderr, "usage: rt disasm <package directory> [class or class.METHOD]")
+			return exitUsage, true
+		}
+		return c.disasm(args), true
 	}
 	return 0, false
+}
+
+// disasm compiles a package and lists the bytecode of its functions, or
+// of those of a class or method, with the names that operands refer to
+// and the source lines.
+func (c *cli) disasm(args []string) int {
+	r, code := c.compile(args[0])
+	if r == nil {
+		return code
+	}
+	p, err := r.Compile(false, r.Deps)
+	if err != nil {
+		return c.fail(err)
+	}
+	kp, err := build.KernelProgram()
+	if err != nil {
+		return c.fail(err)
+	}
+	imports := func(slot int) *bytecode.Program {
+		if slot < 1 || slot > len(p.Imports) {
+			return nil
+		}
+		if id := p.Imports[slot-1]; id != string(model.Kernel) {
+			return r.Deps[model.PackageID(id)]
+		}
+		return kp
+	}
+	texts := map[string][]string{}
+	for _, s := range r.Package.Sources {
+		texts[s.File] = strings.Split(s.Text, "\n")
+	}
+	source := func(path string) []string { return texts[path] }
+	filter := ""
+	if len(args) == 2 {
+		filter = args[1]
+	}
+	n := 0
+	for i := range p.Funcs {
+		f := &p.Funcs[i]
+		if filter != "" && f.Name != filter && !strings.HasPrefix(f.Name, filter+".") {
+			continue
+		}
+		if n > 0 {
+			fmt.Fprintln(c.stdout)
+		}
+		n++
+		kind := "static"
+		if f.Instance {
+			kind = "instance"
+		}
+		fmt.Fprintf(c.stdout, "%s (%s, %d parameters, %d locals)\n", f.Name, kind, f.Params, f.Locals)
+		if f.Native {
+			fmt.Fprintln(c.stdout, "     executed by kernel")
+			continue
+		}
+		fmt.Fprint(c.stdout, bytecode.Listing(p, f, imports, source))
+	}
+	if n == 0 {
+		fmt.Fprintf(c.stderr, "error: package %s has no function %s\n", p.Package, filter)
+		return exitError
+	}
+	return exitOK
 }
 
 // fmt formats source files in place, or with --check lists those that are

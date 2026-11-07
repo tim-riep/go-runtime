@@ -118,6 +118,8 @@ Commands for source files (no database needed):
   fmt [path...]            format source files in canonical form (--check only lists them)
   build <dir>              compile the sources of a package directory and show diagnostics;
                            required packages come from sibling directories
+  disasm <dir> [name]      compile a package directory and list the bytecode of its
+                           functions, or of a class or class.METHOD
   gen natives <dir> --go-package <name> [-o file]
                            generate the Go types of the structures, tables and enums that
                            the native methods of a kernel package use

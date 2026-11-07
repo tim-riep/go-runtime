@@ -163,6 +163,38 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestDisasm(t *testing.T) {
+	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRFIN")
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/TEMPLATE_RENDERER"}, &out, &errOut); code != exitOK {
+		t.Fatalf("disasm: %d %s", code, errOut.String())
+	}
+	for _, want := range []string{
+		"/TRFIN/TEMPLATE_RENDERER.TEMPLATE (static, 1 parameters, 2 locals)",
+		`; src/TEMPLATE_RENDERER.class:6  var templates = /TRBASE/ASSET_REPOSITORY.OPEN("TRFIN", "templates")`,
+		`; "templates"`,
+		"; /TRBASE/ASSET_REPOSITORY.OPEN",
+		"; /TRBASE/ASSET_REPOSITORY.GET_IN_LANGUAGE",
+		"; /TRBASE/XSLT_STYLESHEET.COMPILE",
+		"/TRFIN/TEMPLATE_RENDERER.RENDER_ALL (static, 2 parameters,",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("missing %q in\n%s", want, out.String())
+		}
+	}
+	if strings.Contains(out.String(), "/TRFIN/COMPANY_SERVICE") {
+		t.Error("the listing has functions of other classes")
+	}
+	out.Reset()
+	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; update set /TRFIN/COMPANIES") {
+		t.Errorf("database statement: %d %s", code, out.String())
+	}
+	errOut.Reset()
+	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/NOPE"}, &out, &errOut); code != exitError || !strings.Contains(errOut.String(), "package TRFIN has no function /TRFIN/NOPE") {
+		t.Errorf("unknown name: %d %s", code, errOut.String())
+	}
+}
+
 func TestLanguageCommands(t *testing.T) {
 	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRORDER")
 	for _, s := range []struct {

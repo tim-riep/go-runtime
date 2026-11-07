@@ -750,6 +750,7 @@ rt log
 rt fmt examples/TRORDER
 rt fmt --check .
 rt build examples/TRORDER
+rt disasm examples/TRORDER /TRORDER/ORDER_RATING
 rt install examples/TRORDER
 rt tenant create ACME
 rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME
@@ -770,8 +771,12 @@ rt effects list
 rt gen natives testdata/lang/native/TRTEST --go-package nativetest -o types_gen.go
 ```
 
-`fmt` and `build` work on package directories and need no database; `build` looks up
-the packages a package requires next to it, in a directory named after their ID. `run`
+`fmt`, `build` and `disasm` work on package directories and need no database; `build`
+and `disasm` look up the packages a package requires next to it, in a directory named
+after their ID. `disasm` lists the bytecode of all functions, of a class or of one
+method (`/TRORDER/ORDER_RATING.RATE`), with the source line before its instructions and
+comments that name the called methods, classes, constants, types, transformations and
+database statements. `run`
 calls a public static method of an installed package for a tenant. `test` runs the test
 classes of an installed package, or of a directory compiled against the installed
 packages; every test method runs in a tenant of its own and leaves no rows.

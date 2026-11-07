@@ -898,6 +898,7 @@ collections and strings (10 million) and can be canceled.
 
 Installing a package compiles it; its sources and the compiled code are stored in the
 database, and the kernel compiles packages again when something they use changes.
+`rt disasm <dir> [class or class.METHOD]` shows the bytecode of a package directory.
 
 ```bash
 rt fmt examples/TRORDER
