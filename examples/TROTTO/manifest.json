@@ -1,0 +1,11 @@
+{
+  "id": "TROTTO",
+  "version": "1.0.0",
+  "description": "Connection of companies to the OTTO marketplace",
+  "requires": [
+    {
+      "id": "TRFIN",
+      "version": ">=1.0.0"
+    }
+  ]
+}

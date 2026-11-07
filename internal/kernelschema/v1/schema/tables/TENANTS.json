@@ -1,0 +1,23 @@
+{
+  "name": "TENANTS",
+  "description": "Tenants",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "TENANT",
+      "domain": "TENANT_ID"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TENANT"
+  ]
+}

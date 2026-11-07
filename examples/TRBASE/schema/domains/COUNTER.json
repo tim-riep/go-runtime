@@ -1,0 +1,5 @@
+{
+  "name": "COUNTER",
+  "description": "Counter or sequence number",
+  "type": "INT8"
+}

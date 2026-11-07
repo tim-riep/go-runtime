@@ -1,0 +1,7 @@
+{
+  "name": "AMOUNT",
+  "description": "Monetary amount",
+  "type": "DEC",
+  "length": 15,
+  "decimals": 2
+}

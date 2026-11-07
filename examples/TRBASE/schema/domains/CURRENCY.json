@@ -1,0 +1,6 @@
+{
+  "name": "CURRENCY",
+  "description": "ISO 4217 currency code",
+  "type": "CHAR",
+  "length": 3
+}

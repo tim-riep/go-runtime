@@ -1,0 +1,5 @@
+{
+  "name": "GUID",
+  "description": "Globally unique identifier",
+  "type": "UUID"
+}

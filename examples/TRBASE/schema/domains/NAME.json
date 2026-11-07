@@ -1,0 +1,6 @@
+{
+  "name": "NAME",
+  "description": "Name of a business object",
+  "type": "CHAR",
+  "length": 80
+}

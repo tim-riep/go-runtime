@@ -1,0 +1,38 @@
+{
+  "name": "BASE_TYPE",
+  "description": "Base type of a domain",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "CHAR"
+    },
+    {
+      "value": "STRING"
+    },
+    {
+      "value": "INT4"
+    },
+    {
+      "value": "INT8"
+    },
+    {
+      "value": "DEC"
+    },
+    {
+      "value": "DATE"
+    },
+    {
+      "value": "TIMESTAMP"
+    },
+    {
+      "value": "BOOL"
+    },
+    {
+      "value": "UUID"
+    },
+    {
+      "value": "BLOB"
+    }
+  ]
+}

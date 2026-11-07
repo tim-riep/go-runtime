@@ -1,0 +1,23 @@
+{
+  "name": "COUNTRIES",
+  "description": "Countries, shared by all tenants",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "COUNTRY_CODE",
+      "domain": "COUNTRY_CODE"
+    },
+    {
+      "name": "NAME",
+      "domain": "NAME",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "domain": "CURRENCY"
+    }
+  ],
+  "primaryKey": [
+    "COUNTRY_CODE"
+  ]
+}

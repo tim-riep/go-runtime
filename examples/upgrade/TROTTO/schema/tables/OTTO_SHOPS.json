@@ -1,0 +1,36 @@
+{
+  "name": "OTTO_SHOPS",
+  "description": "Shops of a tenant on the OTTO marketplace",
+  "tenantSpecific": true,
+  "fields": [
+    {
+      "name": "SHOP_ID",
+      "domain": "OTTO_SHOP_ID"
+    },
+    {
+      "name": "COMPANY_ID",
+      "domain": "COMPANY_ID",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "domain": "NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SHOP_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

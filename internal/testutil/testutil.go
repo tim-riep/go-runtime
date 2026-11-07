@@ -19,6 +19,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/timriep/go-runtime/internal/kernelschema"
+	"github.com/timriep/go-runtime/internal/pkgload"
+	"github.com/timriep/go-runtime/model"
 )
 
 // ModuleRoot returns the directory containing go.mod.
@@ -38,4 +43,40 @@ func ModuleRoot(t testing.TB) string {
 		}
 		dir = parent
 	}
+}
+
+// Example loads a package from the examples directory, e.g. "TRFIN" or
+// "upgrade/TROTTO".
+func Example(t testing.TB, name string) *model.Package {
+	t.Helper()
+	dir := filepath.Join(ModuleRoot(t), "examples", name)
+	pkg, err := pkgload.Load(os.DirFS(dir), dir)
+	if err != nil {
+		t.Fatalf("loading %s: %v", name, err)
+	}
+	return pkg
+}
+
+// KernelSchema returns the newest kernel schema.
+func KernelSchema(t testing.TB) *model.Schema {
+	t.Helper()
+	s, err := kernelschema.Schema(kernelschema.Latest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+// Fixed timestamp used for packages in tests.
+var Epoch = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// AddPackages adds packages to s and fails the test on name conflicts.
+func AddPackages(t testing.TB, s *model.Schema, pkgs ...*model.Package) *model.Schema {
+	t.Helper()
+	for _, p := range pkgs {
+		if err := s.AddPackage(p, Epoch, Epoch); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return s
 }

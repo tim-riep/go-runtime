@@ -1,0 +1,6 @@
+{
+  "name": "COMPANY_ID",
+  "description": "Company key",
+  "type": "CHAR",
+  "length": 10
+}

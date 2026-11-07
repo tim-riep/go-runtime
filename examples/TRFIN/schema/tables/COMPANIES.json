@@ -1,0 +1,50 @@
+{
+  "name": "COMPANIES",
+  "description": "Companies of a tenant",
+  "tenantSpecific": true,
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "domain": "COMPANY_ID"
+    },
+    {
+      "name": "NAME",
+      "domain": "NAME",
+      "notNull": true
+    },
+    {
+      "name": "COUNTRY",
+      "domain": "COUNTRY_CODE",
+      "notNull": true
+    },
+    {
+      "name": "STATUS",
+      "domain": "COMPANY_STATUS",
+      "notNull": true,
+      "default": "ACTIVE"
+    },
+    {
+      "name": "CAPITAL",
+      "domain": "AMOUNT"
+    },
+    {
+      "name": "FOUNDED_ON",
+      "domain": "DATE"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COUNTRY",
+      "table": "COUNTRIES",
+      "fields": [
+        {
+          "field": "COUNTRY",
+          "references": "COUNTRY_CODE"
+        }
+      ]
+    }
+  ]
+}

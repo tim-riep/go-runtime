@@ -1,0 +1,46 @@
+{
+  "name": "BANK_ACCOUNTS",
+  "description": "Bank accounts of a company",
+  "tenantSpecific": true,
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "domain": "COMPANY_ID"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "ACCOUNT_NO"
+    },
+    {
+      "name": "IBAN",
+      "domain": "IBAN",
+      "notNull": true
+    },
+    {
+      "name": "BALANCE",
+      "domain": "AMOUNT",
+      "notNull": true,
+      "default": "0"
+    },
+    {
+      "name": "OPENED_AT",
+      "domain": "TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID",
+    "ACCOUNT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

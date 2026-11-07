@@ -1,0 +1,35 @@
+{
+  "table": "COMPANIES",
+  "description": "OTTO partner data of a company",
+  "fields": [
+    {
+      "name": "OTTO_ID",
+      "domain": "OTTO_ID",
+      "description": "Partner ID of the company"
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "FLAG",
+      "notNull": true,
+      "default": false,
+      "description": "Whether the connection is active"
+    },
+    {
+      "name": "MAIN_SHOP",
+      "domain": "OTTO_SHOP_ID",
+      "description": "Default shop of the company"
+    }
+  ],
+  "foreignKeys": [
+    {
+      "name": "MAIN_SHOP",
+      "table": "OTTO_SHOPS",
+      "fields": [
+        {
+          "field": "MAIN_SHOP",
+          "references": "SHOP_ID"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "table": "COMPANIES",
+  "description": "OTTO partner data of a company",
+  "fields": [
+    {
+      "name": "OTTO_ID",
+      "domain": "OTTO_ID",
+      "description": "Partner ID of the company"
+    }
+  ]
+}

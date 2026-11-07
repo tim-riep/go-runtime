@@ -1,0 +1,48 @@
+{
+  "name": "DOMAINS",
+  "description": "Domains",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "DOMAIN_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID",
+      "description": "Owner package, empty for the kernel"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION"
+    },
+    {
+      "name": "BASE_TYPE",
+      "domain": "BASE_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "LENGTH",
+      "domain": "LENGTH"
+    },
+    {
+      "name": "DECIMALS",
+      "domain": "LENGTH"
+    }
+  ],
+  "primaryKey": [
+    "DOMAIN_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "MIGRATIONS",
+  "description": "Applied versions of the kernel tables",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "VERSION",
+      "domain": "KERNEL_VERSION"
+    },
+    {
+      "name": "APPLIED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "VERSION"
+  ]
+}

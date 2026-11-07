@@ -1,0 +1,20 @@
+{
+  "name": "COMPANY_STATUS",
+  "description": "Lifecycle status of a company",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "ACTIVE",
+      "description": "Active"
+    },
+    {
+      "value": "BLOCKED",
+      "description": "Blocked for postings"
+    },
+    {
+      "value": "CLOSED",
+      "description": "Closed"
+    }
+  ]
+}

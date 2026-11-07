@@ -1,0 +1,23 @@
+{
+  "name": "OPERATION",
+  "description": "Logged operation",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "MIGRATE"
+    },
+    {
+      "value": "INSTALL"
+    },
+    {
+      "value": "UPGRADE"
+    },
+    {
+      "value": "UNINSTALL"
+    },
+    {
+      "value": "TENANT_DELETE"
+    }
+  ]
+}

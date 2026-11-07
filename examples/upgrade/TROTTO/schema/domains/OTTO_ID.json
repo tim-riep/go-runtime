@@ -1,0 +1,6 @@
+{
+  "name": "OTTO_ID",
+  "description": "Partner ID on the OTTO marketplace",
+  "type": "CHAR",
+  "length": 32
+}

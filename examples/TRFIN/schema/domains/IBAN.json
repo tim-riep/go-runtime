@@ -1,0 +1,6 @@
+{
+  "name": "IBAN",
+  "description": "International bank account number",
+  "type": "CHAR",
+  "length": 34
+}

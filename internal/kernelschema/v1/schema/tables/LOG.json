@@ -1,0 +1,49 @@
+{
+  "name": "LOG",
+  "description": "Log of installations, upgrades, removals and migrations",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "LOG_ID",
+      "domain": "LOG_ID"
+    },
+    {
+      "name": "OPERATION",
+      "domain": "OPERATION",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID"
+    },
+    {
+      "name": "VERSION_FROM",
+      "domain": "VERSION"
+    },
+    {
+      "name": "VERSION_TO",
+      "domain": "VERSION"
+    },
+    {
+      "name": "STARTED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "FINISHED_AT",
+      "domain": "TIMESTAMP"
+    },
+    {
+      "name": "STATUS",
+      "domain": "LOG_STATUS",
+      "notNull": true
+    },
+    {
+      "name": "MESSAGE",
+      "domain": "DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "LOG_ID"
+  ]
+}

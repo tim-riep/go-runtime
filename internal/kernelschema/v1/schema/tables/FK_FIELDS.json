@@ -1,0 +1,50 @@
+{
+  "name": "FK_FIELDS",
+  "description": "Field mapping of foreign keys",
+  "tenantSpecific": false,
+  "fields": [
+    {
+      "name": "TABLE_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "FK_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TARGET_FIELD",
+      "domain": "OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TABLE_NAME",
+    "FK_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "FOREIGN_KEY",
+      "table": "FOREIGN_KEYS",
+      "fields": [
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        },
+        {
+          "field": "FK_NAME",
+          "references": "FK_NAME"
+        }
+      ]
+    }
+  ]
+}
