@@ -58,6 +58,13 @@ func (k *Kernel) Check(ctx context.Context) ([]Discrepancy, error) {
 	if err != nil && len(out) == 0 {
 		return nil, err
 	}
+	problems, err := k.repo.VerifyContents(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range problems {
+		out = append(out, Discrepancy{Object: "asset content " + p.SHA256, Problem: p.Problem})
+	}
 	return out, nil
 }
 

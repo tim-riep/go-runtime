@@ -26,6 +26,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -160,6 +161,12 @@ func (r *Repo) insert(ctx context.Context, q dialect.Querier, table string, valu
 // values, in the given order. Columns the version does not have are
 // returned as nil; a table it does not have yields no rows.
 func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, cols []string, orderBy ...string) ([]row, error) {
+	return r.selectWhere(ctx, q, table, cols, nil, orderBy...)
+}
+
+// selectWhere is selectRows restricted to rows whose columns equal the
+// values of filter.
+func (r *Repo) selectWhere(ctx context.Context, q dialect.Querier, table string, cols []string, filter row, orderBy ...string) ([]row, error) {
 	if !r.has(table, "") {
 		return nil, nil
 	}
@@ -170,6 +177,15 @@ func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, 
 		}
 	}
 	stmt := "SELECT " + dialect.QuoteList(present) + " FROM " + r.d.QuoteIdent(table)
+	var args []any
+	if len(filter) > 0 {
+		var conds []string
+		for _, c := range slices.Sorted(maps.Keys(filter)) {
+			args = append(args, filter[c])
+			conds = append(conds, r.d.QuoteIdent(c)+" = "+r.d.Placeholder(len(args)))
+		}
+		stmt += " WHERE " + strings.Join(conds, " AND ")
+	}
 	if len(orderBy) > 0 {
 		stmt += " ORDER BY " + dialect.QuoteList(orderBy)
 	}
@@ -181,7 +197,7 @@ func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, 
 		}
 		doms[i] = d
 	}
-	rows, err := q.QueryContext(ctx, stmt)
+	rows, err := q.QueryContext(ctx, stmt, args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", table, err)
 	}

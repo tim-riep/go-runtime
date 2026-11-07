@@ -23,6 +23,7 @@ package rterr
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 )
 
@@ -361,6 +362,30 @@ type TenantReferenced struct {
 func (e *TenantReferenced) Error() string {
 	return fmt.Sprintf("tenant %s is still referenced by %s", e.Tenant, strings.Join(e.Tables, ", "))
 }
+
+// AssetNotFound reports that an asset repository, a folder or an asset
+// does not exist, or has no version for the requested language. It matches
+// fs.ErrNotExist.
+type AssetNotFound struct {
+	Package    string
+	Repository string
+	Path       string // empty if the repository does not exist
+	Language   string
+}
+
+func (e *AssetNotFound) Error() string {
+	if e.Path == "" {
+		return fmt.Sprintf("package %s has no asset repository %s", e.Package, e.Repository)
+	}
+	msg := fmt.Sprintf("asset %s not found in repository %s of package %s", e.Path, e.Repository, e.Package)
+	if e.Language != "" {
+		msg += " for language " + e.Language
+	}
+	return msg
+}
+
+// Is reports whether target is fs.ErrNotExist.
+func (e *AssetNotFound) Is(target error) bool { return target == fs.ErrNotExist }
 
 // MissingLanguages reports texts in languages that are not set up in the
 // database.

@@ -23,6 +23,7 @@ import (
 	"io"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/model"
@@ -49,10 +50,24 @@ const (
 )
 
 func (r *Repo) loadAssets(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	return r.loadAssetsWhere(ctx, q, s, nil)
+}
+
+// AssetRepository reads the metadata of one asset repository, or returns
+// nil if it does not exist.
+func (r *Repo) AssetRepository(ctx context.Context, q dialect.Querier, pkg model.PackageID, id string) (*model.AssetRepository, error) {
+	s := model.NewSchema()
+	if err := r.loadAssetsWhere(ctx, q, s, row{"PACKAGE_ID": string(pkg), "REPOSITORY_ID": id}); err != nil {
+		return nil, err
+	}
+	return s.AssetRepositories[model.AssetRepositoryKey{Package: pkg, ID: id}], nil
+}
+
+func (r *Repo) loadAssetsWhere(ctx context.Context, q dialect.Querier, s *model.Schema, filter row) error {
 	key := func(rw row) model.AssetRepositoryKey {
 		return model.AssetRepositoryKey{Package: model.PackageID(str(rw["PACKAGE_ID"])), ID: str(rw["REPOSITORY_ID"])}
 	}
-	repos, err := r.selectRows(ctx, q, TAssetRepositories, []string{"PACKAGE_ID", "REPOSITORY_ID"})
+	repos, err := r.selectWhere(ctx, q, TAssetRepositories, []string{"PACKAGE_ID", "REPOSITORY_ID"}, filter)
 	if err != nil {
 		return err
 	}
@@ -60,7 +75,7 @@ func (r *Repo) loadAssets(ctx context.Context, q dialect.Querier, s *model.Schem
 		k := key(rw)
 		s.AssetRepositories[k] = &model.AssetRepository{Package: k.Package, ID: k.ID, Description: map[string]string{}, Entries: map[string]*model.AssetEntry{}}
 	}
-	texts, err := r.selectRows(ctx, q, TAssetRepositoryTexts, []string{"PACKAGE_ID", "REPOSITORY_ID", "LANGUAGE", "DESCRIPTION"})
+	texts, err := r.selectWhere(ctx, q, TAssetRepositoryTexts, []string{"PACKAGE_ID", "REPOSITORY_ID", "LANGUAGE", "DESCRIPTION"}, filter)
 	if err != nil {
 		return err
 	}
@@ -69,7 +84,7 @@ func (r *Repo) loadAssets(ctx context.Context, q dialect.Querier, s *model.Schem
 			ar.Description[str(rw["LANGUAGE"])] = str(rw["DESCRIPTION"])
 		}
 	}
-	entries, err := r.selectRows(ctx, q, TAssetEntries, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "KIND", "MIME_TYPE", "SHA256", "SIZE", "SOURCE_PATH", "MODIFIED_AT"})
+	entries, err := r.selectWhere(ctx, q, TAssetEntries, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "KIND", "MIME_TYPE", "SHA256", "SIZE", "SOURCE_PATH", "MODIFIED_AT"}, filter)
 	if err != nil {
 		return err
 	}
@@ -84,7 +99,7 @@ func (r *Repo) loadAssets(ctx context.Context, q dialect.Querier, s *model.Schem
 		}
 		ar.Entries[e.Path] = e
 	}
-	variants, err := r.selectRows(ctx, q, TAssetVariants, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "LANGUAGE", "SOURCE_PATH", "SHA256", "SIZE", "MODIFIED_AT"})
+	variants, err := r.selectWhere(ctx, q, TAssetVariants, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "LANGUAGE", "SOURCE_PATH", "SHA256", "SIZE", "MODIFIED_AT"}, filter)
 	if err != nil {
 		return err
 	}
@@ -99,7 +114,7 @@ func (r *Repo) loadAssets(ctx context.Context, q dialect.Querier, s *model.Schem
 			}
 		}
 	}
-	etexts, err := r.selectRows(ctx, q, TAssetEntryTexts, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "LANGUAGE", "DESCRIPTION"})
+	etexts, err := r.selectWhere(ctx, q, TAssetEntryTexts, []string{"PACKAGE_ID", "REPOSITORY_ID", "PATH", "LANGUAGE", "DESCRIPTION"}, filter)
 	if err != nil {
 		return err
 	}
@@ -238,4 +253,77 @@ func (r *Repo) DeleteUnusedContents(ctx context.Context, q dialect.Querier) erro
 		}
 	}
 	return nil
+}
+
+// ReadChunk returns one part of a stored content, numbered from 1.
+func (r *Repo) ReadChunk(ctx context.Context, q dialect.Querier, sha string, seq int64) ([]byte, error) {
+	var data []byte
+	err := q.QueryRowContext(ctx, "SELECT "+r.d.QuoteIdent("DATA")+" FROM "+r.d.QuoteIdent(TAssetChunks)+" WHERE "+
+		r.d.QuoteIdent("SHA256")+" = "+r.d.Placeholder(1)+" AND "+r.d.QuoteIdent("SEQ")+" = "+r.d.Placeholder(2), sha, seq).Scan(&data)
+	return data, err
+}
+
+// ContentProblem is a stored content that does not match its hash, size
+// or number of chunks, or a referenced content that is missing.
+type ContentProblem struct {
+	SHA256  string
+	Problem string
+}
+
+// VerifyContents reads every stored content in chunks and compares it with
+// its hash and size.
+func (r *Repo) VerifyContents(ctx context.Context, q dialect.Querier) ([]ContentProblem, error) {
+	if !r.HasAssets() {
+		return nil, nil
+	}
+	blobs, err := r.selectRows(ctx, q, TAssetBlobs, []string{"SHA256", "SIZE", "CHUNKS"}, "SHA256")
+	if err != nil {
+		return nil, err
+	}
+	var out []ContentProblem
+	stored := map[string]bool{}
+	for _, b := range blobs {
+		sha := str(b["SHA256"])
+		stored[sha] = true
+		h := sha256.New()
+		var size int64
+		seq := int64(0)
+		for ; seq < int64(num(b["CHUNKS"])); seq++ {
+			data, err := r.ReadChunk(ctx, q, sha, seq+1)
+			if err != nil {
+				out = append(out, ContentProblem{sha, fmt.Sprintf("chunk %d cannot be read: %v", seq+1, err)})
+				break
+			}
+			h.Write(data)
+			size += int64(len(data))
+		}
+		var chunks int
+		if err := q.QueryRowContext(ctx, "SELECT count(*) FROM "+r.d.QuoteIdent(TAssetChunks)+" WHERE "+r.d.QuoteIdent("SHA256")+" = "+r.d.Placeholder(1), sha).Scan(&chunks); err != nil {
+			return nil, err
+		}
+		switch {
+		case chunks != num(b["CHUNKS"]):
+			out = append(out, ContentProblem{sha, fmt.Sprintf("has %d chunks, expected %d", chunks, num(b["CHUNKS"]))})
+		case size != int64(num(b["SIZE"])):
+			out = append(out, ContentProblem{sha, fmt.Sprintf("has %d bytes, expected %d", size, num(b["SIZE"]))})
+		case hex.EncodeToString(h.Sum(nil)) != sha:
+			out = append(out, ContentProblem{sha, "content does not match its SHA-256"})
+		}
+	}
+	s := model.NewSchema()
+	if err := r.loadAssets(ctx, q, s); err != nil {
+		return nil, err
+	}
+	for sha := range s.AssetHashes() {
+		if !stored[sha] {
+			out = append(out, ContentProblem{sha, "referenced content is not stored"})
+		}
+	}
+	for sha := range stored {
+		if !s.AssetHashes()[sha] {
+			out = append(out, ContentProblem{sha, "stored content is not referenced"})
+		}
+	}
+	slices.SortFunc(out, func(a, b ContentProblem) int { return strings.Compare(a.SHA256+a.Problem, b.SHA256+b.Problem) })
+	return out, nil
 }
