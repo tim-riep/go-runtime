@@ -104,8 +104,10 @@ func TestSystemClassReserved(t *testing.T) {
 func TestKernelTablesAreSystem(t *testing.T) {
 	s := testutil.KernelSchema(t)
 	for _, tb := range s.Tables {
-		// The activation of service nodes is maintained during operation.
-		if tb.DataClass != model.System && !(tb.Name == "/RT/HTTP_SERVICE_STATES" && tb.DataClass == model.RuntimeConfiguration) {
+		// The activation of service nodes and the role assignments are
+		// maintained during operation.
+		runtime := tb.Name == "/RT/HTTP_SERVICE_STATES" || tb.Name == "/RT/ROLE_ASSIGNMENTS"
+		if tb.DataClass != model.System && !(runtime && tb.DataClass == model.RuntimeConfiguration) {
 			t.Errorf("%s has class %q", tb.Name, tb.DataClass)
 		}
 	}

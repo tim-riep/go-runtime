@@ -47,6 +47,8 @@ type Schema struct {
 	HTTPServices map[string]*HTTPService
 	// AuthorizationObjects are the authorization objects by name.
 	AuthorizationObjects map[string]*AuthorizationObject
+	// Roles are the package roles and the local roles by name.
+	Roles map[string]*Role
 }
 
 // NewSchema returns an empty schema.
@@ -67,6 +69,7 @@ func NewSchema() *Schema {
 		Transformations:      map[string]*Transformation{},
 		HTTPServices:         map[string]*HTTPService{},
 		AuthorizationObjects: map[string]*AuthorizationObject{},
+		Roles:                map[string]*Role{},
 	}
 }
 
@@ -81,6 +84,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.AuthorizationObjects {
 		c.AuthorizationObjects[k] = cloneAuthorizationObject(v)
+	}
+	for k, v := range s.Roles {
+		c.Roles[k] = cloneRole(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -292,6 +298,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.AuthorizationObjects[o.Name] = o
 	}
+	for i := range p.Roles {
+		r := cloneRole(&p.Roles[i])
+		r.Owner = id
+		if old, ok := s.Roles[r.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "role", Name: r.Name, Owner: string(old.Owner), Package: string(id), Location: r.Src})
+			continue
+		}
+		s.Roles[r.Name] = r
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -368,6 +383,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, r := range s.Roles {
+		if _, ok := r.Texts[code]; ok {
+			delete(r.Texts, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -407,6 +428,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, o := range s.AuthorizationObjects {
 		if o.Owner == id {
 			delete(s.AuthorizationObjects, name)
+		}
+	}
+	for name, r := range s.Roles {
+		if r.Owner == id {
+			delete(s.Roles, name)
 		}
 	}
 	for name, d := range s.Domains {

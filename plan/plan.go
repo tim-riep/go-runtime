@@ -89,6 +89,12 @@ const (
 	CreateAuthorizationObject ChangeKind = "create-authorization-object"
 	DropAuthorizationObject   ChangeKind = "drop-authorization-object"
 	AlterAuthorizationObject  ChangeKind = "alter-authorization-object"
+	CreateRole                ChangeKind = "create-role"
+	DropRole                  ChangeKind = "drop-role"
+	AlterRole                 ChangeKind = "alter-role"
+	// IncompleteAuthorization notes an authorization of a role that no
+	// longer fits its authorization object and grants nothing.
+	IncompleteAuthorization ChangeKind = "incomplete-authorization"
 
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
@@ -115,7 +121,8 @@ func (k ChangeKind) Physical() bool {
 		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage, CompileTransformation,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant,
-		CreateAuthorizationObject, DropAuthorizationObject, AlterAuthorizationObject:
+		CreateAuthorizationObject, DropAuthorizationObject, AlterAuthorizationObject,
+		CreateRole, DropRole, AlterRole, IncompleteAuthorization:
 		return false
 	}
 	return true

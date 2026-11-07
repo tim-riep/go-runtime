@@ -68,7 +68,7 @@ func examples(t *testing.T) []*model.Package {
 // /TRFIN/COMPANIES becomes its former COUNTRY field.
 func legacyExample(t *testing.T, name string) *model.Package {
 	p := testutil.Example(t, name)
-	p.Structures, p.ArrayTypes, p.StructureExtensions, p.AuthorizationObjects = nil, nil, nil, nil
+	p.Structures, p.ArrayTypes, p.StructureExtensions, p.AuthorizationObjects, p.Roles = nil, nil, nil, nil, nil
 	var tables []model.Table
 	for _, tb := range p.Tables {
 		if tb.Name == "/TRFIN/COMPANIES_ARCHIVE" {

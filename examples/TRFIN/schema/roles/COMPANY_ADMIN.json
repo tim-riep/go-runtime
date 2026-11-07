@@ -1,0 +1,24 @@
+{
+  "name": "/TRFIN/COMPANY_ADMIN",
+  "texts": {
+    "en": { "label": "Company administrator", "description": "All activities on all companies" },
+    "de": { "label": "Administration Firma" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "*" }],
+        "ACTIVITY": [{ "pattern": "*" }]
+      }
+    },
+    {
+      "object": "/TRFIN/STATUS_SCOPE",
+      "fields": {
+        "STATUS": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "*" }]
+      }
+    }
+  ]
+}

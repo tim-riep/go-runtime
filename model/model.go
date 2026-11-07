@@ -31,6 +31,9 @@ type PackageID string
 // and never used by a package.
 const Kernel PackageID = KernelPackageID
 
+// Local is the owner of local objects.
+const Local PackageID = LocalPackageID
+
 // String returns the ID, or "kernel" for the kernel owner.
 func (id PackageID) String() string {
 	if id == Kernel {
@@ -400,6 +403,7 @@ type Package struct {
 	Transformations      []Transformation
 	HTTPServices         []HTTPService
 	AuthorizationObjects []AuthorizationObject
+	Roles                []Role
 	Origin               string // where the package was loaded from
 }
 

@@ -29,6 +29,13 @@ const (
 	// KernelNamespace prefixes the names of all kernel objects.
 	KernelNamespace = "/" + KernelPackageID + "/"
 
+	// LocalPackageID is reserved for objects that operators create at
+	// runtime, such as local roles; no package may use it.
+	LocalPackageID = "LOCAL"
+
+	// LocalNamespace prefixes the names of local objects.
+	LocalNamespace = "/" + LocalPackageID + "/"
+
 	// TenantTable is the kernel table holding the tenants.
 	TenantTable = KernelNamespace + "TENANTS"
 

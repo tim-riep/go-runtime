@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11
+//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -53,6 +53,7 @@ var Migrations = []Migration{
 	{Version: 9, Dir: "v9"},   // http services and users
 	{Version: 10, Dir: "v10"}, // uses of asset repositories
 	{Version: 11, Dir: "v11"}, // authorization objects and activities
+	{Version: 12, Dir: "v12"}, // roles and role assignments
 }
 
 // Latest returns the newest version.

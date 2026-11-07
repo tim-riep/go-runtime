@@ -208,6 +208,9 @@ func (l *loader) load() *model.Package {
 	if m.ID == model.KernelPackageID && !l.opts.Kernel {
 		l.fail(rterr.CodeName, l.loc(ManifestFile).At("/id"), "package ID %s is reserved for the kernel", m.ID)
 	}
+	if m.ID == model.LocalPackageID {
+		l.fail(rterr.CodeName, l.loc(ManifestFile).At("/id"), "package ID %s is reserved for local objects", m.ID)
+	}
 	pkg.Manifest = model.Manifest{ID: model.PackageID(m.ID), Version: m.Version, Description: m.Description, LanguageVersion: m.LanguageVersion,
 		KernelPackage: m.KernelPackage, Capabilities: m.Capabilities}
 	if l.opts.Kernel {
@@ -286,9 +289,9 @@ func (l *loader) checkLayout() {
 	for _, e := range entries {
 		p := path.Join(SchemaDir, e.Name())
 		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir,
-			StructuresDir, ArrayTypesDir, StructureExtensionsDir, HTTPServicesDir, AuthorizationObjectsDir}
+			StructuresDir, ArrayTypesDir, StructureExtensionsDir, HTTPServicesDir, AuthorizationObjectsDir, RolesDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/, setting-extensions/, structures/, array-types/, structure-extensions/, http-services/ and authorization-objects/")
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/, setting-extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/ and roles/")
 		}
 	}
 }

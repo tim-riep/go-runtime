@@ -1,0 +1,6 @@
+{
+  "name": "/RT/USER_NAME",
+  "description": "Name of a user",
+  "type": "CHAR",
+  "length": 64
+}

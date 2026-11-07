@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/COMPANY_CLERK",
+  "texts": {
+    "en": { "label": "Company clerk", "description": "Reads and changes companies in Germany, Austria and Poland to Slovakia" },
+    "de": { "label": "Sachbearbeitung Firma" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "value": "DE" }, { "value": "AT" }, { "from": "PL", "to": "SK" }],
+        "ACTIVITY": [{ "value": "READ" }, { "value": "UPDATE" }]
+      }
+    }
+  ]
+}

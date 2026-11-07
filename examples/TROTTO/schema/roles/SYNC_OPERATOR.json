@@ -1,0 +1,16 @@
+{
+  "name": "/TROTTO/SYNC_OPERATOR",
+  "texts": {
+    "en": { "label": "OTTO connection operator", "description": "Runs the exchange with OTTO for German-speaking countries" },
+    "de": { "label": "Betrieb Anbindung OTTO" }
+  },
+  "authorizations": [
+    {
+      "object": "/TROTTO/SYNC",
+      "fields": {
+        "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }, { "value": "IMPORT" }]
+      }
+    }
+  ]
+}

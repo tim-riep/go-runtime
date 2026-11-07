@@ -234,8 +234,10 @@ func TestReflectorLiterals(t *testing.T) {
 			t.Errorf("unknown object with a literal: %v", err)
 		}
 		fin := testutil.CopyExample(t, "TRFIN")
-		if err := os.Remove(filepath.Join(fin, "schema", "authorization-objects", "COMPANY.json")); err != nil {
-			t.Fatal(err)
+		for _, f := range []string{"authorization-objects/COMPANY.json", "roles/COMPANY_CLERK.json", "roles/COMPANY_ADMIN.json"} {
+			if err := os.Remove(filepath.Join(fin, "schema", filepath.FromSlash(f))); err != nil {
+				t.Fatal(err)
+			}
 		}
 		pkg := testutil.LoadDir(t, fin)
 		pkg.Manifest.Version = "1.1.0"

@@ -83,6 +83,16 @@ func expectError(t *testing.T, fsys fstest.MapFS, code rterr.Code, file, pointer
 }
 
 func TestLoadErrors(t *testing.T) {
+	t.Run("package ID of local objects", func(t *testing.T) {
+		fsys := fstest.MapFS{"manifest.json": file(`{"id":"LOCAL","version":"1.0.0"}`)}
+		expectError(t, fsys, rterr.CodeName, "manifest.json", "/id")
+	})
+	t.Run("role entry with null", func(t *testing.T) {
+		fsys := validFS()
+		fsys["schema/roles/CLERK.json"] = file(`{"name":"/TRX/CLERK","texts":{"en":{"label":"Clerk"}},
+			"authorizations":[{"object":"/TRBASE/DOCS","fields":{"A":[{"value":null}]}}]}`)
+		expectError(t, fsys, rterr.CodeSchema, "schema/roles/CLERK.json", "/authorizations/0/fields/A/0/value")
+	})
 	t.Run("missing tenant flag", func(t *testing.T) {
 		fsys := validFS()
 		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","fields":[{"name":"A","domain":"ID"}],"primaryKey":["A"]}`)

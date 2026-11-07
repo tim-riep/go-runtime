@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/role.schema.json",
+  "title": "Role",
+  "description": "A role (schema/roles/<name without namespace>.json): authorizations on authorization objects, or as composite role a list of other roles. Local roles have the same format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "texts"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "authorizations"
+      ]
+    },
+    {
+      "required": [
+        "roles"
+      ]
+    }
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "authorizations": {
+      "description": "The authorizations of a single role. Every field of the object must be given; fields combine with and, the entries of a field with or.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "object",
+          "fields"
+        ],
+        "properties": {
+          "object": {
+            "$ref": "common.schema.json#/$defs/objectName"
+          },
+          "fields": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "additionalProperties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "A value {\"value\": v}, a range {\"from\": a, \"to\": b} with both bounds included, or a pattern {\"pattern\": p}: * for all values or a prefix followed by *. null is never granted.",
+                "oneOf": [
+                  {
+                    "required": [
+                      "value"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": [
+                          "string",
+                          "integer",
+                          "boolean"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": [
+                          "string",
+                          "integer",
+                          "boolean"
+                        ]
+                      },
+                      "to": {
+                        "type": [
+                          "string",
+                          "integer",
+                          "boolean"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "pattern"
+                    ],
+                    "properties": {
+                      "pattern": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "integer",
+                      "boolean"
+                    ]
+                  },
+                  "from": {
+                    "type": [
+                      "string",
+                      "integer",
+                      "boolean"
+                    ]
+                  },
+                  "to": {
+                    "type": [
+                      "string",
+                      "integer",
+                      "boolean"
+                    ]
+                  },
+                  "pattern": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "roles": {
+      "description": "The members of a composite role: single roles only.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "common.schema.json#/$defs/objectName"
+      }
+    }
+  }
+}

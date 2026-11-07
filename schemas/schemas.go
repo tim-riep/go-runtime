@@ -42,4 +42,5 @@ const (
 	Transformation      = "transformation.schema.json"
 	HTTPService         = "http-service.schema.json"
 	AuthorizationObject = "authorization-object.schema.json"
+	Role                = "role.schema.json"
 )
