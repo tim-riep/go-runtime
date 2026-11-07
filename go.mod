@@ -5,6 +5,7 @@ go 1.26.4
 require (
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
+	github.com/tim-riep/go-xslt v0.4.2
 	golang.org/x/text v0.41.0
 	modernc.org/sqlite v1.62.0
 )

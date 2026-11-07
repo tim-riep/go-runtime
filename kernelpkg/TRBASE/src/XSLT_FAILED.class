@@ -1,0 +1,12 @@
+# An XSLT stylesheet could not be compiled or a transformation failed.
+# LINE_NO is the line in the stylesheet, null when it is not known.
+public open class /TRBASE/XSLT_FAILED extends /RT/EXCEPTION
+
+  public attribute LINE_NO: INT4?
+
+  public constructor(text: STRING, line: INT4?)
+    super(text)
+    LINE_NO = line
+  end
+
+end

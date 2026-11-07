@@ -1,0 +1,55 @@
+# Uses the methods executed by kernel of TRBASE.
+public class /TRUSE/USE
+
+  public static method HASH(text: BYTES) returns BYTES
+    return /TRBASE/HASH.SHA256(text)
+  end
+
+  public static method IDS() returns BOOL
+    return /TRBASE/UUID.NEW() <> /TRBASE/UUID.NEW()
+  end
+
+  public static method NOW() returns TIMESTAMP
+    return /TRBASE/CLOCK.NOW()
+  end
+
+  public static method TODAY() returns DATE
+    return /TRBASE/CLOCK.TODAY()
+  end
+
+  public static method READ(pkg: STRING, path: STRING) returns STRING
+    try
+      return /TRBASE/ASSETS.READ(pkg, "xsl", path) as STRING
+    catch e: /TRBASE/ASSET_NOT_FOUND
+      return "not found: {e.PATH}"
+    end
+  end
+
+  public static method READ_DE(path: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND
+    return /TRBASE/ASSETS.READ_IN_LANGUAGE("TRUSE", "xsl", path, "de") as STRING
+  end
+
+  public static method RUN(name: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
+    var sheet = /TRBASE/ASSETS.READ("TRUSE", "xsl", "upper.xsl")
+    return /TRBASE/XSLT_UTILITIES.RUN(sheet, "<name>{name}</name>" as BYTES) as STRING
+  end
+
+  public static method MANY(names: array of STRING) returns array of STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
+    var sheet = /TRBASE/XSLT_STYLESHEET.COMPILE(/TRBASE/ASSETS.READ("TRUSE", "xsl", "upper.xsl"))
+    var out = new array of STRING
+    for name in names
+      out.APPEND(sheet.TRANSFORM("<name>{name}</name>" as BYTES) as STRING)
+    end
+    return out
+  end
+
+  public static method BROKEN() returns STRING
+    try
+      /TRBASE/XSLT_STYLESHEET.COMPILE("<xsl:stylesheet version=\"3.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n<xsl:template match=\"/\"><xsl:value-of select=\"((\"/></xsl:template>\n</xsl:stylesheet>" as BYTES)
+    catch e: /TRBASE/XSLT_FAILED
+      return "line {e.LINE_NO default 0}"
+    end
+    return "compiled"
+  end
+
+end

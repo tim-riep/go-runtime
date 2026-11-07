@@ -103,7 +103,7 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 		if err != nil {
 			return err
 		}
-		x := &execution{k: k, d: k.d, phys: phys, tenant: tenant, opts: opts, test: true}
+		x := &execution{k: k, d: k.d, phys: phys, schema: schema, ctx: ctx, tenant: tenant, opts: opts, test: true}
 		x.sessions = []*session{{x: x, n: 1}}
 		vo.Database = x
 		vo.MaxRows = opts.MaxRows

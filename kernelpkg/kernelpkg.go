@@ -26,6 +26,8 @@ import (
 	"slices"
 
 	"github.com/tim-riep/go-runtime/internal/pkgload"
+	// The implementations of the methods executed by kernel.
+	_ "github.com/tim-riep/go-runtime/kernelpkg/natives"
 	"github.com/tim-riep/go-runtime/model"
 )
 

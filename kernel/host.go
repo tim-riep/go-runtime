@@ -135,8 +135,23 @@ func (k *Kernel) RetryEffect(ctx context.Context, id string) error {
 	return &rterr.NotFound{Kind: "effect", Name: id}
 }
 
-func (x *execution) Assets(pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
-	return nil, errors.New("kernel: assets are not supported yet")
+func (x *execution) Assets(caller, pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
+	allowed := caller == pkg
+	if info := x.schema.Packages[caller]; info != nil {
+		for _, r := range info.Manifest.Requires {
+			allowed = allowed || r.ID == pkg
+		}
+	}
+	if !allowed {
+		return nil, fs.ErrNotExist
+	}
+	fsys, err := x.k.AssetFS(x.ctx, pkg, repo, lang)
+	var nf *rterr.NotFound
+	var anf *rterr.AssetNotFound
+	if errors.As(err, &nf) || errors.As(err, &anf) {
+		return nil, fs.ErrNotExist
+	}
+	return fsys, err
 }
 
 // SetClock replaces the clock of the kernel, for tests of code with the

@@ -96,6 +96,14 @@ func (m *Machine) convert(prog *Program, from, to TypeKind, p, s, extra int, v V
 	switch {
 	case from == to && from != TDec:
 		return v, nil
+	case from == TBytes && to == TString:
+		b, _ := v.R.([]byte)
+		if !utf8.Valid(b) {
+			return bad("the bytes are no valid UTF-8 text")
+		}
+		return Str(string(b)), nil
+	case from == TString && to == TBytes:
+		return Value{R: []byte(v.str())}, nil
 	case to == TString:
 		return Str(m.format(prog, from, extra, v)), nil
 	case isInt(from) && isInt(to):

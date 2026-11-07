@@ -1,0 +1,6 @@
+public class /TRBASE/HASH
+
+  # The SHA-256 hash of the data, 32 bytes.
+  public static method SHA256(data: BYTES) returns BYTES executed by kernel
+
+end

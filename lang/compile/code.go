@@ -453,7 +453,11 @@ func (f *fn) attrField(a *types.Attribute) bytecode.Field {
 	} else {
 		l = f.c.instLayout(a.Owner)
 	}
-	return l.Fields[l.Field(a.Name)]
+	fd := l.Fields[l.Field(a.Name)]
+	// The layout of a class of another package refers to the types of its
+	// program; the code uses those of this one.
+	fd.Type = f.c.typeDesc(a.Type)
+	return fd
 }
 
 func (f *fn) setAttr(a *types.Attribute) { f.setField(f.attrField(a)) }

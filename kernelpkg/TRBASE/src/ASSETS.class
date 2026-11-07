@@ -1,0 +1,9 @@
+# Reads assets of the calling package and of the packages it requires,
+# with the rules of asset repositories for language variants.
+public class /TRBASE/ASSETS
+
+  public static method READ(pkg: STRING, repository: STRING, path: STRING) returns BYTES raises /TRBASE/ASSET_NOT_FOUND executed by kernel
+
+  public static method READ_IN_LANGUAGE(pkg: STRING, repository: STRING, path: STRING, language: STRING) returns BYTES raises /TRBASE/ASSET_NOT_FOUND executed by kernel
+
+end

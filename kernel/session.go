@@ -34,6 +34,8 @@ type execution struct {
 	k        *Kernel
 	d        dialect.Dialect
 	phys     *model.Physical
+	schema   *model.Schema
+	ctx      context.Context // of the execution, for the host
 	tenant   string
 	opts     ExecOptions
 	sessions []*session

@@ -42,8 +42,10 @@ type Host interface {
 	// a session: 0 is the default session.
 	AfterCommit(session int, e Effect) error
 	// Assets returns the asset repository repo of a package for reading,
-	// with lang as language; nil when the package has no such repository.
-	Assets(pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error)
+	// with lang as language, if the package of caller may read it: its
+	// own and those of the packages it requires. It returns fs.ErrNotExist
+	// otherwise and when there is no such repository.
+	Assets(caller, pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error)
 }
 
 // Context is passed to every call of a native method. Its context.Context
@@ -100,12 +102,13 @@ func (c *Context) AfterCommit(session int, e Effect) error {
 	return c.Host.AfterCommit(session, e)
 }
 
-// Assets returns an asset repository of a package for reading.
+// Assets returns an asset repository of a package for reading, if the
+// package of the caller may read it.
 func (c *Context) Assets(pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
 	if c.Host == nil {
 		return nil, errors.New("native: assets need the kernel")
 	}
-	return c.Host.Assets(pkg, repo, lang)
+	return c.Host.Assets(c.Caller.Package, pkg, repo, lang)
 }
 
 // Effect is an effect outside of the VM and the database. It is

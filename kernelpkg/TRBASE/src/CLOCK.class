@@ -1,0 +1,9 @@
+# The current date and time of the kernel. Packages that use it declare the
+# capability clock.
+public class /TRBASE/CLOCK
+
+  public static method NOW() returns TIMESTAMP executed by kernel
+
+  public static method TODAY() returns DATE executed by kernel
+
+end

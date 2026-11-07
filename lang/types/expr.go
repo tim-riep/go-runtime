@@ -268,10 +268,9 @@ func convertible(from, to Type) bool {
 		return true
 	case num(fb.Kind) && num(tb.Kind):
 		return true
-	case tb.Kind == String:
-		return fb.Kind != Bytes
-	case fb.Kind == String:
-		return tb.Kind != Bytes
+	case tb.Kind == String, fb.Kind == String:
+		// BYTES and STRING convert with UTF-8.
+		return true
 	case fb.Kind == Date && tb.Kind == Timestamp, fb.Kind == Timestamp && tb.Kind == Date:
 		return true
 	}

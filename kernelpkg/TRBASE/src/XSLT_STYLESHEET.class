@@ -1,0 +1,9 @@
+# A compiled XSLT stylesheet, to transform many documents with one
+# stylesheet known only at runtime.
+public class /TRBASE/XSLT_STYLESHEET executed by kernel
+
+  public static method COMPILE(stylesheet: BYTES) returns /TRBASE/XSLT_STYLESHEET raises /TRBASE/XSLT_FAILED executed by kernel
+
+  public method TRANSFORM(input: BYTES) returns BYTES raises /TRBASE/XSLT_FAILED executed by kernel
+
+end

@@ -1,0 +1,6 @@
+public class /TRBASE/UUID
+
+  # A random UUID of version 4.
+  public static method NEW() returns UUID executed by kernel
+
+end
