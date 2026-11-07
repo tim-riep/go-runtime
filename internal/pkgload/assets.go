@@ -42,9 +42,9 @@ type assetDoc struct {
 		Description map[string]string `json:"description"`
 	} `json:"folders"`
 	Files map[string]struct {
-		MimeType    string            `json:"mimeType"`
-		Description map[string]string `json:"description"`
-		Languages   map[string]string `json:"languages"`
+		MimeType    model.Optional[string] `json:"mimeType"`
+		Description map[string]string      `json:"description"`
+		Languages   map[string]string      `json:"languages"`
 	} `json:"files"`
 }
 
@@ -182,8 +182,8 @@ func (l *loader) assetRepository(id, dir string, doc *assetDoc) *model.AssetRepo
 		if e.Folder {
 			continue
 		}
-		if e.MimeType == "" {
-			e.MimeType = mimetype.ForPath(e.Path)
+		if !e.MimeType.Valid() {
+			e.MimeType = model.Some(mimetype.ForPath(e.Path))
 		}
 		if p := model.AssetParent(e.Path); p != "" {
 			addFolder(p, e.Src)

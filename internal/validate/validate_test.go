@@ -57,7 +57,7 @@ func TestExamplesAreValid(t *testing.T) {
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if def := s.Tables["/TRFIN/COMPANIES"].Field("STATUS").Default; def == nil || *def != "ACTIVE" {
+	if def := s.Tables["/TRFIN/COMPANIES"].Field("STATUS").Default; def != model.ValueDefault("ACTIVE") {
 		t.Fatalf("default not normalized: %v", def)
 	}
 	up := testutil.AddPackages(t, testutil.KernelSchema(t), load(t).base, load(t).fin, testutil.Example(t, "upgrade/TROTTO"))
@@ -120,8 +120,8 @@ func TestUnknownDomain(t *testing.T) {
 
 func TestDomainNotVisible(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[1].DataElement = ""           // /TRFIN/COUNTRIES.NAME
-	e.fin.Tables[2].Fields[1].Domain = "/TROTTO/OTTO_ID" // TRFIN does not require TROTTO
+	e.fin.Tables[2].Fields[1].DataElement = model.None[string]() // /TRFIN/COUNTRIES.NAME
+	e.fin.Tables[2].Fields[1].Domain = "/TROTTO/OTTO_ID"         // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "OTTO_ID")
 }
 
@@ -152,7 +152,7 @@ func TestForeignKeyMustCoverKey(t *testing.T) {
 
 func TestForeignKeyTypeMismatch(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].Fields[0].DataElement = ""
+	e.fin.Tables[0].Fields[0].DataElement = model.None[string]()
 	e.fin.Tables[0].Fields[0].Domain = "/TRFIN/IBAN" // CHAR(34) referencing CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(34)")
 }

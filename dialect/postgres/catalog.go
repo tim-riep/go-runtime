@@ -16,6 +16,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/dialect"
@@ -23,10 +24,11 @@ import (
 )
 
 const tablesQuery = `
-SELECT c.relname, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull, a.atthasdef
+SELECT c.relname, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull, pg_get_expr(ad.adbin, ad.adrelid)
 FROM pg_catalog.pg_class c
 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+LEFT JOIN pg_catalog.pg_attrdef ad ON ad.adrelid = a.attrelid AND ad.adnum = a.attnum
 WHERE n.nspname = current_schema() AND c.relkind IN ('r', 'p')
 ORDER BY c.relname, a.attnum`
 
@@ -59,12 +61,20 @@ func (d *Dialect) Introspect(ctx context.Context, q dialect.Querier) (*dialect.C
 	}
 	for rows.Next() {
 		var tname, col, typ string
-		var notNull, hasDef bool
-		if err := rows.Scan(&tname, &col, &typ, &notNull, &hasDef); err != nil {
+		var notNull bool
+		var def sql.NullString
+		if err := rows.Scan(&tname, &col, &typ, &notNull, &def); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		table(tname).Columns[col] = dialect.CatalogColumn{Type: normalizeType(typ), NotNull: notNull, HasDefault: hasDef}
+		kind := model.DefaultNone
+		switch {
+		case def.Valid && (def.String == "NULL" || strings.HasPrefix(def.String, "NULL::")):
+			kind = model.DefaultNull
+		case def.Valid:
+			kind = model.DefaultValue
+		}
+		table(tname).Columns[col] = dialect.CatalogColumn{Type: normalizeType(typ), NotNull: notNull, Default: kind}
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
@@ -133,7 +143,7 @@ func (d *Dialect) Expected(p *model.Physical) *dialect.Catalog {
 		for i := range t.Fields {
 			f := &t.Fields[i]
 			dom := p.Domain(f)
-			ct.Columns[f.Name] = dialect.CatalogColumn{Type: d.ColumnType(dom), NotNull: f.NotNull, HasDefault: f.Default != nil}
+			ct.Columns[f.Name] = dialect.CatalogColumn{Type: d.ColumnType(dom), NotNull: f.NotNull, Default: f.ResolvedDefault.Kind}
 			if d.ColumnCheck(f.Name, dom) != "" {
 				ct.Constraints[model.CheckName(name, f.Name)] = true
 			}

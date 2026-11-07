@@ -42,27 +42,29 @@ type AssetRepositoryInfo struct {
 // HTTP handler needs for Content-Type, Content-Length, ETag and
 // Last-Modified.
 type AssetInfo struct {
-	Package     model.PackageID   `json:"package"`
-	Repository  string            `json:"repository"`
-	Path        string            `json:"path"`
-	Folder      bool              `json:"folder,omitempty"`
-	MimeType    string            `json:"mimeType,omitempty"`
-	Size        int64             `json:"size"`
-	SHA256      string            `json:"sha256,omitempty"`
-	ModifiedAt  time.Time         `json:"modifiedAt"`
-	Language    string            `json:"language,omitempty"` // chosen variant, "" for the language-independent version
-	Source      string            `json:"source,omitempty"`   // file in the package the content came from
-	Description map[string]string `json:"description,omitempty"`
-	Variants    []string          `json:"variants,omitempty"` // languages with a variant
-	HasNeutral  bool              `json:"hasNeutral,omitempty"`
+	Package     model.PackageID        `json:"package"`
+	Repository  string                 `json:"repository"`
+	Path        string                 `json:"path"`
+	Folder      bool                   `json:"folder,omitempty"`
+	MimeType    model.Optional[string] `json:"mimeType"` // None for folders
+	Size        int64                  `json:"size"`
+	SHA256      model.Optional[string] `json:"sha256"` // None for folders
+	ModifiedAt  time.Time              `json:"modifiedAt"`
+	Language    model.Optional[string] `json:"language"` // chosen variant, None for the language-independent version
+	Source      model.Optional[string] `json:"source"`   // file in the package the content came from, None for folders
+	Description map[string]string      `json:"description,omitempty"`
+	Variants    []string               `json:"variants,omitempty"` // languages with a variant
+	HasNeutral  bool                   `json:"hasNeutral,omitempty"`
 }
 
 // ETag returns a strong entity tag derived from the content hash.
+// ETag returns "" for folders, which have no content.
 func (i *AssetInfo) ETag() string {
-	if i.SHA256 == "" {
+	sha, ok := i.SHA256.Get()
+	if !ok {
 		return ""
 	}
-	return `"` + i.SHA256 + `"`
+	return `"` + sha + `"`
 }
 
 // AssetRepositories lists the asset repositories of a package, or of all
@@ -115,28 +117,29 @@ func (k *Kernel) assetRepository(ctx context.Context, pkg model.PackageID, id st
 // requested language, then English, then the language-independent version.
 // Without a language it prefers the language-independent version, then
 // English.
-func chooseContent(e *model.AssetEntry, lang string) (*model.AssetContent, string) {
-	if lang != "" {
-		if v := e.Variants[lang]; v != nil {
+func chooseContent(e *model.AssetEntry, lang model.Optional[string]) (*model.AssetContent, model.Optional[string]) {
+	en := model.Some(model.DefaultLanguage)
+	if l, ok := lang.Get(); ok {
+		if v := e.Variants[l]; v != nil {
 			return v, lang
 		}
 		if v := e.Variants[model.DefaultLanguage]; v != nil {
-			return v, model.DefaultLanguage
+			return v, en
 		}
-		return e.Content, ""
+		return e.Content, model.None[string]()
 	}
 	if e.Content != nil {
-		return e.Content, ""
+		return e.Content, model.None[string]()
 	}
 	if v := e.Variants[model.DefaultLanguage]; v != nil {
-		return v, model.DefaultLanguage
+		return v, en
 	}
-	return nil, ""
+	return nil, model.None[string]()
 }
 
 // assetInfo describes an entry; for assets in the version chosen for lang.
 // It returns nil if the asset has no version for lang.
-func assetInfo(r *model.AssetRepository, e *model.AssetEntry, lang string) *AssetInfo {
+func assetInfo(r *model.AssetRepository, e *model.AssetEntry, lang model.Optional[string]) *AssetInfo {
 	info := &AssetInfo{Package: r.Package, Repository: r.ID, Path: e.Path, Folder: e.Folder, MimeType: e.MimeType,
 		Description: e.Description, Variants: e.Languages(), HasNeutral: e.Content != nil}
 	if e.Folder {
@@ -146,24 +149,25 @@ func assetInfo(r *model.AssetRepository, e *model.AssetEntry, lang string) *Asse
 	if c == nil {
 		return nil
 	}
-	info.Size, info.SHA256, info.ModifiedAt, info.Language, info.Source = c.Size, c.SHA256, c.ModifiedAt, l, c.Source
+	info.Size, info.SHA256, info.ModifiedAt, info.Language, info.Source = c.Size, model.Some(c.SHA256), c.ModifiedAt, l, model.Some(c.Source)
 	return info
 }
 
-func notFound(pkg model.PackageID, repoID, path, lang string) error {
-	return &rterr.AssetNotFound{Package: string(pkg), Repository: repoID, Path: path, Language: lang}
+func notFound(pkg model.PackageID, repoID, path string, lang model.Optional[string]) error {
+	return &rterr.AssetNotFound{Package: string(pkg), Repository: repoID, Path: path, Language: lang.Or("")}
 }
 
 // StatAsset returns the metadata of a folder or of the version of an asset
 // chosen for lang.
-func (k *Kernel) StatAsset(ctx context.Context, pkg model.PackageID, repoID, path, lang string) (*AssetInfo, error) {
+// A lang of None asks for the language-independent version first.
+func (k *Kernel) StatAsset(ctx context.Context, pkg model.PackageID, repoID, path string, lang model.Optional[string]) (*AssetInfo, error) {
 	r, err := k.assetRepository(ctx, pkg, repoID)
 	if err != nil {
 		return nil, err
 	}
 	e := r.Entries[path]
 	if e == nil {
-		return nil, notFound(pkg, repoID, path, "")
+		return nil, notFound(pkg, repoID, path, model.None[string]())
 	}
 	info := assetInfo(r, e, lang)
 	if info == nil {
@@ -174,7 +178,7 @@ func (k *Kernel) StatAsset(ctx context.Context, pkg model.PackageID, repoID, pat
 
 // AssetExists reports whether a folder or asset exists.
 func (k *Kernel) AssetExists(ctx context.Context, pkg model.PackageID, repoID, path string) (bool, error) {
-	_, err := k.StatAsset(ctx, pkg, repoID, path, "")
+	_, err := k.StatAsset(ctx, pkg, repoID, path, model.None[string]())
 	var nf *rterr.AssetNotFound
 	if errors.As(err, &nf) && nf.Path != "" {
 		return false, nil
@@ -192,13 +196,13 @@ func (k *Kernel) ListAssets(ctx context.Context, pkg model.PackageID, repoID, di
 	}
 	if dir != "" {
 		if e := r.Entries[dir]; e == nil || !e.Folder {
-			return nil, notFound(pkg, repoID, dir, "")
+			return nil, notFound(pkg, repoID, dir, model.None[string]())
 		}
 	}
-	return children(r, dir, ""), nil
+	return children(r, dir, model.None[string]()), nil
 }
 
-func children(r *model.AssetRepository, dir, lang string) []AssetInfo {
+func children(r *model.AssetRepository, dir string, lang model.Optional[string]) []AssetInfo {
 	out := []AssetInfo{}
 	for _, p := range slices.Sorted(maps.Keys(r.Entries)) {
 		if model.AssetParent(p) != dir {
@@ -213,7 +217,7 @@ func children(r *model.AssetRepository, dir, lang string) []AssetInfo {
 
 // OpenAsset opens the version of an asset chosen for lang for reading. The
 // content is streamed from the database chunk by chunk.
-func (k *Kernel) OpenAsset(ctx context.Context, pkg model.PackageID, repoID, path, lang string) (*AssetReader, error) {
+func (k *Kernel) OpenAsset(ctx context.Context, pkg model.PackageID, repoID, path string, lang model.Optional[string]) (*AssetReader, error) {
 	info, err := k.StatAsset(ctx, pkg, repoID, path, lang)
 	if err != nil {
 		return nil, err
@@ -249,7 +253,7 @@ func (r *AssetReader) Read(p []byte) (int, error) {
 	}
 	seq := r.pos / repo.ChunkSize
 	if seq != r.seq {
-		data, err := r.k.repo.ReadChunk(r.ctx, r.k.db, r.info.SHA256, seq+1)
+		data, err := r.k.repo.ReadChunk(r.ctx, r.k.db, r.info.SHA256.Or(""), seq+1)
 		if err != nil {
 			return 0, err
 		}

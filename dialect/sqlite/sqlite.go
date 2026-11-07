@@ -119,6 +119,9 @@ func (*Dialect) ColumnCheck(column string, d *model.Domain) string {
 	case model.UUID:
 		conds = append(conds, c+" GLOB "+uuidGlob)
 	}
+	if d.Type.IsString() && !d.AllowsEmpty() {
+		conds = append(conds, c+" <> ''")
+	}
 	if len(d.Values) > 0 {
 		conds = append(conds, c+" IN ("+dialect.ValueList(d)+")")
 	}
@@ -156,14 +159,11 @@ func (d *Dialect) columnDef(p *model.Physical, f *model.Field) (string, error) {
 	if f.NotNull {
 		s += " NOT NULL"
 	}
-	if f.Default != nil {
-		lit, err := d.Literal(dom, *f.Default)
-		if err != nil {
-			return "", err
-		}
-		s += " DEFAULT " + lit
+	def, err := dialect.DefaultClause(d.Literal, dom, f.ResolvedDefault)
+	if err != nil {
+		return "", err
 	}
-	return s, nil
+	return s + def, nil
 }
 
 // createTable renders CREATE TABLE for t under the given name. Constraint
@@ -263,7 +263,7 @@ func (d *Dialect) alter(cur, want *model.Physical, c, w *model.Table, chs []plan
 // is no key field, no foreign key uses it, and NOT NULL comes with a default.
 func (d *Dialect) canAdd(t *model.Table, column string) bool {
 	f := t.Field(column)
-	if f == nil || t.IsKey(column) || (f.NotNull && f.Default == nil) {
+	if f == nil || t.IsKey(column) || (f.NotNull && f.ResolvedDefault.Kind != model.DefaultValue) {
 		return false
 	}
 	for _, fk := range t.ForeignKeys {

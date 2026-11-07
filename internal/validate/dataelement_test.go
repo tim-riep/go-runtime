@@ -40,7 +40,7 @@ func TestDataElementResolvesDomain(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := s.Physical().Tables["/TRFIN/COMPANIES"].Field("COUNTRY")
-	if f.DataElement != "/TRBASE/COUNTRY" || f.Domain != "/TRBASE/COUNTRY_CODE" {
+	if f.DataElement != model.Some("/TRBASE/COUNTRY") || f.Domain != "/TRBASE/COUNTRY_CODE" {
 		t.Fatalf("physical field: %+v", f)
 	}
 	if s.Tables["/TRFIN/COMPANIES"].Field("COUNTRY").Domain != "" {
@@ -59,19 +59,19 @@ func TestFieldWithDomainAndDataElement(t *testing.T) {
 
 func TestFieldWithoutType(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[1].Fields[0].DataElement = ""
+	e.fin.Tables[1].Fields[0].DataElement = model.None[string]()
 	expect(t, e.schema(t), rterr.CodeDataElement, "needs a domain or a data element")
 }
 
 func TestUnknownDataElement(t *testing.T) {
 	e := load(t)
-	e.otto.Extensions[0].Fields[0].DataElement = "NOPE"
+	e.otto.Extensions[0].Fields[0].DataElement = model.Some("NOPE")
 	expect(t, e.schema(t), rterr.CodeDataElement, "data element NOPE does not exist")
 }
 
 func TestDataElementNotVisible(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[2].Fields[0].DataElement = "/TROTTO/OTTO_PARTNER" // TRFIN does not require TROTTO
+	e.fin.Tables[2].Fields[0].DataElement = model.Some("/TROTTO/OTTO_PARTNER") // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "data element /TROTTO/OTTO_PARTNER")
 }
 
@@ -130,6 +130,6 @@ func TestDataElementTypeCompatibility(t *testing.T) {
 		t.Fatalf("consistent change rejected: %v", err)
 	}
 	e = load(t)
-	e.otto.Tables[0].Fields[0].DataElement = "/TRBASE/NAME" // /TROTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRFIN/COMPANIES CHAR(10)
+	e.otto.Tables[0].Fields[0].DataElement = model.Some("/TRBASE/NAME") // /TROTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRFIN/COMPANIES CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(80)")
 }

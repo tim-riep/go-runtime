@@ -46,7 +46,7 @@ func TestLoadValid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if pkg.Manifest.ID != "TRX" || len(pkg.Manifest.Requires) != 1 || pkg.Manifest.Requires[0].Constraint != ">=1.0.0" {
+	if pkg.Manifest.ID != "TRX" || len(pkg.Manifest.Requires) != 1 || pkg.Manifest.Requires[0].Constraint != model.Some(">=1.0.0") {
 		t.Fatalf("manifest: %+v", pkg.Manifest)
 	}
 	if len(pkg.Domains) != 2 || len(pkg.Tables) != 1 || len(pkg.Extensions) != 1 {

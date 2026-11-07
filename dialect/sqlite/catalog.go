@@ -82,7 +82,14 @@ func columns(ctx context.Context, q dialect.Querier, table string, t *dialect.Ca
 		if err := rows.Scan(&name, &typ, &notNull, &def, &pk); err != nil {
 			return err
 		}
-		t.Columns[name] = dialect.CatalogColumn{Type: strings.ToUpper(typ), NotNull: notNull, HasDefault: def.Valid}
+		kind := model.DefaultNone
+		switch {
+		case def.Valid && strings.EqualFold(def.String, "NULL"):
+			kind = model.DefaultNull
+		case def.Valid:
+			kind = model.DefaultValue
+		}
+		t.Columns[name] = dialect.CatalogColumn{Type: strings.ToUpper(typ), NotNull: notNull, Default: kind}
 		if pk > 0 {
 			keys[pk] = name
 		}
@@ -131,7 +138,7 @@ func (d *Dialect) Expected(p *model.Physical) *dialect.Catalog {
 		for i := range t.Fields {
 			f := &t.Fields[i]
 			dom := p.Domain(f)
-			ct.Columns[f.Name] = dialect.CatalogColumn{Type: d.ColumnType(dom), NotNull: f.NotNull, HasDefault: f.Default != nil}
+			ct.Columns[f.Name] = dialect.CatalogColumn{Type: d.ColumnType(dom), NotNull: f.NotNull, Default: f.ResolvedDefault.Kind}
 			if d.ColumnCheck(f.Name, dom) != "" {
 				ct.Constraints[model.CheckName(name, f.Name)] = true
 			}

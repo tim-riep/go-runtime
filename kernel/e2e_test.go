@@ -37,7 +37,7 @@ func TestEndToEnd(t *testing.T) {
 
 		// Two tenants.
 		for _, id := range []string{"ACME", "GLOBEX"} {
-			if _, err := k.Tenants().Create(ctx, id, id+" tenant"); err != nil {
+			if _, err := k.Tenants().Create(ctx, id, model.Some(id+" tenant")); err != nil {
 				t.Fatal(err)
 			}
 		}

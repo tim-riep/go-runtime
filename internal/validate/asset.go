@@ -61,13 +61,13 @@ func (v *validator) assetRepository(r *model.AssetRepository) {
 			v.languages(eobj, e.Src, slices.Sorted(maps.Keys(e.Description)))
 		}
 		if e.Folder {
-			if e.Content != nil || len(e.Variants) > 0 || e.MimeType != "" {
+			if e.Content != nil || len(e.Variants) > 0 || e.MimeType.Valid() {
 				v.fail(rterr.CodeAsset, e.Src, eobj, "folders have no content")
 			}
 			continue
 		}
-		if !model.ValidMimeType(e.MimeType) {
-			v.fail(rterr.CodeAsset, e.Src, eobj, "invalid media type %q", e.MimeType)
+		if mt, ok := e.MimeType.Get(); !ok || !model.ValidMimeType(mt) {
+			v.fail(rterr.CodeAsset, e.Src, eobj, "invalid media type %s", e.MimeType)
 		}
 		if e.Content == nil && len(e.Variants) == 0 {
 			v.fail(rterr.CodeAsset, e.Src, eobj, "the asset has neither content nor language variants")

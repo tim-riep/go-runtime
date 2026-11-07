@@ -110,7 +110,7 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 		if err != nil {
 			return err
 		}
-		p := &plan.Plan{Operation: plan.LanguageRemove, Dialect: k.d.Name(), Target: code}
+		p := &plan.Plan{Operation: plan.LanguageRemove, Dialect: k.d.Name(), Target: model.Some(code)}
 		texts := 0
 		for _, table := range repo.TextTables {
 			if n := counts[table]; n > 0 {
@@ -139,7 +139,7 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 		if err := k.repo.DeleteLanguage(ctx, q, code); err != nil {
 			return err
 		}
-		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {
 		if err := run(k.db, false); err != nil {

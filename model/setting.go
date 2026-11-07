@@ -34,18 +34,18 @@ type Operations struct {
 
 // SettingText holds the label of a setting in one language.
 type SettingText struct {
-	Label       string `json:"label"`
-	Description string `json:"description,omitempty"`
+	Label       string           `json:"label"`
+	Description Optional[string] `json:"description"`
 }
 
 // SettingTable is a table of a setting. Every table but the root names its
 // parent table in the setting and its foreign key to that parent.
 type SettingTable struct {
-	Table      string         `json:"table"`
-	Parent     string         `json:"parent,omitempty"`
-	ForeignKey string         `json:"foreignKey,omitempty"`
-	Operations Operations     `json:"operations"`
-	Src        rterr.Location `json:"-"`
+	Table      string           `json:"table"`
+	Parent     Optional[string] `json:"parent"`     // None for the root
+	ForeignKey Optional[string] `json:"foreignKey"` // None for the root
+	Operations Operations       `json:"operations"`
+	Src        rterr.Location   `json:"-"`
 }
 
 // Setting groups tables that together form one configuration, as a tree

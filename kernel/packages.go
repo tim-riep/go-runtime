@@ -68,7 +68,7 @@ func (k *Kernel) Install(ctx context.Context, pkgs []*model.Package, opts Option
 		packages: func(*model.Schema) []plan.PackageChange {
 			var out []plan.PackageChange
 			for _, p := range order {
-				out = append(out, plan.PackageChange{ID: string(p.Manifest.ID), To: p.Manifest.Version})
+				out = append(out, plan.PackageChange{ID: string(p.Manifest.ID), To: model.Some(p.Manifest.Version)})
 			}
 			return out
 		},
@@ -108,7 +108,7 @@ func (k *Kernel) Upgrade(ctx context.Context, pkg *model.Package, opts Options) 
 	return k.apply(ctx, operation{
 		op: plan.Upgrade,
 		packages: func(*model.Schema) []plan.PackageChange {
-			return []plan.PackageChange{{ID: string(id), From: from, To: pkg.Manifest.Version}}
+			return []plan.PackageChange{{ID: string(id), From: model.Some(from), To: model.Some(pkg.Manifest.Version)}}
 		},
 		target: func(cur *model.Schema, now time.Time) (*model.Schema, error) {
 			info, ok := cur.Packages[id]
@@ -140,7 +140,7 @@ func (k *Kernel) Uninstall(ctx context.Context, id model.PackageID, opts Options
 	return k.apply(ctx, operation{
 		op: plan.Uninstall,
 		packages: func(*model.Schema) []plan.PackageChange {
-			return []plan.PackageChange{{ID: string(id), From: from}}
+			return []plan.PackageChange{{ID: string(id), From: model.Some(from)}}
 		},
 		target: func(cur *model.Schema, _ time.Time) (*model.Schema, error) {
 			info, ok := cur.Packages[id]

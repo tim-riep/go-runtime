@@ -26,6 +26,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/model"
@@ -196,7 +197,7 @@ func assets(cur, want *model.Schema) []plan.Change {
 			}
 			var parts []string
 			if ce.MimeType != we.MimeType {
-				parts = append(parts, "media type "+ce.MimeType+" -> "+we.MimeType)
+				parts = append(parts, "media type "+ce.MimeType.Or("none")+" -> "+we.MimeType.Or("none"))
 			}
 			if !maps.Equal(ce.Description, we.Description) {
 				parts = append(parts, "description")
@@ -245,7 +246,7 @@ func describeContent(c *model.AssetContent) string {
 }
 
 func describeAsset(e *model.AssetEntry) string {
-	parts := []string{e.MimeType}
+	parts := []string{e.MimeType.Or("no media type")}
 	if e.Content != nil {
 		parts = append(parts, describeContent(e.Content))
 	}
@@ -256,8 +257,8 @@ func describeAsset(e *model.AssetEntry) string {
 }
 
 func describeReference(f *model.Field) string {
-	if f.DataElement != "" {
-		return "data element " + f.DataElement
+	if de, ok := f.DataElement.Get(); ok {
+		return "data element " + de
 	}
 	return "domain " + f.Domain
 }
@@ -266,6 +267,15 @@ func describeReference(f *model.Field) string {
 // of a domain.
 func compareDomains(c, w *model.Domain) (detail string, destructive, changed bool) {
 	var parts []string
+	if c.AllowsEmpty() != w.AllowsEmpty() {
+		changed = true
+		parts = append(parts, fmt.Sprintf("allowEmpty %v -> %v", c.AllowsEmpty(), w.AllowsEmpty()))
+		destructive = destructive || !w.AllowsEmpty()
+	}
+	if c.Default != w.Default {
+		changed = true
+		parts = append(parts, describeDefault(c.Default)+" -> "+describeDefault(w.Default))
+	}
 	if c.TypeString() != w.TypeString() {
 		changed = true
 		parts = append(parts, c.TypeString()+" -> "+w.TypeString())
@@ -361,7 +371,7 @@ func columns(cur, want *model.Physical, c, w *model.Table) []plan.Change {
 		wd := want.Domain(wf)
 		if cf == nil {
 			ch := plan.Change{Kind: plan.AddColumn, Table: t, Column: wf.Name, Detail: wd.TypeString()}
-			if wf.NotNull && wf.Default == nil {
+			if wf.NotNull && wf.ResolvedDefault.Kind != model.DefaultValue {
 				ch.Destructive = true
 				ch.Detail += ", NOT NULL without default fails for existing rows"
 			}
@@ -387,14 +397,18 @@ func columns(cur, want *model.Physical, c, w *model.Table) []plan.Change {
 			}
 			out = append(out, plan.Change{Kind: plan.AlterValues, Table: t, Column: wf.Name, Detail: detail, Destructive: restricts(cd, wd)})
 		}
+		if cd.AllowsEmpty() != wd.AllowsEmpty() && wd.Type.IsString() {
+			out = append(out, plan.Change{Kind: plan.AlterValues, Table: t, Column: wf.Name,
+				Detail: fmt.Sprintf("allowEmpty %v -> %v", cd.AllowsEmpty(), wd.AllowsEmpty()), Destructive: !wd.AllowsEmpty()})
+		}
 		switch {
 		case wf.NotNull && !cf.NotNull:
 			out = append(out, plan.Change{Kind: plan.SetNotNull, Table: t, Column: wf.Name, Destructive: true})
 		case !wf.NotNull && cf.NotNull:
 			out = append(out, plan.Change{Kind: plan.DropNotNull, Table: t, Column: wf.Name})
 		}
-		if !sameDefault(cf.Default, wf.Default) {
-			out = append(out, plan.Change{Kind: plan.SetDefault, Table: t, Column: wf.Name, Detail: describeDefault(wf.Default)})
+		if cf.ResolvedDefault != wf.ResolvedDefault {
+			out = append(out, plan.Change{Kind: plan.SetDefault, Table: t, Column: wf.Name, Detail: describeDefault(wf.ResolvedDefault)})
 		}
 	}
 	for _, cf := range c.Fields {
@@ -444,16 +458,12 @@ func sameKey(a, b *model.ForeignKey) bool {
 	return a.Target == b.Target && slices.Equal(a.Columns, b.Columns)
 }
 
-func sameDefault(a, b *string) bool {
-	if a == nil || b == nil {
-		return a == b
+func describeDefault(d model.Default) string {
+	switch d.Kind {
+	case model.DefaultNull:
+		return "default null"
+	case model.DefaultValue:
+		return "default " + strconv.Quote(d.Value)
 	}
-	return *a == *b
-}
-
-func describeDefault(d *string) string {
-	if d == nil {
-		return "no default"
-	}
-	return "default " + *d
+	return "no default"
 }

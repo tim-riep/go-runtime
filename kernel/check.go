@@ -95,8 +95,8 @@ func compareCatalogs(want, got *dialect.Catalog) []Discrepancy {
 				add(name+"."+col, "type is %s, expected %s", gc.Type, wc.Type)
 			case gc.NotNull != wc.NotNull:
 				add(name+"."+col, "NOT NULL is %v, expected %v", gc.NotNull, wc.NotNull)
-			case gc.HasDefault != wc.HasDefault:
-				add(name+"."+col, "has default is %v, expected %v", gc.HasDefault, wc.HasDefault)
+			case gc.Default != wc.Default:
+				add(name+"."+col, "default is %s, expected %s", gc.Default, wc.Default)
 			}
 		}
 		for col := range gt.Columns {

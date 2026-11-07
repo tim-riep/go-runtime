@@ -273,7 +273,9 @@ func fieldRefs(fs []fieldDoc) []NameRef {
 	var out []NameRef
 	for i, f := range fs {
 		out = append(out, ref(f.Domain, fmt.Sprintf("/fields/%d/domain", i))...)
-		out = append(out, ref(f.DataElement, fmt.Sprintf("/fields/%d/dataElement", i))...)
+		if de, ok := f.DataElement.Get(); ok {
+			out = append(out, ref(de, fmt.Sprintf("/fields/%d/dataElement", i))...)
+		}
 	}
 	return out
 }
@@ -297,7 +299,9 @@ func nodeRefs(ts []settingTableDoc) []NameRef {
 	var out []NameRef
 	for i, t := range ts {
 		out = append(out, ref(t.Table, fmt.Sprintf("/tables/%d/table", i))...)
-		out = append(out, ref(t.Parent, fmt.Sprintf("/tables/%d/parent", i))...)
+		if parent, ok := t.Parent.Get(); ok {
+			out = append(out, ref(parent, fmt.Sprintf("/tables/%d/parent", i))...)
+		}
 	}
 	return out
 }

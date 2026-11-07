@@ -26,8 +26,12 @@ import (
 func pkg(id, version string, reqs ...string) *model.Package {
 	p := &model.Package{Manifest: model.Manifest{ID: model.PackageID(id), Version: version}}
 	for _, r := range reqs {
-		rid, c, _ := strings.Cut(r, " ")
-		p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(rid), Constraint: c})
+		rid, c, hasConstraint := strings.Cut(r, " ")
+		dep := model.Dependency{ID: model.PackageID(rid)}
+		if hasConstraint {
+			dep.Constraint = model.Some(c)
+		}
+		p.Manifest.Requires = append(p.Manifest.Requires, dep)
 	}
 	return p
 }

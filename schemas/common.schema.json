@@ -44,11 +44,12 @@
           "default": false
         },
         "default": {
-          "description": "Default value. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "description": "Default value. A missing default, null and \"\" are three different cases: no default, the explicit default null, and the empty string. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
           "type": [
             "string",
             "integer",
-            "boolean"
+            "boolean",
+            "null"
           ]
         },
         "dataElement": {
@@ -193,11 +194,12 @@
           "default": false
         },
         "default": {
-          "description": "Default value. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "description": "Default value. A missing default, null and \"\" are three different cases: no default, the explicit default null, and the empty string. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
           "type": [
             "string",
             "integer",
-            "boolean"
+            "boolean",
+            "null"
           ]
         },
         "dataElement": {

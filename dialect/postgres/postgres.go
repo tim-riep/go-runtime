@@ -91,10 +91,15 @@ func (*Dialect) ColumnType(d *model.Domain) string {
 // ColumnCheck implements dialect.Dialect. Native types cover everything but
 // fixed values.
 func (*Dialect) ColumnCheck(column string, d *model.Domain) string {
-	if len(d.Values) == 0 {
-		return ""
+	c := dialect.QuoteIdent(column)
+	var conds []string
+	if d.Type.IsString() && !d.AllowsEmpty() {
+		conds = append(conds, c+" <> ''")
 	}
-	return dialect.QuoteIdent(column) + " IN (" + dialect.ValueList(d) + ")"
+	if len(d.Values) > 0 {
+		conds = append(conds, c+" IN ("+dialect.ValueList(d)+")")
+	}
+	return strings.Join(conds, " AND ")
 }
 
 // Literal implements dialect.Dialect.
@@ -116,14 +121,11 @@ func (d *Dialect) columnDef(p *model.Physical, f *model.Field) (string, error) {
 	if f.NotNull {
 		s += " NOT NULL"
 	}
-	if f.Default != nil {
-		lit, err := d.Literal(dom, *f.Default)
-		if err != nil {
-			return "", err
-		}
-		s += " DEFAULT " + lit
+	def, err := dialect.DefaultClause(d.Literal, dom, f.ResolvedDefault)
+	if err != nil {
+		return "", err
 	}
-	return s, nil
+	return s + def, nil
 }
 
 func fkConstraint(table string, fk *model.ForeignKey) string {
@@ -268,12 +270,10 @@ func (d *Dialect) PlanChanges(cur, want *model.Physical, changes []plan.Change) 
 		case plan.SetDefault:
 			f := want.Tables[t].Field(ch.Column)
 			action := "DROP DEFAULT"
-			if f.Default != nil {
-				lit, err := d.Literal(want.Domain(f), *f.Default)
-				if err != nil {
-					return nil, err
-				}
-				action = "SET DEFAULT " + lit
+			if def, err := dialect.DefaultClause(d.Literal, want.Domain(f), f.ResolvedDefault); err != nil {
+				return nil, err
+			} else if def != "" {
+				action = "SET" + def
 			}
 			step.Statements = []string{alterTable(t, "ALTER COLUMN "+dialect.QuoteIdent(ch.Column)+" "+action)}
 			alters = append(alters, step)

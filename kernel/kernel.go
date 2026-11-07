@@ -209,7 +209,7 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 			}
 		}
 		executed = true
-		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {
 		if err := run(k.db, false); err != nil {
@@ -327,7 +327,7 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.persist(ctx, q, want); err != nil {
 			return err
 		}
-		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {
 		if err := run(k.db, false); err != nil {
@@ -410,7 +410,7 @@ func (k *Kernel) execute(ctx context.Context, q dialect.Querier, p *plan.Plan) e
 	return nil
 }
 
-func (k *Kernel) logEntry(p *plan.Plan, started time.Time, status, message string) *repo.LogEntry {
+func (k *Kernel) logEntry(p *plan.Plan, started time.Time, status string, message model.Optional[string]) *repo.LogEntry {
 	e := &repo.LogEntry{Operation: logOperation(p.Operation), Target: p.Target, StartedAt: started, FinishedAt: k.timestamp(), Status: status, Message: message}
 	for _, pc := range p.Packages {
 		e.Packages = append(e.Packages, repo.LogPackage{ID: pc.ID, From: pc.From, To: pc.To})
@@ -423,7 +423,7 @@ func (k *Kernel) logEntry(p *plan.Plan, started time.Time, status, message strin
 	return e
 }
 
-func (k *Kernel) writeLog(ctx context.Context, q dialect.Querier, p *plan.Plan, started time.Time, status, message string) error {
+func (k *Kernel) writeLog(ctx context.Context, q dialect.Querier, p *plan.Plan, started time.Time, status string, message model.Optional[string]) error {
 	e := k.logEntry(p, started, status, message)
 	if err := k.repo.WriteLog(ctx, q, e); err != nil {
 		return err
@@ -436,7 +436,7 @@ func (k *Kernel) writeLog(ctx context.Context, q dialect.Querier, p *plan.Plan, 
 // error is what the caller needs.
 func (k *Kernel) logFailure(ctx context.Context, p *plan.Plan, started time.Time, cause error) {
 	_ = k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
-		return k.writeLog(ctx, tx, p, started, repo.StatusFailed, cause.Error())
+		return k.writeLog(ctx, tx, p, started, repo.StatusFailed, model.Some(cause.Error()))
 	})
 }
 

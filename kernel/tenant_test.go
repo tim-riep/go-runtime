@@ -31,15 +31,15 @@ func TestTenants(t *testing.T) {
 		withData(t, k) // creates ACME
 		ten := k.Tenants()
 		var ia *rterr.InvalidArgument
-		if _, err := ten.Create(ctx, "acme", ""); !errors.As(err, &ia) {
+		if _, err := ten.Create(ctx, "acme", model.None[string]()); !errors.As(err, &ia) {
 			t.Fatalf("lower-case tenant accepted: %v", err)
 		}
-		if _, err := ten.Create(ctx, "GLOBEX", "Globex Corp"); err != nil {
+		if _, err := ten.Create(ctx, "GLOBEX", model.Some("Globex Corp")); err != nil {
 			t.Fatal(err)
 		}
-		violation(t, func() error { _, err := ten.Create(ctx, "GLOBEX", ""); return err }(), rterr.ViolationUnique, "duplicate tenant")
+		violation(t, func() error { _, err := ten.Create(ctx, "GLOBEX", model.None[string]()); return err }(), rterr.ViolationUnique, "duplicate tenant")
 		list, err := ten.List(ctx)
-		if err != nil || len(list) != 2 || list[1].ID != "GLOBEX" || list[1].Description != "Globex Corp" || list[1].CreatedAt.IsZero() {
+		if err != nil || len(list) != 2 || list[1].ID != "GLOBEX" || list[1].Description != model.Some("Globex Corp") || list[1].CreatedAt.IsZero() {
 			t.Fatalf("list: %v %+v", err, list)
 		}
 
@@ -77,7 +77,7 @@ func TestTenants(t *testing.T) {
 			t.Fatalf("tenants: %+v", list)
 		}
 		log, _ := k.Log(ctx)
-		if log[0].Operation != "TENANT_DELETE" || log[0].Target != tenantA {
+		if log[0].Operation != "TENANT_DELETE" || log[0].Target != model.Some(tenantA) {
 			t.Errorf("log: %+v", log[0])
 		}
 		var nf *rterr.NotFound

@@ -34,7 +34,7 @@ import (
 //
 // The metadata of the repository is read once when the file system is
 // created; contents are streamed from the database when files are read.
-func (k *Kernel) AssetFS(ctx context.Context, pkg model.PackageID, repoID, lang string) (fs.FS, error) {
+func (k *Kernel) AssetFS(ctx context.Context, pkg model.PackageID, repoID string, lang model.Optional[string]) (fs.FS, error) {
 	r, err := k.assetRepository(ctx, pkg, repoID)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ type assetFS struct {
 	ctx  context.Context
 	k    *Kernel
 	repo *model.AssetRepository
-	lang string
+	lang model.Optional[string]
 }
 
 var (

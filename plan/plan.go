@@ -19,6 +19,8 @@ package plan
 import (
 	"fmt"
 	"strings"
+
+	"github.com/tim-riep/go-runtime/model"
 )
 
 // Operation names the kind of operation a plan belongs to.
@@ -157,21 +159,21 @@ type Step struct {
 
 // PackageChange records the version change of one package.
 type PackageChange struct {
-	ID   string `json:"id"`
-	From string `json:"from,omitempty"`
-	To   string `json:"to,omitempty"`
+	ID   string                 `json:"id"`
+	From model.Optional[string] `json:"from"` // None for installations
+	To   model.Optional[string] `json:"to"`   // None for removals
 }
 
 // Plan is the complete description of an operation.
 type Plan struct {
-	Operation Operation       `json:"operation"`
-	Dialect   string          `json:"dialect"`
-	Packages  []PackageChange `json:"packages,omitempty"`
-	Target    string          `json:"target,omitempty"` // e.g. the tenant of a tenant deletion
-	Changes   []Change        `json:"changes"`
-	Steps     []Step          `json:"steps"`
-	Executed  bool            `json:"executed"`
-	LogID     string          `json:"logId,omitempty"`
+	Operation Operation              `json:"operation"`
+	Dialect   string                 `json:"dialect"`
+	Packages  []PackageChange        `json:"packages,omitempty"`
+	Target    model.Optional[string] `json:"target"` // e.g. the tenant of a tenant deletion
+	Changes   []Change               `json:"changes"`
+	Steps     []Step                 `json:"steps"`
+	Executed  bool                   `json:"executed"`
+	LogID     string                 `json:"logId,omitempty"`
 }
 
 // Destructive returns the destructive changes.
@@ -229,16 +231,16 @@ func (p *Plan) Summary() string {
 	var parts []string
 	for _, pc := range p.Packages {
 		switch {
-		case pc.From == "":
-			parts = append(parts, pc.ID+" "+pc.To)
-		case pc.To == "":
-			parts = append(parts, pc.ID+" "+pc.From)
+		case !pc.From.Valid():
+			parts = append(parts, pc.ID+" "+pc.To.Or(""))
+		case !pc.To.Valid():
+			parts = append(parts, pc.ID+" "+pc.From.Or(""))
 		default:
-			parts = append(parts, fmt.Sprintf("%s %s -> %s", pc.ID, pc.From, pc.To))
+			parts = append(parts, fmt.Sprintf("%s %s -> %s", pc.ID, pc.From.Or(""), pc.To.Or("")))
 		}
 	}
-	if p.Target != "" {
-		parts = append(parts, p.Target)
+	if t, ok := p.Target.Get(); ok {
+		parts = append(parts, t)
 	}
 	return fmt.Sprintf("%s %s (%s)", p.Operation, strings.Join(parts, ", "), p.Dialect)
 }

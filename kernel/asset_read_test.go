@@ -44,7 +44,7 @@ func exampleFile(t *testing.T, pkg, rel string) []byte {
 	return b
 }
 
-func readAsset(t *testing.T, k *kernel.Kernel, pkg model.PackageID, repo, path, lang string) ([]byte, *kernel.AssetInfo) {
+func readAsset(t *testing.T, k *kernel.Kernel, pkg model.PackageID, repo, path string, lang model.Optional[string]) ([]byte, *kernel.AssetInfo) {
 	t.Helper()
 	r, err := k.OpenAsset(context.Background(), pkg, repo, path, lang)
 	if err != nil {
@@ -66,35 +66,40 @@ func TestReadAssets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		logo, info := readAsset(t, k, "TRFIN", "web", "images/logo.png", "")
+		logo, info := readAsset(t, k, "TRFIN", "web", "images/logo.png", model.None[string]())
 		if !bytes.Equal(logo, exampleFile(t, "TRFIN", "web/images/logo.png")) {
 			t.Fatal("logo differs from the package file")
 		}
 		sum := sha256.Sum256(logo)
-		if info.MimeType != "image/png" || info.Size != int64(len(logo)) || info.ETag() != `"`+hex.EncodeToString(sum[:])+`"` || info.ModifiedAt.IsZero() {
+		if info.MimeType != model.Some("image/png") || info.Size != int64(len(logo)) || info.ETag() != `"`+hex.EncodeToString(sum[:])+`"` || info.ModifiedAt.IsZero() {
 			t.Fatalf("info: %+v", info)
 		}
 
 		// Language variants with fallback.
-		for _, c := range []struct{ path, lang, want, chosen string }{
-			{"invoice/invoice.xsl", "de", "invoice/invoice_de.xsl", "de"},
-			{"invoice/invoice.xsl", "pl", "invoice/invoice_en.xsl", "en"},
-			{"invoice/invoice.xsl", "", "invoice/invoice_en.xsl", "en"},
-			{"letter/letter.xsl", "de", "letter/letter_de.xsl", "de"},
-			{"letter/letter.xsl", "fr", "letter/letter.xsl", ""},
-			{"letter/letter.xsl", "", "letter/letter.xsl", ""},
+		none, de, en := model.None[string](), model.Some("de"), model.Some("en")
+		for _, c := range []struct {
+			path         string
+			lang, chosen model.Optional[string]
+			want         string
+		}{
+			{"invoice/invoice.xsl", de, de, "invoice/invoice_de.xsl"},
+			{"invoice/invoice.xsl", model.Some("pl"), en, "invoice/invoice_en.xsl"},
+			{"invoice/invoice.xsl", none, en, "invoice/invoice_en.xsl"},
+			{"letter/letter.xsl", de, de, "letter/letter_de.xsl"},
+			{"letter/letter.xsl", model.Some("fr"), none, "letter/letter.xsl"},
+			{"letter/letter.xsl", none, none, "letter/letter.xsl"},
 		} {
 			b, info := readAsset(t, k, "TRFIN", "templates", c.path, c.lang)
-			if !bytes.Equal(b, exampleFile(t, "TRFIN", "templates/"+c.want)) || info.Language != c.chosen || info.Source != c.want {
-				t.Errorf("%s in %q: got %s (language %q)", c.path, c.lang, info.Source, info.Language)
+			if !bytes.Equal(b, exampleFile(t, "TRFIN", "templates/"+c.want)) || info.Language != c.chosen || info.Source != model.Some(c.want) {
+				t.Errorf("%s in %s: got %s (language %s)", c.path, c.lang, info.Source, info.Language)
 			}
 		}
-		_, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice_de.xsl", "")
+		_, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice_de.xsl", model.None[string]())
 		if !errors.Is(err, fs.ErrNotExist) {
 			t.Fatalf("variant files must not be readable under their own path: %v", err)
 		}
 		var nf *rterr.AssetNotFound
-		if _, err := k.OpenAsset(ctx, "TRFIN", "nope", "x", ""); !errors.As(err, &nf) || nf.Path != "" {
+		if _, err := k.OpenAsset(ctx, "TRFIN", "nope", "x", model.None[string]()); !errors.As(err, &nf) || nf.Path != "" {
 			t.Fatalf("unknown repository: %v", err)
 		}
 
@@ -145,11 +150,11 @@ func TestAssetStreamingAndFS(t *testing.T) {
 			t.Fatalf("chunks: %d", n)
 		}
 
-		got, _ := readAsset(t, k, "TRBIG", "data", "big.bin", "")
+		got, _ := readAsset(t, k, "TRBIG", "data", "big.bin", model.None[string]())
 		if !bytes.Equal(got, big) {
 			t.Fatal("streamed content differs")
 		}
-		r, err := k.OpenAsset(ctx, "TRBIG", "data", "big.bin", "")
+		r, err := k.OpenAsset(ctx, "TRBIG", "data", "big.bin", model.None[string]())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -162,7 +167,7 @@ func TestAssetStreamingAndFS(t *testing.T) {
 		}
 		r.Close()
 
-		de, err := k.AssetFS(ctx, "TRBIG", "data", "de")
+		de, err := k.AssetFS(ctx, "TRBIG", "data", model.Some("de"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,7 +188,7 @@ func TestAssetStreamingAndFS(t *testing.T) {
 		if string(b) != `{{define "page"}}deutsch {{.}}{{end}}` {
 			t.Fatalf("German version: %s", b)
 		}
-		en, _ := k.AssetFS(ctx, "TRBIG", "data", "en")
+		en, _ := k.AssetFS(ctx, "TRBIG", "data", model.Some("en"))
 		b, _ = fs.ReadFile(en, "page.html")
 		if !strings.Contains(string(b), "neutral") {
 			t.Fatalf("fallback to the language-independent version: %s", b)

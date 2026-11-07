@@ -164,7 +164,7 @@ func TestDataElementChanges(t *testing.T) {
 	p := build(func(s *model.Schema) {
 		f := s.Tables["/TRFIN/BANK_ACCOUNTS"].Field("IBAN")
 		s.DataElements["/TRFIN/IBAN"] = &model.DataElement{Name: "/TRFIN/IBAN", Owner: "TRFIN", Domain: "/TRFIN/IBAN", Texts: map[string]model.DataElementText{}}
-		f.Domain, f.DataElement = "", "/TRFIN/IBAN"
+		f.Domain, f.DataElement = "", model.Some("/TRFIN/IBAN")
 	})
 	if got := kinds(p); !slices.Equal(got, []plan.ChangeKind{plan.CreateDataElement, plan.AlterFieldReference}) || len(p.Steps) != 0 {
 		t.Fatalf("changes %v, %d steps", got, len(p.Steps))

@@ -42,7 +42,7 @@
       "minimum": 0
     },
     "values": {
-      "description": "Fixed values. Only CHAR, INT4 and INT8 domains may have them.",
+      "description": "Fixed values. Only CHAR, INT4 and INT8 domains may have them. The empty string is a valid fixed value; null never is.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -63,6 +63,19 @@
           }
         }
       }
+    },
+    "allowEmpty": {
+      "description": "Whether fields of the domain accept the empty string. Only for CHAR and STRING; default true. With false the kernel adds a check that rejects \"\".",
+      "type": "boolean"
+    },
+    "default": {
+      "description": "Default of fields of the domain that declare no default of their own. A missing default, null and \"\" are three different cases.",
+      "type": [
+        "string",
+        "integer",
+        "boolean",
+        "null"
+      ]
     }
   },
   "allOf": [
@@ -111,6 +124,27 @@
         "not": {
           "required": [
             "decimals"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "not": {
+              "enum": [
+                "CHAR",
+                "STRING"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "allowEmpty"
           ]
         }
       }

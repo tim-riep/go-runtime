@@ -22,7 +22,10 @@
 // TenantSpecific and its rows are always read and written for one tenant.
 //
 // The types are stable: fields are only added, never renamed or removed,
-// within one FormatVersion.
+// within one FormatVersion. null and "" are different values throughout:
+// optional texts are model.Optional and written as null when absent, and a
+// default is left out when there is none, written as null for the default
+// null and as a string otherwise.
 package setting
 
 import (
@@ -34,7 +37,7 @@ import (
 )
 
 // FormatVersion is the version of the structure of Definition.
-const FormatVersion = 1
+const FormatVersion = 2
 
 // Definition is the resolved definition of a setting.
 type Definition struct {
@@ -60,8 +63,8 @@ type Definition struct {
 
 // Text is the label of a setting in one language.
 type Text struct {
-	Label       string `json:"label"`
-	Description string `json:"description,omitempty"`
+	Label       string                 `json:"label"`
+	Description model.Optional[string] `json:"description"`
 }
 
 // Operations are the operations allowed on the rows of a table.
@@ -69,8 +72,8 @@ type Operations = model.Operations
 
 // Table is a table of the setting with its dependent tables.
 type Table struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	Name        string                 `json:"name"`
+	Description model.Optional[string] `json:"description"`
 	// Owner is the package that owns the table.
 	Owner model.PackageID `json:"owner"`
 	// Origin is the package that added the table to the setting: the owner
@@ -99,11 +102,11 @@ type ParentKey struct {
 
 // Field is a field of a table.
 type Field struct {
-	Name        string            `json:"name"`      // physical name
-	LocalName   string            `json:"localName"` // name as declared
-	Description string            `json:"description,omitempty"`
-	Owner       model.PackageID   `json:"owner"`
-	Origin      model.FieldOrigin `json:"origin"` // TABLE or EXTENSION
+	Name        string                 `json:"name"`      // physical name
+	LocalName   string                 `json:"localName"` // name as declared
+	Description model.Optional[string] `json:"description"`
+	Owner       model.PackageID        `json:"owner"`
+	Origin      model.FieldOrigin      `json:"origin"` // TABLE or EXTENSION
 	// DataElement carries the labels; nil means the field has none and is
 	// shown with its technical name.
 	DataElement *DataElement       `json:"dataElement,omitempty"`
@@ -114,7 +117,11 @@ type Field struct {
 	FixedValues []model.FixedValue `json:"fixedValues,omitempty"`
 	NotNull     bool               `json:"notNull"`
 	Key         bool               `json:"key"`
-	Default     *string            `json:"default,omitempty"` // canonical text form
+	// Default is the effective default: none (left out), null, or a value
+	// in canonical text form, including "".
+	Default model.Default `json:"default,omitzero"`
+	// AllowEmpty tells whether the field accepts "" (CHAR and STRING only).
+	AllowEmpty model.Optional[bool] `json:"allowEmpty"`
 	// FromParent marks fields filled through the key to the parent table.
 	FromParent bool `json:"fromParent,omitempty"`
 	// ValueHelps are derived from the foreign keys the field takes part
@@ -201,6 +208,7 @@ func Resolve(s *model.Schema, languages []string, id string) (*Definition, error
 		d.Extensions = append(d.Extensions, e.Package)
 	}
 	tables := map[string]*Table{}
+	parentOf := func(n model.SettingNode) string { p, _ := n.Parent.Get(); return p }
 	for _, n := range s.SettingNodes(id) {
 		pt := phys.Tables[n.Table]
 		if pt == nil {
@@ -213,9 +221,9 @@ func Resolve(s *model.Schema, languages []string, id string) (*Definition, error
 			d.DataClass, d.TenantSpecific = pt.DataClass, pt.TenantSpecific
 			continue
 		}
-		parent := tables[n.Parent]
+		parent := tables[parentOf(n)]
 		if parent == nil {
-			return nil, &rterr.NotFound{Kind: "parent table", Name: n.Parent}
+			return nil, &rterr.NotFound{Kind: "parent table of " + n.Table, Name: n.Parent.String()}
 		}
 		parent.Children = append(parent.Children, t)
 	}
@@ -242,8 +250,8 @@ func resolveTable(phys *model.Physical, pt *model.Table, n model.SettingNode, la
 		}
 	}
 	fromParent := map[string]bool{}
-	if !n.Root {
-		if fk := pt.ForeignKey(n.ForeignKey); fk != nil {
+	if name, ok := n.ForeignKey.Get(); ok && !n.Root {
+		if fk := pt.ForeignKey(name); fk != nil {
 			t.ParentKey = &ParentKey{Name: fk.Name, Table: fk.Target, Fields: withoutTenant(fk.Columns)}
 			for _, c := range t.ParentKey.Fields {
 				fromParent[c.Field] = true
@@ -256,14 +264,17 @@ func resolveTable(phys *model.Physical, pt *model.Table, n model.SettingNode, la
 		}
 		dom := phys.Domain(&f)
 		rf := Field{Name: f.Name, LocalName: f.LocalName, Description: f.Description, Owner: f.Owner, Origin: f.Origin,
-			Domain: f.Domain, NotNull: f.NotNull, Key: pt.IsKey(f.Name), Default: f.Default, FromParent: fromParent[f.Name]}
+			Domain: f.Domain, NotNull: f.NotNull, Key: pt.IsKey(f.Name), Default: f.ResolvedDefault, FromParent: fromParent[f.Name]}
 		if dom != nil {
 			rf.Type, rf.FixedValues = dom.Type, slices.Clone(dom.Values)
+			if dom.Type.IsString() {
+				rf.AllowEmpty = model.Some(dom.AllowsEmpty())
+			}
 			if dom.Type.HasLength() {
 				rf.Length, rf.Decimals = dom.Length, dom.Decimals
 			}
 		}
-		if de := phys.DataElements[f.DataElement]; de != nil {
+		if de := phys.DataElements[f.DataElement.Or("")]; de != nil && f.DataElement.Valid() {
 			rf.DataElement = &DataElement{Name: de.Name, Owner: de.Owner, Texts: map[string]model.DataElementText{}}
 			for _, l := range langs {
 				if txt, ok := de.Texts[l]; ok {

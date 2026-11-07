@@ -106,22 +106,22 @@ func (l *loader) fail(code rterr.Code, loc rterr.Location, format string, args .
 }
 
 type manifestDoc struct {
-	ID          string `json:"id"`
-	Version     string `json:"version"`
-	Description string `json:"description"`
+	ID          string                 `json:"id"`
+	Version     string                 `json:"version"`
+	Description model.Optional[string] `json:"description"`
 	Requires    []struct {
-		ID      string `json:"id"`
-		Version string `json:"version"`
+		ID      string                 `json:"id"`
+		Version model.Optional[string] `json:"version"`
 	} `json:"requires"`
 }
 
 type fieldDoc struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Domain      string          `json:"domain"`
-	DataElement string          `json:"dataElement"`
-	NotNull     bool            `json:"notNull"`
-	Default     json.RawMessage `json:"default"`
+	Name        string                 `json:"name"`
+	Description model.Optional[string] `json:"description"`
+	Domain      string                 `json:"domain"`
+	DataElement model.Optional[string] `json:"dataElement"`
+	NotNull     bool                   `json:"notNull"`
+	Default     json.RawMessage        `json:"default"`
 }
 
 type fkDoc struct {
@@ -134,14 +134,16 @@ type fkDoc struct {
 }
 
 type domainDoc struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-	Length      int    `json:"length"`
-	Decimals    int    `json:"decimals"`
+	Name        string                 `json:"name"`
+	Description model.Optional[string] `json:"description"`
+	Type        string                 `json:"type"`
+	Length      int                    `json:"length"`
+	Decimals    int                    `json:"decimals"`
+	AllowEmpty  model.Optional[bool]   `json:"allowEmpty"`
+	Default     json.RawMessage        `json:"default"`
 	Values      []struct {
-		Value       json.RawMessage `json:"value"`
-		Description string          `json:"description"`
+		Value       json.RawMessage        `json:"value"`
+		Description model.Optional[string] `json:"description"`
 	} `json:"values"`
 }
 
@@ -152,10 +154,10 @@ type dataElementDoc struct {
 }
 
 type settingTableDoc struct {
-	Table      string           `json:"table"`
-	Parent     string           `json:"parent"`
-	ForeignKey string           `json:"foreignKey"`
-	Operations model.Operations `json:"operations"`
+	Table      string                 `json:"table"`
+	Parent     model.Optional[string] `json:"parent"`
+	ForeignKey model.Optional[string] `json:"foreignKey"`
+	Operations model.Operations       `json:"operations"`
 }
 
 type settingDoc struct {
@@ -171,20 +173,20 @@ type settingExtensionDoc struct {
 }
 
 type tableDoc struct {
-	Name           string     `json:"name"`
-	Description    string     `json:"description"`
-	TenantSpecific bool       `json:"tenantSpecific"`
-	DataClass      string     `json:"dataClass"`
-	Fields         []fieldDoc `json:"fields"`
-	PrimaryKey     []string   `json:"primaryKey"`
-	ForeignKeys    []fkDoc    `json:"foreignKeys"`
+	Name           string                 `json:"name"`
+	Description    model.Optional[string] `json:"description"`
+	TenantSpecific bool                   `json:"tenantSpecific"`
+	DataClass      string                 `json:"dataClass"`
+	Fields         []fieldDoc             `json:"fields"`
+	PrimaryKey     []string               `json:"primaryKey"`
+	ForeignKeys    []fkDoc                `json:"foreignKeys"`
 }
 
 type extensionDoc struct {
-	Table       string     `json:"table"`
-	Description string     `json:"description"`
-	Fields      []fieldDoc `json:"fields"`
-	ForeignKeys []fkDoc    `json:"foreignKeys"`
+	Table       string                 `json:"table"`
+	Description model.Optional[string] `json:"description"`
+	Fields      []fieldDoc             `json:"fields"`
+	ForeignKeys []fkDoc                `json:"foreignKeys"`
 }
 
 func (l *loader) load() *model.Package {
@@ -400,7 +402,8 @@ func (l *loader) domain(file string, doc *domainDoc) model.Domain {
 	loc := l.loc(file)
 	d := model.Domain{
 		Name: doc.Name, Owner: l.owner(), Description: doc.Description,
-		Type: model.BaseType(doc.Type), Length: doc.Length, Decimals: doc.Decimals, Src: loc,
+		Type: model.BaseType(doc.Type), Length: doc.Length, Decimals: doc.Decimals, AllowEmpty: doc.AllowEmpty,
+		DefaultJSON: doc.Default, Src: loc,
 	}
 	for i, v := range doc.Values {
 		canon, err := d.ParseJSON(v.Value)

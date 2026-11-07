@@ -107,9 +107,26 @@ type CatalogTable struct {
 
 // CatalogColumn is one column of a CatalogTable.
 type CatalogColumn struct {
-	Type       string
-	NotNull    bool
-	HasDefault bool
+	Type    string
+	NotNull bool
+	Default model.DefaultKind // none, NULL or a value
+}
+
+// DefaultClause renders the DEFAULT clause of a column: nothing without
+// default, DEFAULT NULL for the explicit default null and DEFAULT <literal>
+// for a value, including ”.
+func DefaultClause(literal func(*model.Domain, string) (string, error), dom *model.Domain, def model.Default) (string, error) {
+	switch def.Kind {
+	case model.DefaultNull:
+		return " DEFAULT NULL", nil
+	case model.DefaultValue:
+		lit, err := literal(dom, def.Value)
+		if err != nil {
+			return "", err
+		}
+		return " DEFAULT " + lit, nil
+	}
+	return "", nil
 }
 
 // CatalogForeignKey is one foreign key of a CatalogTable.

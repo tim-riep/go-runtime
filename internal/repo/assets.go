@@ -93,8 +93,8 @@ func (r *Repo) loadAssetsWhere(ctx context.Context, q dialect.Querier, s *model.
 		if ar == nil {
 			return fmt.Errorf("repository: asset %s of unknown repository", str(rw["PATH"]))
 		}
-		e := &model.AssetEntry{Path: str(rw["PATH"]), Folder: str(rw["KIND"]) == kindFolder, MimeType: str(rw["MIME_TYPE"])}
-		if sha := str(rw["SHA256"]); sha != "" {
+		e := &model.AssetEntry{Path: str(rw["PATH"]), Folder: str(rw["KIND"]) == kindFolder, MimeType: opt(rw["MIME_TYPE"])}
+		if sha, ok := opt(rw["SHA256"]).Get(); ok {
 			e.Content = &model.AssetContent{Source: str(rw["SOURCE_PATH"]), Size: int64(num(rw["SIZE"])), SHA256: sha, ModifiedAt: tm(rw["MODIFIED_AT"])}
 		}
 		ar.Entries[e.Path] = e
@@ -148,7 +148,11 @@ func (r *Repo) writeAssets(ctx context.Context, q dialect.Querier, s *model.Sche
 		for _, p := range ar.Paths() {
 			e := ar.Entries[p]
 			ek := with(k, row{"PATH": p})
-			vals := row{"KIND": kindFile, "PARENT_PATH": nullable(model.AssetParent(p)), "MIME_TYPE": nullable(e.MimeType)}
+			var parent any // top-level entries have no parent
+			if pp := model.AssetParent(p); pp != "" {
+				parent = pp
+			}
+			vals := row{"KIND": kindFile, "PARENT_PATH": parent, "MIME_TYPE": val(e.MimeType)}
 			if e.Folder {
 				vals["KIND"] = kindFolder
 			}

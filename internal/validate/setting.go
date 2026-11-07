@@ -106,28 +106,35 @@ func (v *validator) setting(st *model.Setting, phys *model.Physical, owners map[
 			continue
 		}
 		loc := n.Src
-		parent, ok := inTree[n.Parent]
+		parentName := n.Parent.Or("")
+		parent, ok := inTree[parentName]
 		switch {
-		case !ok:
-			v.fail(rterr.CodeSetting, loc.At("/parent"), obj, "parent %s of table %s is not part of the setting", n.Parent, n.Table)
+		case !n.Parent.Valid():
+			v.fail(rterr.CodeSetting, loc.At("/parent"), obj, "table %s has no parent", n.Table)
 			continue
-		case n.Parent == n.Table:
+		case !ok:
+			v.fail(rterr.CodeSetting, loc.At("/parent"), obj, "parent %s of table %s is not part of the setting", parentName, n.Table)
+			continue
+		case parentName == n.Table:
 			v.fail(rterr.CodeSetting, loc.At("/parent"), obj, "table %s cannot be its own parent", n.Table)
 			continue
 		case n.Origin != st.Owner && !v.s.Visible(n.Origin, parent.Origin):
 			v.fail(rterr.CodeNotVisible, loc.At("/parent"), obj, "table %s was added by package %s, which %s does not require", n.Parent, parent.Origin, n.Origin)
 		}
-		children[n.Parent] = append(children[n.Parent], n.Table)
+		children[parentName] = append(children[parentName], n.Table)
 		pt := phys.Tables[n.Table]
 		if pt == nil {
 			continue
 		}
-		fk := pt.ForeignKey(n.ForeignKey)
+		fkName, hasFK := n.ForeignKey.Get()
+		fk := pt.ForeignKey(fkName)
 		switch {
+		case !hasFK:
+			v.fail(rterr.CodeSetting, loc.At("/foreignKey"), obj, "table %s names no foreign key to its parent", n.Table)
 		case fk == nil:
-			v.fail(rterr.CodeSetting, loc.At("/foreignKey"), obj, "table %s has no foreign key %s", n.Table, n.ForeignKey)
-		case fk.Target != n.Parent:
-			v.fail(rterr.CodeSetting, loc.At("/foreignKey"), obj, "foreign key %s.%s references %s, not the parent %s", n.Table, n.ForeignKey, fk.Target, n.Parent)
+			v.fail(rterr.CodeSetting, loc.At("/foreignKey"), obj, "table %s has no foreign key %s", n.Table, fkName)
+		case fk.Target != parentName:
+			v.fail(rterr.CodeSetting, loc.At("/foreignKey"), obj, "foreign key %s.%s references %s, not the parent %s", n.Table, fkName, fk.Target, parentName)
 		}
 	}
 	reached := map[string]bool{}

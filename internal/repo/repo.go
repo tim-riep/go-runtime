@@ -230,12 +230,75 @@ func str(v any) string {
 	return s
 }
 
-func optStr(v any) *string {
-	s, ok := v.(string)
-	if !ok {
+// opt reads a nullable text column: NULL is None, "" is Some("").
+func opt(v any) model.Optional[string] {
+	if s, ok := v.(string); ok {
+		return model.Some(s)
+	}
+	return model.None[string]()
+}
+
+// val writes an optional text: None is NULL, Some("") is "".
+func val(o model.Optional[string]) any {
+	if s, ok := o.Get(); ok {
+		return s
+	}
+	return nil
+}
+
+func optBool(v any) model.Optional[bool] {
+	if b, ok := v.(bool); ok {
+		return model.Some(b)
+	}
+	return model.None[bool]()
+}
+
+func valBool(o model.Optional[bool]) any {
+	if b, ok := o.Get(); ok {
+		return b
+	}
+	return nil
+}
+
+// owner reads an owner column, which is NULL for kernel objects.
+func owner(v any) model.PackageID {
+	if s, ok := v.(string); ok {
+		return model.PackageID(s)
+	}
+	return model.Kernel
+}
+
+// ownerValue writes an owner column: NULL for the kernel.
+func ownerValue(id model.PackageID) any {
+	if id == model.Kernel {
 		return nil
 	}
-	return &s
+	return string(id)
+}
+
+// readDefault reads DEFAULT_KIND and DEFAULT_VALUE. Repositories without
+// DEFAULT_KIND knew only values.
+func readDefault(kind, value any) model.Default {
+	switch k, _ := kind.(string); k {
+	case "NULL":
+		return model.NullDefault()
+	case "VALUE":
+		v, _ := value.(string)
+		return model.ValueDefault(v)
+	case "":
+		if v, ok := value.(string); ok {
+			return model.ValueDefault(v)
+		}
+	}
+	return model.NoDefault()
+}
+
+// writeDefault returns the values of DEFAULT_KIND and DEFAULT_VALUE.
+func writeDefault(d model.Default) (any, any) {
+	if d.Kind == model.DefaultValue {
+		return d.Kind.String(), d.Value
+	}
+	return d.Kind.String(), nil
 }
 
 func num(v any) int {
@@ -251,14 +314,6 @@ func flag(v any) bool {
 func tm(v any) time.Time {
 	t, _ := v.(time.Time)
 	return t
-}
-
-// nullable maps empty strings and the kernel owner to NULL.
-func nullable(s string) any {
-	if s == "" {
-		return nil
-	}
-	return s
 }
 
 func nullableInt(n int, ok bool) any {
@@ -294,9 +349,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		return nil, err
 	}
 	for _, p := range pkgs {
-		id := model.PackageID(str(p["PACKAGE_ID"]))
+		id := owner(p["PACKAGE_ID"])
 		s.Packages[id] = &model.PackageInfo{
-			Manifest:    model.Manifest{ID: id, Version: str(p["VERSION"]), Description: str(p["DESCRIPTION"])},
+			Manifest:    model.Manifest{ID: id, Version: str(p["VERSION"]), Description: opt(p["DESCRIPTION"])},
 			InstalledAt: tm(p["INSTALLED_AT"]), UpdatedAt: tm(p["UPDATED_AT"]),
 		}
 	}
@@ -305,19 +360,21 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		return nil, err
 	}
 	for _, d := range deps {
-		if p := s.Packages[model.PackageID(str(d["PACKAGE_ID"]))]; p != nil {
-			p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(str(d["REQUIRED_ID"])), Constraint: str(d["VERSION_CONSTRAINT"])})
+		if p := s.Packages[owner(d["PACKAGE_ID"])]; p != nil {
+			p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(str(d["REQUIRED_ID"])), Constraint: opt(d["VERSION_CONSTRAINT"])})
 		}
 	}
 
-	doms, err := r.selectRows(ctx, q, TDomains, []string{"DOMAIN_NAME", "PACKAGE_ID", "DESCRIPTION", "BASE_TYPE", "LENGTH", "DECIMALS"})
+	doms, err := r.selectRows(ctx, q, TDomains, []string{"DOMAIN_NAME", "PACKAGE_ID", "DESCRIPTION", "BASE_TYPE", "LENGTH", "DECIMALS",
+		"DEFAULT_KIND", "DEFAULT_VALUE", "ALLOW_EMPTY"})
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range doms {
 		name := str(d["DOMAIN_NAME"])
-		s.Domains[name] = &model.Domain{Name: name, Owner: model.PackageID(str(d["PACKAGE_ID"])), Description: str(d["DESCRIPTION"]),
-			Type: model.BaseType(str(d["BASE_TYPE"])), Length: num(d["LENGTH"]), Decimals: num(d["DECIMALS"])}
+		s.Domains[name] = &model.Domain{Name: name, Owner: owner(d["PACKAGE_ID"]), Description: opt(d["DESCRIPTION"]),
+			Type: model.BaseType(str(d["BASE_TYPE"])), Length: num(d["LENGTH"]), Decimals: num(d["DECIMALS"]),
+			Default: readDefault(d["DEFAULT_KIND"], d["DEFAULT_VALUE"]), AllowEmpty: optBool(d["ALLOW_EMPTY"])}
 	}
 	vals, err := r.selectRows(ctx, q, TDomainValues, []string{"DOMAIN_NAME", "VALUE", "DESCRIPTION"}, "DOMAIN_NAME", "POSITION")
 	if err != nil {
@@ -325,7 +382,7 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	}
 	for _, v := range vals {
 		if d := s.Domains[str(v["DOMAIN_NAME"])]; d != nil {
-			d.Values = append(d.Values, model.FixedValue{Value: str(v["VALUE"]), Description: str(v["DESCRIPTION"])})
+			d.Values = append(d.Values, model.FixedValue{Value: str(v["VALUE"]), Description: opt(v["DESCRIPTION"])})
 		}
 	}
 
@@ -335,7 +392,7 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	}
 	for _, d := range des {
 		name := str(d["DATA_ELEMENT"])
-		s.DataElements[name] = &model.DataElement{Name: name, Owner: model.PackageID(str(d["PACKAGE_ID"])), Domain: str(d["DOMAIN_NAME"]),
+		s.DataElements[name] = &model.DataElement{Name: name, Owner: owner(d["PACKAGE_ID"]), Domain: str(d["DOMAIN_NAME"]),
 			Texts: map[string]model.DataElementText{}}
 	}
 	deTexts, err := r.selectRows(ctx, q, TDataElementTexts, []string{"DATA_ELEMENT", "LANGUAGE", "SHORT_LABEL", "MEDIUM_LABEL", "LONG_LABEL", "HEADING", "DESCRIPTION"})
@@ -345,7 +402,7 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	for _, t := range deTexts {
 		if d := s.DataElements[str(t["DATA_ELEMENT"])]; d != nil {
 			d.Texts[str(t["LANGUAGE"])] = model.DataElementText{Short: str(t["SHORT_LABEL"]), Medium: str(t["MEDIUM_LABEL"]),
-				Long: str(t["LONG_LABEL"]), Heading: str(t["HEADING"]), Description: str(t["DESCRIPTION"])}
+				Long: str(t["LONG_LABEL"]), Heading: str(t["HEADING"]), Description: opt(t["DESCRIPTION"])}
 		}
 	}
 
@@ -357,9 +414,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	for _, t := range tabs {
 		name := str(t["TABLE_NAME"])
 		if provisional {
-			t["DATA_CLASS"] = string(ProvisionalClass(model.PackageID(str(t["PACKAGE_ID"]))))
+			t["DATA_CLASS"] = string(ProvisionalClass(owner(t["PACKAGE_ID"])))
 		}
-		s.Tables[name] = &model.Table{Name: name, Owner: model.PackageID(str(t["PACKAGE_ID"])), Description: str(t["DESCRIPTION"]),
+		s.Tables[name] = &model.Table{Name: name, Owner: owner(t["PACKAGE_ID"]), Description: opt(t["DESCRIPTION"]),
 			TenantSpecific: flag(t["TENANT_SPECIFIC"]), DataClass: model.DataClass(str(t["DATA_CLASS"]))}
 	}
 	exts, err := r.selectRows(ctx, q, TExtensions, []string{"PACKAGE_ID", "TABLE_NAME", "DESCRIPTION"})
@@ -367,12 +424,12 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		return nil, err
 	}
 	for _, e := range exts {
-		ext := &model.Extension{Package: model.PackageID(str(e["PACKAGE_ID"])), Table: str(e["TABLE_NAME"]), Description: str(e["DESCRIPTION"])}
+		ext := &model.Extension{Package: owner(e["PACKAGE_ID"]), Table: str(e["TABLE_NAME"]), Description: opt(e["DESCRIPTION"])}
 		s.Extensions[ext.Key()] = ext
 	}
 
 	fields, err := r.selectRows(ctx, q, TFields, []string{"TABLE_NAME", "FIELD_NAME", "LOCAL_NAME", "DESCRIPTION", "PACKAGE_ID", "ORIGIN",
-		"DOMAIN_NAME", "NOT_NULL", "DEFAULT_VALUE", "KEY_POSITION", "DATA_ELEMENT"}, "TABLE_NAME", "POSITION")
+		"DOMAIN_NAME", "NOT_NULL", "DEFAULT_KIND", "DEFAULT_VALUE", "KEY_POSITION", "DATA_ELEMENT"}, "TABLE_NAME", "POSITION")
 	if err != nil {
 		return nil, err
 	}
@@ -382,13 +439,14 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	}{}
 	for _, f := range fields {
 		table := str(f["TABLE_NAME"])
-		fld := model.Field{Name: str(f["FIELD_NAME"]), LocalName: str(f["LOCAL_NAME"]), Description: str(f["DESCRIPTION"]),
-			Owner: model.PackageID(str(f["PACKAGE_ID"])), Origin: model.FieldOrigin(str(f["ORIGIN"])), Domain: str(f["DOMAIN_NAME"]),
-			NotNull: flag(f["NOT_NULL"]), Default: optStr(f["DEFAULT_VALUE"])}
+		fld := model.Field{Name: str(f["FIELD_NAME"]), LocalName: str(f["LOCAL_NAME"]), Description: opt(f["DESCRIPTION"]),
+			Owner: owner(f["PACKAGE_ID"]), Origin: model.FieldOrigin(str(f["ORIGIN"])), Domain: str(f["DOMAIN_NAME"]),
+			NotNull: flag(f["NOT_NULL"]), Default: readDefault(f["DEFAULT_KIND"], f["DEFAULT_VALUE"]),
+			DataElement: opt(f["DATA_ELEMENT"])}
 		// The repository stores the effective domain; the declaration
 		// references only the data element.
-		if de := str(f["DATA_ELEMENT"]); de != "" {
-			fld.DataElement, fld.Domain = de, ""
+		if fld.DataElement.Valid() {
+			fld.Domain = ""
 		}
 		switch fld.Origin {
 		case model.OriginTable:
@@ -443,7 +501,7 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	}
 	for _, f := range fks {
 		table := str(f["TABLE_NAME"])
-		fk := model.ForeignKey{Name: str(f["FK_NAME"]), Owner: model.PackageID(str(f["PACKAGE_ID"])), Origin: model.FieldOrigin(str(f["ORIGIN"])),
+		fk := model.ForeignKey{Name: str(f["FK_NAME"]), Owner: owner(f["PACKAGE_ID"]), Origin: model.FieldOrigin(str(f["ORIGIN"])),
 			Target: str(f["TARGET_TABLE"]), Columns: cols[[2]string{table, str(f["FK_NAME"])}]}
 		switch fk.Origin {
 		case model.OriginTable:
@@ -472,7 +530,7 @@ func (r *Repo) loadSettings(ctx context.Context, q dialect.Querier, s *model.Sch
 	}
 	for _, st := range sets {
 		id := str(st["SETTING_ID"])
-		s.Settings[id] = &model.Setting{ID: id, Owner: model.PackageID(str(st["PACKAGE_ID"])), Texts: map[string]model.SettingText{},
+		s.Settings[id] = &model.Setting{ID: id, Owner: owner(st["PACKAGE_ID"]), Texts: map[string]model.SettingText{},
 			Root: model.SettingTable{Table: str(st["ROOT_TABLE"])}}
 	}
 	texts, err := r.selectRows(ctx, q, TSettingTexts, []string{"SETTING_ID", "LANGUAGE", "LABEL", "DESCRIPTION"})
@@ -481,7 +539,7 @@ func (r *Repo) loadSettings(ctx context.Context, q dialect.Querier, s *model.Sch
 	}
 	for _, t := range texts {
 		if st := s.Settings[str(t["SETTING_ID"])]; st != nil {
-			st.Texts[str(t["LANGUAGE"])] = model.SettingText{Label: str(t["LABEL"]), Description: str(t["DESCRIPTION"])}
+			st.Texts[str(t["LANGUAGE"])] = model.SettingText{Label: str(t["LABEL"]), Description: opt(t["DESCRIPTION"])}
 		}
 	}
 	exts, err := r.selectRows(ctx, q, TSettingExtensions, []string{"PACKAGE_ID", "SETTING_ID"})
@@ -489,7 +547,7 @@ func (r *Repo) loadSettings(ctx context.Context, q dialect.Querier, s *model.Sch
 		return err
 	}
 	for _, e := range exts {
-		ext := &model.SettingExtension{Package: model.PackageID(str(e["PACKAGE_ID"])), Setting: str(e["SETTING_ID"])}
+		ext := &model.SettingExtension{Package: owner(e["PACKAGE_ID"]), Setting: str(e["SETTING_ID"])}
 		s.SettingExtensions[ext.Key()] = ext
 	}
 	nodes, err := r.selectRows(ctx, q, TSettingTables, []string{"TABLE_NAME", "SETTING_ID", "PACKAGE_ID", "PARENT_TABLE", "FK_NAME",
@@ -502,9 +560,9 @@ func (r *Repo) loadSettings(ctx context.Context, q dialect.Querier, s *model.Sch
 		if st == nil {
 			return fmt.Errorf("repository: table %s of unknown setting %s", str(n["TABLE_NAME"]), str(n["SETTING_ID"]))
 		}
-		t := model.SettingTable{Table: str(n["TABLE_NAME"]), Parent: str(n["PARENT_TABLE"]), ForeignKey: str(n["FK_NAME"]),
+		t := model.SettingTable{Table: str(n["TABLE_NAME"]), Parent: opt(n["PARENT_TABLE"]), ForeignKey: opt(n["FK_NAME"]),
 			Operations: model.Operations{Create: flag(n["ALLOW_CREATE"]), Update: flag(n["ALLOW_UPDATE"]), Delete: flag(n["ALLOW_DELETE"])}}
-		origin := model.PackageID(str(n["PACKAGE_ID"]))
+		origin := owner(n["PACKAGE_ID"])
 		switch {
 		case t.Table == st.Root.Table:
 			st.Root = t
@@ -531,7 +589,7 @@ func (r *Repo) writeSettings(ctx context.Context, q dialect.Querier, s *model.Sc
 		}
 		for _, lang := range st.Languages() {
 			t := st.Texts[lang]
-			if err := r.insert(ctx, q, TSettingTexts, row{"SETTING_ID": id, "LANGUAGE": lang, "LABEL": t.Label, "DESCRIPTION": nullable(t.Description)}); err != nil {
+			if err := r.insert(ctx, q, TSettingTexts, row{"SETTING_ID": id, "LANGUAGE": lang, "LABEL": t.Label, "DESCRIPTION": val(t.Description)}); err != nil {
 				return err
 			}
 		}
@@ -546,12 +604,12 @@ func (r *Repo) writeSettings(ctx context.Context, q dialect.Querier, s *model.Sc
 		written := map[string]bool{}
 		for pass := 0; pass <= len(nodes); pass++ {
 			for i, n := range nodes {
-				if written[n.Table] || (!n.Root && !written[n.Parent]) {
+				if written[n.Table] || (!n.Root && !written[n.Parent.Or("")]) {
 					continue
 				}
 				written[n.Table] = true
 				if err := r.insert(ctx, q, TSettingTables, row{"TABLE_NAME": n.Table, "SETTING_ID": id, "PACKAGE_ID": string(n.Origin),
-					"POSITION": int64(i + 1), "PARENT_TABLE": nullable(n.Parent), "FK_NAME": nullable(n.ForeignKey),
+					"POSITION": int64(i + 1), "PARENT_TABLE": val(n.Parent), "FK_NAME": val(n.ForeignKey),
 					"ALLOW_CREATE": n.Operations.Create, "ALLOW_UPDATE": n.Operations.Update, "ALLOW_DELETE": n.Operations.Delete}); err != nil {
 					return err
 				}
@@ -600,25 +658,26 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	for _, id := range s.PackageIDs() {
 		p := s.Packages[id]
 		if err := r.insert(ctx, q, TPackages, row{"PACKAGE_ID": string(id), "VERSION": p.Manifest.Version,
-			"DESCRIPTION": nullable(p.Manifest.Description), "INSTALLED_AT": p.InstalledAt, "UPDATED_AT": p.UpdatedAt}); err != nil {
+			"DESCRIPTION": val(p.Manifest.Description), "INSTALLED_AT": p.InstalledAt, "UPDATED_AT": p.UpdatedAt}); err != nil {
 			return err
 		}
 	}
 	for _, id := range s.PackageIDs() {
 		for _, d := range s.Packages[id].Manifest.Requires {
-			if err := r.insert(ctx, q, TPackageDeps, row{"PACKAGE_ID": string(id), "REQUIRED_ID": string(d.ID), "VERSION_CONSTRAINT": nullable(d.Constraint)}); err != nil {
+			if err := r.insert(ctx, q, TPackageDeps, row{"PACKAGE_ID": string(id), "REQUIRED_ID": string(d.ID), "VERSION_CONSTRAINT": val(d.Constraint)}); err != nil {
 				return err
 			}
 		}
 	}
 	for _, name := range s.DomainNames() {
 		d := s.Domains[name]
-		if err := r.insert(ctx, q, TDomains, row{"DOMAIN_NAME": name, "PACKAGE_ID": nullable(string(d.Owner)), "DESCRIPTION": nullable(d.Description),
+		domKind, domValue := writeDefault(d.Default)
+		if err := r.insert(ctx, q, TDomains, row{"DEFAULT_KIND": domKind, "DEFAULT_VALUE": domValue, "ALLOW_EMPTY": valBool(d.AllowEmpty), "DOMAIN_NAME": name, "PACKAGE_ID": ownerValue(d.Owner), "DESCRIPTION": val(d.Description),
 			"BASE_TYPE": string(d.Type), "LENGTH": nullableInt(d.Length, d.Type.HasLength()), "DECIMALS": nullableInt(d.Decimals, d.Type == model.Dec)}); err != nil {
 			return err
 		}
 		for i, v := range d.Values {
-			if err := r.insert(ctx, q, TDomainValues, row{"DOMAIN_NAME": name, "POSITION": int64(i + 1), "VALUE": v.Value, "DESCRIPTION": nullable(v.Description)}); err != nil {
+			if err := r.insert(ctx, q, TDomainValues, row{"DOMAIN_NAME": name, "POSITION": int64(i + 1), "VALUE": v.Value, "DESCRIPTION": val(v.Description)}); err != nil {
 				return err
 			}
 		}
@@ -631,20 +690,20 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		for _, lang := range d.Languages() {
 			t := d.Texts[lang]
 			if err := r.insert(ctx, q, TDataElementTexts, row{"DATA_ELEMENT": name, "LANGUAGE": lang, "SHORT_LABEL": t.Short, "MEDIUM_LABEL": t.Medium,
-				"LONG_LABEL": t.Long, "HEADING": t.Heading, "DESCRIPTION": nullable(t.Description)}); err != nil {
+				"LONG_LABEL": t.Long, "HEADING": t.Heading, "DESCRIPTION": val(t.Description)}); err != nil {
 				return err
 			}
 		}
 	}
 	for _, name := range s.TableNames() {
 		t := s.Tables[name]
-		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": nullable(string(t.Owner)), "DESCRIPTION": nullable(t.Description),
+		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": ownerValue(t.Owner), "DESCRIPTION": val(t.Description),
 			"TENANT_SPECIFIC": t.TenantSpecific, "DATA_CLASS": string(t.DataClass), "PK_NAME": model.PrimaryKeyName(name)}); err != nil {
 			return err
 		}
 	}
 	for _, e := range s.SortedExtensions() {
-		if err := r.insert(ctx, q, TExtensions, row{"PACKAGE_ID": string(e.Package), "TABLE_NAME": e.Table, "DESCRIPTION": nullable(e.Description)}); err != nil {
+		if err := r.insert(ctx, q, TExtensions, row{"PACKAGE_ID": string(e.Package), "TABLE_NAME": e.Table, "DESCRIPTION": val(e.Description)}); err != nil {
 			return err
 		}
 	}
@@ -653,19 +712,16 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		t := phys.Tables[name]
 		for i, f := range t.Fields {
 			key := slices.Index(t.PrimaryKey, f.Name)
-			var def any
-			if f.Default != nil {
-				def = *f.Default
-			}
+			defKind, defValue := writeDefault(f.Default)
 			if err := r.insert(ctx, q, TFields, row{"TABLE_NAME": name, "FIELD_NAME": f.Name, "POSITION": int64(i + 1), "LOCAL_NAME": f.LocalName,
-				"DESCRIPTION": nullable(f.Description), "PACKAGE_ID": nullable(string(f.Owner)), "ORIGIN": string(f.Origin), "DOMAIN_NAME": f.Domain,
-				"NOT_NULL": f.NotNull, "DEFAULT_VALUE": def, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": nullable(f.DataElement),
+				"DESCRIPTION": val(f.Description), "PACKAGE_ID": ownerValue(f.Owner), "ORIGIN": string(f.Origin), "DOMAIN_NAME": f.Domain,
+				"NOT_NULL": f.NotNull, "DEFAULT_KIND": defKind, "DEFAULT_VALUE": defValue, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": val(f.DataElement),
 				"CHECK_NAME": model.CheckName(name, f.Name)}); err != nil {
 				return err
 			}
 		}
 		for _, fk := range t.ForeignKeys {
-			if err := r.insert(ctx, q, TForeignKeys, row{"TABLE_NAME": name, "FK_NAME": fk.Name, "PACKAGE_ID": nullable(string(fk.Owner)),
+			if err := r.insert(ctx, q, TForeignKeys, row{"TABLE_NAME": name, "FK_NAME": fk.Name, "PACKAGE_ID": ownerValue(fk.Owner),
 				"ORIGIN": string(fk.Origin), "TARGET_TABLE": fk.Target, "CONSTRAINT_NAME": model.ForeignKeyName(name, fk.Name)}); err != nil {
 				return err
 			}
@@ -685,9 +741,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 
 // LogPackage is a package affected by a logged operation.
 type LogPackage struct {
-	ID   string `json:"id"`
-	From string `json:"from,omitempty"`
-	To   string `json:"to,omitempty"`
+	ID   string                 `json:"id"`
+	From model.Optional[string] `json:"from"` // None for installations
+	To   model.Optional[string] `json:"to"`   // None for removals
 }
 
 // LogStatement is a statement executed by a logged operation.
@@ -698,15 +754,15 @@ type LogStatement struct {
 
 // LogEntry is one entry of the operation log.
 type LogEntry struct {
-	ID         string         `json:"id"`
-	Operation  string         `json:"operation"`
-	Target     string         `json:"target,omitempty"`
-	StartedAt  time.Time      `json:"startedAt"`
-	FinishedAt time.Time      `json:"finishedAt"`
-	Status     string         `json:"status"`
-	Message    string         `json:"message,omitempty"`
-	Packages   []LogPackage   `json:"packages,omitempty"`
-	Statements []LogStatement `json:"statements,omitempty"`
+	ID         string                 `json:"id"`
+	Operation  string                 `json:"operation"`
+	Target     model.Optional[string] `json:"target"`
+	StartedAt  time.Time              `json:"startedAt"`
+	FinishedAt time.Time              `json:"finishedAt"`
+	Status     string                 `json:"status"`
+	Message    model.Optional[string] `json:"message"`
+	Packages   []LogPackage           `json:"packages,omitempty"`
+	Statements []LogStatement         `json:"statements,omitempty"`
 }
 
 // Log statuses.
@@ -720,12 +776,12 @@ func (r *Repo) WriteLog(ctx context.Context, q dialect.Querier, e *LogEntry) err
 	if e.ID == "" {
 		e.ID = NewID()
 	}
-	if err := r.insert(ctx, q, TLog, row{"LOG_ID": e.ID, "OPERATION": e.Operation, "TARGET": nullable(e.Target), "STARTED_AT": e.StartedAt,
-		"FINISHED_AT": e.FinishedAt, "STATUS": e.Status, "MESSAGE": nullable(e.Message)}); err != nil {
+	if err := r.insert(ctx, q, TLog, row{"LOG_ID": e.ID, "OPERATION": e.Operation, "TARGET": val(e.Target), "STARTED_AT": e.StartedAt,
+		"FINISHED_AT": e.FinishedAt, "STATUS": e.Status, "MESSAGE": val(e.Message)}); err != nil {
 		return err
 	}
 	for _, p := range e.Packages {
-		if err := r.insert(ctx, q, TLogPackages, row{"LOG_ID": e.ID, "PACKAGE_ID": p.ID, "VERSION_FROM": nullable(p.From), "VERSION_TO": nullable(p.To)}); err != nil {
+		if err := r.insert(ctx, q, TLogPackages, row{"LOG_ID": e.ID, "PACKAGE_ID": p.ID, "VERSION_FROM": val(p.From), "VERSION_TO": val(p.To)}); err != nil {
 			return err
 		}
 	}
@@ -746,8 +802,8 @@ func (r *Repo) ReadLog(ctx context.Context, q dialect.Querier) ([]*LogEntry, err
 	byID := map[string]*LogEntry{}
 	var out []*LogEntry
 	for _, l := range rows {
-		e := &LogEntry{ID: str(l["LOG_ID"]), Operation: str(l["OPERATION"]), Target: str(l["TARGET"]), StartedAt: tm(l["STARTED_AT"]),
-			FinishedAt: tm(l["FINISHED_AT"]), Status: str(l["STATUS"]), Message: str(l["MESSAGE"])}
+		e := &LogEntry{ID: str(l["LOG_ID"]), Operation: str(l["OPERATION"]), Target: opt(l["TARGET"]), StartedAt: tm(l["STARTED_AT"]),
+			FinishedAt: tm(l["FINISHED_AT"]), Status: str(l["STATUS"]), Message: opt(l["MESSAGE"])}
 		byID[e.ID] = e
 		out = append(out, e)
 	}
@@ -757,7 +813,7 @@ func (r *Repo) ReadLog(ctx context.Context, q dialect.Querier) ([]*LogEntry, err
 	}
 	for _, p := range pkgs {
 		if e := byID[str(p["LOG_ID"])]; e != nil {
-			e.Packages = append(e.Packages, LogPackage{ID: str(p["PACKAGE_ID"]), From: str(p["VERSION_FROM"]), To: str(p["VERSION_TO"])})
+			e.Packages = append(e.Packages, LogPackage{ID: str(p["PACKAGE_ID"]), From: opt(p["VERSION_FROM"]), To: opt(p["VERSION_TO"])})
 		}
 	}
 	stmts, err := r.selectRows(ctx, q, TLogStatements, []string{"LOG_ID", "STATEMENT", "DESTRUCTIVE"}, "LOG_ID", "POSITION")
@@ -788,14 +844,14 @@ func NewID() string {
 
 // Tenant is a row of the tenant table.
 type Tenant struct {
-	ID          string    `json:"id"`
-	Description string    `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID          string                 `json:"id"`
+	Description model.Optional[string] `json:"description"`
+	CreatedAt   time.Time              `json:"createdAt"`
 }
 
 // InsertTenant creates a tenant.
 func (r *Repo) InsertTenant(ctx context.Context, q dialect.Querier, t Tenant) error {
-	return r.insert(ctx, q, model.TenantTable, row{model.TenantTableKey: t.ID, "DESCRIPTION": nullable(t.Description), "CREATED_AT": t.CreatedAt})
+	return r.insert(ctx, q, model.TenantTable, row{model.TenantTableKey: t.ID, "DESCRIPTION": val(t.Description), "CREATED_AT": t.CreatedAt})
 }
 
 // Tenants returns all tenants ordered by key.
@@ -806,7 +862,7 @@ func (r *Repo) Tenants(ctx context.Context, q dialect.Querier) ([]Tenant, error)
 	}
 	out := make([]Tenant, 0, len(rows))
 	for _, t := range rows {
-		out = append(out, Tenant{ID: str(t[model.TenantTableKey]), Description: str(t["DESCRIPTION"]), CreatedAt: tm(t["CREATED_AT"])})
+		out = append(out, Tenant{ID: str(t[model.TenantTableKey]), Description: opt(t["DESCRIPTION"]), CreatedAt: tm(t["CREATED_AT"])})
 	}
 	return out, nil
 }

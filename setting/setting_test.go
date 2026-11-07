@@ -86,7 +86,7 @@ func TestResolveMergesExtensions(t *testing.T) {
 		t.Fatalf("value help of COUNTRY: %+v", country.ValueHelps)
 	}
 	status := root.Field("STATUS")
-	if status.DataElement != nil || len(status.FixedValues) != 3 || *status.Default != "ACTIVE" {
+	if status.DataElement != nil || len(status.FixedValues) != 3 || status.Default != model.ValueDefault("ACTIVE") {
 		t.Fatalf("STATUS: %+v", status)
 	}
 	ext := root.Field("/TROTTO/OTTO_ID")

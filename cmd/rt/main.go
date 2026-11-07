@@ -94,6 +94,7 @@ type cli struct {
 	description    string
 	name           string
 	lang           string
+	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
 }
@@ -129,6 +130,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		c.fs.PrintDefaults()
 	}
 	pos, err := c.parse(args)
+	c.set = map[string]bool{}
+	c.fs.Visit(func(f *flag.Flag) { c.set[f.Name] = true })
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
@@ -319,7 +322,11 @@ func (c *cli) list(ctx context.Context, k *kernel.Kernel) int {
 	for _, p := range pkgs {
 		var req []string
 		for _, r := range p.Manifest.Requires {
-			req = append(req, strings.TrimSpace(string(r.ID)+" "+r.Constraint))
+			if c, ok := r.Constraint.Get(); ok {
+				req = append(req, string(r.ID)+" "+c)
+			} else {
+				req = append(req, string(r.ID))
+			}
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", p.Manifest.ID, p.Manifest.Version, p.InstalledAt.Format("2006-01-02 15:04:05"),
 			p.UpdatedAt.Format("2006-01-02 15:04:05"), strings.Join(req, ", "), p.Manifest.Description)
@@ -371,8 +378,8 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 		t := d.Table
 		fmt.Fprintf(c.stdout, "Table %s (owner %s, tenant-specific %v)\n  %s\n  data class %s\n", t.Name, t.Owner, t.TenantSpecific, t.Description, t.DataClass)
-		if d.Setting != "" {
-			fmt.Fprintf(c.stdout, "  setting %s\n", d.Setting)
+		if id, ok := d.Setting.Get(); ok {
+			fmt.Fprintf(c.stdout, "  setting %s\n", id)
 		} else {
 			fmt.Fprintln(c.stdout, "  no setting")
 		}
@@ -384,10 +391,7 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 			if t.IsKey(f.Name) {
 				key = "yes"
 			}
-			def := ""
-			if f.Default != nil {
-				def = *f.Default
-			}
+			def := f.ResolvedDefault.String() // empty without default, <null>, or a quoted value
 			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%v\t%s\t%s\t%s\n", f.Name, f.DataElement, f.Domain, key, f.NotNull, def, f.Owner, f.Origin)
 		}
 		w.Flush()
@@ -437,8 +441,14 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 		dom := d.Domain
 		fmt.Fprintf(c.stdout, "Domain %s %s (owner %s)\n  %s\n", dom.Name, dom.TypeString(), dom.Owner, dom.Description)
+		if dom.Type.IsString() {
+			fmt.Fprintf(c.stdout, "  allows empty string %v\n", dom.AllowsEmpty())
+		}
+		if !dom.Default.IsZero() {
+			fmt.Fprintf(c.stdout, "  default %s\n", dom.Default)
+		}
 		for _, v := range dom.Values {
-			fmt.Fprintf(c.stdout, "  value %s  %s\n", v.Value, v.Description)
+			fmt.Fprintf(c.stdout, "  value %q  %s\n", v.Value, v.Description)
 		}
 		for _, u := range d.UsedBy {
 			fmt.Fprintf(c.stdout, "  used by %s\n", u)
@@ -461,10 +471,19 @@ func (c *cli) log(ctx context.Context, k *kernel.Kernel) int {
 	for _, e := range entries {
 		var objs []string
 		for _, p := range e.Packages {
-			objs = append(objs, strings.TrimSpace(p.ID+" "+strings.Trim(p.From+"->"+p.To, "->")))
+			from, hasFrom := p.From.Get()
+			to, hasTo := p.To.Get()
+			switch {
+			case hasFrom && hasTo:
+				objs = append(objs, p.ID+" "+from+"->"+to)
+			case hasTo:
+				objs = append(objs, p.ID+" "+to)
+			default:
+				objs = append(objs, p.ID+" "+from)
+			}
 		}
-		if e.Target != "" {
-			objs = append(objs, e.Target)
+		if t, ok := e.Target.Get(); ok {
+			objs = append(objs, t)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n", e.StartedAt.Format("2006-01-02 15:04:05"), e.Operation, e.Status, strings.Join(objs, ", "), len(e.Statements), e.ID)
 	}
@@ -483,7 +502,11 @@ func (c *cli) tenant(ctx context.Context, k *kernel.Kernel, args []string) int {
 		if !c.need(args[1:], 1, "tenant create <id> [--description text]") {
 			return exitUsage
 		}
-		t, err := ten.Create(ctx, args[1], c.description)
+		desc := model.None[string]()
+		if c.set["description"] {
+			desc = model.Some(c.description)
+		}
+		t, err := ten.Create(ctx, args[1], desc)
 		if err != nil {
 			return c.fail(err)
 		}
@@ -622,7 +645,7 @@ func (c *cli) asset(ctx context.Context, k *kernel.Kernel, args []string) int {
 				fmt.Fprintf(w, "folder\t%s/\t\t\t\n", a.Path)
 				continue
 			}
-			fmt.Fprintf(w, "file\t%s\t%d\t%s\t%s\n", a.Path, a.Size, a.MimeType, strings.Join(a.Variants, ", "))
+			fmt.Fprintf(w, "file\t%s\t%d\t%s\t%s\n", a.Path, a.Size, a.MimeType.Or(""), strings.Join(a.Variants, ", "))
 		}
 		w.Flush()
 		return exitOK
@@ -639,7 +662,7 @@ func (c *cli) asset(ctx context.Context, k *kernel.Kernel, args []string) int {
 			fmt.Fprintln(c.stderr, "error: name the target file with -o, or - for standard output")
 			return exitUsage
 		}
-		r, err := k.OpenAsset(ctx, model.PackageID(args[1]), args[2], args[3], c.lang)
+		r, err := k.OpenAsset(ctx, model.PackageID(args[1]), args[2], args[3], c.langOption())
 		if err != nil {
 			return c.fail(err)
 		}
@@ -658,11 +681,7 @@ func (c *cli) asset(ctx context.Context, k *kernel.Kernel, args []string) int {
 		}
 		if c.output != "-" {
 			info := r.Info()
-			lang := info.Language
-			if lang == "" {
-				lang = "language-independent"
-			}
-			fmt.Fprintf(c.stderr, "Wrote %d bytes (%s, %s) to %s.\n", info.Size, info.MimeType, lang, c.output)
+			fmt.Fprintf(c.stderr, "Wrote %d bytes (%s, %s) to %s.\n", info.Size, info.MimeType.Or(""), versionName(info.Language), c.output)
 		}
 		return exitOK
 	}
@@ -671,21 +690,21 @@ func (c *cli) asset(ctx context.Context, k *kernel.Kernel, args []string) int {
 }
 
 func (c *cli) showAsset(ctx context.Context, k *kernel.Kernel, pkg model.PackageID, repoID, path string) int {
-	info, err := k.StatAsset(ctx, pkg, repoID, path, "")
+	info, err := k.StatAsset(ctx, pkg, repoID, path, model.None[string]())
 	var nf *rterr.AssetNotFound
 	if errors.As(err, &nf) && nf.Path != "" {
 		// Assets with variants only have no version without a language.
-		info, err = k.StatAsset(ctx, pkg, repoID, path, model.DefaultLanguage)
+		info, err = k.StatAsset(ctx, pkg, repoID, path, model.Some(model.DefaultLanguage))
 	}
 	if err != nil {
 		return c.fail(err)
 	}
 	type version struct {
-		Language string `json:"language,omitempty"`
-		Source   string `json:"source"`
-		Size     int64  `json:"size"`
-		SHA256   string `json:"sha256"`
-		Modified string `json:"modifiedAt"`
+		Language model.Optional[string] `json:"language"` // None for the language-independent version
+		Source   model.Optional[string] `json:"source"`
+		Size     int64                  `json:"size"`
+		SHA256   model.Optional[string] `json:"sha256"`
+		Modified string                 `json:"modifiedAt"`
 	}
 	var versions []version
 	add := func(i *kernel.AssetInfo) {
@@ -693,14 +712,14 @@ func (c *cli) showAsset(ctx context.Context, k *kernel.Kernel, pkg model.Package
 	}
 	if !info.Folder {
 		if info.HasNeutral {
-			n, err := k.StatAsset(ctx, pkg, repoID, path, "")
+			n, err := k.StatAsset(ctx, pkg, repoID, path, model.None[string]())
 			if err != nil {
 				return c.fail(err)
 			}
 			add(n)
 		}
 		for _, l := range info.Variants {
-			v, err := k.StatAsset(ctx, pkg, repoID, path, l)
+			v, err := k.StatAsset(ctx, pkg, repoID, path, model.Some(l))
 			if err != nil {
 				return c.fail(err)
 			}
@@ -720,7 +739,7 @@ func (c *cli) showAsset(ctx context.Context, k *kernel.Kernel, pkg model.Package
 	}
 	fmt.Fprintf(c.stdout, "%s %s\n  package %s, repository %s\n", kind, path, pkg, repoID)
 	if !info.Folder {
-		fmt.Fprintf(c.stdout, "  media type %s\n", info.MimeType)
+		fmt.Fprintf(c.stdout, "  media type %s\n", info.MimeType.Or(""))
 	}
 	for _, l := range slices.Sorted(maps.Keys(info.Description)) {
 		fmt.Fprintf(c.stdout, "  description (%s) %s\n", l, info.Description[l])
@@ -730,15 +749,24 @@ func (c *cli) showAsset(ctx context.Context, k *kernel.Kernel, pkg model.Package
 		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(w, "  VERSION\tSOURCE\tBYTES\tSHA-256\tMODIFIED")
 		for _, v := range versions {
-			lang := v.Language
-			if lang == "" {
-				lang = "language-independent"
-			}
-			fmt.Fprintf(w, "  %s\t%s\t%d\t%s\t%s\n", lang, v.Source, v.Size, v.SHA256, v.Modified)
+			fmt.Fprintf(w, "  %s\t%s\t%d\t%s\t%s\n", versionName(v.Language), v.Source.Or(""), v.Size, v.SHA256.Or(""), v.Modified)
 		}
 		w.Flush()
 	}
 	return exitOK
+}
+
+// versionName names the version of an asset for display.
+func versionName(lang model.Optional[string]) string {
+	return lang.Or("language-independent")
+}
+
+// langOption returns --lang if it was given.
+func (c *cli) langOption() model.Optional[string] {
+	if c.set["lang"] {
+		return model.Some(c.lang)
+	}
+	return model.None[string]()
 }
 
 func joinIDs(ids []model.PackageID) string {

@@ -20,6 +20,8 @@
 package validate
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"unicode/utf8"
@@ -181,6 +183,10 @@ func (v *validator) domain(d *model.Domain) {
 	case !d.Type.HasLength() && (d.Length != 0 || d.Decimals != 0):
 		v.fail(rterr.CodeTypeParams, d.Src, obj, "%s takes no length or decimals", d.Type)
 	}
+	if d.AllowEmpty.Valid() && !d.Type.IsString() {
+		v.fail(rterr.CodeTypeParams, d.Src.At("/allowEmpty"), obj, "allowEmpty applies only to CHAR and STRING")
+	}
+	v.defaultValue(&d.DefaultJSON, &d.Default, d, d.Src.At("/default"), obj)
 	if len(d.Values) > 0 && !d.Type.AllowsFixedValues() {
 		v.fail(rterr.CodeFixedValue, d.Src.At("/values"), obj, "fixed values are only allowed for CHAR, INT4 and INT8")
 		return
@@ -190,6 +196,9 @@ func (v *validator) domain(d *model.Domain) {
 		loc := d.Src.At(fmt.Sprintf("/values/%d/value", i))
 		if canon, err := d.Canonical(fv.Value); err != nil || canon != fv.Value {
 			v.fail(rterr.CodeFixedValue, loc, obj, "invalid fixed value %q", fv.Value)
+		}
+		if fv.Value == "" && !d.AllowsEmpty() {
+			v.fail(rterr.CodeFixedValue, loc, obj, "the fixed value \"\" contradicts allowEmpty false")
 		}
 		if seen[fv.Value] {
 			v.fail(rterr.CodeFixedValue, loc, obj, "fixed value %q is listed twice", fv.Value)
@@ -201,17 +210,18 @@ func (v *validator) domain(d *model.Domain) {
 // fieldDomain resolves the domain of a field declared by owner, directly or
 // through its data element, and reports problems on the way.
 func (v *validator) fieldDomain(f *model.Field, owner model.PackageID, obj string) *model.Domain {
+	deName, hasDE := f.DataElement.Get()
 	switch {
-	case f.Domain != "" && f.DataElement != "":
+	case f.Domain != "" && hasDE:
 		v.fail(rterr.CodeDataElement, f.Src, obj, "a field references either a domain or a data element, not both")
 		return nil
-	case f.Domain == "" && f.DataElement == "":
+	case f.Domain == "" && !hasDE:
 		v.fail(rterr.CodeDataElement, f.Src, obj, "a field needs a domain or a data element")
 		return nil
-	case f.DataElement != "":
-		de, ok := v.s.DataElements[f.DataElement]
+	case hasDE:
+		de, ok := v.s.DataElements[deName]
 		if !ok {
-			v.fail(rterr.CodeDataElement, f.Src.At("/dataElement"), obj, "data element %s does not exist", f.DataElement)
+			v.fail(rterr.CodeDataElement, f.Src.At("/dataElement"), obj, "data element %s does not exist", deName)
 			return nil
 		}
 		if !v.s.Visible(owner, de.Owner) {
@@ -270,21 +280,49 @@ func (v *validator) field(table string, f *model.Field, owner model.PackageID) {
 	if d == nil {
 		return
 	}
-	if len(f.DefaultJSON) > 0 {
-		canon, err := d.ParseJSON(f.DefaultJSON)
-		if err != nil {
-			v.fail(rterr.CodeDefault, f.Src.At("/default"), obj, "invalid default: %v", err)
-			return
-		}
-		f.Default = &canon
-		f.DefaultJSON = nil
+	v.defaultValue(&f.DefaultJSON, &f.Default, d, f.Src.At("/default"), obj)
+	if f.NotNull && effectiveDefault(f, d).Kind == model.DefaultNull {
+		v.fail(rterr.CodeDefault, f.Src.At("/default"), obj, "a field with notNull cannot have the default null")
 	}
-	if f.Default != nil {
-		if canon, err := d.Canonical(*f.Default); err != nil || canon != *f.Default {
-			v.fail(rterr.CodeDefault, f.Src.At("/default"), obj, "invalid default %q for domain %s", *f.Default, d.Name)
-		} else if !d.HasValue(*f.Default) {
-			v.fail(rterr.CodeDefault, f.Src.At("/default"), obj, "default %q is not a fixed value of domain %s", *f.Default, d.Name)
+}
+
+// effectiveDefault returns the default of a field: its own, else that of its
+// domain.
+func effectiveDefault(f *model.Field, d *model.Domain) model.Default {
+	if f.Default.Kind != model.DefaultNone || d == nil {
+		return f.Default
+	}
+	return d.Default
+}
+
+// defaultValue converts a default written in a package into its canonical
+// form and checks it against the domain d. A missing default, null and ""
+// stay three different cases.
+func (v *validator) defaultValue(raw *json.RawMessage, def *model.Default, d *model.Domain, loc rterr.Location, obj string) {
+	if len(*raw) > 0 {
+		if bytes.Equal(bytes.TrimSpace(*raw), []byte("null")) {
+			*def = model.NullDefault()
+		} else {
+			canon, err := d.ParseJSON(*raw)
+			if err != nil {
+				v.fail(rterr.CodeDefault, loc, obj, "invalid default: %v", err)
+				return
+			}
+			*def = model.ValueDefault(canon)
 		}
+		*raw = nil
+	}
+	if def.Kind != model.DefaultValue {
+		return
+	}
+	val := def.Value
+	switch canon, err := d.Canonical(val); {
+	case err != nil || canon != val:
+		v.fail(rterr.CodeDefault, loc, obj, "invalid default %q for domain %s", val, d.Name)
+	case !d.HasValue(val):
+		v.fail(rterr.CodeDefault, loc, obj, "default %q is not a fixed value of domain %s", val, d.Name)
+	case val == "" && d.Type.IsString() && !d.AllowsEmpty():
+		v.fail(rterr.CodeDefault, loc, obj, "the default is the empty string, which domain %s does not allow", d.Name)
 	}
 }
 
@@ -364,7 +402,7 @@ func (v *validator) extension(e *model.Extension) {
 		}
 		names[f.Name] = true
 		v.field(t.Name, f, e.Package)
-		if f.NotNull && f.Default == nil && len(f.DefaultJSON) == 0 {
+		if f.NotNull && effectiveDefault(f, v.s.Domains[v.s.FieldDomain(f)]).Kind != model.DefaultValue {
 			v.fail(rterr.CodeExtension, f.Src.At("/notNull"), obj, "extension field %s must be nullable or have a default, the table may already contain rows", f.Name)
 		}
 	}

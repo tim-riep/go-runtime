@@ -87,10 +87,10 @@ func (k *Kernel) Package(ctx context.Context, id model.PackageID) (*PackageDetai
 
 // TableDetail describes a table with all its physical fields.
 type TableDetail struct {
-	Table        *model.Table       `json:"table"` // physical layout incl. tenant and extension fields
-	Extensions   []*model.Extension `json:"extensions,omitempty"`
-	ReferencedBy []string           `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
-	Setting      string             `json:"setting,omitempty"`      // setting the table belongs to
+	Table        *model.Table           `json:"table"` // physical layout incl. tenant and extension fields
+	Extensions   []*model.Extension     `json:"extensions,omitempty"`
+	ReferencedBy []string               `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
+	Setting      model.Optional[string] `json:"setting"`                // setting the table belongs to
 }
 
 // Table returns the physical layout of a table.
@@ -104,7 +104,7 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 	if !ok {
 		return nil, &rterr.NotFound{Kind: "table", Name: name}
 	}
-	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Setting: s.SettingOf(name)}
+	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Setting: settingOf(s, name)}
 	for _, other := range p.TableNames() {
 		for _, fk := range p.Tables[other].ForeignKeys {
 			if fk.Target == name {
@@ -165,7 +165,7 @@ func (k *Kernel) DataElement(ctx context.Context, name string) (*DataElementDeta
 	p := s.Physical()
 	for _, tn := range p.TableNames() {
 		for _, f := range p.Tables[tn].Fields {
-			if f.DataElement == name {
+			if f.DataElement == model.Some(name) {
 				d.UsedBy = append(d.UsedBy, tn+"."+f.Name)
 			}
 		}
@@ -212,4 +212,11 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 		return kinds[0], ref, nil
 	}
 	return "", "", &rterr.Ambiguous{Name: ref, Kinds: kinds}
+}
+
+func settingOf(s *model.Schema, table string) model.Optional[string] {
+	if id := s.SettingOf(table); id != "" {
+		return model.Some(id)
+	}
+	return model.None[string]()
 }

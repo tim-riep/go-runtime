@@ -112,10 +112,7 @@ func cloneTable(t *Table) *Table {
 func cloneFields(fs []Field) []Field {
 	out := slices.Clone(fs)
 	for i := range out {
-		if out[i].Default != nil {
-			v := *out[i].Default
-			out[i].Default = &v
-		}
+		out[i].DefaultJSON = slices.Clone(out[i].DefaultJSON)
 	}
 	return out
 }
@@ -155,6 +152,7 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 	for i := range p.Tables {
 		t := cloneTable(&p.Tables[i])
 		t.Owner = id
+		setOwner(t.Fields, t.ForeignKeys, id)
 		if old, ok := s.Tables[t.Name]; ok {
 			errs = append(errs, &rterr.NameConflict{Kind: "table", Name: t.Name, Owner: string(old.Owner), Package: string(id), Location: t.Src})
 			continue
@@ -166,6 +164,7 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		e.Package = id
 		e.Fields = cloneFields(e.Fields)
 		e.ForeignKeys = cloneFKs(e.ForeignKeys)
+		setOwner(e.Fields, e.ForeignKeys, id)
 		if _, ok := s.Extensions[e.Key()]; ok {
 			errs = append(errs, &rterr.ValidationError{Code: rterr.CodeDuplicate, Location: e.Src, Object: "extension of " + e.Table, Message: "package extends this table more than once"})
 			continue
@@ -199,6 +198,17 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		s.Packages[id] = &PackageInfo{Manifest: p.Manifest, InstalledAt: installedAt, UpdatedAt: updatedAt}
 	}
 	return errs.Err()
+}
+
+// setOwner makes the package that declares fields and foreign keys their
+// owner.
+func setOwner(fields []Field, fks []ForeignKey, id PackageID) {
+	for i := range fields {
+		fields[i].Owner = id
+	}
+	for i := range fks {
+		fks[i].Owner = id
+	}
 }
 
 // RemoveLanguage removes all texts in a language and returns how many were
@@ -344,13 +354,25 @@ func (s *Schema) DataElementNames() []string { return sortedKeys(s.DataElements)
 // FieldDomain returns the name of the domain of a field, resolving its data
 // element.
 func (s *Schema) FieldDomain(f *Field) string {
-	if f.DataElement != "" {
-		if d, ok := s.DataElements[f.DataElement]; ok {
+	if name, ok := f.DataElement.Get(); ok {
+		if d, ok := s.DataElements[name]; ok {
 			return d.Domain
 		}
 		return ""
 	}
 	return f.Domain
+}
+
+// resolveDefault returns the effective default of a field: its own if it
+// declares one, otherwise that of its domain.
+func (s *Schema) resolveDefault(f *Field) Default {
+	if f.Default.Kind != DefaultNone {
+		return f.Default
+	}
+	if d, ok := s.Domains[s.FieldDomain(f)]; ok {
+		return d.Default
+	}
+	return NoDefault()
 }
 
 // ExtensionsOf returns the extensions of a table ordered by package ID.
@@ -447,6 +469,7 @@ func (s *Schema) Physical() *Physical {
 				t.Fields[i].NotNull = true
 			}
 			t.Fields[i].Domain = s.FieldDomain(&t.Fields[i])
+			t.Fields[i].ResolvedDefault = s.resolveDefault(&t.Fields[i])
 		}
 		p.Tables[name] = t
 	}

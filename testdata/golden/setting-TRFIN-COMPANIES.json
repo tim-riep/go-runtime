@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "id": "/TRFIN/COMPANIES",
   "owner": "TRFIN",
   "texts": {
@@ -40,6 +40,7 @@
       {
         "name": "COMPANY_ID",
         "localName": "COMPANY_ID",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
@@ -50,13 +51,15 @@
               "short": "Firma",
               "medium": "Firma",
               "long": "Firmennummer",
-              "heading": "Firma"
+              "heading": "Firma",
+              "description": null
             },
             "en": {
               "short": "Company",
               "medium": "Company",
               "long": "Company ID",
-              "heading": "Company"
+              "heading": "Company",
+              "description": null
             }
           }
         },
@@ -64,11 +67,13 @@
         "type": "CHAR",
         "length": 10,
         "notNull": true,
-        "key": true
+        "key": true,
+        "allowEmpty": true
       },
       {
         "name": "NAME",
         "localName": "NAME",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
@@ -79,13 +84,15 @@
               "short": "Name",
               "medium": "Name",
               "long": "Bezeichnung",
-              "heading": "Name"
+              "heading": "Name",
+              "description": null
             },
             "en": {
               "short": "Name",
               "medium": "Name",
               "long": "Name",
-              "heading": "Name"
+              "heading": "Name",
+              "description": null
             }
           }
         },
@@ -93,11 +100,13 @@
         "type": "CHAR",
         "length": 80,
         "notNull": true,
-        "key": false
+        "key": false,
+        "allowEmpty": true
       },
       {
         "name": "COUNTRY",
         "localName": "COUNTRY",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "dataElement": {
@@ -125,6 +134,7 @@
         "length": 2,
         "notNull": true,
         "key": false,
+        "allowEmpty": true,
         "valueHelps": [
           {
             "foreignKey": "COUNTRY",
@@ -141,6 +151,7 @@
       {
         "name": "STATUS",
         "localName": "STATUS",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "domain": "/TRFIN/COMPANY_STATUS",
@@ -162,11 +173,13 @@
         ],
         "notNull": true,
         "key": false,
-        "default": "ACTIVE"
+        "default": "ACTIVE",
+        "allowEmpty": true
       },
       {
         "name": "CAPITAL",
         "localName": "CAPITAL",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "domain": "/TRBASE/AMOUNT",
@@ -174,17 +187,20 @@
         "length": 15,
         "decimals": 2,
         "notNull": false,
-        "key": false
+        "key": false,
+        "allowEmpty": null
       },
       {
         "name": "FOUNDED_ON",
         "localName": "FOUNDED_ON",
+        "description": null,
         "owner": "TRFIN",
         "origin": "TABLE",
         "domain": "/TRBASE/DATE",
         "type": "DATE",
         "notNull": false,
-        "key": false
+        "key": false,
+        "allowEmpty": null
       },
       {
         "name": "/TROTTO/OTTO_ID",
@@ -200,13 +216,15 @@
               "short": "Partner",
               "medium": "OTTO-Partner",
               "long": "Partner-ID bei OTTO",
-              "heading": "OTTO-Partner"
+              "heading": "OTTO-Partner",
+              "description": null
             },
             "en": {
               "short": "Partner",
               "medium": "OTTO partner",
               "long": "Partner ID on OTTO",
-              "heading": "OTTO partner"
+              "heading": "OTTO partner",
+              "description": null
             }
           }
         },
@@ -214,7 +232,8 @@
         "type": "CHAR",
         "length": 20,
         "notNull": false,
-        "key": false
+        "key": false,
+        "allowEmpty": true
       }
     ],
     "children": [
@@ -248,6 +267,7 @@
           {
             "name": "COMPANY_ID",
             "localName": "COMPANY_ID",
+            "description": null,
             "owner": "TRFIN",
             "origin": "TABLE",
             "dataElement": {
@@ -258,13 +278,15 @@
                   "short": "Firma",
                   "medium": "Firma",
                   "long": "Firmennummer",
-                  "heading": "Firma"
+                  "heading": "Firma",
+                  "description": null
                 },
                 "en": {
                   "short": "Company",
                   "medium": "Company",
                   "long": "Company ID",
-                  "heading": "Company"
+                  "heading": "Company",
+                  "description": null
                 }
               }
             },
@@ -273,6 +295,7 @@
             "length": 10,
             "notNull": true,
             "key": true,
+            "allowEmpty": true,
             "fromParent": true,
             "valueHelps": [
               {
@@ -290,27 +313,32 @@
           {
             "name": "ACCOUNT_NO",
             "localName": "ACCOUNT_NO",
+            "description": null,
             "owner": "TRFIN",
             "origin": "TABLE",
             "domain": "/TRFIN/ACCOUNT_NO",
             "type": "INT4",
             "notNull": true,
-            "key": true
+            "key": true,
+            "allowEmpty": null
           },
           {
             "name": "IBAN",
             "localName": "IBAN",
+            "description": null,
             "owner": "TRFIN",
             "origin": "TABLE",
             "domain": "/TRFIN/IBAN",
             "type": "CHAR",
             "length": 34,
             "notNull": true,
-            "key": false
+            "key": false,
+            "allowEmpty": true
           },
           {
             "name": "BALANCE",
             "localName": "BALANCE",
+            "description": null,
             "owner": "TRFIN",
             "origin": "TABLE",
             "dataElement": {
@@ -321,13 +349,15 @@
                   "short": "Betrag",
                   "medium": "Betrag",
                   "long": "Betrag",
-                  "heading": "Betrag"
+                  "heading": "Betrag",
+                  "description": null
                 },
                 "en": {
                   "short": "Amount",
                   "medium": "Amount",
                   "long": "Amount",
-                  "heading": "Amount"
+                  "heading": "Amount",
+                  "description": null
                 }
               }
             },
@@ -337,17 +367,20 @@
             "decimals": 2,
             "notNull": true,
             "key": false,
-            "default": "0.00"
+            "default": "0.00",
+            "allowEmpty": null
           },
           {
             "name": "OPENED_AT",
             "localName": "OPENED_AT",
+            "description": null,
             "owner": "TRFIN",
             "origin": "TABLE",
             "domain": "/TRBASE/TIMESTAMP",
             "type": "TIMESTAMP",
             "notNull": false,
-            "key": false
+            "key": false,
+            "allowEmpty": null
           }
         ]
       },
@@ -380,6 +413,7 @@
           {
             "name": "COMPANY_ID",
             "localName": "COMPANY_ID",
+            "description": null,
             "owner": "TROTTO",
             "origin": "TABLE",
             "dataElement": {
@@ -390,13 +424,15 @@
                   "short": "Firma",
                   "medium": "Firma",
                   "long": "Firmennummer",
-                  "heading": "Firma"
+                  "heading": "Firma",
+                  "description": null
                 },
                 "en": {
                   "short": "Company",
                   "medium": "Company",
                   "long": "Company ID",
-                  "heading": "Company"
+                  "heading": "Company",
+                  "description": null
                 }
               }
             },
@@ -405,6 +441,7 @@
             "length": 10,
             "notNull": true,
             "key": true,
+            "allowEmpty": true,
             "fromParent": true,
             "valueHelps": [
               {
@@ -422,23 +459,27 @@
           {
             "name": "ENDPOINT",
             "localName": "ENDPOINT",
+            "description": null,
             "owner": "TROTTO",
             "origin": "TABLE",
             "domain": "/TRBASE/TEXT",
             "type": "STRING",
             "notNull": true,
-            "key": false
+            "key": false,
+            "allowEmpty": true
           },
           {
             "name": "ACTIVE",
             "localName": "ACTIVE",
+            "description": null,
             "owner": "TROTTO",
             "origin": "TABLE",
             "domain": "/TRBASE/FLAG",
             "type": "BOOL",
             "notNull": true,
             "key": false,
-            "default": "true"
+            "default": "true",
+            "allowEmpty": null
           }
         ]
       }

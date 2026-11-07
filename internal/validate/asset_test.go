@@ -52,7 +52,7 @@ func TestExampleAssetsAreValid(t *testing.T) {
 		t.Fatal("entries mixed up between the repositories")
 	}
 	inv := assetRepo(s, "TRFIN", "templates").Entries["invoice/invoice.xsl"]
-	if inv.Content != nil || !slices.Equal(inv.Languages(), []string{"de", "en"}) || inv.MimeType != "application/xslt+xml" {
+	if inv.Content != nil || !slices.Equal(inv.Languages(), []string{"de", "en"}) || inv.MimeType != model.Some("application/xslt+xml") {
 		t.Fatalf("invoice: %+v", inv)
 	}
 	if assetRepo(s, "TRFIN", "templates").Entries["invoice/invoice_de.xsl"] != nil {
@@ -94,14 +94,14 @@ func TestAssetPathRules(t *testing.T) {
 	e := load(t)
 	s := e.schema(t)
 	r := assetRepo(s, "TRFIN", "web")
-	r.Entries["images/bad name.png"] = &model.AssetEntry{Path: "images/bad name.png", MimeType: "image/png", Content: r.Entries["images/logo.png"].Content}
+	r.Entries["images/bad name.png"] = &model.AssetEntry{Path: "images/bad name.png", MimeType: model.Some("image/png"), Content: r.Entries["images/logo.png"].Content}
 	expectAsset(t, s, Options{}, "invalid path")
 }
 
 func TestAssetCaseCollision(t *testing.T) {
 	s := load(t).schema(t)
 	r := assetRepo(s, "TRFIN", "web")
-	r.Entries["images/Logo.png"] = &model.AssetEntry{Path: "images/Logo.png", MimeType: "image/png", Content: r.Entries["images/logo.png"].Content}
+	r.Entries["images/Logo.png"] = &model.AssetEntry{Path: "images/Logo.png", MimeType: model.Some("image/png"), Content: r.Entries["images/logo.png"].Content}
 	expectAsset(t, s, Options{}, "only in upper and lower case")
 }
 
@@ -137,11 +137,11 @@ func TestAssetStructure(t *testing.T) {
 
 	s = load(t).schema(t)
 	r = assetRepo(s, "TRFIN", "web")
-	r.Entries["images"].MimeType = "image/png"
+	r.Entries["images"].MimeType = model.Some("image/png")
 	expectAsset(t, s, Options{}, "folders have no content")
 
 	s = load(t).schema(t)
-	assetRepo(s, "TRFIN", "web").Entries["images/logo.png"].MimeType = "PNG"
+	assetRepo(s, "TRFIN", "web").Entries["images/logo.png"].MimeType = model.Some("PNG")
 	expectAsset(t, s, Options{}, "invalid media type")
 
 	s = load(t).schema(t)

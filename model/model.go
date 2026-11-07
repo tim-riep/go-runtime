@@ -27,8 +27,9 @@ import (
 // digits and starts with a letter. The empty ID denotes the kernel.
 type PackageID string
 
-// Kernel is the owner of the kernel's native objects.
-const Kernel PackageID = ""
+// Kernel is the owner of the kernel's native objects. Its ID is reserved
+// and never used by a package.
+const Kernel PackageID = KernelPackageID
 
 // String returns the ID, or "kernel" for the kernel owner.
 func (id PackageID) String() string {
@@ -111,21 +112,35 @@ func (c DataClass) IsConfiguration() bool { return c == Configuration || c == Ru
 
 // FixedValue is one allowed value of a domain.
 type FixedValue struct {
-	Value       string `json:"value"` // canonical text form
-	Description string `json:"description,omitempty"`
+	Value       string           `json:"value"` // canonical text form
+	Description Optional[string] `json:"description"`
 }
 
 // Domain describes a technical type.
 type Domain struct {
-	Name        string         `json:"name"`
-	Owner       PackageID      `json:"owner"`
-	Description string         `json:"description,omitempty"`
-	Type        BaseType       `json:"type"`
-	Length      int            `json:"length,omitempty"`   // CHAR: max characters, DEC: precision
-	Decimals    int            `json:"decimals,omitempty"` // DEC: scale
-	Values      []FixedValue   `json:"values,omitempty"`
-	Src         rterr.Location `json:"-"`
+	Name        string           `json:"name"`
+	Owner       PackageID        `json:"owner"`
+	Description Optional[string] `json:"description"`
+	Type        BaseType         `json:"type"`
+	Length      int              `json:"length,omitempty"`   // CHAR: max characters, DEC: precision
+	Decimals    int              `json:"decimals,omitempty"` // DEC: scale
+	Values      []FixedValue     `json:"values,omitempty"`
+	// AllowEmpty tells whether CHAR and STRING fields accept "". None means
+	// the default, true; other types never have it.
+	AllowEmpty Optional[bool] `json:"allowEmpty"`
+	// Default is the default of fields of the domain that declare none.
+	Default Default `json:"default,omitzero"`
+	// DefaultJSON holds the default as written in the package until the
+	// validator converts it into Default.
+	DefaultJSON json.RawMessage `json:"-"`
+	Src         rterr.Location  `json:"-"`
 }
+
+// AllowsEmpty reports whether fields of the domain accept "".
+func (d *Domain) AllowsEmpty() bool { return d.AllowEmpty.Or(true) }
+
+// IsString reports whether the type holds character strings.
+func (t BaseType) IsString() bool { return t == Char || t == String }
 
 // Maximum lengths of data element labels in characters.
 const (
@@ -137,11 +152,11 @@ const (
 
 // DataElementText holds the labels of a data element in one language.
 type DataElementText struct {
-	Short       string `json:"short"`
-	Medium      string `json:"medium"`
-	Long        string `json:"long"`
-	Heading     string `json:"heading"` // column heading
-	Description string `json:"description,omitempty"`
+	Short       string           `json:"short"`
+	Medium      string           `json:"medium"`
+	Long        string           `json:"long"`
+	Heading     string           `json:"heading"` // column heading
+	Description Optional[string] `json:"description"`
 }
 
 // DataElement gives a domain a meaning: it carries the field labels in
@@ -169,18 +184,21 @@ const (
 
 // Field is a column of a table.
 type Field struct {
-	Name        string      `json:"name"`      // physical name, with namespace for extension fields
-	LocalName   string      `json:"localName"` // name as declared in the package
-	Description string      `json:"description,omitempty"`
-	Owner       PackageID   `json:"owner"`
-	Origin      FieldOrigin `json:"origin"`
+	Name        string           `json:"name"`      // physical name, with namespace for extension fields
+	LocalName   string           `json:"localName"` // name as declared in the package
+	Description Optional[string] `json:"description"`
+	Owner       PackageID        `json:"owner"`
+	Origin      FieldOrigin      `json:"origin"`
 	// Domain is the domain of the field. For fields with a data element it
 	// is empty in Schema.Tables and set to the data element's domain by
 	// Schema.Physical.
-	Domain      string  `json:"domain"`
-	DataElement string  `json:"dataElement,omitempty"`
-	NotNull     bool    `json:"notNull"`
-	Default     *string `json:"default,omitempty"` // canonical text form
+	Domain      string           `json:"domain"`
+	DataElement Optional[string] `json:"dataElement"`
+	NotNull     bool             `json:"notNull"`
+	Default     Default          `json:"default,omitzero"` // declared default
+	// ResolvedDefault is the effective default: the declared one, else that
+	// of the domain. Schema.Physical sets it.
+	ResolvedDefault Default `json:"-"`
 
 	// DefaultJSON holds the default as written in the package until the
 	// validator converts it into Default.
@@ -216,15 +234,15 @@ func (fk *ForeignKey) FieldNames() []string {
 // Table is a table definition. In a Schema it holds only the fields declared
 // by its owner; Schema.Physical merges extension and tenant fields.
 type Table struct {
-	Name           string         `json:"name"`
-	Owner          PackageID      `json:"owner"`
-	Description    string         `json:"description,omitempty"`
-	TenantSpecific bool           `json:"tenantSpecific"`
-	DataClass      DataClass      `json:"dataClass"`
-	Fields         []Field        `json:"fields"`
-	PrimaryKey     []string       `json:"primaryKey"`
-	ForeignKeys    []ForeignKey   `json:"foreignKeys,omitempty"`
-	Src            rterr.Location `json:"-"`
+	Name           string           `json:"name"`
+	Owner          PackageID        `json:"owner"`
+	Description    Optional[string] `json:"description"`
+	TenantSpecific bool             `json:"tenantSpecific"`
+	DataClass      DataClass        `json:"dataClass"`
+	Fields         []Field          `json:"fields"`
+	PrimaryKey     []string         `json:"primaryKey"`
+	ForeignKeys    []ForeignKey     `json:"foreignKeys,omitempty"`
+	Src            rterr.Location   `json:"-"`
 }
 
 // Field returns the field with the given physical name.
@@ -259,12 +277,12 @@ func (t *Table) IsKey(field string) bool {
 
 // Extension adds fields and foreign keys to a table of another package.
 type Extension struct {
-	Package     PackageID      `json:"package"`
-	Table       string         `json:"table"`
-	Description string         `json:"description,omitempty"`
-	Fields      []Field        `json:"fields"`
-	ForeignKeys []ForeignKey   `json:"foreignKeys,omitempty"`
-	Src         rterr.Location `json:"-"`
+	Package     PackageID        `json:"package"`
+	Table       string           `json:"table"`
+	Description Optional[string] `json:"description"`
+	Fields      []Field          `json:"fields"`
+	ForeignKeys []ForeignKey     `json:"foreignKeys,omitempty"`
+	Src         rterr.Location   `json:"-"`
 }
 
 // Key returns the identity of the extension.
@@ -279,16 +297,16 @@ type ExtensionKey struct {
 
 // Dependency is a requirement of a package on another package.
 type Dependency struct {
-	ID         PackageID `json:"id"`
-	Constraint string    `json:"version,omitempty"` // empty means any version
+	ID         PackageID        `json:"id"`
+	Constraint Optional[string] `json:"version"` // None means any version
 }
 
 // Manifest describes a package.
 type Manifest struct {
-	ID          PackageID    `json:"id"`
-	Version     string       `json:"version"`
-	Description string       `json:"description,omitempty"`
-	Requires    []Dependency `json:"requires,omitempty"`
+	ID          PackageID        `json:"id"`
+	Version     string           `json:"version"`
+	Description Optional[string] `json:"description"`
+	Requires    []Dependency     `json:"requires,omitempty"`
 }
 
 // Package is a loaded package.

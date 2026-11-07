@@ -111,7 +111,7 @@ func TestSettingLifecycle(t *testing.T) {
 		if !strings.Contains(p.Text(), "[DATA CLASS]") {
 			t.Errorf("plan text:\n%s", p.Text())
 		}
-		if got, _ := k.Table(ctx, "/TRFIN/EXCHANGE_RATES"); got.Table.DataClass != model.Configuration || got.Setting != "" {
+		if got, _ := k.Table(ctx, "/TRFIN/EXCHANGE_RATES"); got.Table.DataClass != model.Configuration || got.Setting.Valid() {
 			t.Fatalf("/TRFIN/EXCHANGE_RATES: %+v", got.Table)
 		}
 

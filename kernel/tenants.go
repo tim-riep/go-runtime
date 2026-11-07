@@ -44,7 +44,7 @@ func checkTenantID(id string) error {
 }
 
 // Create adds a tenant.
-func (t *Tenants) Create(ctx context.Context, id, description string) (*Tenant, error) {
+func (t *Tenants) Create(ctx context.Context, id string, description model.Optional[string]) (*Tenant, error) {
 	if err := checkTenantID(id); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (t *Tenants) Delete(ctx context.Context, id string, opts Options) (*plan.Pl
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
-		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {
 		if err := run(k.db, false); err != nil {
@@ -162,7 +162,7 @@ func (k *Kernel) tenantDeletePlan(ctx context.Context, q dialect.Querier, phys *
 		return nil, referenced
 	}
 
-	p := &plan.Plan{Operation: plan.TenantDelete, Dialect: k.d.Name(), Target: id}
+	p := &plan.Plan{Operation: plan.TenantDelete, Dialect: k.d.Name(), Target: model.Some(id)}
 	// Referencing tables first: the reverse of the creation order.
 	order, _ := dialect.CreationOrder(phys, tenantTables)
 	slices.Reverse(order)

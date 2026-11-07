@@ -71,17 +71,17 @@ func TestLoadAssets(t *testing.T) {
 	if e := web.Entries["empty"]; !e.Folder || e.Description["en"] != "Nothing yet" {
 		t.Fatalf("declared folder: %+v", e)
 	}
-	if e := web.Entries["css/app.css"]; e.MimeType != "text/css" || e.Content.Size != 6 {
+	if e := web.Entries["css/app.css"]; e.MimeType != model.Some("text/css") || e.Content.Size != 6 {
 		t.Fatalf("css: %+v", e)
 	}
 	sum := sha256.Sum256([]byte("body{}"))
 	if web.Entries["css/app.css"].Content.SHA256 != hex.EncodeToString(sum[:]) {
 		t.Fatal("hash")
 	}
-	if e := web.Entries["images/logo.png"]; e.MimeType != "image/x-custom" {
+	if e := web.Entries["images/logo.png"]; e.MimeType != model.Some("image/x-custom") {
 		t.Fatalf("mime override: %+v", e)
 	}
-	if e := web.Entries["data/blob.bin"]; e.MimeType != "application/octet-stream" {
+	if e := web.Entries["data/blob.bin"]; e.MimeType != model.Some("application/octet-stream") {
 		t.Fatalf("unknown extension: %+v", e)
 	}
 	mail := web.Entries["tpl/mail.html"]

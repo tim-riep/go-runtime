@@ -29,6 +29,22 @@
     {
       "name": "DECIMALS",
       "domain": "/RT/LENGTH"
+    },
+    {
+      "name": "DEFAULT_KIND",
+      "domain": "/RT/DEFAULT_KIND",
+      "notNull": true,
+      "description": "Kind of the default; DEFAULT_VALUE holds the value"
+    },
+    {
+      "name": "DEFAULT_VALUE",
+      "domain": "/RT/VALUE",
+      "description": "Default value in canonical text form"
+    },
+    {
+      "name": "ALLOW_EMPTY",
+      "domain": "/RT/FLAG",
+      "description": "Whether CHAR and STRING fields accept the empty string; empty for other types and when not declared"
     }
   ],
   "primaryKey": [

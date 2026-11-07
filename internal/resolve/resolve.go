@@ -57,17 +57,21 @@ func Resolve(installed map[model.PackageID]model.Manifest, changed []*model.Pack
 		for _, dep := range avail[id].Requires {
 			req, ok := avail[dep.ID]
 			if !ok {
-				errs = append(errs, &rterr.DependencyError{Kind: rterr.DependencyMissing, Package: string(id), Required: string(dep.ID), Constraint: dep.Constraint})
+				errs = append(errs, &rterr.DependencyError{Kind: rterr.DependencyMissing, Package: string(id), Required: string(dep.ID), Constraint: dep.Constraint.Or("any")})
 				continue
 			}
-			ok, err := semver.Satisfies(req.Version, dep.Constraint)
+			constraint, constrained := dep.Constraint.Get()
+			if !constrained {
+				continue // no constraint: every version is fine
+			}
+			ok, err := semver.Satisfies(req.Version, constraint)
 			if err != nil {
 				errs = append(errs, &rterr.ValidationError{Code: rterr.CodeSchema, Location: rterr.Location{Package: string(id), File: "manifest.json"},
 					Message: "invalid version constraint for " + string(dep.ID) + ": " + err.Error()})
 				continue
 			}
 			if !ok {
-				errs = append(errs, &rterr.DependencyError{Kind: rterr.DependencyVersion, Package: string(id), Required: string(dep.ID), Constraint: dep.Constraint, Found: req.Version})
+				errs = append(errs, &rterr.DependencyError{Kind: rterr.DependencyVersion, Package: string(id), Required: string(dep.ID), Constraint: dep.Constraint.Or("any"), Found: req.Version})
 			}
 		}
 	}

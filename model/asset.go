@@ -120,7 +120,7 @@ type AssetEntry struct {
 	Path        string            `json:"path"`
 	Folder      bool              `json:"folder,omitempty"`
 	Description map[string]string `json:"description,omitempty"` // by language
-	MimeType    string            `json:"mimeType,omitempty"`
+	MimeType    Optional[string]  `json:"mimeType"`              // None for folders
 	// Content is the language-independent version. It is nil for folders
 	// and for language-dependent assets without such a version.
 	Content *AssetContent `json:"content,omitempty"`

@@ -47,8 +47,8 @@ func TestAssetLifecycle(t *testing.T) {
 		}
 
 		// Same folder name in two packages: two repositories.
-		baseCSS, _ := readAsset(t, k, "TRBASE", "web", "css/base.css", "")
-		finCSS, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", "")
+		baseCSS, _ := readAsset(t, k, "TRBASE", "web", "css/base.css", model.None[string]())
+		finCSS, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", model.None[string]())
 		if !bytes.Equal(baseCSS, exampleFile(t, "TRBASE", "web/css/base.css")) || !bytes.Equal(finCSS, exampleFile(t, "TRFIN", "web/css/finance.css")) {
 			t.Fatal("contents differ from the package files")
 		}
@@ -57,21 +57,21 @@ func TestAssetLifecycle(t *testing.T) {
 		}
 
 		// With and without language, with fallback.
-		de, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", "de")
-		if !bytes.Equal(de, exampleFile(t, "TRFIN", "templates/invoice/invoice_de.xsl")) || info.Language != "de" {
+		de, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
+		if !bytes.Equal(de, exampleFile(t, "TRFIN", "templates/invoice/invoice_de.xsl")) || info.Language != model.Some("de") {
 			t.Fatalf("German version: %+v", info)
 		}
-		pl, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", "pl")
-		if !bytes.Equal(pl, exampleFile(t, "TRFIN", "templates/invoice/invoice_en.xsl")) || info.Language != "en" {
+		pl, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("pl"))
+		if !bytes.Equal(pl, exampleFile(t, "TRFIN", "templates/invoice/invoice_en.xsl")) || info.Language != model.Some("en") {
 			t.Fatalf("fallback to English: %+v", info)
 		}
-		neutral, info := readAsset(t, k, "TRFIN", "templates", "letter/letter.xsl", "fr")
-		if !bytes.Equal(neutral, exampleFile(t, "TRFIN", "templates/letter/letter.xsl")) || info.Language != "" {
+		neutral, info := readAsset(t, k, "TRFIN", "templates", "letter/letter.xsl", model.Some("fr"))
+		if !bytes.Equal(neutral, exampleFile(t, "TRFIN", "templates/letter/letter.xsl")) || info.Language.Valid() {
 			t.Fatalf("fallback to the language-independent version: %+v", info)
 		}
 
 		// Streaming a file larger than one chunk with a small buffer.
-		r, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", "")
+		r, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", model.None[string]())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,7 +84,7 @@ func TestAssetLifecycle(t *testing.T) {
 		}
 
 		// A repository as file system.
-		fsys, err := k.AssetFS(ctx, "TRFIN", "templates", "de")
+		fsys, err := k.AssetFS(ctx, "TRFIN", "templates", model.Some("de"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -117,16 +117,16 @@ func TestAssetLifecycle(t *testing.T) {
 		if _, err := k.Upgrade(ctx, next, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", ""); string(b) != ".amount { color: black; }\n" {
+		if b, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", model.None[string]()); string(b) != ".amount { color: black; }\n" {
 			t.Fatalf("changed asset: %q", b)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "web", "js/app.js", ""); string(b) != "console.log('finance');\n" {
+		if b, _ := readAsset(t, k, "TRFIN", "web", "js/app.js", model.None[string]()); string(b) != "console.log('finance');\n" {
 			t.Fatalf("new asset: %q", b)
 		}
-		if _, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", ""); !errors.Is(err, fs.ErrNotExist) {
+		if _, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", model.None[string]()); !errors.Is(err, fs.ErrNotExist) {
 			t.Fatalf("removed asset still readable: %v", err)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "mail", "welcome.html", ""); string(b) != "<p>Welcome</p>\n" {
+		if b, _ := readAsset(t, k, "TRFIN", "mail", "welcome.html", model.None[string]()); string(b) != "<p>Welcome</p>\n" {
 			t.Fatalf("new repository: %q", b)
 		}
 		s, _ := k.Schema(ctx)

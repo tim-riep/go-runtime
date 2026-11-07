@@ -177,7 +177,7 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 			t.Fatalf(">=1.0.0 accepts 2.0.0: %v", err)
 		}
 		fin = testutil.Example(t, "TRFIN")
-		fin.Manifest.Requires[0].Constraint = "^1.0.0"
+		fin.Manifest.Requires[0].Constraint = model.Some("^1.0.0")
 		_, err = k.Upgrade(context.Background(), fin, kernel.Options{})
 		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyVersion {
 			t.Fatalf("expected version conflict, got %v", err)
