@@ -1,0 +1,215 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package plan describes what an operation will do: the logical changes and
+// the SQL statements that carry them out.
+package plan
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Operation names the kind of operation a plan belongs to.
+type Operation string
+
+// Operations.
+const (
+	Install      Operation = "install"
+	Upgrade      Operation = "upgrade"
+	Uninstall    Operation = "uninstall"
+	Migrate      Operation = "migrate"
+	TenantDelete Operation = "tenant-delete"
+)
+
+// ChangeKind classifies a logical change.
+type ChangeKind string
+
+// Change kinds.
+const (
+	CreateDomain    ChangeKind = "create-domain"
+	DropDomain      ChangeKind = "drop-domain"
+	AlterDomain     ChangeKind = "alter-domain"
+	CreateTable     ChangeKind = "create-table"
+	DropTable       ChangeKind = "drop-table"
+	RecreateTable   ChangeKind = "recreate-table" // tenant flag changed
+	AddColumn       ChangeKind = "add-column"
+	DropColumn      ChangeKind = "drop-column"
+	AlterType       ChangeKind = "alter-type"
+	AlterValues     ChangeKind = "alter-values" // fixed values of the column's domain changed
+	SetNotNull      ChangeKind = "set-not-null"
+	DropNotNull     ChangeKind = "drop-not-null"
+	SetDefault      ChangeKind = "set-default"
+	AlterPrimaryKey ChangeKind = "alter-primary-key"
+	AddForeignKey   ChangeKind = "add-foreign-key"
+	DropForeignKey  ChangeKind = "drop-foreign-key"
+	DeleteRows      ChangeKind = "delete-rows"
+)
+
+// Change is one logical change.
+type Change struct {
+	Kind        ChangeKind `json:"kind"`
+	Table       string     `json:"table,omitempty"`
+	Column      string     `json:"column,omitempty"`
+	Name        string     `json:"name,omitempty"` // domain or foreign key name
+	Detail      string     `json:"detail,omitempty"`
+	Destructive bool       `json:"destructive"`
+}
+
+// Object names the affected object.
+func (c Change) Object() string {
+	switch {
+	case c.Column != "":
+		return c.Table + "." + c.Column
+	case c.Table != "" && c.Name != "":
+		return c.Table + "." + c.Name
+	case c.Table != "":
+		return c.Table
+	}
+	return c.Name
+}
+
+func (c Change) String() string {
+	s := string(c.Kind) + " " + c.Object()
+	if c.Detail != "" {
+		s += " (" + c.Detail + ")"
+	}
+	return s
+}
+
+// Step is a group of statements executed for one purpose.
+type Step struct {
+	Description string   `json:"description"`
+	Destructive bool     `json:"destructive"`
+	Statements  []string `json:"statements"`
+}
+
+// PackageChange records the version change of one package.
+type PackageChange struct {
+	ID   string `json:"id"`
+	From string `json:"from,omitempty"`
+	To   string `json:"to,omitempty"`
+}
+
+// Plan is the complete description of an operation.
+type Plan struct {
+	Operation Operation       `json:"operation"`
+	Dialect   string          `json:"dialect"`
+	Packages  []PackageChange `json:"packages,omitempty"`
+	Target    string          `json:"target,omitempty"` // e.g. the tenant of a tenant deletion
+	Changes   []Change        `json:"changes"`
+	Steps     []Step          `json:"steps"`
+	Executed  bool            `json:"executed"`
+	LogID     string          `json:"logId,omitempty"`
+}
+
+// Destructive returns the destructive changes.
+func (p *Plan) Destructive() []Change {
+	var out []Change
+	for _, c := range p.Changes {
+		if c.Destructive {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// Statements returns all statements in execution order.
+func (p *Plan) Statements() []string {
+	var out []string
+	for _, s := range p.Steps {
+		out = append(out, s.Statements...)
+	}
+	return out
+}
+
+// SQL renders the statements as a script with one comment per step.
+func (p *Plan) SQL() string {
+	var sb strings.Builder
+	for _, s := range p.Steps {
+		sb.WriteString("-- ")
+		sb.WriteString(s.Description)
+		if s.Destructive {
+			sb.WriteString(" [DESTRUCTIVE]")
+		}
+		sb.WriteByte('\n')
+		for _, st := range s.Statements {
+			sb.WriteString(st)
+			sb.WriteString(";\n")
+		}
+		sb.WriteByte('\n')
+	}
+	return sb.String()
+}
+
+// Summary returns a one-line description of the operation.
+func (p *Plan) Summary() string {
+	var parts []string
+	for _, pc := range p.Packages {
+		switch {
+		case pc.From == "":
+			parts = append(parts, pc.ID+" "+pc.To)
+		case pc.To == "":
+			parts = append(parts, pc.ID+" "+pc.From)
+		default:
+			parts = append(parts, fmt.Sprintf("%s %s -> %s", pc.ID, pc.From, pc.To))
+		}
+	}
+	if p.Target != "" {
+		parts = append(parts, p.Target)
+	}
+	return fmt.Sprintf("%s %s (%s)", p.Operation, strings.Join(parts, ", "), p.Dialect)
+}
+
+// Text renders the plan for humans: summary, changes with destructive ones
+// marked, and the statements.
+func (p *Plan) Text() string {
+	var sb strings.Builder
+	sb.WriteString("Plan: ")
+	sb.WriteString(p.Summary())
+	sb.WriteString("\n\nChanges:\n")
+	if len(p.Changes) == 0 {
+		sb.WriteString("  (none)\n")
+	}
+	for _, c := range p.Changes {
+		mark := "  "
+		if c.Destructive {
+			mark = "! "
+		}
+		sb.WriteString("  ")
+		sb.WriteString(mark)
+		sb.WriteString(c.String())
+		if c.Destructive {
+			sb.WriteString("  [DESTRUCTIVE]")
+		}
+		sb.WriteByte('\n')
+	}
+	if n := len(p.Destructive()); n > 0 {
+		fmt.Fprintf(&sb, "\n%d destructive change(s).\n", n)
+	}
+	sb.WriteString("\nStatements:\n")
+	if len(p.Steps) == 0 {
+		sb.WriteString("  (none)\n")
+	}
+	for _, line := range strings.Split(strings.TrimRight(p.SQL(), "\n"), "\n") {
+		if line == "" {
+			sb.WriteByte('\n')
+			continue
+		}
+		sb.WriteString("  ")
+		sb.WriteString(line)
+		sb.WriteByte('\n')
+	}
+	return sb.String()
+}

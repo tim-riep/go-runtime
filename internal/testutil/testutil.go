@@ -16,6 +16,7 @@
 package testutil
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"testing"
@@ -79,4 +80,29 @@ func AddPackages(t testing.TB, s *model.Schema, pkgs ...*model.Package) *model.S
 		}
 	}
 	return s
+}
+
+var update = flag.Bool("update", false, "rewrite golden files")
+
+// Golden compares got with testdata/golden/<name> in the module root and
+// rewrites the file when the test runs with -update.
+func Golden(t testing.TB, name, got string) {
+	t.Helper()
+	path := filepath.Join(ModuleRoot(t), "testdata", "golden", name)
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("%v (run the test with -update to create it)", err)
+	}
+	if string(want) != got {
+		t.Errorf("output differs from %s (run with -update to accept):\n%s", name, got)
+	}
 }
