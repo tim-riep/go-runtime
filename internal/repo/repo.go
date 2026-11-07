@@ -552,3 +552,28 @@ func NewID() string {
 	b[8] = b[8]&0x3f | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
+
+// Tenant is a row of the tenant table.
+type Tenant struct {
+	ID          string    `json:"id"`
+	Description string    `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// InsertTenant creates a tenant.
+func (r *Repo) InsertTenant(ctx context.Context, q dialect.Querier, t Tenant) error {
+	return r.insert(ctx, q, model.TenantTable, row{model.TenantTableKey: t.ID, "DESCRIPTION": nullable(t.Description), "CREATED_AT": t.CreatedAt})
+}
+
+// Tenants returns all tenants ordered by key.
+func (r *Repo) Tenants(ctx context.Context, q dialect.Querier) ([]Tenant, error) {
+	rows, err := r.selectRows(ctx, q, model.TenantTable, []string{model.TenantTableKey, "DESCRIPTION", "CREATED_AT"}, model.TenantTableKey)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Tenant, 0, len(rows))
+	for _, t := range rows {
+		out = append(out, Tenant{ID: str(t[model.TenantTableKey]), Description: str(t["DESCRIPTION"]), CreatedAt: tm(t["CREATED_AT"])})
+	}
+	return out, nil
+}

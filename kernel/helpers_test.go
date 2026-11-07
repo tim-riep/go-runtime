@@ -130,3 +130,15 @@ func where(k *kernel.Kernel, cols ...string) string {
 	}
 	return strings.Join(parts, " AND ")
 }
+
+// consistent fails if the repository and the database disagree.
+func consistent(t *testing.T, k *kernel.Kernel) {
+	t.Helper()
+	d, err := k.Check(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d) > 0 {
+		t.Fatalf("schema check: %v", d)
+	}
+}

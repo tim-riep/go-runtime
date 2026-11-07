@@ -84,6 +84,7 @@ func TestUpgradeKeepsData(t *testing.T) {
 		}
 		want := testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN"), up)
 		sameSchema(t, k, want)
+		consistent(t, k)
 	})
 }
 
@@ -124,6 +125,7 @@ func TestUpgradeDestructive(t *testing.T) {
 		}
 		violation(t, insert(t, k, "COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C9", "NAME": "N", "COUNTRY": "DE", "/TROTTO/OTTO_ID": raw{"ELEVEN-CHAR"}}),
 			rterr.ViolationCheck, "shortened field")
+		consistent(t, k)
 	})
 }
 
@@ -233,6 +235,7 @@ func TestUninstall(t *testing.T) {
 			t.Error("OTTO_SHOPS still exists")
 		}
 		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN")))
+		consistent(t, k)
 		var ni *rterr.NotInstalled
 		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); !errors.As(err, &ni) {
 			t.Fatalf("expected NotInstalled, got %v", err)
