@@ -432,6 +432,16 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		for _, u := range d.UsedBy {
 			fmt.Fprintf(c.stdout, "  used by %s %s (%s)\n", u.Kind, u.Name, u.Via)
 		}
+	case kernel.KindClass:
+		d, err := k.Class(ctx, name)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(d)
+			return exitOK
+		}
+		fmt.Fprintf(c.stdout, "%s %s (package %s, %s)\n", strings.ToUpper(string(d.Kind[:1]))+string(d.Kind[1:]), d.Name, d.Package, d.File)
 	case kernel.KindStructure, kernel.KindArrayType:
 		d, err := k.Structure(ctx, name)
 		if err != nil {
@@ -489,6 +499,19 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 		for _, u := range d.UsedBy {
 			fmt.Fprintf(c.stdout, "  used by %s\n", u)
+		}
+	}
+	if kind != kernel.KindPackage {
+		uses, err := k.CodeUses(ctx, name)
+		if err != nil {
+			return c.fail(err)
+		}
+		for _, u := range uses {
+			what := u.Kind
+			if m, ok := u.Member.Get(); ok {
+				what += " " + m
+			}
+			fmt.Fprintf(c.stdout, "  used in code by %s at %s:%d (%s)\n", u.Package, u.File, u.Line, what)
 		}
 	}
 	return exitOK

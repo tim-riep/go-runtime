@@ -23,4 +23,8 @@ public open class /TRA/BASE
   package method HIDDEN()
   end
 
+  public static method NAME_OF(item: /TRA/ITEMS) returns STRING
+    return item.NAME default ""
+  end
+
 end

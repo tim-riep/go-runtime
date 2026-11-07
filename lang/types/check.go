@@ -87,6 +87,28 @@ type Info struct {
 	Catches    map[*syntax.CatchClause]*Local
 	Raises     map[*syntax.RaiseStmt]*Class
 	Expansions map[*syntax.IncludeStmt]*Expansion
+	// References lists every object the code uses, IncludeRefs every
+	// include it inserts or skips.
+	References  []Reference
+	IncludeRefs []IncludeRef
+}
+
+// Reference is the use of an object of the schema or of a class by code.
+type Reference struct {
+	File   string
+	Line   int
+	Column int
+	Kind   string // table, field, structure, component, array-type, data-element, domain, fixed-value, class, interface, method, attribute, constant, include
+	Object string
+	Member string // field, component, method, attribute, constant or fixed value; empty for the object itself
+}
+
+// IncludeRef is an include that code inserts, or skips because it does not
+// exist (include ... if found).
+type IncludeRef struct {
+	Name    string
+	IfFound bool
+	Found   bool
 }
 
 // Expansion is a statements include inserted at an include statement.
@@ -329,6 +351,7 @@ func (c *checker) classVisible(k *Class, pos syntax.Pos) bool {
 func (c *checker) classRef(n syntax.Name) *Class {
 	if k, ok := c.classes[n.Name]; ok {
 		c.classVisible(k, n.Pos)
+		c.useName(n)
 		return k
 	}
 	if !c.visibleNamespace(n) {
@@ -531,11 +554,13 @@ func mapKey(t Type) bool {
 func (c *checker) globalType(n syntax.Name) Type {
 	if k, ok := c.classes[n.Name]; ok {
 		c.classVisible(k, n.Pos)
+		c.useName(n)
 		return k
 	}
 	if !c.visibleNamespace(n) {
 		return nil
 	}
+	c.useName(n)
 	if t := c.schema.lookup(n.Name, n.Pos); t != nil {
 		return t
 	}
@@ -650,6 +675,12 @@ func (c *checker) findInclude(n syntax.Name, ifFound bool, stack []string) (*Uni
 		return nil, false
 	}
 	u, ok := c.cfg.Includes.Include(n.Name)
+	if !c.quiet {
+		c.info.IncludeRefs = append(c.info.IncludeRefs, IncludeRef{Name: n.Name, IfFound: ifFound, Found: ok})
+		if ok {
+			c.use(n.Pos, "include", n.Name, "")
+		}
+	}
 	if !ok {
 		if ifFound {
 			c.report(Note, c.loc.File, n.Pos, slices.Clone(c.loc.Chain), CodeInclude, "include %s does not exist and is skipped", n.Name)
@@ -875,4 +906,64 @@ func (c *checker) fieldVisible(name string, pos syntax.Pos) bool {
 	id, _, _ := model.SplitName(name)
 	c.errorf(pos, CodeVisibility, "the field %s belongs to package %s, which %s does not require", name, id, c.cfg.Package)
 	return false
+}
+
+// use records a reference of the code being checked.
+func (c *checker) use(pos syntax.Pos, kind, object, member string) {
+	if c.quiet || object == "" {
+		return
+	}
+	r := Reference{File: c.loc.File, Line: pos.Line, Column: pos.Col, Kind: kind, Object: object, Member: member}
+	if n := len(c.info.References); n > 0 && c.info.References[n-1] == r {
+		return
+	}
+	c.info.References = append(c.info.References, r)
+}
+
+// useName records the use of a global name: a class, interface or object
+// of the schema.
+func (c *checker) useName(n syntax.Name) {
+	if k, ok := c.classes[n.Name]; ok {
+		kind := "class"
+		if k.IsInterface() {
+			kind = "interface"
+		}
+		c.use(n.Pos, kind, n.Name, "")
+		return
+	}
+	s := c.schema.s
+	switch {
+	case s.Tables[n.Name] != nil:
+		c.use(n.Pos, "table", n.Name, "")
+	case s.Structures[n.Name] != nil:
+		c.use(n.Pos, "structure", n.Name, "")
+	case s.ArrayTypes[n.Name] != nil:
+		c.use(n.Pos, "array-type", n.Name, "")
+	case s.DataElements[n.Name] != nil:
+		c.use(n.Pos, "data-element", n.Name, "")
+	case s.Domains[n.Name] != nil:
+		c.use(n.Pos, "domain", n.Name, "")
+	}
+}
+
+// useMember records the use of a member of a class.
+func (c *checker) useMember(pos syntax.Pos, m any) {
+	switch m := m.(type) {
+	case *Attribute:
+		c.use(pos, "attribute", m.Owner.Name, m.Name)
+	case *Constant:
+		c.use(pos, "constant", m.Owner.Name, m.Name)
+	case *Method:
+		c.use(pos, "method", m.Owner.Name, m.Name)
+	}
+}
+
+// useField records the use of a field of a table or a component of a
+// structure.
+func (c *checker) useField(pos syntax.Pos, st *Struct, field string) {
+	if st.Table {
+		c.use(pos, "field", st.Name, field)
+	} else {
+		c.use(pos, "component", st.Name, field)
+	}
 }

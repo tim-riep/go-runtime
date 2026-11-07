@@ -475,6 +475,7 @@ func (c *checker) memberIdent(f *fnCtx, x *syntax.Ident) Type {
 		return TypInvalid
 	}
 	c.info.Uses[x] = m
+	c.useMember(x.Pos, m)
 	switch m := m.(type) {
 	case *Attribute:
 		if !m.Static && f.static {
@@ -510,6 +511,7 @@ func (c *checker) visible(f *fnCtx, owner *Class, v syntax.Visibility, name stri
 func (c *checker) global(x *syntax.GlobalExpr) any {
 	if k, ok := c.classes[x.Name.Name]; ok {
 		c.classVisible(k, x.Name.Pos)
+		c.useName(x.Name)
 		c.info.Globals[x] = k
 		return k
 	}
@@ -517,6 +519,7 @@ func (c *checker) global(x *syntax.GlobalExpr) any {
 		return nil
 	}
 	if t := c.schema.lookup(x.Name.Name, x.Name.Pos); t != nil {
+		c.useName(x.Name)
 		c.info.Globals[x] = t
 		return t
 	}
@@ -538,10 +541,12 @@ func (c *checker) selectExpr(f *fnCtx, sc *scope, x *syntax.SelectExpr, e env) T
 				}
 				c.visible(f, m.Owner, m.Visibility, name, x.Name.Pos)
 				c.info.Selects[x] = &Selection{Kind: SelectStatic, Attribute: m}
+				c.useMember(x.Name.Pos, m)
 				return m.Type
 			case *Constant:
 				c.visible(f, m.Owner, m.Visibility, name, x.Name.Pos)
 				c.info.Selects[x] = &Selection{Kind: SelectConstant, Constant: m}
+				c.useMember(x.Name.Pos, m)
 				return m.Type
 			case *Method:
 				c.errorf(x.Name.Pos, CodeType, "the method %s must be called", name)
@@ -555,6 +560,7 @@ func (c *checker) selectExpr(f *fnCtx, sc *scope, x *syntax.SelectExpr, e env) T
 				return TypInvalid
 			}
 			c.info.Selects[x] = &Selection{Kind: SelectEnum, Enum: t, EnumIndex: i}
+			c.use(x.Name.Pos, "fixed-value", t.Name, name)
 			return t
 		case nil:
 		default:
@@ -580,6 +586,7 @@ func (c *checker) selectExpr(f *fnCtx, sc *scope, x *syntax.SelectExpr, e env) T
 		}
 		c.fieldVisible(name, x.Name.Pos)
 		c.info.Selects[x] = &Selection{Kind: SelectField, Field: i}
+		c.useField(x.Name.Pos, r, name)
 		return r.Fields[i].Type
 	case *Class:
 		switch m := r.Member(name).(type) {
@@ -590,10 +597,12 @@ func (c *checker) selectExpr(f *fnCtx, sc *scope, x *syntax.SelectExpr, e env) T
 				kind = SelectStatic
 			}
 			c.info.Selects[x] = &Selection{Kind: kind, Attribute: m}
+			c.useMember(x.Name.Pos, m)
 			return m.Type
 		case *Constant:
 			c.visible(f, m.Owner, m.Visibility, name, x.Name.Pos)
 			c.info.Selects[x] = &Selection{Kind: SelectConstant, Constant: m}
+			c.useMember(x.Name.Pos, m)
 			return m.Type
 		case *Method:
 			c.errorf(x.Name.Pos, CodeType, "the method %s must be called: %s(...)", name, name)
@@ -941,6 +950,9 @@ func (c *checker) newExpr(f *fnCtx, sc *scope, x *syntax.NewExpr, e env) Type {
 			}
 			fld := t.Field(a.Name.Name)
 			c.fieldVisible(a.Name.Name, a.Name.Pos)
+			if fld != nil {
+				c.useField(a.Name.Pos, t, fld.Name)
+			}
 			if fld == nil {
 				c.errorf(a.Name.Pos, CodeUnknown, "%s has no component %s", t.Name, a.Name.Name)
 				c.expr(f, sc, a.Value, e, nil)
@@ -1125,6 +1137,10 @@ func (c *checker) call(f *fnCtx, sc *scope, x *syntax.CallExpr, e env, want Type
 // methodCall checks a call of a method on recv (nil: me or static).
 func (c *checker) methodCall(f *fnCtx, sc *scope, x *syntax.CallExpr, m *Method, recv syntax.Expr, e env, super bool) Type {
 	pos := x.Fun.Start()
+	if sel, ok := x.Fun.(*syntax.SelectExpr); ok {
+		pos = sel.Name.Pos
+	}
+	c.useMember(pos, m)
 	c.visible(f, m.Owner, m.Visibility, m.Name, pos)
 	c.args(f, sc, x, m.Sig, e, nil)
 	for _, r := range m.Sig.Raises {

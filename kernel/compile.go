@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/tim-riep/go-runtime/dialect"
@@ -94,16 +95,145 @@ func (k *Kernel) compile(ctx context.Context, q dialect.Querier, cur, want *mode
 	if !k.repo.HasCode() {
 		return &compiled{}, nil, nil
 	}
+	codes, err := k.repo.LoadCode(ctx, q)
+	if err != nil {
+		return nil, nil, err
+	}
+	return k.compileSet(ctx, q, want, recompileSet(cur, want, codes), now)
+}
+
+// recompileSet returns the packages whose code may change through an
+// operation, with the reason for each: the packages it installs or
+// upgrades, the packages that require any changed package, the packages
+// that include an include of a changed package with if found, and the
+// packages that use an object of a changed package or a table or
+// structure whose components change.
+func recompileSet(cur, want *model.Schema, codes map[model.PackageID]*repo.Code) map[model.PackageID]string {
+	changed := changedPackages(cur, want)
+	isChanged := map[model.PackageID]bool{}
+	for _, id := range changed {
+		isChanged[id] = true
+	}
 	reasons := map[model.PackageID]string{}
-	for _, id := range changedPackages(cur, want) {
-		if _, ok := want.Packages[id]; ok {
-			reasons[id] = "installed"
-			if _, was := cur.Packages[id]; was {
-				reasons[id] = "upgraded"
+	add := func(id model.PackageID, reason string) {
+		if _, ok := want.Packages[id]; !ok {
+			return
+		}
+		if _, done := reasons[id]; !done {
+			reasons[id] = reason
+		}
+	}
+	for _, id := range changed {
+		if _, was := cur.Packages[id]; was {
+			add(id, "upgraded")
+		} else {
+			add(id, "installed")
+		}
+	}
+	for _, id := range want.PackageIDs() {
+		for _, dep := range requiredBy(want, id) {
+			if isChanged[dep] {
+				add(id, "requires "+string(dep))
+				break
 			}
 		}
 	}
-	return k.compileSet(ctx, q, want, reasons, now)
+	objects := changedObjects(cur, want)
+	for _, id := range sortedIDs(codes) {
+		c := codes[id]
+		for _, inc := range c.Includes {
+			if isChanged[inc.Package] && inc.IfFound {
+				add(id, "includes "+inc.Name+" if found")
+			}
+		}
+		for _, u := range c.Uses {
+			p, _ := u.ObjectPackage.Get()
+			switch {
+			case isChanged[p] && p != id:
+				add(id, "uses "+u.Object)
+			case objects[u.Object]:
+				add(id, "uses "+u.Object)
+			}
+		}
+	}
+	return reasons
+}
+
+func sortedIDs(m map[model.PackageID]*repo.Code) []model.PackageID {
+	out := make([]model.PackageID, 0, len(m))
+	for id := range m {
+		out = append(out, id)
+	}
+	slices.Sort(out)
+	return out
+}
+
+// requiredBy returns the packages a package requires, also indirectly.
+func requiredBy(s *model.Schema, id model.PackageID) []model.PackageID {
+	var out []model.PackageID
+	seen := map[model.PackageID]bool{}
+	var visit func(p model.PackageID)
+	visit = func(p model.PackageID) {
+		info := s.Packages[p]
+		if info == nil {
+			return
+		}
+		for _, r := range info.Manifest.Requires {
+			if !seen[r.ID] {
+				seen[r.ID] = true
+				out = append(out, r.ID)
+				visit(r.ID)
+			}
+		}
+	}
+	visit(id)
+	return out
+}
+
+// changedObjects returns the tables and structures whose resolved
+// components differ, e.g. because an extension adds fields, which changes
+// their memory layout in code.
+func changedObjects(cur, want *model.Schema) map[string]bool {
+	out := map[string]bool{}
+	sig := func(s *model.Schema) map[string]string {
+		m := map[string]string{}
+		r := s.Resolver()
+		for _, name := range append(s.TableNames(), s.StructureNames()...) {
+			comps, _ := r.Components(name)
+			var b strings.Builder
+			for _, c := range comps {
+				fmt.Fprintf(&b, "%s %s %s %v %v|", c.Name, c.Type.Kind, c.Type.Name, c.NotNull, c.Default)
+			}
+			if t := s.Tables[name]; t != nil {
+				fmt.Fprintf(&b, "key %v", t.PrimaryKey)
+			}
+			m[name] = b.String()
+		}
+		return m
+	}
+	a, b := sig(cur), sig(want)
+	for name, v := range a {
+		if b[name] != v {
+			out[name] = true
+		}
+	}
+	for name := range b {
+		if _, ok := a[name]; !ok {
+			out[name] = true
+		}
+	}
+	// Domains and data elements change the types of components as well.
+	for name, d := range want.Domains {
+		if c, ok := cur.Domains[name]; !ok || c.TypeString() != d.TypeString() || !slices.Equal(c.Values, d.Values) {
+			out[name] = true
+		}
+	}
+	for name, d := range want.DataElements {
+		if c, ok := cur.DataElements[name]; !ok || c.Domain != d.Domain {
+			out[name] = true
+		}
+	}
+	return out
 }
 
 // compileSet compiles the given packages, with the reason for each, in
@@ -137,10 +267,11 @@ func (k *Kernel) compileSet(ctx context.Context, q dialect.Querier, want *model.
 			return nil, nil, err
 		}
 		programs[id] = prog
+		uses, includes := codeReferences(r)
 		b := bytecode.Encode(prog)
 		sum := sha256.Sum256(b)
 		out.codes = append(out.codes, &repo.Code{Package: id, FormatVersion: bytecode.FormatVersion, LanguageVersion: info.Manifest.LanguageVersion,
-			Bytes: b, SHA256: hex.EncodeToString(sum[:]), CompiledAt: now})
+			Bytes: b, SHA256: hex.EncodeToString(sum[:]), CompiledAt: now, Uses: uses, Includes: includes})
 		changes = append(changes, plan.Change{Kind: plan.CompilePackage, Name: string(id), Detail: reasons[id]})
 	}
 	return out, changes, nil
@@ -246,4 +377,34 @@ func (k *Kernel) recompileOutdated(ctx context.Context) error {
 		}
 		return k.saveCode(ctx, tx, c, now)
 	})
+}
+
+// codeReferences returns what the code of a package uses and includes.
+func codeReferences(r *build.Result) ([]repo.CodeUse, []repo.CodeInclude) {
+	var uses []repo.CodeUse
+	seen := map[repo.CodeUse]bool{}
+	for _, ref := range r.Program.Info.References {
+		u := repo.CodeUse{File: ref.File, Line: ref.Line, Column: ref.Column, Kind: ref.Kind, Object: ref.Object}
+		if ref.Member != "" {
+			u.Member = model.Some(ref.Member)
+		}
+		if id, _, ok := model.SplitName(ref.Object); ok {
+			u.ObjectPackage = model.Some(id)
+		}
+		if !seen[u] {
+			seen[u] = true
+			uses = append(uses, u)
+		}
+	}
+	var includes []repo.CodeInclude
+	byName := map[string]bool{}
+	for _, inc := range r.Program.Info.IncludeRefs {
+		if byName[inc.Name] {
+			continue
+		}
+		byName[inc.Name] = true
+		id, _, _ := model.SplitName(inc.Name)
+		includes = append(includes, repo.CodeInclude{Name: inc.Name, Package: id, IfFound: inc.IfFound, Found: inc.Found})
+	}
+	return uses, includes
 }

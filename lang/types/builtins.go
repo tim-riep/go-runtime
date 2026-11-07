@@ -298,6 +298,11 @@ func (c *checker) builtinCall(f *fnCtx, sc *scope, x *syntax.CallExpr, recv synt
 				}
 			}
 			c.args(f, sc, x, nil, e, named)
+			for _, a := range x.Args {
+				if a.Name != nil {
+					c.useField(a.Name.Pos, st, a.Name.Name)
+				}
+			}
 			var given []string
 			for _, a := range x.Args {
 				if a.Name != nil {

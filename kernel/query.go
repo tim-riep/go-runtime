@@ -95,6 +95,7 @@ type TableDetail struct {
 	UsedBy       []model.Use            `json:"usedBy,omitempty"`       // structures, tables and array types using the table
 	ReferencedBy []string               `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
 	Setting      model.Optional[string] `json:"setting"`                // setting the table belongs to
+	CodeUses     []CodeUse              `json:"codeUses"`
 }
 
 // Table returns the physical layout of a table.
@@ -116,13 +117,17 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 			}
 		}
 	}
+	if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
+		return nil, err
+	}
 	return d, nil
 }
 
 // DomainDetail describes a domain and where it is used.
 type DomainDetail struct {
-	Domain *model.Domain `json:"domain"`
-	UsedBy []string      `json:"usedBy,omitempty"` // "TABLE.FIELD"
+	Domain   *model.Domain `json:"domain"`
+	UsedBy   []string      `json:"usedBy,omitempty"` // "TABLE.FIELD"
+	CodeUses []CodeUse     `json:"codeUses"`
 }
 
 // Domain returns a domain and the fields that use it.
@@ -144,6 +149,9 @@ func (k *Kernel) Domain(ctx context.Context, name string) (*DomainDetail, error)
 			}
 		}
 	}
+	if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
+		return nil, err
+	}
 	return d, nil
 }
 
@@ -152,6 +160,7 @@ type DataElementDetail struct {
 	DataElement *model.DataElement `json:"dataElement"`
 	Domain      *model.Domain      `json:"domain"`
 	UsedBy      []string           `json:"usedBy,omitempty"` // "TABLE.FIELD"
+	CodeUses    []CodeUse          `json:"codeUses"`
 }
 
 // DataElement returns a data element with its domain and the fields that
@@ -174,6 +183,9 @@ func (k *Kernel) DataElement(ctx context.Context, name string) (*DataElementDeta
 			}
 		}
 	}
+	if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
+		return nil, err
+	}
 	return d, nil
 }
 
@@ -185,6 +197,7 @@ const (
 	KindDataElement = "data-element"
 	KindStructure   = "structure"
 	KindArrayType   = "array-type"
+	KindClass       = "class" // a class or interface in code
 )
 
 // Resolve determines which kind of object a name refers to. A prefix
@@ -192,7 +205,7 @@ const (
 // "array-type:" selects the kind explicitly; a bare name
 // that matches several kinds is reported as rterr.Ambiguous.
 func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, err error) {
-	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType}, kd) {
+	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType, KindClass}, kd) {
 		return kd, n, nil
 	}
 	s, err := k.Schema(ctx)
@@ -218,6 +231,13 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	if _, ok := s.ArrayTypes[ref]; ok {
 		kinds = append(kinds, KindArrayType)
 	}
+	for _, sources := range s.Sources {
+		for _, src := range sources {
+			if src.Name == ref && src.Kind != model.SourceInclude {
+				kinds = append(kinds, KindClass)
+			}
+		}
+	}
 	switch len(kinds) {
 	case 0:
 		return "", "", &rterr.NotFound{Kind: "object", Name: ref}
@@ -227,11 +247,50 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	return "", "", &rterr.Ambiguous{Name: ref, Kinds: kinds}
 }
 
+// CodeUse is the use of an object by the code of a package.
+type CodeUse struct {
+	Package model.PackageID        `json:"package"`
+	File    string                 `json:"file"`
+	Line    int                    `json:"line"`
+	Kind    string                 `json:"kind"`
+	Object  string                 `json:"object"`
+	Member  model.Optional[string] `json:"member"`
+}
+
+// CodeUses returns where code uses an object: a table, structure, array
+// type, data element, domain, class, interface or include, including
+// its fields, components and members.
+func (k *Kernel) CodeUses(ctx context.Context, object string) ([]CodeUse, error) {
+	codes, err := k.repo.LoadCode(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	out := []CodeUse{}
+	for _, id := range sortedCodeIDs(codes) {
+		for _, u := range codes[id].Uses {
+			if u.Object == object {
+				out = append(out, CodeUse{Package: id, File: u.File, Line: u.Line, Kind: u.Kind, Object: u.Object, Member: u.Member})
+			}
+		}
+	}
+	return out, nil
+}
+
+func sortedCodeIDs(m map[model.PackageID]*repo.Code) []model.PackageID {
+	out := make([]model.PackageID, 0, len(m))
+	for id := range m {
+		out = append(out, id)
+	}
+	slices.Sort(out)
+	return out
+}
+
 // StructureDetail is the resolved definition of a structure, table or
 // array type with its direct uses.
 type StructureDetail struct {
 	Definition *structure.Definition `json:"definition"`
 	UsedBy     []model.Use           `json:"usedBy"`
+	CodeUses   []CodeUse             `json:"codeUses"`
 }
 
 // Structure returns the resolved definition of a structure, table or array
@@ -254,7 +313,11 @@ func (k *Kernel) Structure(ctx context.Context, name string) (*StructureDetail, 
 	if uses == nil {
 		uses = []model.Use{}
 	}
-	return &StructureDetail{Definition: d, UsedBy: uses}, nil
+	codeUses, err := k.CodeUses(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return &StructureDetail{Definition: d, UsedBy: uses, CodeUses: codeUses}, nil
 }
 
 func settingOf(s *model.Schema, table string) model.Optional[string] {
@@ -262,4 +325,34 @@ func settingOf(s *model.Schema, table string) model.Optional[string] {
 		return model.Some(id)
 	}
 	return model.None[string]()
+}
+
+// ClassDetail describes a class or interface of the code of a package.
+type ClassDetail struct {
+	Name     string           `json:"name"`
+	Package  model.PackageID  `json:"package"`
+	Kind     model.SourceKind `json:"kind"`
+	File     string           `json:"file"`
+	CodeUses []CodeUse        `json:"codeUses"`
+}
+
+// Class returns a class or interface of an installed package and where
+// code uses it.
+func (k *Kernel) Class(ctx context.Context, name string) (*ClassDetail, error) {
+	s, err := k.Schema(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for id, sources := range s.Sources {
+		for _, src := range sources {
+			if src.Name == name && src.Kind != model.SourceInclude {
+				d := &ClassDetail{Name: name, Package: id, Kind: src.Kind, File: src.File}
+				if d.CodeUses, err = k.CodeUses(ctx, name); err != nil {
+					return nil, err
+				}
+				return d, nil
+			}
+		}
+	}
+	return nil, &rterr.NotFound{Kind: "class", Name: name}
 }

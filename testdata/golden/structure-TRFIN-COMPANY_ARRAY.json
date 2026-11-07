@@ -413,5 +413,6 @@
       "name": "/TRFIN/COMPANY_GROUP",
       "via": "component MEMBERS"
     }
-  ]
+  ],
+  "codeUses": []
 }
