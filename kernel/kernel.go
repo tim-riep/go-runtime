@@ -1,0 +1,346 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package kernel is the entry point for embedding the kernel: it opens a
+// database, initializes the kernel tables and installs, upgrades and
+// removes packages.
+//
+// Every operation follows the same path. The current schema is read from
+// the repository, the operation computes the schema it should produce, that
+// schema is validated as a whole, the difference becomes a plan of
+// statements, and the plan runs in one transaction together with the
+// repository update. With Options.DryRun only the plan is returned.
+package kernel
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"io/fs"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/timriep/go-runtime/dialect"
+	"github.com/timriep/go-runtime/dialect/postgres"
+	"github.com/timriep/go-runtime/dialect/sqlite"
+	"github.com/timriep/go-runtime/internal/kernelschema"
+	"github.com/timriep/go-runtime/internal/pkgload"
+	"github.com/timriep/go-runtime/internal/planner"
+	"github.com/timriep/go-runtime/internal/repo"
+	"github.com/timriep/go-runtime/internal/validate"
+	"github.com/timriep/go-runtime/model"
+	"github.com/timriep/go-runtime/plan"
+	"github.com/timriep/go-runtime/rterr"
+)
+
+// Options control an operation.
+type Options struct {
+	// DryRun returns the plan without changing the database.
+	DryRun bool
+	// AllowDestructive permits changes that remove or restrict structures.
+	AllowDestructive bool
+	// Confirm acknowledges that the operation deletes data. Uninstalling a
+	// package and deleting a tenant require it.
+	Confirm bool
+}
+
+// Kernel manages packages in one database.
+type Kernel struct {
+	db     *sql.DB
+	d      dialect.Dialect
+	repo   *repo.Repo
+	ownsDB bool
+	now    func() time.Time
+}
+
+// Open connects to a database. The connection string selects the dialect:
+// "sqlite:<path>" for SQLite and "postgres://..." or "postgresql://..." for
+// PostgreSQL. Call Init before other operations on a new database.
+func Open(ctx context.Context, dsn string) (*Kernel, error) {
+	var d dialect.Dialect
+	target := dsn
+	switch {
+	case strings.HasPrefix(dsn, "sqlite:"):
+		d = sqlite.New()
+		target = strings.TrimPrefix(strings.TrimPrefix(dsn, "sqlite:"), "//")
+	case strings.HasPrefix(dsn, "postgres://"), strings.HasPrefix(dsn, "postgresql://"):
+		d = postgres.New()
+	default:
+		return nil, &rterr.UnsupportedDatabase{DSN: dsn}
+	}
+	if target == "" {
+		return nil, &rterr.InvalidArgument{Argument: "connection string", Message: "missing database path"}
+	}
+	db, err := d.Open(target)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
+	k := New(db, d)
+	k.ownsDB = true
+	return k, nil
+}
+
+// New creates a kernel on an existing connection pool. For SQLite the pool
+// must come from the dialect's Open so every connection enforces foreign
+// keys.
+func New(db *sql.DB, d dialect.Dialect) *Kernel {
+	return &Kernel{db: db, d: d, repo: repo.New(d), now: time.Now}
+}
+
+// Close closes the connection pool if Open created it.
+func (k *Kernel) Close() error {
+	if k.ownsDB {
+		return k.db.Close()
+	}
+	return nil
+}
+
+// DB returns the connection pool.
+func (k *Kernel) DB() *sql.DB { return k.db }
+
+// Dialect returns the dialect of the database.
+func (k *Kernel) Dialect() dialect.Dialect { return k.d }
+
+// timestamp returns the current time in the precision the kernel stores.
+func (k *Kernel) timestamp() time.Time { return k.now().UTC().Truncate(time.Microsecond) }
+
+// LoadDir loads a package from a directory.
+func LoadDir(path string) (*model.Package, error) {
+	return pkgload.Load(os.DirFS(path), path)
+}
+
+// LoadFS loads a package from a file system, e.g. an opened ZIP archive.
+func LoadFS(fsys fs.FS, origin string) (*model.Package, error) {
+	return pkgload.Load(fsys, origin)
+}
+
+// Init creates the kernel tables in a new database or migrates them to the
+// version of this kernel. It returns the executed plan, or a plan without
+// changes if the database is up to date.
+func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
+	var result *plan.Plan
+	executed := false
+	run := func(q dialect.Querier, execute bool) error {
+		version, err := k.repo.KernelVersion(ctx, q)
+		if err != nil {
+			return err
+		}
+		latest := kernelschema.Latest()
+		if version > latest {
+			return rterr.ErrNewerSchema
+		}
+		cur := model.NewSchema()
+		if version > 0 {
+			if cur, err = k.repo.Load(ctx, q); err != nil {
+				return err
+			}
+		}
+		want, err := kernelschema.Replace(cur, latest)
+		if err != nil {
+			return err
+		}
+		if err := validate.Schema(want); err != nil {
+			return err
+		}
+		p, err := planner.Build(k.d, plan.Migrate, cur, want, nil)
+		if err != nil {
+			return err
+		}
+		result = p
+		if !execute || version == latest {
+			return nil
+		}
+		started := k.timestamp()
+		if err := k.execute(ctx, q, p); err != nil {
+			return err
+		}
+		if err := k.repo.Write(ctx, q, want); err != nil {
+			return err
+		}
+		for v := version + 1; v <= latest; v++ {
+			if err := k.repo.AddMigration(ctx, q, v, started); err != nil {
+				return err
+			}
+		}
+		executed = true
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+	}
+	if opts.DryRun {
+		if err := run(k.db, false); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+	err := k.d.Transact(ctx, k.db, dialect.TxOptions{DDL: true}, func(tx *sql.Tx) error { return run(tx, true) })
+	if err != nil {
+		return nil, err
+	}
+	result.Executed = executed
+	return result, nil
+}
+
+// requireInit fails unless the kernel tables have the version of this
+// kernel.
+func (k *Kernel) requireInit(ctx context.Context, q dialect.Querier) error {
+	v, err := k.repo.KernelVersion(ctx, q)
+	switch {
+	case err != nil:
+		return err
+	case v > kernelschema.Latest():
+		return rterr.ErrNewerSchema
+	case v < kernelschema.Latest():
+		return rterr.ErrNotInitialized
+	}
+	return nil
+}
+
+// Schema returns the current schema from the repository.
+func (k *Kernel) Schema(ctx context.Context) (*model.Schema, error) {
+	if err := k.requireInit(ctx, k.db); err != nil {
+		return nil, err
+	}
+	return k.repo.Load(ctx, k.db)
+}
+
+// operation describes a schema change. target computes the desired schema
+// from the current one; check may reject the resulting plan.
+type operation struct {
+	op       plan.Operation
+	packages func(cur *model.Schema) []plan.PackageChange
+	target   func(cur *model.Schema, now time.Time) (*model.Schema, error)
+	check    func(p *plan.Plan) error
+}
+
+// apply runs an operation. Without DryRun everything happens in one
+// transaction: reading the repository, planning, executing the statements
+// and writing repository and log. A failed execution is logged afterwards
+// in a separate transaction.
+func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Plan, error) {
+	var result *plan.Plan
+	var started time.Time
+	run := func(q dialect.Querier, execute bool) error {
+		if err := k.requireInit(ctx, q); err != nil {
+			return err
+		}
+		cur, err := k.repo.Load(ctx, q)
+		if err != nil {
+			return err
+		}
+		started = k.timestamp()
+		want, err := o.target(cur, started)
+		if err != nil {
+			return err
+		}
+		if err := validate.Schema(want); err != nil {
+			return err
+		}
+		p, err := planner.Build(k.d, o.op, cur, want, o.packages(cur))
+		if err != nil {
+			return err
+		}
+		result = p
+		if o.check != nil {
+			if err := o.check(p); err != nil {
+				return err
+			}
+		}
+		if !execute {
+			return nil
+		}
+		if err := k.execute(ctx, q, p); err != nil {
+			return err
+		}
+		if err := k.repo.Write(ctx, q, want); err != nil {
+			return err
+		}
+		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, "")
+	}
+	if opts.DryRun {
+		if err := run(k.db, false); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+	err := k.d.Transact(ctx, k.db, dialect.TxOptions{DDL: true}, func(tx *sql.Tx) error { return run(tx, true) })
+	if err != nil {
+		var ee *rterr.ExecError
+		if errors.As(err, &ee) && result != nil {
+			k.logFailure(ctx, result, started, err)
+		}
+		return nil, err
+	}
+	result.Executed = true
+	return result, nil
+}
+
+// execute runs the statements of a plan.
+func (k *Kernel) execute(ctx context.Context, q dialect.Querier, p *plan.Plan) error {
+	for _, step := range p.Steps {
+		for _, stmt := range step.Statements {
+			if _, err := q.ExecContext(ctx, stmt); err != nil {
+				return &rterr.ExecError{Step: step.Description, Statement: stmt, Err: k.d.ClassifyError(err)}
+			}
+		}
+	}
+	return nil
+}
+
+func (k *Kernel) logEntry(p *plan.Plan, started time.Time, status, message string) *repo.LogEntry {
+	e := &repo.LogEntry{Operation: logOperation(p.Operation), Target: p.Target, StartedAt: started, FinishedAt: k.timestamp(), Status: status, Message: message}
+	for _, pc := range p.Packages {
+		e.Packages = append(e.Packages, repo.LogPackage{ID: pc.ID, From: pc.From, To: pc.To})
+	}
+	for _, s := range p.Steps {
+		for _, st := range s.Statements {
+			e.Statements = append(e.Statements, repo.LogStatement{SQL: st, Destructive: s.Destructive})
+		}
+	}
+	return e
+}
+
+func (k *Kernel) writeLog(ctx context.Context, q dialect.Querier, p *plan.Plan, started time.Time, status, message string) error {
+	e := k.logEntry(p, started, status, message)
+	if err := k.repo.WriteLog(ctx, q, e); err != nil {
+		return err
+	}
+	p.LogID = e.ID
+	return nil
+}
+
+// logFailure records a failed operation. Errors are ignored: the original
+// error is what the caller needs.
+func (k *Kernel) logFailure(ctx context.Context, p *plan.Plan, started time.Time, cause error) {
+	_ = k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+		return k.writeLog(ctx, tx, p, started, repo.StatusFailed, cause.Error())
+	})
+}
+
+func logOperation(op plan.Operation) string {
+	switch op {
+	case plan.Install:
+		return "INSTALL"
+	case plan.Upgrade:
+		return "UPGRADE"
+	case plan.Uninstall:
+		return "UNINSTALL"
+	case plan.TenantDelete:
+		return "TENANT_DELETE"
+	}
+	return "MIGRATE"
+}
