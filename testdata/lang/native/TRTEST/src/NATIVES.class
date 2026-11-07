@@ -27,6 +27,29 @@ public class /TRTEST/NATIVES
 
   public static method TICK() returns TIMESTAMP executed by kernel
 
+  public static method NOTIFY(text: STRING) executed by kernel
+
+  public static method NOTIFY_IN(target: SESSION, text: STRING) executed by kernel
+
+  public static method NOTIFY_COMMIT(text: STRING)
+    NOTIFY(text)
+    commit
+  end
+
+  public static method NOTIFY_ROLLBACK(text: STRING)
+    NOTIFY(text)
+    rollback
+  end
+
+  # The effect waits for the commit of its own session.
+  public static method NOTIFY_OTHER(text: STRING)
+    var other = open session
+    NOTIFY_IN(other, text)
+    commit
+    NOTIFY(text + " in the default session")
+    commit other
+  end
+
   # A wrapper around a method with the capability clock.
   public static method TICK_TWICE() returns array of TIMESTAMP
     return [TICK(), TICK()]

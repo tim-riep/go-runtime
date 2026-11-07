@@ -35,6 +35,10 @@ func (d Date) Time() time.Time { return time.Unix(int64(d)*86400, 0).UTC() }
 
 func (d Date) String() string { return d.Time().Format(time.DateOnly) }
 
+// Session is the number of a database session of the execution; 1 is
+// the default session. Native methods use it to register effects.
+type Session int
+
 // UUID is a UUID.
 type UUID [16]byte
 

@@ -561,6 +561,8 @@ func basicKind(b *types.Basic) bytecode.TypeKind {
 		return bytecode.TUUID
 	case types.Bytes:
 		return bytecode.TBytes
+	case types.Session:
+		return bytecode.TSession
 	}
 	return bytecode.TVoid
 }

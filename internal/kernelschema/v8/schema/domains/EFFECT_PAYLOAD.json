@@ -1,0 +1,5 @@
+{
+  "name": "/RT/EFFECT_PAYLOAD",
+  "description": "Payload of an effect in JSON",
+  "type": "STRING"
+}

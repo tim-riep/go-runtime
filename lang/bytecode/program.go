@@ -100,6 +100,7 @@ const (
 	TObject
 	TFunc
 	TVoid
+	TSession
 )
 
 // TypeDesc describes a type for zero values, copies, comparison, keys and

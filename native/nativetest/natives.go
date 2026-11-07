@@ -18,8 +18,11 @@
 package nativetest
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -50,6 +53,23 @@ func (c *Counter) Close() error {
 
 // Closed counts the counters that were freed.
 var Closed atomic.Int64
+
+// Failing makes the effect TRTEST.RECORD fail.
+var Failing atomic.Bool
+
+var recorded struct {
+	sync.Mutex
+	texts []string
+}
+
+// Recorded returns and clears the texts of the effects that ran.
+func Recorded() []string {
+	recorded.Lock()
+	defer recorded.Unlock()
+	out := recorded.texts
+	recorded.texts = nil
+	return out
+}
 
 func init() {
 	Registry.RegisterClass("TRTEST", "/TRTEST/COUNTER", (*Counter)(nil))
@@ -98,6 +118,25 @@ func init() {
 	register("UNDECLARED", "()", func(c *native.Context) error { return native.Raise("/TRTEST/FAILED", "not declared", 1) })
 	register("BROKEN", "() returns STRING", func(c *native.Context) (string, error) { return "", errors.New("the disk is full") })
 	register("PANIC", "()", func(c *native.Context) error { panic("something impossible") })
+	notify := func(c *native.Context, session native.Session, text string) error {
+		payload, _ := json.Marshal(text)
+		return c.AfterCommit(int(session), native.Effect{Kind: "TRTEST.RECORD", Payload: payload})
+	}
+	register("NOTIFY", "(text: STRING)", func(c *native.Context, text string) error { return notify(c, 1, text) })
+	register("NOTIFY_IN", "(target: SESSION, text: STRING)", notify)
+	Registry.RegisterEffect("TRTEST.RECORD", func(ctx context.Context, payload json.RawMessage) error {
+		var text string
+		if err := json.Unmarshal(payload, &text); err != nil {
+			return err
+		}
+		if Failing.Load() {
+			return errors.New("the receiver is down")
+		}
+		recorded.Lock()
+		defer recorded.Unlock()
+		recorded.texts = append(recorded.texts, text)
+		return nil
+	})
 	register("SLOW", "()", func(c *native.Context) error {
 		select {
 		case <-c.Done():

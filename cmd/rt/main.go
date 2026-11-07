@@ -82,6 +82,8 @@ Commands:
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
   natives list             list the methods executed by kernel that this kernel implements
+  effects list             list effects of native methods that failed after their commit
+  effects retry <id>       run a failed effect again
   run <package> <class> <method> [json] --tenant <id> [--lang code]
                            call a public static method of an installed package for a
                            tenant; arguments and result are JSON
@@ -294,6 +296,19 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 			return exitUsage
 		}
 		return c.natives(ctx, k)
+	case "effects":
+		switch {
+		case len(args) == 1 && args[0] == "list":
+			return c.effects(ctx, k)
+		case len(args) == 2 && args[0] == "retry":
+			if err := k.RetryEffect(ctx, args[1]); err != nil {
+				return c.fail(err)
+			}
+			fmt.Fprintf(c.stdout, "Effect %s ran.\n", args[1])
+			return exitOK
+		}
+		fmt.Fprintln(c.stderr, "usage: rt effects list | rt effects retry <id>")
+		return exitUsage
 	case "show":
 		if !c.need(args, 1, "show <object>") {
 			return exitUsage
@@ -1145,6 +1160,29 @@ func (c *cli) natives(ctx context.Context, k *kernel.Kernel) int {
 			caps = "-"
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", n.Key, n.Declaration, caps, timeout, yes(n.Declared), yes(n.Used))
+	}
+	w.Flush()
+	return exitOK
+}
+
+// effects lists the effects that failed after their commit.
+func (c *cli) effects(ctx context.Context, k *kernel.Kernel) int {
+	list, err := k.Effects(ctx)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(list)
+		return exitOK
+	}
+	if len(list) == 0 {
+		fmt.Fprintln(c.stdout, "No failed effects.")
+		return exitOK
+	}
+	w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tFAILED\tTENANT\tKIND\tATTEMPTS\tERROR")
+	for _, e := range list {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n", e.ID, e.FailedAt.Format("2006-01-02 15:04:05"), e.Tenant.Or("-"), e.Kind, e.Attempts, e.Error)
 	}
 	w.Flush()
 	return exitOK

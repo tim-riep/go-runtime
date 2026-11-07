@@ -52,6 +52,7 @@ var (
 	typBool      = reflect.TypeOf(false)
 	typUUID      = reflect.TypeOf(native.UUID{})
 	typBytes     = reflect.TypeOf([]byte(nil))
+	typSession   = reflect.TypeOf(native.Session(0))
 )
 
 // optional is implemented by model.Optional.
@@ -149,7 +150,7 @@ func (image *Image) compatible(reg *native.Registry, p *Program, t int, gt refle
 
 func (image *Image) compatibleDesc(reg *native.Registry, p *Program, d *TypeDesc, gt reflect.Type) error {
 	want := map[TypeKind]reflect.Type{TString: typString, TInt4: typInt32, TInt8: typInt64, TDec: typDec, TDate: typDate,
-		TTimestamp: typTimestamp, TBool: typBool, TUUID: typUUID, TBytes: typBytes}[d.Kind]
+		TTimestamp: typTimestamp, TBool: typBool, TUUID: typUUID, TBytes: typBytes, TSession: typSession}[d.Kind]
 	switch d.Kind {
 	case TEnum:
 		base := reflect.String
@@ -286,6 +287,12 @@ func (m *Machine) toNativeDesc(p *Program, d *TypeDesc, v Value, gt reflect.Type
 			return reflect.Zero(gt)
 		}
 		return reflect.ValueOf(v.record().Native)
+	case TSession:
+		n := 1
+		if s, ok := v.R.(*session); ok {
+			n = s.s.Number()
+		}
+		return reflect.ValueOf(native.Session(n))
 	}
 	panic(fmt.Sprintf("vm: no Go value for type kind %d", d.Kind))
 }
