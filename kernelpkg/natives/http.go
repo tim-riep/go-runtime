@@ -16,6 +16,7 @@ package natives
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -30,6 +31,9 @@ type HTTPRequest struct {
 	R    *http.Request
 	Path string // full path
 	Rest string // below the service node
+	// Package owns the service node; it decides which assets the request
+	// may read.
+	Package model.PackageID
 	// Params are those of the handler entry that runs.
 	Params  []model.HTTPParam
 	MaxBody int64
@@ -68,8 +72,10 @@ type HTTPResponse struct {
 	Body   bytes.Buffer
 	Max    int64
 	// Serve, when set, writes the response itself instead of Body, e.g. a
-	// file of an asset repository that is streamed.
-	Serve func(w http.ResponseWriter)
+	// file of an asset repository that is streamed. It runs after the
+	// execution has ended, with the context of the request, and returns
+	// the number of bytes written.
+	Serve func(ctx context.Context, w http.ResponseWriter) int64
 }
 
 // NewHTTPResponse returns a response with status 200.

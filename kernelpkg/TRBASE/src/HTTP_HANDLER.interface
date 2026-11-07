@@ -1,8 +1,10 @@
 # A handler of http services. The kernel creates a new object of the
 # handler class for every request and calls HANDLE; true means the request
-# is done, false passes it to the next handler of the service node.
+# is done, false passes it to the next handler of the service node. A
+# handler may raise any exception; one it does not catch ends the request
+# with 500 and a rollback.
 public interface /TRBASE/HTTP_HANDLER
 
-  method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+  method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
 
 end

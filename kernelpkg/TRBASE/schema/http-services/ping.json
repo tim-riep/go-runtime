@@ -1,0 +1,9 @@
+{
+  "path": "ping",
+  "texts": {
+    "en": { "label": "Ping", "description": "Health check without sign-in" },
+    "de": { "label": "Ping", "description": "Prüfung der Erreichbarkeit ohne Anmeldung" }
+  },
+  "handlers": [{ "class": "/TRBASE/PING_HANDLER" }],
+  "settings": { "anonymous": true }
+}

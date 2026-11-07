@@ -1,0 +1,20 @@
+# Serves the files of an asset repository below the path of its service
+# node. The handler entry names the repository with the parameters package
+# and repository; the package of the node may read its own repositories and
+# those of the packages it requires. Language-dependent assets come in the
+# language of the request.
+public class /TRBASE/ASSET_HANDLER implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    var pkg = request.HANDLER_PARAMETER("package") default ""
+    var repository = request.HANDLER_PARAMETER("repository") default ""
+    return SERVE(request, response, pkg, repository)
+  end
+
+  # Answers GET and HEAD with the asset at the rest of the path, with
+  # Content-Type, Content-Length, ETag and Last-Modified, and 304 for
+  # conditional requests of an unchanged asset; false for other methods
+  # and missing assets.
+  public static method SERVE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE, pkg: STRING, repository: STRING) returns BOOL executed by kernel
+
+end

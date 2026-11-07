@@ -1,0 +1,8 @@
+{
+  "path": "companies",
+  "texts": {
+    "en": { "label": "Companies", "description": "Lists companies with GET and creates them with POST" },
+    "de": { "label": "Firmen", "description": "Listet Firmen mit GET und legt sie mit POST an" }
+  },
+  "handlers": [{ "class": "/TRFIN/COMPANY_API" }, { "class": "/TRFIN/COMPANY_INTAKE" }]
+}

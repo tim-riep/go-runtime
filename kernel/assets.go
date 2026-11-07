@@ -67,6 +67,9 @@ func (i *AssetInfo) ETag() string {
 	return `"` + sha + `"`
 }
 
+// ContentType returns the media type of the content, "" for folders.
+func (i *AssetInfo) ContentType() string { return i.MimeType.Or("") }
+
 // AssetRepositories lists the asset repositories of a package, or of all
 // packages if pkg is empty, ordered by package and ID.
 func (k *Kernel) AssetRepositories(ctx context.Context, pkg model.PackageID) ([]AssetRepositoryInfo, error) {

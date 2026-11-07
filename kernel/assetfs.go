@@ -49,6 +49,14 @@ type assetFS struct {
 	lang model.Optional[string]
 }
 
+// WithContext returns the file system reading with another context, for
+// reads after the execution that opened it has ended.
+func (f *assetFS) WithContext(ctx context.Context) fs.FS {
+	c := *f
+	c.ctx = ctx
+	return &c
+}
+
 var (
 	_ fs.ReadDirFS  = (*assetFS)(nil)
 	_ fs.StatFS     = (*assetFS)(nil)

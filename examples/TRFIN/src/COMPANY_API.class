@@ -1,0 +1,15 @@
+# Lists the companies of the tenant of the request as JSON. Other methods
+# than GET are left to the next handler of the service node.
+public class /TRFIN/COMPANY_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    if request.METHOD() <> "GET"
+      return false
+    end
+    var companies = select from /TRFIN/COMPANIES order by NAME limit 100
+    response.SET_HEADER("Content-Type", "application/json")
+    response.WRITE_TEXT(transform companies using /TRBASE/JSON)
+    return true
+  end
+
+end

@@ -154,7 +154,7 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	entry.tenant = tenant.Or("")
 
-	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, MaxBody: set.MaxBodySize}
+	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, Package: node.Package, MaxBody: set.MaxBodySize}
 	resp := natives.NewHTTPResponse(set.MaxResponseSize)
 	handled := false
 	opts := ExecOptions{Tenant: tenant.Or(""), Language: lang, User: userName, Timeout: set.Timeout, VM: vm.Options{Budget: set.Budget},
@@ -209,7 +209,7 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header()[name] = vals
 	}
 	if resp.Serve != nil {
-		resp.Serve(w)
+		entry.size = int(resp.Serve(r.Context(), w))
 		return
 	}
 	if w.Header().Get("Content-Length") == "" {

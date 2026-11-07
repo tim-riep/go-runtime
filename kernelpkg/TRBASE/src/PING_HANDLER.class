@@ -1,0 +1,10 @@
+# Answers every request with 200, for health checks.
+public class /TRBASE/PING_HANDLER implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    response.SET_HEADER("Content-Type", "application/json")
+    response.WRITE_TEXT("\{\"status\":\"ok\"\}")
+    return true
+  end
+
+end

@@ -1,0 +1,22 @@
+# Creates a company from a JSON body sent with POST and answers with 201
+# and the stored company, or with 400 for a body that is no company.
+public class /TRFIN/COMPANY_INTAKE implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    if request.METHOD() <> "POST"
+      return false
+    end
+    response.SET_HEADER("Content-Type", "application/json")
+    try
+      var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFIN/COMPANIES
+      insert company
+      response.SET_STATUS(201)
+      response.WRITE_TEXT(transform company using /TRBASE/JSON)
+    catch e: /TRBASE/TRANSFORM_RESULT_INVALID
+      response.SET_STATUS(400)
+      response.WRITE_TEXT(transform e.TEXT using /TRBASE/JSON)
+    end
+    return true
+  end
+
+end

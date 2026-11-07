@@ -420,6 +420,38 @@
     },
     {
       "package": "TRFIN",
+      "file": "src/COMPANY_API.class",
+      "line": 9,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_API.class",
+      "line": 9,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "NAME"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_INTAKE.class",
+      "line": 11,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_INTAKE.class",
+      "line": 12,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
       "file": "src/COMPANY_SERVICE.class",
       "line": 16,
       "kind": "table",

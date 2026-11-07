@@ -1,0 +1,14 @@
+{
+  "path": "web",
+  "texts": {
+    "en": { "label": "Base web assets" },
+    "de": { "label": "Basis-Web-Ressourcen" }
+  },
+  "handlers": [
+    {
+      "class": "/TRBASE/ASSET_HANDLER",
+      "parameters": [{ "name": "package", "value": "TRBASE" }, { "name": "repository", "value": "web" }]
+    }
+  ],
+  "settings": { "anonymous": true }
+}
