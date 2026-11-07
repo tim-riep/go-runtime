@@ -1,0 +1,11 @@
+# Raised for orders that cannot be rated.
+public class /TRORDER/INVALID_ORDER extends /RT/EXCEPTION
+
+  public attribute ORDER_ID: STRING
+
+  public constructor(id: STRING)
+    super("invalid order {id}")
+    ORDER_ID = id
+  end
+
+end

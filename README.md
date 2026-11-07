@@ -470,6 +470,40 @@ afterwards. With `DryRun` only the plan is returned.
   keys are `DEFERRABLE INITIALLY IMMEDIATE`. The kernel uses the first schema of the
   `search_path`.
 
+## Source language
+
+Packages contain code in the go-runtime language in `src/`: classes, interfaces,
+exception and test classes, and includes. The [language reference](docs/language.md)
+describes syntax, types and rules; its examples are compiled by the tests. The example
+package [TRORDER](examples/TRORDER) shows classes, an interface, schema types (a
+structure, a table used as structure, an array type with a unique key and a domain with
+fixed values as enum), an exception class, a test class and both kinds of includes.
+
+```
+public class /TRORDER/ORDER_RATING implements /TRORDER/RATER
+
+  public constant LIMIT: DEC(15,2) = 1000.00
+  private attribute HISTORY: array of /TRORDER/ORDER_INFO
+
+  public method RATE(order: /TRORDER/ORDER_INFO) returns /TRORDER/RATING raises /TRORDER/INVALID_ORDER
+    var note = order.NOTE default ""
+    HISTORY.APPEND(order)
+    if order.AMOUNT > LIMIT
+      return /TRORDER/RATING.HIGH
+    end
+    return /TRORDER/RATING.NORMAL
+  end
+
+end
+```
+
+The pipeline needs no database: `lang/syntax` (lexer, parser, canonical printer),
+`lang/types` (checker with null checks along the control flow, checked exceptions and
+includes), `lang/compile` (layouts and typed stack instructions), `lang/bytecode` (the
+program and its binary encoding with format version), `vm` (the machine with limits) and
+`lang/build`, which reads a package directory and runs all of them. The kernel installs
+packages with source files, but does not store or compile the sources yet.
+
 ## Library
 
 ```go
@@ -531,9 +565,16 @@ rt log
 ```
 
 ```bash
-rt fmt path/to/package
+rt fmt examples/TRORDER
 rt fmt --check .
+rt build examples/TRORDER
+rt test examples/TRORDER
+rt run examples/TRORDER /TRORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]'
 ```
+
+`fmt`, `build`, `test` and `run` work on package directories and need no database.
+Packages a package requires are looked up next to it, in a directory named after their
+ID.
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
 `--description`, `--name`, `--lang`, `-o`, `--max-asset-size`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
@@ -555,12 +596,14 @@ works in its own schema that is dropped afterwards. The generated DDL per dialec
 with golden files in `testdata/golden`; after an intended change, update them with:
 
 ```bash
-go test ./internal/planner ./setting ./kernel -update
+go test ./internal/planner ./setting ./kernel ./lang/syntax -update
 ```
 
 ## Not included yet
 
-Executable code in packages, permissions, user interface, views, indexes beyond keys,
+Database access from code, storing and compiling sources on installation, types and
+includes of other packages in code, native methods, messages with texts per language, a
+language server and a debugger, permissions, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
 loader already works on `fs.FS`), a data access layer that restricts queries to a tenant,
 reading and writing data through settings, display properties of fields, translation packages

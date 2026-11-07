@@ -1,0 +1,5 @@
+# Logs a rating: inserted into a method, it uses its variables order and
+# rating.
+statements include /TRORDER/LOG_RATING
+  log info "rated {order.ID} as {rating}"
+end

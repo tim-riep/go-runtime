@@ -1,0 +1,11 @@
+{
+  "name": "/TRORDER/ORDER_INFO",
+  "texts": { "en": { "label": "Order" }, "de": { "label": "Auftrag" } },
+  "components": [
+    { "name": "ID", "dataElement": "/TRORDER/ORDER_ID", "notNull": true },
+    { "name": "AMOUNT", "domain": "/TRORDER/AMOUNT", "notNull": true },
+    { "name": "NOTE", "domain": "/TRORDER/TEXT" },
+    { "name": "COUPON", "domain": "/TRORDER/TEXT" },
+    { "name": "PAID", "domain": "/TRORDER/FLAG", "notNull": true }
+  ]
+}

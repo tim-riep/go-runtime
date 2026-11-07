@@ -148,3 +148,41 @@ func TestBuild(t *testing.T) {
 		t.Fatalf("json: %d %s", code, out.String())
 	}
 }
+
+func TestLanguageCommands(t *testing.T) {
+	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRORDER")
+	for _, s := range []struct {
+		args     []string
+		code     int
+		contains string
+	}{
+		{[]string{"fmt", "--check", dir}, exitOK, ""},
+		{[]string{"build", dir}, exitOK, "include /TRORDER/AUDIT does not exist and is skipped"},
+		{[]string{"test", dir}, exitOK, "3 tests, 3 passed, 0 failed"},
+		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]`}, exitOK, `"A1": "HIGH"`},
+		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "TO_ROWS", `[[{"ID":"A1","AMOUNT":"1","NOTE":"","PAID":false}]]`}, exitOK, `"NOTE": "",
+    "COUPON": null`},
+		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A3","AMOUNT":"-1","PAID":false}]]`}, exitError, "/TRORDER/CHECKS included from src/ORDER_RATING.class"},
+		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE"}, exitError, "no public static method RATE"},
+		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"","AMOUNT":"1","PAID":false}]]`}, exitError, "does not allow the empty string"},
+	} {
+		var out, errOut bytes.Buffer
+		code := run(context.Background(), s.args, &out, &errOut)
+		all := out.String() + errOut.String()
+		if code != s.code || !strings.Contains(all, s.contains) {
+			t.Errorf("rt %s: exit %d (want %d):\n%s", strings.Join(s.args, " "), code, s.code, all)
+		}
+	}
+	// The kernel installs the package; its sources are not stored yet.
+	db := testutil.Databases(t)[0]
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), []string{"--db", db.DSN, "init"}, &out, &errOut); code != exitOK {
+		t.Fatalf("init: %s", errOut.String())
+	}
+	if code := run(context.Background(), []string{"--db", db.DSN, "language", "add", "de"}, &out, &errOut); code != exitOK {
+		t.Fatalf("language: %s", errOut.String())
+	}
+	if code := run(context.Background(), []string{"--db", db.DSN, "install", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "/TRORDER/ORDERS") {
+		t.Fatalf("install: %d %s %s", code, out.String(), errOut.String())
+	}
+}

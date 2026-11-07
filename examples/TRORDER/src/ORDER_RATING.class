@@ -1,0 +1,64 @@
+# Rates orders and sums up open amounts
+public class /TRORDER/ORDER_RATING implements /TRORDER/RATER
+
+  public constant LIMIT: DEC(15,2) = 1000.00
+  private attribute HISTORY: array of /TRORDER/ORDER_INFO
+  include /TRORDER/CHECKS
+
+  public method RATE(order: /TRORDER/ORDER_INFO) returns /TRORDER/RATING raises /TRORDER/INVALID_ORDER
+    CHECK(order)
+    var note = order.NOTE default ""
+    if order.COUPON is not null and not (order.COUPON is empty)
+      note = "{note} coupon {order.COUPON}"
+    end
+    HISTORY.APPEND(order)
+    var rating = /TRORDER/RATING.NORMAL
+    if order.AMOUNT > LIMIT
+      rating = /TRORDER/RATING.HIGH
+    end
+    include /TRORDER/LOG_RATING if found
+    # An audit include may be added later; until then nothing is inserted.
+    include /TRORDER/AUDIT if found
+    return rating
+  end
+
+  public method OPEN_TOTAL() returns DEC(15,2)
+    var total: DEC(15,2) = 0
+    for info in HISTORY.FILTER(function (o: /TRORDER/ORDER_INFO) returns BOOL
+      return not o.PAID
+    end)
+      total = total + info.AMOUNT
+    end
+    return total
+  end
+
+  # Rates all orders and returns the rating per order.
+  public static method RATE_ALL(orders: /TRORDER/ORDER_ARRAY) returns map of STRING to /TRORDER/RATING raises /TRORDER/INVALID_ORDER
+    var rater: /TRORDER/RATER = new /TRORDER/ORDER_RATING()
+    var out: map of STRING to /TRORDER/RATING = [:]
+    for order in orders
+      out.SET(order.ID, rater.RATE(order))
+    end
+    return out
+  end
+
+  # Turns orders into rows of the table /TRORDER/ORDERS, a table used as structure.
+  public static method TO_ROWS(orders: /TRORDER/ORDER_ARRAY) returns array of /TRORDER/ORDERS
+    var rows: array of /TRORDER/ORDERS = []
+    for no, order in orders
+      var row = new /TRORDER/ORDERS(ORDER_NO: no, ID: order.ID, AMOUNT: order.AMOUNT, NOTE: order.NOTE, COUPON: order.COUPON,
+          PAID: order.PAID, RATING: /TRORDER/RATING.NORMAL)
+      if order.AMOUNT > LIMIT
+        row.RATING = /TRORDER/RATING.HIGH
+      end
+      rows.APPEND(row)
+    end
+    return rows
+  end
+
+  # Finds an order by its key without searching through the array.
+  public static method FIND(orders: /TRORDER/ORDER_ARRAY, id: STRING) returns /TRORDER/ORDER_INFO?
+    return orders.LOOKUP(ID: id)
+  end
+
+end

@@ -24,9 +24,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"time"
 
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/syntax"
+	"github.com/tim-riep/go-runtime/lang/testrun"
 	"github.com/tim-riep/go-runtime/lang/types"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -45,6 +47,11 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 			return exitUsage, true
 		}
 		return c.build(args[0]), true
+	case "test":
+		if !c.need(args, 1, "test <package directory>") {
+			return exitUsage, true
+		}
+		return c.test(ctx, args[0]), true
 	case "run":
 		if len(args) != 3 && len(args) != 4 {
 			fmt.Fprintln(c.stderr, "usage: rt run <package directory> <class> <method> [arguments as JSON array]")
@@ -205,3 +212,50 @@ func (c *cli) run(ctx context.Context, args []string) int {
 type logWriter struct{ w io.Writer }
 
 func (l logWriter) Log(level, text string) { fmt.Fprintf(l.w, "%s: %s\n", level, text) }
+
+// test runs the test classes of a package.
+func (c *cli) test(ctx context.Context, dir string) int {
+	r, code := c.compile(dir)
+	if r == nil {
+		return code
+	}
+	p, err := r.Compile(true)
+	if err != nil {
+		return c.fail(err)
+	}
+	results, err := testrun.Run(ctx, p, vm.Options{})
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		if results == nil {
+			results = []testrun.Result{}
+		}
+		c.json(results)
+	}
+	failed := 0
+	for _, t := range results {
+		if !t.Passed {
+			failed++
+		}
+		if c.asJSON {
+			continue
+		}
+		if t.Passed {
+			fmt.Fprintf(c.stdout, "PASS %s.%s (%s)\n", t.Class, t.Method, t.Duration.Round(time.Microsecond))
+			continue
+		}
+		where := ""
+		if t.File != "" {
+			where = fmt.Sprintf(" at %s:%d", t.File, t.Line)
+		}
+		fmt.Fprintf(c.stdout, "FAIL %s.%s: %s%s\n", t.Class, t.Method, t.Message, where)
+	}
+	if !c.asJSON {
+		fmt.Fprintf(c.stdout, "%d tests, %d passed, %d failed\n", len(results), len(results)-failed, failed)
+	}
+	if failed > 0 {
+		return exitError
+	}
+	return exitOK
+}

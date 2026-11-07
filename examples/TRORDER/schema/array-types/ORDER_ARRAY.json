@@ -1,0 +1,6 @@
+{
+  "name": "/TRORDER/ORDER_ARRAY",
+  "texts": { "en": { "label": "Orders" }, "de": { "label": "Aufträge" } },
+  "rowType": { "structure": "/TRORDER/ORDER_INFO" },
+  "key": { "fields": ["ID"], "unique": true }
+}

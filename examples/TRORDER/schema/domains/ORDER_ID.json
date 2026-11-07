@@ -1,0 +1,1 @@
+{ "name": "/TRORDER/ORDER_ID", "description": "Key of an order", "type": "CHAR", "length": 10, "allowEmpty": false }

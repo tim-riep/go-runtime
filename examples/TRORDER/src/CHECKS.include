@@ -1,0 +1,12 @@
+# Checks shared by raters: inserted among the members of a class.
+members include /TRORDER/CHECKS
+
+  private constant MIN_AMOUNT: DEC(15,2) = 0.00
+
+  private method CHECK(order: /TRORDER/ORDER_INFO) raises /TRORDER/INVALID_ORDER
+    if order.AMOUNT < MIN_AMOUNT
+      raise /TRORDER/INVALID_ORDER with order.ID
+    end
+  end
+
+end

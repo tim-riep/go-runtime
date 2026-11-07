@@ -1,0 +1,37 @@
+public test class /TRORDER/ORDER_RATING_TEST
+
+  private method ORDER(id: STRING, amount: DEC(15,2), paid: BOOL) returns /TRORDER/ORDER_INFO
+    return new /TRORDER/ORDER_INFO(ID: id, AMOUNT: amount, PAID: paid)
+  end
+
+  public test method RATES_BY_LIMIT()
+    var rating = new /TRORDER/ORDER_RATING()
+    try
+      assert rating.RATE(ORDER("A", 1500.00, false)) = /TRORDER/RATING.HIGH, "above the limit"
+      assert rating.RATE(ORDER("B", 10.00, true)) = /TRORDER/RATING.NORMAL, "below the limit"
+    catch e: /TRORDER/INVALID_ORDER
+      assert false, e.MESSAGE()
+    end
+    assert rating.OPEN_TOTAL() = 1500.00, "only unpaid orders count"
+  end
+
+  public test method REJECTS_NEGATIVE_AMOUNTS()
+    var rating = new /TRORDER/ORDER_RATING()
+    try
+      rating.RATE(ORDER("C", -1.00, false))
+      assert false, "no exception"
+    catch e: /TRORDER/INVALID_ORDER
+      assert e.ORDER_ID = "C"
+    end
+  end
+
+  public test method KEEPS_NULL_AND_EMPTY_APART()
+    var order = new /TRORDER/ORDER_INFO(ID: "D", AMOUNT: 1.00, NOTE: "", PAID: false)
+    assert order.NOTE is not null
+    assert order.COUPON is null
+    var orders: /TRORDER/ORDER_ARRAY = [order]
+    assert /TRORDER/ORDER_RATING.FIND(orders, "D") is not null
+    assert /TRORDER/ORDER_RATING.FIND(orders, "E") is null
+  end
+
+end

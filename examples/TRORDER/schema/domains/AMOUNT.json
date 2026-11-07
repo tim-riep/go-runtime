@@ -1,0 +1,1 @@
+{ "name": "/TRORDER/AMOUNT", "description": "Amount of money", "type": "DEC", "length": 15, "decimals": 2 }
