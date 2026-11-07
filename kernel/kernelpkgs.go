@@ -39,6 +39,9 @@ type Config struct {
 	// KernelPackages are the kernel packages in installation order; nil
 	// means those embedded in the kernel binary.
 	KernelPackages []*model.Package
+	// MaxFailedLogins locks a user after this many failed logins; 0 means
+	// 5.
+	MaxFailedLogins int
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

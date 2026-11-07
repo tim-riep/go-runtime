@@ -21,6 +21,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -33,6 +34,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
@@ -82,6 +84,17 @@ Commands:
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
   natives list             list the methods executed by kernel that this kernel implements
+  user create <name> [--tenant T] [--lang L]
+                           create a user; the password is read from standard input
+  user list                list users
+  user lock|unlock <name>  lock a user or unlock it and reset its failed logins
+  user passwd <name>       set the password of a user from standard input
+  user tenant add|remove <name> <tenant>
+                           let a user work in a tenant, or no longer
+  token create <user> --label X [--expires 2027-01-31]
+                           create an API token; it is shown only once
+  token list [user]        list API tokens without their secrets
+  token revoke <id>        delete an API token
   http list [package]      list the service nodes with their activation
   http show <path>         show a service node with its resolved settings and handlers
   http activate <path>     activate a service node and the never activated nodes below it
@@ -119,6 +132,8 @@ type cli struct {
 	lang           string
 	tenantID       string
 	goPackage      string
+	label          string
+	expires        string
 	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
@@ -142,6 +157,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read, or of texts in run")
 	c.fs.StringVar(&c.tenantID, "tenant", "", "run: the tenant whose data the code reads and writes")
 	c.fs.StringVar(&c.goPackage, "go-package", "", "gen natives: the Go package of the generated file")
+	c.fs.StringVar(&c.label, "label", "", "token create: the label of the token")
+	c.fs.StringVar(&c.expires, "expires", "", "token create: the day the token expires, YYYY-MM-DD")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	maxSize := int64(model.DefaultMaxAssetSize)
@@ -302,6 +319,10 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.natives(ctx, k)
 	case "http":
 		return c.http(ctx, k, args)
+	case "user":
+		return c.user(ctx, k, args)
+	case "token":
+		return c.token(ctx, k, args)
 	case "effects":
 		switch {
 		case len(args) == 1 && args[0] == "list":
@@ -1277,4 +1298,147 @@ func (c *cli) http(ctx context.Context, k *kernel.Kernel, args []string) int {
 		return exitOK
 	}
 	return usage()
+}
+
+// input is standard input; tests replace it.
+var input io.Reader = os.Stdin
+
+// readSecret reads a password from standard input: its first line.
+func (c *cli) readSecret() (string, error) {
+	line, err := bufio.NewReader(input).ReadString('\n')
+	if err != nil && line == "" {
+		return "", errors.New("no password on standard input")
+	}
+	return strings.TrimRight(line, "\r\n"), nil
+}
+
+// user manages users.
+func (c *cli) user(ctx context.Context, k *kernel.Kernel, args []string) int {
+	us := k.Users()
+	usage := func() int {
+		fmt.Fprintln(c.stderr, "usage: rt user create <name> [--tenant T] [--lang L] | list | lock <name> | unlock <name> | passwd <name> | tenant add|remove <name> <tenant>")
+		return exitUsage
+	}
+	if len(args) == 0 {
+		return usage()
+	}
+	done := func(err error, format string, a ...any) int {
+		if err != nil {
+			return c.fail(err)
+		}
+		fmt.Fprintf(c.stdout, format+"\n", a...)
+		return exitOK
+	}
+	switch {
+	case args[0] == "create" && len(args) == 2:
+		pw, err := c.readSecret()
+		if err != nil {
+			return c.fail(err)
+		}
+		opts := kernel.UserOptions{}
+		if c.tenantID != "" {
+			opts.Tenant = model.Some(c.tenantID)
+		}
+		if c.lang != "" {
+			opts.Language = model.Some(c.lang)
+		}
+		_, err = us.Create(ctx, args[1], pw, opts)
+		return done(err, "User %s created.", args[1])
+	case args[0] == "list" && len(args) == 1:
+		list, err := us.List(ctx)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			if list == nil {
+				list = []*kernel.User{}
+			}
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "USER\tSTATUS\tLANGUAGE\tDEFAULT TENANT\tTENANTS\tFAILED LOGINS")
+		for _, u := range list {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\n", u.Name, u.Status, u.Language.Or("-"), u.DefaultTenant.Or("-"), strings.Join(u.Tenants, ", "), u.FailedLogins)
+		}
+		w.Flush()
+		return exitOK
+	case args[0] == "lock" && len(args) == 2:
+		return done(us.Lock(ctx, args[1]), "User %s locked.", args[1])
+	case args[0] == "unlock" && len(args) == 2:
+		return done(us.Unlock(ctx, args[1]), "User %s unlocked.", args[1])
+	case args[0] == "passwd" && len(args) == 2:
+		pw, err := c.readSecret()
+		if err != nil {
+			return c.fail(err)
+		}
+		return done(us.SetPassword(ctx, args[1], pw), "Password of %s set.", args[1])
+	case args[0] == "tenant" && len(args) == 4 && args[1] == "add":
+		return done(us.AddTenant(ctx, args[2], args[3]), "User %s may work in tenant %s.", args[2], args[3])
+	case args[0] == "tenant" && len(args) == 4 && args[1] == "remove":
+		return done(us.RemoveTenant(ctx, args[2], args[3]), "User %s no longer works in tenant %s.", args[2], args[3])
+	}
+	return usage()
+}
+
+// token manages API tokens.
+func (c *cli) token(ctx context.Context, k *kernel.Kernel, args []string) int {
+	ts := k.Tokens()
+	switch {
+	case len(args) == 2 && args[0] == "create":
+		expires := model.None[time.Time]()
+		if c.expires != "" {
+			d, err := time.Parse(time.DateOnly, c.expires)
+			if err != nil {
+				fmt.Fprintln(c.stderr, "error: --expires needs a date YYYY-MM-DD")
+				return exitUsage
+			}
+			expires = model.Some(d.UTC())
+		}
+		token, info, err := ts.Create(ctx, args[1], c.label, expires)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(map[string]any{"token": token, "info": info})
+			return exitOK
+		}
+		fmt.Fprintf(c.stdout, "Token %s for %s created. It is shown only now:\n%s\n", info.ID, info.User, token)
+		return exitOK
+	case len(args) <= 2 && len(args) >= 1 && args[0] == "list":
+		user := ""
+		if len(args) == 2 {
+			user = args[1]
+		}
+		list, err := ts.List(ctx, user)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			if list == nil {
+				list = []*kernel.APIToken{}
+			}
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "ID\tUSER\tLABEL\tEXPIRES\tCREATED")
+		for _, t := range list {
+			exp := "-"
+			if e, ok := t.ExpiresAt.Get(); ok {
+				exp = e.Format(time.DateOnly)
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", t.ID, t.User, t.Label, exp, t.CreatedAt.Format("2006-01-02 15:04:05"))
+		}
+		w.Flush()
+		return exitOK
+	case len(args) == 2 && args[0] == "revoke":
+		if err := ts.Revoke(ctx, args[1]); err != nil {
+			return c.fail(err)
+		}
+		fmt.Fprintf(c.stdout, "Token %s revoked.\n", args[1])
+		return exitOK
+	}
+	fmt.Fprintln(c.stderr, "usage: rt token create <user> --label X [--expires YYYY-MM-DD] | list [user] | revoke <id>")
+	return exitUsage
 }

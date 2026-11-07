@@ -83,6 +83,14 @@ func TestCLI(t *testing.T) {
 				{[]string{"run", "TRFIN", "/TRFIN/INVOICE_RENDERER", "RENDER", `[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,
 					"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]`, "--tenant", "ACME"}, exitOK, "Rechnung R-1"},
 				{[]string{"effects", "list"}, exitOK, "No failed effects."},
+				{[]string{"user", "create", "anna", "--tenant", "ACME", "--lang", "de"}, exitOK, "User anna created."},
+				{[]string{"user", "list"}, exitOK, "anna  active  de"},
+				{[]string{"token", "create", "anna", "--label", "cli", "--expires", "2099-01-01"}, exitOK, "shown only now"},
+				{[]string{"token", "list", "anna"}, exitOK, "2099-01-01"},
+				{[]string{"user", "lock", "anna"}, exitOK, "locked"},
+				{[]string{"user", "unlock", "anna"}, exitOK, "unlocked"},
+				{[]string{"user", "tenant", "remove", "anna", "BETA"}, exitError, "not found"},
+				{[]string{"http", "list", "TRFIN"}, exitOK, "/trfin"},
 				{[]string{"tenant", "list"}, exitOK, "Acme Corp"},
 				{[]string{"tenant", "delete", "ACME"}, exitNeedsPermit, "--yes"},
 				{[]string{"tenant", "delete", "ACME", "--yes"}, exitOK, "Executed"},
@@ -94,6 +102,7 @@ func TestCLI(t *testing.T) {
 			}
 			for _, s := range steps {
 				var out, errOut bytes.Buffer
+				input = strings.NewReader("secret\n")
 				code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
 				all := out.String() + errOut.String()
 				if code != s.code || !strings.Contains(all, s.contains) {

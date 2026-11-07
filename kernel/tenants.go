@@ -97,6 +97,10 @@ func (t *Tenants) Delete(ctx context.Context, id string, opts Options) (*plan.Pl
 		if !opts.Confirm {
 			return &rterr.ConfirmationRequired{Operation: "deletion", Object: "tenant " + id}
 		}
+		// Users lose the tenant before it goes.
+		if err := k.repo.ForgetTenant(ctx, q, id); err != nil {
+			return err
+		}
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
@@ -144,6 +148,9 @@ func (k *Kernel) tenantDeletePlan(ctx context.Context, q dialect.Querier, phys *
 		if tab.TenantSpecific {
 			tenantTables = append(tenantTables, name)
 			continue
+		}
+		if name == repo.TUsers || name == repo.TUserTenants {
+			continue // users lose the tenant with it
 		}
 		for _, fk := range tab.ForeignKeys {
 			if fk.Target != model.TenantTable {

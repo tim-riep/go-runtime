@@ -77,6 +77,8 @@ type Kernel struct {
 	natives *native.Registry
 	// kernelPkgs are the kernel packages in installation order.
 	kernelPkgs []*model.Package
+	// maxFailedLogins locks a user after this many failed logins.
+	maxFailedLogins int
 }
 
 // Open connects to a database. The connection string selects the dialect:
@@ -157,7 +159,10 @@ func New(db *sql.DB, d dialect.Dialect) *Kernel {
 // NewConfig is New with a configuration.
 func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
-		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages}
+		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins}
+	if k.maxFailedLogins <= 0 {
+		k.maxFailedLogins = 5
+	}
 	if k.natives == nil {
 		k.natives = native.Default
 	}
