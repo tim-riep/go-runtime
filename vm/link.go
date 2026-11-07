@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/tim-riep/go-runtime/lang/bytecode"
+	"github.com/tim-riep/go-runtime/native"
 )
 
 // Image is a set of linked programs: the kernel program and the programs
@@ -61,8 +62,9 @@ type LinkedClass struct {
 
 // LinkedFunc is a linked function.
 type LinkedFunc struct {
-	Def  *bytecode.Func
-	Prog *Prog
+	Def    *bytecode.Func
+	Prog   *Prog
+	native *nativeFunc
 }
 
 func (p *Prog) at(slot int) *Prog {
@@ -83,6 +85,11 @@ func (p *Prog) fn(r bytecode.Ref) *LinkedFunc {
 // Link links programs. The kernel program and every imported program must
 // be among them.
 func Link(generation int64, programs ...*bytecode.Program) (*Image, error) {
+	return LinkWith(generation, native.Default, programs...)
+}
+
+// LinkWith is Link with the native methods of a registry.
+func LinkWith(generation int64, natives *native.Registry, programs ...*bytecode.Program) (*Image, error) {
 	image := &Image{Generation: generation, progs: map[string]*Prog{}, classes: map[string]*LinkedClass{}, rt: map[string]*LinkedClass{}}
 	for _, p := range programs {
 		if _, dup := image.progs[p.Package]; dup {
@@ -188,6 +195,9 @@ func Link(generation int64, programs ...*bytecode.Program) (*Image, error) {
 		return nil, fmt.Errorf("vm: the kernel program is not linked")
 	}
 	image.textField = rte.Layout.Fields[rte.Layout.Field("TEXT")]
+	if err := image.bindNatives(natives); err != nil {
+		return nil, err
+	}
 	return image, nil
 }
 

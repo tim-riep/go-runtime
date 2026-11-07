@@ -117,7 +117,9 @@ type manifestDoc struct {
 		ID      string                 `json:"id"`
 		Version model.Optional[string] `json:"version"`
 	} `json:"requires"`
-	LanguageVersion int `json:"languageVersion"`
+	LanguageVersion int      `json:"languageVersion"`
+	KernelPackage   bool     `json:"kernelPackage"`
+	Capabilities    []string `json:"capabilities"`
 }
 
 type fieldDoc struct {
@@ -206,7 +208,8 @@ func (l *loader) load() *model.Package {
 	if m.ID == model.KernelPackageID && !l.opts.Kernel {
 		l.fail(rterr.CodeName, l.loc(ManifestFile).At("/id"), "package ID %s is reserved for the kernel", m.ID)
 	}
-	pkg.Manifest = model.Manifest{ID: model.PackageID(m.ID), Version: m.Version, Description: m.Description, LanguageVersion: m.LanguageVersion}
+	pkg.Manifest = model.Manifest{ID: model.PackageID(m.ID), Version: m.Version, Description: m.Description, LanguageVersion: m.LanguageVersion,
+		KernelPackage: m.KernelPackage, Capabilities: m.Capabilities}
 	if l.opts.Kernel {
 		pkg.Manifest.ID = model.Kernel
 	}

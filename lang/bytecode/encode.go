@@ -209,6 +209,8 @@ func Encode(p *Program) []byte {
 		}
 		w.ints(f.ParamTypes)
 		w.int(f.Result)
+		w.bool(f.Native)
+		w.ints(f.Raises)
 	}
 	w.int(len(p.Queries))
 	for _, q := range p.Queries {
@@ -419,6 +421,8 @@ func Decode(b []byte) (*Program, error) {
 		}
 		f.ParamTypes = r.ints()
 		f.Result = r.int()
+		f.Native = r.bool()
+		f.Raises = r.ints()
 		p.Funcs[i] = f
 	}
 	p.Queries = make([]Query, r.count())
@@ -504,6 +508,11 @@ func (p *Program) Verify() error {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
 			}
 			pc += 1 + op.Operands()
+		}
+		for _, r := range f.Raises {
+			if !ref(r, len(p.Classes)) {
+				return fmt.Errorf("bytecode: %s: invalid exception class", f.Name)
+			}
 		}
 		for _, h := range f.Handlers {
 			if !in(h.Target, len(f.Code)) || h.Class != -1 && !ref(h.Class, len(p.Classes)) {

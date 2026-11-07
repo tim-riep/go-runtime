@@ -55,6 +55,7 @@ type Result struct {
 	// build read them from directories.
 	Deps     map[model.PackageID]*bytecode.Program
 	includes includes
+	natives  *native.Registry
 }
 
 // Errors returns the diagnostics with severity Error.
@@ -147,7 +148,7 @@ func Package(pkg *model.Package, deps []*model.Package) *Result {
 
 // PackageWith is Package with the native methods of a registry.
 func PackageWith(pkg *model.Package, deps []*model.Package, natives *native.Registry) *Result {
-	r := &Result{Package: pkg}
+	r := &Result{Package: pkg, natives: natives}
 	schema, err := Schema(pkg, deps)
 	if err != nil {
 		var list rterr.List
@@ -262,7 +263,7 @@ func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
 
 // CheckPackageWith is CheckPackage with the native methods of a registry.
 func CheckPackageWith(pkg *model.Package, schema *model.Schema, natives *native.Registry) *Result {
-	r := &Result{Package: pkg, Schema: schema}
+	r := &Result{Package: pkg, Schema: schema, natives: natives}
 	id := pkg.Manifest.ID
 	if _, err := KernelProgram(); err != nil {
 		r.fail("", 0, 0, "kernel", err.Error())
@@ -402,5 +403,5 @@ func (r *Result) Image(tests bool) (*vm.Image, error) {
 			progs = append(progs, dp)
 		}
 	}
-	return vm.Link(0, append(progs, p)...)
+	return vm.LinkWith(0, r.natives, append(progs, p)...)
 }

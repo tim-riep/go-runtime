@@ -136,9 +136,15 @@ func (f *fn) method(m *types.Method) {
 	}
 	o.Result = f.c.typeDesc(m.Sig.Result)
 	f.result = m.Sig.Result
+	if m.Native {
+		o.Native = true
+		for _, r := range m.Sig.Raises {
+			o.Raises = append(o.Raises, f.c.classRef(r))
+		}
+		return
+	}
 	if m.Func == nil {
-		// Native and abstract methods have no code; the checker rejects
-		// native methods.
+		// Abstract methods have no code.
 		f.emit(RETURN)
 		return
 	}

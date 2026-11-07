@@ -1,0 +1,32 @@
+# Native methods for the tests of the boundary between the VM and Go.
+public class /TRTEST/NATIVES
+
+  public static method ECHO(item: /TRTEST/ITEM) returns /TRTEST/ITEM executed by kernel
+
+  public static method ECHO_ALL(items: /TRTEST/ITEMS) returns /TRTEST/ITEMS executed by kernel
+
+  public static method TEXT(text: STRING?) returns STRING? executed by kernel
+
+  public static method DOUBLE(amount: DEC(15,2)) returns DEC(15,2) executed by kernel
+
+  public static method BAD_CODE() returns /TRTEST/CODE executed by kernel
+
+  public static method FAIL(code: INT4) raises /TRTEST/FAILED executed by kernel
+
+  public static method UNDECLARED() executed by kernel
+
+  public static method BROKEN() returns STRING executed by kernel
+
+  public static method PANIC() executed by kernel
+
+  # A method with a body around a native method.
+  public static method FAIL_CODE(code: INT4) returns INT4
+    try
+      FAIL(code)
+    catch e: /TRTEST/FAILED
+      return e.CODE
+    end
+    return 0
+  end
+
+end

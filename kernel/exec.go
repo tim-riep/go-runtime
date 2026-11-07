@@ -55,5 +55,5 @@ func (k *Kernel) loadImage(ctx context.Context, q dialect.Querier) (*vm.Image, e
 			progs = append(progs, p)
 		}
 	}
-	return vm.Link(gen, progs...)
+	return vm.LinkWith(gen, k.natives, progs...)
 }

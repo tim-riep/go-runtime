@@ -79,6 +79,10 @@ type Record struct {
 	P      *bytecode.Program // the program whose types the layout refers to
 	Data   []byte
 	Refs   []any
+	// Native is the Go value of an object of a native class; released
+	// tells that it was freed.
+	Native   any
+	released bool
 }
 
 // Cell holds a local variable captured by a function literal.
@@ -523,6 +527,15 @@ func formatUUID(v Value) string {
 	binary.BigEndian.PutUint64(b[:8], v.X)
 	binary.BigEndian.PutUint64(b[8:], v.N)
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+func putUUID(b []byte, v Value) {
+	binary.BigEndian.PutUint64(b[:8], v.X)
+	binary.BigEndian.PutUint64(b[8:], v.N)
+}
+
+func uuidValue(b []byte) Value {
+	return Value{X: binary.BigEndian.Uint64(b[:8]), N: binary.BigEndian.Uint64(b[8:])}
 }
 
 func parseUUID(s string) (Value, bool) {

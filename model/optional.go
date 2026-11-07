@@ -40,6 +40,25 @@ func (o Optional[T]) Get() (T, bool) { return o.value, o.valid }
 // Valid reports whether there is a value.
 func (o Optional[T]) Valid() bool { return o.valid }
 
+// AnyValue returns the value as any and whether there is one, for code
+// that handles optionals by reflection.
+func (o Optional[T]) AnyValue() (any, bool) { return o.value, o.valid }
+
+// SetAny sets the value from v, which must be a T, or clears it when valid
+// is false. It reports false when v is no T.
+func (o *Optional[T]) SetAny(v any, valid bool) bool {
+	if !valid {
+		*o = None[T]()
+		return true
+	}
+	t, ok := v.(T)
+	if !ok {
+		return false
+	}
+	*o = Some(t)
+	return true
+}
+
 // Or returns the value, or def if there is none.
 func (o Optional[T]) Or(def T) T {
 	if o.valid {

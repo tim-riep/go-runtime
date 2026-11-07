@@ -1,0 +1,13 @@
+# A method executed by kernel failed with an error it does not declare, or
+# its implementation stopped with a panic. CLASS_NAME and METHOD_NAME name
+# the method.
+public class /RT/NATIVE_ERROR extends /RT/RUNTIME_ERROR
+
+  public attribute CLASS_NAME: STRING
+  public attribute METHOD_NAME: STRING
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

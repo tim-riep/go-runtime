@@ -27,6 +27,8 @@ import (
 
 	. "github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/dec"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 )
 
 // Options are the limits and the log of an execution.
@@ -49,6 +51,11 @@ type Options struct {
 	// MaxRows limits the rows a select reads into an array; 0 means
 	// 10 000. Cursors of for ... in select have no limit.
 	MaxRows int
+	// Host gives native methods access to the kernel.
+	Host native.Host
+	// MaxNativeInput is the largest input of native methods in bytes; 0
+	// means 16 MiB.
+	MaxNativeInput int64
 }
 
 // LogSink receives log statements.
@@ -115,6 +122,10 @@ type Machine struct {
 	steps   int
 
 	defaultSession *session
+	// callers are the methods that run, for the caller of native methods.
+	callers []native.Caller
+	// handles are the objects of native classes the execution created.
+	handles []*Record
 }
 
 // New prepares an image for execution and runs the initial values of
@@ -134,6 +145,9 @@ func New(image *Image, opts Options) (*Machine, error) {
 	}
 	if opts.MaxRows <= 0 {
 		opts.MaxRows = 10_000
+	}
+	if opts.MaxNativeInput <= 0 {
+		opts.MaxNativeInput = 16 << 20
 	}
 	m := &Machine{image: image, opts: opts, statics: map[*LinkedClass]*Record{}, ctx: context.Background()}
 	m.budget = opts.Budget
@@ -268,6 +282,12 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 	if m.depth > m.opts.MaxCallDepth {
 		return Value{}, nil, &LimitError{Limit: "call depth", Msg: fmt.Sprintf("more than %d nested calls", m.opts.MaxCallDepth)}
 	}
+	if fn.Def.Native {
+		return m.callNative(fn, me, args)
+	}
+	class, method, _ := strings.Cut(fn.Def.Name, ".")
+	m.callers = append(m.callers, native.Caller{Package: model.PackageID(fn.Prog.P.Package), Class: class, Method: method})
+	defer func() { m.callers = m.callers[:len(m.callers)-1] }()
 	f, pr := fn.Def, fn.Prog
 	p := pr.P
 	locals := make([]Value, f.Locals)

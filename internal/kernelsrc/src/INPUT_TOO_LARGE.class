@@ -1,0 +1,9 @@
+# An input of a method executed by kernel is larger than the limit of the
+# execution.
+public class /RT/INPUT_TOO_LARGE extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

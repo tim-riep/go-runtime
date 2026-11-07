@@ -92,6 +92,9 @@ Commands for source files (no database needed):
   fmt [path...]            format source files in canonical form (--check only lists them)
   build <dir>              compile the sources of a package directory and show diagnostics;
                            required packages come from sibling directories
+  gen natives <dir> --go-package <name> [-o file]
+                           generate the Go types of the structures, tables and enums that
+                           the native methods of a kernel package use
 
 Flags (anywhere on the command line):
 `
@@ -108,6 +111,7 @@ type cli struct {
 	name           string
 	lang           string
 	tenantID       string
+	goPackage      string
 	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
@@ -130,6 +134,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.name, "name", "", "name of a new language (default: English name of the code)")
 	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read, or of texts in run")
 	c.fs.StringVar(&c.tenantID, "tenant", "", "run: the tenant whose data the code reads and writes")
+	c.fs.StringVar(&c.goPackage, "go-package", "", "gen natives: the Go package of the generated file")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	maxSize := int64(model.DefaultMaxAssetSize)

@@ -93,7 +93,7 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 			progs = append(progs, p)
 		}
 	}
-	image, err := vm.Link(0, append(progs, prog)...)
+	image, err := vm.LinkWith(0, k.natives, append(progs, prog)...)
 	if err != nil {
 		return nil, err
 	}

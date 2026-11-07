@@ -1,0 +1,10 @@
+public class /TRTEST/FAILED extends /RT/EXCEPTION
+
+  public attribute CODE: INT4
+
+  public constructor(text: STRING, code: INT4)
+    super(text)
+    CODE = code
+  end
+
+end

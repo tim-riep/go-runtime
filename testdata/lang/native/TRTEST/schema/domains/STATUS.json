@@ -1,0 +1,1 @@
+{ "name": "/TRTEST/STATUS", "type": "CHAR", "length": 1, "values": [{ "value": "O", "name": "OPEN" }, { "value": "C", "name": "CLOSED" }] }

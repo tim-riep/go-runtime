@@ -1,0 +1,7 @@
+{ "name": "/TRTEST/ITEM", "texts": { "en": { "label": "Item" } }, "components": [
+  { "name": "CODE", "domain": "/TRTEST/CODE", "notNull": true },
+  { "name": "NAME", "domain": "/TRTEST/TEXT", "notNull": true },
+  { "name": "NOTE", "domain": "/TRTEST/TEXT" },
+  { "name": "AMOUNT", "domain": "/TRTEST/AMOUNT", "notNull": true },
+  { "name": "DUE", "domain": "/TRTEST/DAY" },
+  { "name": "STATUS", "domain": "/TRTEST/STATUS", "notNull": true } ] }

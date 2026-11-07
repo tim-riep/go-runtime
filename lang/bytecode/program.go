@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 3
+const FormatVersion = 4
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -229,6 +229,10 @@ type Func struct {
 	// ParamTypes and Result describe the signature for calls from outside.
 	ParamTypes []int
 	Result     int // TypeDesc, -1 without result
+	// Native functions have no code: the kernel executes them. Raises are
+	// the exception classes they declare.
+	Native bool
+	Raises []Ref
 }
 
 // Handler catches exceptions raised between Start and End.

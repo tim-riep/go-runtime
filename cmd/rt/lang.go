@@ -34,6 +34,7 @@ import (
 	"github.com/tim-riep/go-runtime/lang/testrun"
 	"github.com/tim-riep/go-runtime/lang/types"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native/gen"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -47,6 +48,12 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 	switch cmd {
 	case "fmt":
 		return c.fmt(args), true
+	case "gen":
+		if len(args) != 2 || args[0] != "natives" || c.goPackage == "" {
+			fmt.Fprintln(c.stderr, "usage: rt gen natives <kernel package directory> --go-package <name> [-o <file>]")
+			return exitUsage, true
+		}
+		return c.genNatives(args[1]), true
 	case "build":
 		if !c.need(args, 1, "build <package directory>") {
 			return exitUsage, true
@@ -257,6 +264,39 @@ func (c *cli) test(ctx context.Context, k *kernel.Kernel, target string) int {
 	}
 	if failed > 0 {
 		return exitError
+	}
+	return exitOK
+}
+
+// genNatives writes the Go types of the structures, tables and enums that
+// the native methods of a kernel package use.
+func (c *cli) genNatives(dir string) int {
+	r, err := build.Dir(dir)
+	if err != nil {
+		return c.fail(err)
+	}
+	// The implementations need the generated types, so missing
+	// registrations do not stop the generator.
+	for _, d := range r.Errors() {
+		if d.Code != types.CodeNative {
+			fmt.Fprintln(c.stderr, d)
+			return exitInvalid
+		}
+	}
+	if r.Program == nil {
+		return exitInvalid
+	}
+	src, err := gen.Generate(r.Program, c.goPackage)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.output == "" || c.output == "-" {
+		_, err = c.stdout.Write(src)
+	} else {
+		err = os.WriteFile(c.output, src, 0o644)
+	}
+	if err != nil {
+		return c.fail(err)
 	}
 	return exitOK
 }
