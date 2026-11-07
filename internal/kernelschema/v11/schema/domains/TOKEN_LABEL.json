@@ -1,0 +1,6 @@
+{
+  "name": "/RT/TOKEN_LABEL",
+  "description": "Label of an API token",
+  "type": "CHAR",
+  "length": 80
+}

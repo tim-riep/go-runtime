@@ -258,7 +258,13 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 				return err
 			}
 		}
-		want, err := kernelschema.Replace(cur, latest)
+		langs := map[string]bool{}
+		if version >= languagesVersion {
+			if langs, err = old.LanguageCodes(ctx, q); err != nil {
+				return err
+			}
+		}
+		want, err := kernelschema.Replace(cur, latest, func(l string) bool { return langs[l] })
 		if err != nil {
 			return err
 		}
@@ -293,6 +299,13 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
+		// English exists before the repository gets the texts of the
+		// kernel.
+		if version < languagesVersion && latest >= languagesVersion {
+			if err := migrationHooks[languagesVersion](ctx, k, q); err != nil {
+				return err
+			}
+		}
 		if err := k.persist(ctx, q, want); err != nil {
 			return err
 		}
@@ -315,11 +328,15 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		}
 		return result, nil
 	}
+	k.dropIdleConnections()
 	err := k.d.Transact(ctx, k.db, dialect.TxOptions{DDL: true}, func(tx *sql.Tx) error { return run(tx, true) })
 	if err != nil {
 		return nil, err
 	}
 	result.Executed = executed
+	if executed {
+		k.dropIdleConnections()
+	}
 	// The kernel packages follow in their own operation.
 	pkgs, err := k.syncKernelPackages(ctx, false)
 	if err != nil {
@@ -335,7 +352,7 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 // migrationHooks run after the statements of a kernel migration, keyed by
 // the version they migrate to.
 var migrationHooks = map[int]func(ctx context.Context, k *Kernel, q dialect.Querier) error{
-	2: func(ctx context.Context, k *Kernel, q dialect.Querier) error {
+	languagesVersion: func(ctx context.Context, k *Kernel, q dialect.Querier) error {
 		langs, err := k.repo.LanguageCodes(ctx, q)
 		if err != nil || langs[model.DefaultLanguage] {
 			return err
@@ -572,4 +589,14 @@ func logOperation(op plan.Operation) string {
 		return "LANGUAGE_REMOVE"
 	}
 	return "MIGRATE"
+}
+
+// dropIdleConnections closes the pooled connections of PostgreSQL. They
+// cache prepared statements that describe the kernel tables, which
+// PostgreSQL rejects once a migration changed the type of a column.
+func (k *Kernel) dropIdleConnections() {
+	if k.d.Name() == "postgres" {
+		k.db.SetMaxIdleConns(0)
+		k.db.SetMaxIdleConns(2)
+	}
 }

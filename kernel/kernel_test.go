@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/diff"
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/internal/validate"
 	"github.com/tim-riep/go-runtime/kernel"
@@ -108,8 +109,12 @@ func baseSchema(t *testing.T, k *kernel.Kernel) *model.Schema {
 	for _, l := range langs {
 		set[l.Code] = true
 	}
-	base := testutil.Example(t, "TRBASE").WithLanguages(func(l string) bool { return set[l] })
-	return testutil.AddPackages(t, testutil.KernelSchema(t), base)
+	keep := func(l string) bool { return set[l] }
+	kernelOnly, err := kernelschema.Replace(model.NewSchema(), kernelschema.Latest(), keep)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return testutil.AddPackages(t, kernelOnly, testutil.Example(t, "TRBASE").WithLanguages(keep))
 }
 
 // upgrade upgrades a package; TRBASE, a kernel package, goes through the

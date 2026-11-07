@@ -116,7 +116,6 @@ func (k *Kernel) assetRepository(ctx context.Context, pkg model.PackageID, id st
 	return r, nil
 }
 
-
 // assetInfo describes an entry; for assets in the version chosen for lang.
 // It returns nil if the asset has no version for lang.
 func assetInfo(r *model.AssetRepository, e *model.AssetEntry, lang model.Optional[string]) *AssetInfo {

@@ -725,7 +725,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	}
 	for _, name := range s.DataElementNames() {
 		d := s.DataElements[name]
-		if err := r.insert(ctx, q, TDataElements, row{"DATA_ELEMENT": name, "PACKAGE_ID": string(d.Owner), "DOMAIN_NAME": d.Domain}); err != nil {
+		if err := r.insert(ctx, q, TDataElements, row{"DATA_ELEMENT": name, "PACKAGE_ID": ownerValue(d.Owner), "DOMAIN_NAME": d.Domain}); err != nil {
 			return err
 		}
 		for _, lang := range d.Languages() {
@@ -974,4 +974,10 @@ func (r *Repo) CheckGeneratedNames(ctx context.Context, q dialect.Querier) ([]Na
 		}
 	}
 	return out, nil
+}
+
+// InsertDataElementText adds the labels of a data element in a language.
+func (r *Repo) InsertDataElementText(ctx context.Context, q dialect.Querier, name, lang string, t model.DataElementText) error {
+	return r.insert(ctx, q, TDataElementTexts, row{"DATA_ELEMENT": name, "LANGUAGE": lang, "SHORT_LABEL": t.Short, "MEDIUM_LABEL": t.Medium,
+		"LONG_LABEL": t.Long, "HEADING": t.Heading, "DESCRIPTION": val(t.Description)})
 }

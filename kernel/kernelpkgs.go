@@ -31,6 +31,9 @@ import (
 // kernel packages.
 const kernelPackagesVersion = 8
 
+// languagesVersion is the first kernel schema version with languages.
+const languagesVersion = 2
+
 // Config configures a kernel beyond its database.
 type Config struct {
 	// Natives are the native methods; nil means native.Default, those of

@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10
+//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -52,6 +52,7 @@ var Migrations = []Migration{
 	{Version: 8, Dir: "v8"},   // kernel packages and capabilities
 	{Version: 9, Dir: "v9"},   // http services and users
 	{Version: 10, Dir: "v10"}, // uses of asset repositories
+	{Version: 11, Dir: "v11"}, // authorization objects and activities
 }
 
 // Latest returns the newest version.
@@ -85,13 +86,15 @@ func Schema(version int) (*model.Schema, error) {
 	return s, nil
 }
 
-// Replace returns a copy of s whose kernel objects are those of version.
-// Package objects are kept.
-func Replace(s *model.Schema, version int) (*model.Schema, error) {
+// Replace returns a copy of s whose kernel objects are those of version,
+// with texts in English and the languages keep accepts. Package objects
+// are kept.
+func Replace(s *model.Schema, version int, keep func(lang string) bool) (*model.Schema, error) {
 	pkg, err := Package(version)
 	if err != nil {
 		return nil, err
 	}
+	pkg = pkg.WithLanguages(keep)
 	out := s.Clone()
 	out.RemovePackage(model.Kernel)
 	if err := out.AddPackage(pkg, time.Time{}, time.Time{}); err != nil {

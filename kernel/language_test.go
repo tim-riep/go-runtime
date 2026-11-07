@@ -19,8 +19,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -94,7 +96,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 			t.Fatalf("expected ConfirmationRequired, got %v", err)
 		}
 		dry, err := k.Languages().Remove(ctx, "de", kernel.Options{DryRun: true})
-		if err != nil || dry.Changes[0].Detail != "24 texts" {
+		if err != nil || dry.Changes[0].Detail != "25 texts" {
 			t.Fatalf("dry run: %v %+v", err, dry)
 		}
 		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {
@@ -112,6 +114,47 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 		var ml *rterr.MissingLanguages
 		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{}); !errors.As(err, &ml) {
 			t.Fatalf("expected MissingLanguages, got %v", err)
+		}
+	})
+}
+
+// TestKernelTexts writes the German labels of the data element ACTIVITY of
+// the kernel only when German is set up, also on a migration.
+func TestKernelTexts(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		labels := func() map[string]model.DataElementText {
+			s, err := k.Schema(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return s.DataElements[model.ActivityDomain].Texts
+		}
+		k.SetTargetVersion(10)
+		if _, err := k.Init(ctx, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Languages().Add(ctx, "fr", ""); err != nil {
+			t.Fatal(err)
+		}
+		k.SetTargetVersion(kernelschema.Latest())
+		if _, err := k.Init(ctx, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if l := labels(); len(l) != 1 || l["en"].Medium != "Activity" {
+			t.Fatalf("labels after the migration: %v", l)
+		}
+		if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
+			t.Fatal(err)
+		}
+		if l := labels(); l["de"].Medium != "Aktivität" {
+			t.Fatalf("labels after adding German: %v", l)
+		}
+		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {
+			t.Fatal(err)
+		}
+		if l := labels(); len(l) != 1 {
+			t.Fatalf("labels after removing German: %v", l)
 		}
 	})
 }

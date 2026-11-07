@@ -23,6 +23,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/internal/iso639"
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
@@ -72,7 +73,11 @@ func (l *Languages) Add(ctx context.Context, code, name string) (*Language, erro
 	if err := k.repo.InsertLanguage(ctx, k.db, lang); err != nil {
 		return nil, err
 	}
-	// Kernel packages bring their texts in the new language.
+	// The kernel and the kernel packages bring their texts in the new
+	// language.
+	if err := k.addKernelTexts(ctx, code); err != nil {
+		return nil, err
+	}
 	if _, err := k.syncKernelPackages(ctx, true); err != nil {
 		return nil, err
 	}
@@ -156,4 +161,21 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 	}
 	result.Executed = true
 	return result, nil
+}
+
+// addKernelTexts writes the labels of the data elements of the kernel in a
+// language that was set up.
+func (k *Kernel) addKernelTexts(ctx context.Context, lang string) error {
+	pkg, err := kernelschema.Package(k.target)
+	if err != nil {
+		return err
+	}
+	for _, d := range pkg.DataElements {
+		if t, ok := d.Texts[lang]; ok {
+			if err := k.repo.InsertDataElementText(ctx, k.db, d.Name, lang, t); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

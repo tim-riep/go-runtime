@@ -1,0 +1,5 @@
+{
+  "name": "/RT/PARAMETER_VALUE",
+  "description": "Value of a parameter",
+  "type": "STRING"
+}

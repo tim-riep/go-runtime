@@ -1,0 +1,20 @@
+{
+  "name": "/RT/SOURCE_KIND",
+  "description": "Kind of a source file",
+  "type": "CHAR",
+  "length": 9,
+  "values": [
+    {
+      "value": "class",
+      "description": "Class"
+    },
+    {
+      "value": "interface",
+      "description": "Interface"
+    },
+    {
+      "value": "include",
+      "description": "Include"
+    }
+  ]
+}

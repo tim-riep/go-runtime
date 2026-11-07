@@ -1,0 +1,20 @@
+{
+  "name": "/RT/DEFAULT_KIND",
+  "description": "Kind of a default: none, the explicit default null, or a value",
+  "type": "CHAR",
+  "length": 5,
+  "values": [
+    {
+      "value": "NONE",
+      "description": "No default"
+    },
+    {
+      "value": "NULL",
+      "description": "Default null"
+    },
+    {
+      "value": "VALUE",
+      "description": "Default value, possibly the empty string"
+    }
+  ]
+}

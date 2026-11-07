@@ -1,0 +1,48 @@
+{
+  "name": "/RT/CODE_INCLUDES",
+  "description": "Includes inserted by the code of packages, also missing ones of include ... if found",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "INCLUDE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "INCLUDE_PACKAGE",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true,
+      "description": "Package whose namespace the include has"
+    },
+    {
+      "name": "IF_FOUND",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "FOUND",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "INCLUDE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}
