@@ -237,6 +237,15 @@ func Encode(p *Program) []byte {
 		w.bool(q.Limit)
 		w.ints(q.Params)
 	}
+	w.int(len(p.Transforms))
+	for _, t := range p.Transforms {
+		w.str(t.Name)
+		w.strs(t.Params)
+		w.ints(t.ParamTypes)
+		w.int(t.Source)
+		w.bool(t.SourceXML)
+		w.int(t.Into)
+	}
 	return w.b.Bytes()
 }
 
@@ -441,6 +450,10 @@ func Decode(b []byte) (*Program, error) {
 		q.Params = r.ints()
 		p.Queries[i] = q
 	}
+	p.Transforms = make([]Transform, r.count())
+	for i := range p.Transforms {
+		p.Transforms[i] = Transform{Name: r.str(), Params: r.strs(), ParamTypes: r.ints(), Source: r.int(), SourceXML: r.bool(), Into: r.int()}
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -504,6 +517,8 @@ func (p *Program) Verify() error {
 				ok = in(arg(0), len(p.Queries))
 			case DB_NEXT:
 				ok = in(arg(0), len(f.Code)+1)
+			case XFORM:
+				ok = in(arg(0), len(p.Transforms))
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -519,6 +534,15 @@ func (p *Program) Verify() error {
 			if !in(h.Target, len(f.Code)) || h.Class != -1 && !ref(h.Class, len(p.Classes)) {
 				return fmt.Errorf("bytecode: %s: invalid exception handler", f.Name)
 			}
+		}
+	}
+	for _, t := range p.Transforms {
+		ok := in(t.Source, len(p.Types)) && in(t.Into, len(p.Types)) && len(t.Params) == len(t.ParamTypes)
+		for _, pt := range t.ParamTypes {
+			ok = ok && in(pt, len(p.Types))
+		}
+		if !ok {
+			return fmt.Errorf("bytecode: invalid transform with %s", t.Name)
 		}
 	}
 	for _, q := range p.Queries {

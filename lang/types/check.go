@@ -119,6 +119,8 @@ type Info struct {
 	Tables    map[syntax.Expr]*Struct
 	RowTables map[*syntax.RowStmt]*Struct
 	Cursors   map[*syntax.ForStmt]bool
+	// Transforms describes the transform expressions.
+	Transforms map[*syntax.TransformExpr]*Transform
 }
 
 // Reference is the use of an object of the schema or of a class by code.
@@ -217,7 +219,8 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		Globals: map[*syntax.GlobalExpr]any{}, Selects: map[*syntax.SelectExpr]*Selection{}, Calls: map[*syntax.CallExpr]*Call{},
 		TypeExprs: map[*syntax.Type]Type{}, Funcs: map[*syntax.FuncExpr]*FuncInfo{}, Vars: map[syntax.Stmt][]*Local{},
 		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
-		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{}}
+		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{},
+		Transforms: map[*syntax.TransformExpr]*Transform{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)
 	c.declareClasses()
 	c.hierarchy()

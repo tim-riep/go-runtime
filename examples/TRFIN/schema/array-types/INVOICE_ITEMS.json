@@ -1,0 +1,8 @@
+{
+  "name": "/TRFIN/INVOICE_ITEMS",
+  "texts": {
+    "en": { "label": "Invoice items" },
+    "de": { "label": "Rechnungspositionen" }
+  },
+  "rowType": { "structure": "/TRFIN/INVOICE_ITEM" }
+}

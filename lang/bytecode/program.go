@@ -57,7 +57,9 @@ type Program struct {
 	Classes []Class
 	Funcs   []Func
 	Queries []Query // database statements
-	Tests   bool    // contains test classes
+	// Transforms are the transform expressions.
+	Transforms []Transform
+	Tests      bool // contains test classes
 }
 
 // File is a source file.
@@ -290,4 +292,16 @@ func (p *Program) Method(class, method string) (MethodRef, bool) {
 		}
 	}
 	return MethodRef{}, false
+}
+
+// Transform is a transform expression: the transformation, the names and
+// types of its parameters in the order of their values on the stack, and
+// the types of source and result.
+type Transform struct {
+	Name       string
+	Params     []string
+	ParamTypes []int
+	Source     int  // TypeDesc
+	SourceXML  bool // the source is XML text, STRING or BYTES
+	Into       int  // TypeDesc
 }

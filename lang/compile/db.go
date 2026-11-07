@@ -242,3 +242,18 @@ func (f *fn) cursorLoop(s *syntax.ForStmt) {
 	f.emit(DB_CLOSE)
 	f.patch(exit)
 }
+
+// transform runs a transformation: the source, then the values of the
+// parameters.
+func (f *fn) transform(x *syntax.TransformExpr) {
+	t := f.c.info.Transforms[x]
+	f.expr(x.Source)
+	bt := bytecode.Transform{Name: t.Name, Params: t.Params, Source: f.c.typeDesc(t.Source), SourceXML: t.SourceXML, Into: f.c.typeDesc(t.Into)}
+	for _, pv := range x.Params {
+		f.expr(pv.Value)
+		bt.ParamTypes = append(bt.ParamTypes, f.c.typeDesc(f.operandType(pv.Value)))
+	}
+	f.c.out.Transforms = append(f.c.out.Transforms, bt)
+	f.line(x.Pos)
+	f.emit(XFORM, len(f.c.out.Transforms)-1)
+}

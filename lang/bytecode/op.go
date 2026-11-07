@@ -164,6 +164,9 @@ const (
 	DB_END    // rollback: pop a session and commit it, or roll it back if rollback is 1
 	DB_OPEN   // push a new session
 
+	// Transformations.
+	XFORM // t: pop the source and the parameters of transform t and push its result
+
 	opCount
 )
 
@@ -194,6 +197,7 @@ var opInfo = [opCount]struct {
 	MAKE_FN: {"MAKE_FN", 2}, RETURN: {"RETURN", 0}, RETURN_VALUE: {"RETURN_VALUE", 0}, RAISE: {"RAISE", 0}, ASSERT: {"ASSERT", 1},
 	LOG: {"LOG", 1}, FOR_TEST: {"FOR_TEST", 4}, FOR_STEP: {"FOR_STEP", 5},
 	DB_QUERY: {"DB_QUERY", 1}, DB_CURSOR: {"DB_CURSOR", 1}, DB_NEXT: {"DB_NEXT", 1}, DB_CLOSE: {"DB_CLOSE", 0}, DB_END: {"DB_END", 1}, DB_OPEN: {"DB_OPEN", 0},
+	XFORM: {"XFORM", 1},
 }
 
 func (o Op) String() string {

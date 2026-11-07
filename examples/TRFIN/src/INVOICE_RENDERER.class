@@ -1,0 +1,26 @@
+public class /TRFIN/INVOICE_RENDERER
+
+  public static method RENDER(invoice: /TRFIN/INVOICE) returns STRING raises /TRFIN/INVOICE_NOT_RENDERED
+    try
+      return transform invoice using /TRFIN/INVOICE_HTML parameters LANG = "de"
+    catch error: /TRBASE/XSLT_FAILED
+      raise /TRFIN/INVOICE_NOT_RENDERED with error
+    end
+  end
+
+  public static method RENDER_IN(invoice: /TRFIN/INVOICE, language: STRING?) returns STRING raises /TRBASE/XSLT_FAILED
+    return transform invoice using /TRFIN/INVOICE_HTML parameters LANG = language
+  end
+
+  # The invoice in the canonical XML format of values.
+  public static method AS_XML(invoice: /TRFIN/INVOICE) returns STRING raises /TRBASE/XSLT_FAILED
+    return transform invoice using /TRBASE/IDENTITY
+  end
+
+  # Writes the invoice in the canonical XML format and reads it back.
+  public static method ROUNDTRIP(invoice: /TRFIN/INVOICE) returns /TRFIN/INVOICE raises /TRBASE/XSLT_FAILED
+    var xml = transform invoice using /TRBASE/IDENTITY into BYTES
+    return transform xml using /TRBASE/IDENTITY into /TRFIN/INVOICE
+  end
+
+end

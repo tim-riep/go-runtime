@@ -514,7 +514,21 @@ type (
 	}
 	// OpenSessionExpr opens another database session.
 	OpenSessionExpr struct{ Pos Pos }
+	// TransformExpr runs a transformation on a value or an XML document.
+	TransformExpr struct {
+		Pos    Pos
+		Source Expr
+		Using  Name
+		Params []ParamValue
+		Into   *Type // nil: the result is a STRING
+	}
 )
+
+// ParamValue is NAME = value of transform ... parameters.
+type ParamValue struct {
+	Name  Ident
+	Value Expr
+}
 
 // OrderItem is a field to sort by.
 type OrderItem struct {
@@ -533,6 +547,7 @@ func (e *QueryExpr) Start() Pos       { return e.Pos }
 func (e *UpdateExpr) Start() Pos      { return e.Pos }
 func (e *DeleteExpr) Start() Pos      { return e.Pos }
 func (e *OpenSessionExpr) Start() Pos { return e.Pos }
+func (e *TransformExpr) Start() Pos   { return e.Pos }
 
 // Arg is an argument, possibly named (NAME: value).
 type Arg struct {

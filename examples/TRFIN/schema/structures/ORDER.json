@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/ORDER",
+  "texts": {
+    "en": { "label": "Order", "description": "An order as it is imported" },
+    "de": { "label": "Bestellung", "description": "Eine Bestellung, wie sie importiert wird" }
+  },
+  "components": [
+    { "name": "ORDER_ID", "domain": "/TRFIN/COMPANY_ID", "notNull": true },
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY", "notNull": true },
+    { "name": "ORDERED_ON", "domain": "/TRBASE/DATE", "notNull": true },
+    { "name": "AMOUNT", "dataElement": "/TRBASE/AMOUNT", "notNull": true },
+    { "name": "NOTE", "domain": "/TRBASE/TEXT" }
+  ]
+}

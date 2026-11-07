@@ -198,6 +198,8 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		return c.delete(f, sc, x, e)
 	case *syntax.OpenSessionExpr:
 		return TypSession
+	case *syntax.TransformExpr:
+		return c.transform(f, sc, x, e)
 	}
 	return TypInvalid
 }

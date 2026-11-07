@@ -36,6 +36,7 @@ type execution struct {
 	phys     *model.Physical
 	schema   *model.Schema
 	ctx      context.Context // of the execution, for the host
+	sheets   *sheets
 	tenant   string
 	opts     ExecOptions
 	sessions []*session

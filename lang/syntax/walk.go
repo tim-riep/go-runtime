@@ -75,6 +75,11 @@ func Inspect(x Expr, fn func(Expr)) {
 	case *DeleteExpr:
 		Inspect(x.Where, fn)
 		Inspect(x.Using, fn)
+	case *TransformExpr:
+		Inspect(x.Source, fn)
+		for _, pv := range x.Params {
+			Inspect(pv.Value, fn)
+		}
 	}
 }
 

@@ -61,8 +61,8 @@ end
 Database access uses the keywords `commit`, `rollback`, `session`, `using`, `select`,
 `insert`, `update`, `delete`, `from` and `where`; `single`, `count`, `order`, `by`,
 `ascending`, `descending`, `limit` and `set` are keywords only at their place in a
-database statement. `transform`, `parameters` and `into` are reserved for later language
-parts.
+database statement. `transform`, `parameters` and `into` belong to the expression
+`transform`.
 
 ## Types
 
@@ -123,7 +123,8 @@ used as when they fit. The digits of a `DEC` before the point are checked when i
 stored and raise `/RT/OVERFLOW`.
 
 Everything else is explicit with `as`: between number types, from and to `STRING`,
-between `DATE` and `TIMESTAMP`, from `UUID` to `STRING` and back. Invalid text raises
+between `DATE` and `TIMESTAMP`, from `UUID` to `STRING` and back, and between `STRING`
+and `BYTES` in UTF-8. Invalid text and bytes that are no UTF-8 raise
 `/RT/CONVERSION_ERROR`.
 
 `DEC` arithmetic is exact. `+` and `-` keep the larger scale, `*` adds the scales, `/`
@@ -279,8 +280,8 @@ public class /TRORDER/DOC_BONUS_ACCOUNT extends /TRORDER/DOC_ACCOUNT
 end
 ```
 
-Methods marked `executed by kernel` have no body; they come with native methods in a
-later language part and are rejected until then.
+Methods marked `executed by kernel` have no body; the kernel executes them (see
+[Methods executed by kernel](#methods-executed-by-kernel)).
 
 ## Interfaces
 
@@ -524,6 +525,119 @@ end
   `/RT/SESSION_ERROR` at once. Sessions of SQLite read in parallel; a reading transaction
   keeps the state of its first statement until it ends.
 
+## Methods executed by kernel
+
+Some methods are written in Go inside the kernel: XSLT transformations, hashing, the
+clock or reading assets. Classes of kernel packages declare them with `executed by kernel`
+instead of a body, and code calls them like any other method, with type checks, the
+record of uses and the dependency on their package.
+
+```
+public class /TRBASE/XSLT_UTILITIES
+
+  public static method RUN(stylesheet: BYTES, input: BYTES) returns BYTES raises /TRBASE/XSLT_FAILED executed by kernel
+
+end
+```
+
+- Only kernel packages, which come with the kernel binary, have such methods. The compiler
+  accepts a method only if the kernel registers an implementation with exactly the same
+  signature: static or not, the types of the parameters with `?`, the result and the
+  exceptions. Otherwise the error shows both signatures. Such methods are never `open`;
+  a class may mix them with methods that have a body.
+- An implementation raises the exceptions the method declares. Any other error, and a
+  panic of the implementation, becomes `/RT/NATIVE_ERROR`; the kernel goes on.
+- A class marked `executed by kernel` is a native class: its objects carry a value of the
+  kernel that only its methods see, such as a compiled stylesheet. Native classes have no
+  attributes, constants or constructor, are never `open` and extend nothing; their objects
+  come from their static methods. Code holds them in variables and collections, but not in
+  static attributes or constants, and `rt run` cannot pass them. The kernel frees them at
+  the end of every execution.
+- Every method executed by kernel runs under the time limit of the execution, 60 seconds
+  by default, and inputs larger than 16 MiB raise `/RT/INPUT_TOO_LARGE`.
+- Methods that act beyond computing and the database declare a capability, in this version
+  only `clock`. A package lists the capabilities of the kernel methods it calls in its
+  manifest, `"capabilities": ["clock"]`, also when it calls them through other methods of
+  kernel packages; otherwise its code does not compile.
+- Effects outside of the VM and the database run after the next commit of their session
+  and are dropped by `rollback`. A failed effect is recorded; `rt effects list` shows it and
+  `rt effects retry <id>` runs it again.
+
+The kernel package `TRBASE` brings:
+
+| Class | Methods |
+|---|---|
+| `/TRBASE/XSLT_UTILITIES` | `RUN(stylesheet, input)`: a stylesheet known only at runtime |
+| `/TRBASE/XSLT_STYLESHEET` | native class: `COMPILE(stylesheet)` once, then `TRANSFORM(input)` many times |
+| `/TRBASE/ASSETS` | `READ(pkg, repository, path)` and `READ_IN_LANGUAGE(pkg, repository, path, language)`: assets of the own package and of required packages, else `/TRBASE/ASSET_NOT_FOUND` |
+| `/TRBASE/CLOCK` | `NOW()` and `TODAY()`, capability `clock` |
+| `/TRBASE/UUID` | `NEW()`: a random UUID |
+| `/TRBASE/HASH` | `SHA256(data)` |
+
+Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
+`LINE_NO`, the line in the stylesheet or `null`.
+
+## Transformations
+
+A transformation is an XSLT stylesheet of a package: `transformations/INVOICE_HTML.xsl` is
+`/TRFIN/INVOICE_HTML`. An optional `transformations/INVOICE_HTML.json` gives its labels per
+language and what it produces:
+
+```json
+{ "name": "/TRFIN/INVOICE_HTML", "texts": { "en": { "label": "Invoice as HTML" } }, "output": "html" }
+```
+
+Installing a package compiles its stylesheets; an error stops the installation with file,
+line and text. The kernel keeps them compiled for all executions of a generation. In this
+version stylesheets cannot include or import other stylesheets (`xsl:include` and
+`xsl:import` are rejected), and `document()` and similar functions read nothing outside the
+stylesheet.
+
+`transform` runs a transformation:
+
+```
+var html = transform invoice using /TRFIN/INVOICE_HTML parameters LANG = "de", MODE = "print"
+var order = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/ORDER
+```
+
+- The source is XML as `STRING` or `BYTES`, or any value of a structure, table, array, map
+  or simple type, which the kernel writes in the canonical XML format below.
+- `parameters` sets top-level `xsl:param` elements of the stylesheet; each must be declared
+  there, and required ones must be given. Values are of simple types and are passed in
+  their text form; `null` leaves the default of the stylesheet.
+- The result is a `STRING`; `into BYTES` gives bytes, and `into T` reads the result in the
+  canonical format into a value of `T`.
+- The transformation belongs to the own package or a required one. `transform` raises the
+  checked exception `/TRBASE/XSLT_FAILED`, so the package requires `TRBASE`. A result that
+  does not fit the type of `into` raises `/TRBASE/TRANSFORM_RESULT_INVALID`, a subclass,
+  with the path and the reason.
+- `/TRBASE/IDENTITY` copies its input: `transform value using /TRBASE/IDENTITY` gives the
+  canonical XML of a value, and `transform xml using /TRBASE/IDENTITY into T` reads it back.
+
+### Canonical XML format
+
+```xml
+<value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="/TRFIN/INVOICE">
+  <INVOICE_ID>R-1</INVOICE_ID>
+  <NOTE/>                          <!-- the empty string -->
+  <REFERENCE xsi:nil="true"/>      <!-- null -->
+  <TOTAL>150.50</TOTAL>
+  <ITEMS><item><POSITION>1</POSITION><TEXT>Consulting</TEXT><AMOUNT>100.00</AMOUNT></item></ITEMS>
+</value>
+```
+
+- The root is `<value>`; `type` names the structure or table and is not needed when the
+  kernel reads a value. Components are elements in their order; an extension field
+  `/PKG/FIELD` is `<PKG.FIELD>`, since `/` is not allowed in XML names.
+- `null` is `xsi:nil="true"`, `""` an empty element. A missing optional component is
+  `null` when the kernel reads a value; a missing other component, an unknown element or a
+  text that does not fit is an error.
+- Arrays have `<item>` elements, maps `<entry><key>…</key><value>…</value></entry>`. A simple
+  value is the text of `<value>`.
+- `DEC` has all digits of its scale, `DATE` is `2026-11-07`, `TIMESTAMP`
+  `2026-11-07T10:30:00.000000Z`, `BOOL` `true` or `false`, `UUID` lower-case hex, `BYTES`
+  base64, and enum constants are their fixed value.
+
 ## Test classes
 
 A test class is marked with `test`. `rt test` runs its test methods, each on a new
@@ -574,7 +688,7 @@ no options and does not break long lines:
 ```
 file          = { comment } ( classDecl | interfaceDecl | includeDecl ) ;
 classDecl     = visibility [ "test" ] [ "open" ] "class" GLOBAL [ "extends" GLOBAL ]
-                [ "implements" GLOBAL { "," GLOBAL } ] NL { member } "end" ;
+                [ "implements" GLOBAL { "," GLOBAL } ] [ "executed" "by" "kernel" ] NL { member } "end" ;
 interfaceDecl = visibility "interface" GLOBAL [ "extends" GLOBAL { "," GLOBAL } ] NL
                 { methodSig NL } "end" ;
 includeDecl   = ( "members" | "statements" ) "include" GLOBAL NL ( { member } | { stmt } ) "end" ;
@@ -609,7 +723,9 @@ expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr "
               | "function" params [ "returns" type ] [ raises ] ( "=>" expr | NL block "end" )
               | ( "-" | "not" ) expr | expr OPERATOR expr | expr "is" [ "not" ] ( "null" | "empty" )
               | expr "as" type | expr "." GLOBAL | expr "in" expr
-              | selectExpr | updateExpr | deleteExpr | "open" "session" ;
+              | selectExpr | updateExpr | deleteExpr | "open" "session" | transformExpr ;
+transformExpr = "transform" expr "using" GLOBAL [ "parameters" MEMBER "=" expr { "," MEMBER "=" expr } ]
+                [ "into" type ] ;
 args          = expr { "," expr } | MEMBER ":" expr { "," MEMBER ":" expr } ;
 selectExpr    = "select" [ "single" | "count" ] "from" GLOBAL [ "where" expr ]
                 [ "order" "by" field [ "ascending" | "descending" ]

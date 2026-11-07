@@ -1,0 +1,16 @@
+{
+  "name": "/TRFIN/INVOICE",
+  "texts": {
+    "en": { "label": "Invoice", "description": "An invoice to render, not stored" },
+    "de": { "label": "Rechnung", "description": "Eine Rechnung zum Ausgeben, nicht gespeichert" }
+  },
+  "components": [
+    { "name": "INVOICE_ID", "domain": "/TRFIN/COMPANY_ID", "notNull": true },
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY", "notNull": true },
+    { "name": "ISSUED_ON", "domain": "/TRBASE/DATE", "notNull": true },
+    { "name": "NOTE", "domain": "/TRBASE/TEXT" },
+    { "name": "REFERENCE", "domain": "/TRBASE/TEXT" },
+    { "name": "TOTAL", "dataElement": "/TRBASE/AMOUNT", "notNull": true },
+    { "name": "ITEMS", "arrayType": "/TRFIN/INVOICE_ITEMS" }
+  ]
+}

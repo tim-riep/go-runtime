@@ -82,6 +82,9 @@ TRFIN/
   assets/
     <repository>/asset.json    every folder below assets/ is an asset repository
     <repository>/...           its files and folders
+  transformations/
+    <NAME>.xsl                 an XSLT stylesheet, the transformation /<PACKAGE>/<NAME>
+    <NAME>.json                its labels and output, optional
 ```
 
 `manifest.json`:
@@ -546,6 +549,26 @@ program and its binary encoding with format version), `vm` (the machine with lim
   `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
   of its own and inserts `/TROTTO/COMPANY_HOOK` into `TRFIN`.
 
+- Kernel packages contain methods executed by kernel: Go functions registered in the
+  package `native` with the signature they implement, which the compiler checks against
+  the declaration. Values cross the boundary as Go types (`model.Optional` for optional
+  values, `dec.Dec` for `DEC`, generated structs from `rt gen natives` for structures);
+  declared exceptions are raised with `native.Raise`, other errors and panics become
+  `/RT/NATIVE_ERROR`. Native methods run under the time limit of the execution, declare
+  capabilities such as `clock` that packages must list in their manifest, and register
+  effects outside that run after the commit of their session; failed effects are kept in
+  `/RT/EFFECT_FAILURES`. `rt natives list` shows the registered methods. TRBASE brings
+  XSLT, assets, clock, UUID and hash methods; see the
+  [language reference](docs/language.md#methods-executed-by-kernel).
+- Transformations are XSLT stylesheets of packages, compiled with
+  [go-xslt](https://github.com/tim-riep/go-xslt) on installation and kept compiled per
+  generation. `transform value using /TRFIN/INVOICE_HTML parameters LANG = "de"` runs one on
+  XML or on a value in a canonical XML format, and `into T` reads the result back; see the
+  [language reference](docs/language.md#transformations). `TRFIN` renders invoices with
+  `/TRFIN/INVOICE_HTML`, imports orders with `/TRFIN/ORDER_IMPORT` into the table
+  `/TRFIN/ORDERS` and renders a print template of its asset repository with
+  `/TRBASE/XSLT_UTILITIES` and `/TRBASE/XSLT_STYLESHEET`.
+
 ```go
 out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC",
 	[]json.RawMessage{json.RawMessage(`"DE"`)})
@@ -618,8 +641,12 @@ rt build examples/TRORDER
 rt install examples/TRORDER
 rt tenant create ACME
 rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME
+rt run TRFIN /TRFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]' --tenant ACME
 rt test TRORDER
 rt test examples/TRORDER
+rt natives list
+rt effects list
+rt gen natives testdata/lang/native/TRTEST --go-package nativetest -o types_gen.go
 ```
 
 `fmt` and `build` work on package directories and need no database; `build` looks up
@@ -653,7 +680,8 @@ go test ./internal/planner ./setting ./kernel ./lang/syntax -update
 
 ## Not included yet
 
-Native methods, a time of the execution such as "now" for code, messages with texts per language, a
+Stylesheets that include, import or read other stylesheets and documents, native methods
+with network or file access, HTTP services, messages with texts per language, a
 language server and a debugger, permissions, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
 loader already works on `fs.FS`), joins and aggregates other than `count` in code,

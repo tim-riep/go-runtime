@@ -579,6 +579,22 @@
       "member": "STATUS"
     },
     {
+      "package": "TRFIN",
+      "file": "src/ORDER_INTAKE.class",
+      "line": 23,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/ORDER_INTAKE.class",
+      "line": 24,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "NAME"
+    },
+    {
       "package": "TROTTO",
       "file": "src/COMPANY_SYNC.class",
       "line": 10,

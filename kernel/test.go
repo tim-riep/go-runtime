@@ -98,17 +98,19 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 		return nil, err
 	}
 	phys := schema.Physical()
+	cache := newSheets(schema)
 	wrap := func(ctx context.Context, vo vm.Options, run func(vm.Options) error) error {
 		tenant, err := k.testTenant(ctx)
 		if err != nil {
 			return err
 		}
-		x := &execution{k: k, d: k.d, phys: phys, schema: schema, ctx: ctx, tenant: tenant, opts: opts, test: true}
+		x := &execution{k: k, d: k.d, phys: phys, schema: schema, sheets: cache, ctx: ctx, tenant: tenant, opts: opts, test: true}
 		x.sessions = []*session{{x: x, n: 1}}
 		vo.Database = x
 		vo.MaxRows = opts.MaxRows
 		vo.MaxNativeInput = opts.MaxNativeInput
 		vo.Host = x
+		vo.Transformer = x
 		err = run(vo)
 		err = errors.Join(err, x.finish(err))
 		if _, derr := k.Tenants().Delete(context.Background(), tenant, Options{Confirm: true}); derr != nil {

@@ -320,6 +320,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, t := range s.Transformations {
+		if _, ok := t.Texts[code]; ok {
+			delete(t.Texts, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)

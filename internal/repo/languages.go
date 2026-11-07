@@ -48,7 +48,7 @@ func (r *Repo) CountTexts(ctx context.Context, q dialect.Querier, code string) (
 
 // TextTables are the tables with language-dependent rows: texts and asset
 // variants.
-var TextTables = []string{TDataElementTexts, TSettingTexts, TStructureTexts, TArrayTypeTexts, TAssetRepositoryTexts, TAssetEntryTexts, TAssetVariants}
+var TextTables = []string{TDataElementTexts, TSettingTexts, TStructureTexts, TArrayTypeTexts, TTransformationTexts, TAssetRepositoryTexts, TAssetEntryTexts, TAssetVariants}
 
 // InsertLanguage adds a language.
 func (r *Repo) InsertLanguage(ctx context.Context, q dialect.Querier, l Language) error {

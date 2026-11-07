@@ -53,9 +53,11 @@ type Options struct {
 	MaxRows int
 	// Host gives native methods access to the kernel.
 	Host native.Host
-	// MaxNativeInput is the largest input of native methods in bytes; 0
-	// means 16 MiB.
+	// MaxNativeInput is the largest input of native methods and of
+	// transform in bytes; 0 means 16 MiB.
 	MaxNativeInput int64
+	// Transformer runs the transformations of transform.
+	Transformer Transformer
 }
 
 // LogSink receives log statements.
@@ -926,6 +928,17 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 			err = pop().R.(*cursor).close()
 		case DB_END:
 			t, err = m.endSession(pop(), arg(0) == 1)
+		case XFORM:
+			tr := &p.Transforms[arg(0)]
+			n := len(tr.Params)
+			params := append([]Value(nil), stack[len(stack)-n:]...)
+			stack = stack[:len(stack)-n]
+			src := pop()
+			var v Value
+			v, t, err = m.transform(p, tr, src, params)
+			if t == nil && err == nil {
+				push(v)
+			}
 		case DB_OPEN:
 			var s Value
 			s, t, err = m.openSession()

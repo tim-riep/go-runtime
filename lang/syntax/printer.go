@@ -754,6 +754,23 @@ func (p *printer) expr(x Expr) {
 			p.expr(x.Limit)
 		}
 		p.using(x.Using)
+	case *TransformExpr:
+		p.w("transform ")
+		p.expr(x.Source)
+		p.w(" using " + x.Using.Name)
+		for i, pv := range x.Params {
+			if i == 0 {
+				p.w(" parameters ")
+			} else {
+				p.w(", ")
+			}
+			p.w(pv.Name.Name + " = ")
+			p.expr(pv.Value)
+		}
+		if x.Into != nil {
+			p.w(" into ")
+			p.typ(x.Into)
+		}
 	case *UpdateExpr:
 		p.w("update " + x.Table.Name + " set ")
 		for i, s := range x.Sets {

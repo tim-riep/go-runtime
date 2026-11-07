@@ -1,0 +1,26 @@
+# Renders invoices with the print template of the asset repository
+# templates, a stylesheet that is only known at runtime.
+public class /TRFIN/TEMPLATE_RENDERER
+
+  private static method TEMPLATE(language: STRING) returns BYTES raises /TRBASE/ASSET_NOT_FOUND
+    return /TRBASE/ASSETS.READ_IN_LANGUAGE("TRFIN", "templates", "invoice/invoice.xsl", language)
+  end
+
+  private static method SOURCE(number: STRING, total: DEC(15,2)) returns BYTES
+    return "<invoice number=\"{number}\"><total>{total}</total></invoice>" as BYTES
+  end
+
+  public static method RENDER_ONCE(number: STRING, total: DEC(15,2), language: STRING) returns STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
+    return /TRBASE/XSLT_UTILITIES.RUN(TEMPLATE(language), SOURCE(number, total)) as STRING
+  end
+
+  public static method RENDER_ALL(numbers: array of STRING, language: STRING) returns array of STRING raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/XSLT_FAILED
+    var template = /TRBASE/XSLT_STYLESHEET.COMPILE(TEMPLATE(language))
+    var out = new array of STRING
+    for number in numbers
+      out.APPEND(template.TRANSFORM(SOURCE(number, 100.00)) as STRING)
+    end
+    return out
+  end
+
+end

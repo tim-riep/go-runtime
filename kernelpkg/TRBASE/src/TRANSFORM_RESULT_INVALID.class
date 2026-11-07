@@ -1,0 +1,8 @@
+# The result of transform ... into does not fit the type.
+public class /TRBASE/TRANSFORM_RESULT_INVALID extends /TRBASE/XSLT_FAILED
+
+  public constructor(text: STRING)
+    super(text, null)
+  end
+
+end

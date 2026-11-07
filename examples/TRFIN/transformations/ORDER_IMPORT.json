@@ -1,0 +1,8 @@
+{
+  "name": "/TRFIN/ORDER_IMPORT",
+  "texts": {
+    "en": { "label": "Order import", "description": "Reads orders of the ordering system" },
+    "de": { "label": "Bestellimport", "description": "Liest Bestellungen des Bestellsystems" }
+  },
+  "output": "xml"
+}

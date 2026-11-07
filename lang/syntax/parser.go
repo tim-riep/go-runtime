@@ -779,7 +779,7 @@ func (p *parser) stmt() Stmt {
 
 func (p *parser) startsOperand() bool {
 	switch p.tok.Text {
-	case "me", "super", "new", "null", "true", "false", "function", "select", "update", "delete", "open":
+	case "me", "super", "new", "null", "true", "false", "function", "select", "update", "delete", "open", "transform":
 		return true
 	}
 	return false
@@ -1008,6 +1008,8 @@ func (p *parser) primary() Expr {
 			return p.funcExpr()
 		case "select":
 			return p.selectExpr()
+		case "transform":
+			return p.transformExpr()
 		case "update":
 			return p.updateExpr()
 		case "delete":
@@ -1328,6 +1330,38 @@ func (p *parser) where() Expr {
 	}
 	p.next()
 	return p.expr(0)
+}
+
+// transformExpr reads transform SOURCE using /PKG/T [parameters NAME =
+// value, ...] [into TYPE].
+func (p *parser) transformExpr() Expr {
+	e := &TransformExpr{Pos: p.tok.Pos}
+	p.next()
+	e.Source = p.expr(0)
+	if !p.isKw("using") {
+		p.errorf(p.tok.Pos, `expected "using" and a transformation, found %s`, p.tok)
+		return e
+	}
+	p.next()
+	e.Using = p.global()
+	if p.isKw("parameters") {
+		p.next()
+		for {
+			pv := ParamValue{Name: p.ident()}
+			p.expectOp("=")
+			pv.Value = p.expr(0)
+			e.Params = append(e.Params, pv)
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
+	}
+	if p.isKw("into") {
+		p.next()
+		e.Into = p.typ()
+	}
+	return e
 }
 
 func (p *parser) selectExpr() Expr {

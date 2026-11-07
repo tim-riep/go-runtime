@@ -870,6 +870,8 @@ func (f *fn) expr0(x syntax.Expr) {
 		f.funcExpr(x)
 	case *syntax.QueryExpr, *syntax.UpdateExpr, *syntax.DeleteExpr, *syntax.OpenSessionExpr:
 		f.dbExpr(x)
+	case *syntax.TransformExpr:
+		f.transform(x)
 	default:
 		f.c.failf("cannot compile %T", x)
 	}

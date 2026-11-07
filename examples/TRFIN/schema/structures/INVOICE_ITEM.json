@@ -1,0 +1,12 @@
+{
+  "name": "/TRFIN/INVOICE_ITEM",
+  "texts": {
+    "en": { "label": "Invoice item" },
+    "de": { "label": "Rechnungsposition" }
+  },
+  "components": [
+    { "name": "POSITION", "domain": "/TRBASE/COUNTER", "notNull": true },
+    { "name": "TEXT", "domain": "/TRBASE/TEXT", "notNull": true },
+    { "name": "AMOUNT", "dataElement": "/TRBASE/AMOUNT", "notNull": true }
+  ]
+}

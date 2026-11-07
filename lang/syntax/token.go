@@ -96,8 +96,8 @@ var Keywords = map[string]bool{}
 // part.
 var DatabaseKeywords = []string{"commit", "rollback", "session", "using", "select", "insert", "update", "delete", "from", "where"}
 
-// FutureKeywords are reserved for later language parts.
-var FutureKeywords = []string{"transform", "parameters", "into"}
+// TransformKeywords belong to the expression transform.
+var TransformKeywords = []string{"transform", "parameters", "into"}
 
 func init() {
 	for _, k := range []string{"class", "interface", "include", "public", "package", "private", "static", "open", "override",
@@ -107,7 +107,7 @@ func init() {
 		"function", "as", "of", "array", "map", "mod"} {
 		Keywords[k] = true
 	}
-	for _, k := range append(DatabaseKeywords, FutureKeywords...) {
+	for _, k := range append(DatabaseKeywords, TransformKeywords...) {
 		Keywords[k] = true
 	}
 }

@@ -123,7 +123,7 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(ctx cont
 		return err
 	}
 	image := g.image
-	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, ctx: ctx, tenant: opts.Tenant, opts: opts}
+	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts}
 	x.sessions = []*session{{x: x, n: 1}}
 	defer func() { err = errors.Join(err, x.finish(err)) }()
 	vo := opts.VM
@@ -131,6 +131,7 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(ctx cont
 	vo.MaxRows = opts.MaxRows
 	vo.MaxNativeInput = opts.MaxNativeInput
 	vo.Host = x
+	vo.Transformer = x
 	m, err := vm.New(image, vo)
 	if err != nil {
 		return err
@@ -173,6 +174,7 @@ type generation struct {
 	image  *vm.Image
 	phys   *model.Physical
 	schema *model.Schema
+	sheets *sheets
 }
 
 // generation returns the code of the current generation. An execution
@@ -202,7 +204,7 @@ func (k *Kernel) generation(ctx context.Context) (*generation, error) {
 		if err != nil {
 			return err
 		}
-		g = &generation{n: n, image: image, phys: s.Physical(), schema: s}
+		g = &generation{n: n, image: image, phys: s.Physical(), schema: s, sheets: newSheets(s)}
 		return nil
 	})
 	if err != nil {

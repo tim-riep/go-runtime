@@ -1,0 +1,8 @@
+{
+  "name": "/TRBASE/IDENTITY",
+  "texts": {
+    "en": { "label": "Identity", "description": "Copies the input; turns values into the canonical XML format and back" },
+    "de": { "label": "Identität", "description": "Kopiert die Eingabe; wandelt Werte in das kanonische XML-Format und zurück" }
+  },
+  "output": "xml"
+}

@@ -1,0 +1,7 @@
+public class /TRX/T
+  public static method M(x: /TRX/S) returns STRING
+    var h=transform x using /TRX/HTML parameters LANG="de",MODE = "print"
+    var o=transform h using /TRX/IMPORT into /TRX/ORDER
+    return transform (h) using /TRX/X into BYTES
+  end
+end

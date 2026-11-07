@@ -1,0 +1,8 @@
+# An invoice could not be rendered.
+public class /TRFIN/INVOICE_NOT_RENDERED extends /RT/EXCEPTION
+
+  public constructor(cause: /TRBASE/XSLT_FAILED)
+    super("the invoice cannot be rendered: {cause.TEXT}")
+  end
+
+end

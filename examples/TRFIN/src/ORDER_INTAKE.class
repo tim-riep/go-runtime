@@ -1,0 +1,32 @@
+# Imports orders of the ordering system.
+public class /TRFIN/ORDER_INTAKE
+
+  public static method IMPORT(xml: STRING) returns /TRFIN/ORDERS raises /TRBASE/XSLT_FAILED
+    var order = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/ORDER
+    var row: /TRFIN/ORDERS
+    row.ORDER_ID = order.ORDER_ID
+    row.COMPANY_ID = order.COMPANY_ID
+    row.ORDERED_ON = order.ORDERED_ON
+    row.AMOUNT = order.AMOUNT
+    row.NOTE = order.NOTE
+    insert row
+    return row
+  end
+
+  public static method FIND(id: STRING) returns /TRFIN/ORDERS?
+    return select single from /TRFIN/ORDERS where ORDER_ID = id
+  end
+
+  # Reads the import format as a company, which does not fit.
+  public static method WRONG(xml: STRING) returns STRING
+    try
+      var company = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/COMPANIES
+      return company.NAME
+    catch e: /TRBASE/TRANSFORM_RESULT_INVALID
+      return e.TEXT
+    catch e: /TRBASE/XSLT_FAILED
+      return "failed: {e.TEXT}"
+    end
+  end
+
+end
