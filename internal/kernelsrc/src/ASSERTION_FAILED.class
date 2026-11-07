@@ -1,0 +1,8 @@
+# An assertion of a test failed.
+public class /RT/ASSERTION_FAILED extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

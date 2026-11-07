@@ -1,0 +1,8 @@
+# A key exists twice in an array with a unique key.
+public class /RT/DUPLICATE_KEY extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

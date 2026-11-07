@@ -22,7 +22,9 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/syntax"
+	"github.com/tim-riep/go-runtime/lang/types"
 )
 
 // sourceExts are the extensions of source files.
@@ -34,6 +36,11 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 	switch cmd {
 	case "fmt":
 		return c.fmt(args), true
+	case "build":
+		if !c.need(args, 1, "build <package directory>") {
+			return exitUsage, true
+		}
+		return c.build(args[0]), true
 	}
 	return 0, false
 }
@@ -96,4 +103,55 @@ func (c *cli) fmt(args []string) int {
 		}
 	}
 	return code
+}
+
+// compile builds a package directory and prints its diagnostics. It
+// returns nil when the build failed.
+func (c *cli) compile(dir string) (*build.Result, int) {
+	r, err := build.Dir(dir)
+	if err != nil {
+		return nil, c.fail(err)
+	}
+	if c.asJSON {
+		return r, exitOK
+	}
+	for _, d := range r.Diagnostics {
+		w := c.stdout
+		if d.Severity == types.Error {
+			w = c.stderr
+		}
+		fmt.Fprintln(w, d)
+	}
+	if !r.OK() {
+		fmt.Fprintf(c.stderr, "build of %s failed with %d error(s)\n", r.Package.Manifest.ID, len(r.Errors()))
+		return nil, exitInvalid
+	}
+	return r, exitOK
+}
+
+// build compiles a package and reports the diagnostics.
+func (c *cli) build(dir string) int {
+	r, code := c.compile(dir)
+	if c.asJSON && r != nil {
+		diags := r.Diagnostics
+		if diags == nil {
+			diags = []types.Diagnostic{}
+		}
+		c.json(map[string]any{"package": r.Package.Manifest.ID, "ok": r.OK(), "diagnostics": diags})
+		if !r.OK() {
+			return exitInvalid
+		}
+		return exitOK
+	}
+	if r == nil {
+		return code
+	}
+	n := 0
+	for _, k := range r.Program.Classes {
+		if !k.Kernel {
+			n++
+		}
+	}
+	fmt.Fprintf(c.stdout, "build of %s succeeded: %d classes and interfaces\n", r.Package.Manifest.ID, n)
+	return exitOK
 }

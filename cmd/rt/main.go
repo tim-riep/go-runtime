@@ -84,6 +84,7 @@ Commands:
 
 Commands for source files (no database needed):
   fmt [path...]            format source files in canonical form (--check only lists them)
+  build <dir>              compile the sources of a package directory and show diagnostics
 
 Flags (anywhere on the command line):
 `

@@ -1,0 +1,10 @@
+{
+  "name": "/TRFIN/RATING",
+  "description": "Rating of an order",
+  "type": "CHAR",
+  "length": 1,
+  "values": [
+    { "value": "H", "name": "HIGH", "description": "High amount" },
+    { "value": "N", "name": "NORMAL", "description": "Normal amount" }
+  ]
+}

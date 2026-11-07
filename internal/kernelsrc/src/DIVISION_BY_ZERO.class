@@ -1,0 +1,8 @@
+# Division by zero.
+public class /RT/DIVISION_BY_ZERO extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

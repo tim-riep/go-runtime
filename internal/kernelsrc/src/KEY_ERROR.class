@@ -1,0 +1,8 @@
+# A key does not exist in a map.
+public class /RT/KEY_ERROR extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

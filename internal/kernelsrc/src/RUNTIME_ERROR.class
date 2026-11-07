@@ -1,0 +1,15 @@
+# Root of the runtime errors of the VM. They are not checked: no method
+# declares them, and code catches them only by naming them.
+public open class /RT/RUNTIME_ERROR
+
+  public attribute TEXT: STRING
+
+  public constructor(text: STRING)
+    TEXT = text
+  end
+
+  public method MESSAGE() returns STRING
+    return TEXT
+  end
+
+end

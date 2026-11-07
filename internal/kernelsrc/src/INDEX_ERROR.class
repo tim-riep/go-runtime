@@ -1,0 +1,8 @@
+# An index is outside of an array or string.
+public class /RT/INDEX_ERROR extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

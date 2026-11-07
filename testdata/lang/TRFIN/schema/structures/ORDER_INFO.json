@@ -1,0 +1,11 @@
+{
+  "name": "/TRFIN/ORDER_INFO",
+  "texts": { "en": { "label": "Order" } },
+  "components": [
+    { "name": "ID", "domain": "/TRFIN/TEXT", "notNull": true },
+    { "name": "AMOUNT", "domain": "/TRFIN/AMOUNT", "notNull": true },
+    { "name": "NOTE", "domain": "/TRFIN/TEXT" },
+    { "name": "COUPON", "domain": "/TRFIN/TEXT" },
+    { "name": "PAID", "domain": "/TRFIN/FLAG", "notNull": true }
+  ]
+}

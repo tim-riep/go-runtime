@@ -1,0 +1,8 @@
+# A value cannot be converted.
+public class /RT/CONVERSION_ERROR extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -1,0 +1,16 @@
+# Root of the checked exceptions. Exception classes of packages extend it,
+# declare it with raises and are caught with catch.
+public open class /RT/EXCEPTION
+
+  public attribute TEXT: STRING
+
+  public constructor(text: STRING)
+    TEXT = text
+  end
+
+  # The text of the exception; later versions also refer to a message.
+  public open method MESSAGE() returns STRING
+    return TEXT
+  end
+
+end

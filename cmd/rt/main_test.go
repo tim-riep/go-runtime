@@ -128,3 +128,23 @@ func TestFmt(t *testing.T) {
 		t.Fatalf("canonical: %d %s", code, out.String())
 	}
 }
+
+func TestBuild(t *testing.T) {
+	var out, errOut bytes.Buffer
+	dir := filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "TRFIN")
+	if code := run(context.Background(), []string{"build", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "build of TRFIN succeeded: 2 classes") {
+		t.Fatalf("build: %d %s %s", code, out.String(), errOut.String())
+	}
+	broken := t.TempDir()
+	testutil.WriteFile(t, broken, "manifest.json", []byte(`{"id":"TRB","version":"1.0.0","languageVersion":1}`))
+	testutil.WriteFile(t, broken, "src/A.class", []byte("public class /TRB/A\n\n  public method M() returns INT4\n    return \"x\"\n  end\n\nend\n"))
+	out.Reset()
+	errOut.Reset()
+	if code := run(context.Background(), []string{"build", broken}, &out, &errOut); code != exitInvalid || !strings.Contains(errOut.String(), "src/A.class:4:12: type:") {
+		t.Fatalf("broken build: %d %s %s", code, out.String(), errOut.String())
+	}
+	out.Reset()
+	if code := run(context.Background(), []string{"build", "--json", broken}, &out, &errOut); code != exitInvalid || !strings.Contains(out.String(), `"code": "type"`) {
+		t.Fatalf("json: %d %s", code, out.String())
+	}
+}

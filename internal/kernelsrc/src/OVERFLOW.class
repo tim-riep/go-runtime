@@ -1,0 +1,8 @@
+# A number exceeds its type.
+public class /RT/OVERFLOW extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end
