@@ -32,6 +32,10 @@ transaction together with its own bookkeeping.
   `/RT/TENANT` as first key field and a foreign key to the tenant table.
 - **Languages**: the kernel table `/RT/LANGUAGES` lists the languages translatable texts may
   use. English always exists.
+- **Asset repository**: a folder below `assets/` of a package with files (assets) and
+  subfolders, such as images, stylesheets, fonts or print templates. It is identified by the
+  package ID and its folder name, installed and removed with the package and read-only at
+  runtime.
 - **Setting**: tables that together form one configuration, as a tree below a root table
   connected through foreign keys. Other packages can add dependent tables to a setting.
 
@@ -47,6 +51,9 @@ TRFIN/
     extensions/*.json          one extension per extended table
     settings/*.json            one setting per file, named <ID>.json
     setting-extensions/*.json  one extension per extended setting, named <ID>.json
+  assets/
+    <repository>/asset.json    every folder below assets/ is an asset repository
+    <repository>/...           its files and folders
 ```
 
 `manifest.json`:
@@ -172,6 +179,63 @@ normalization (`1.0` vs `1.00`).
   than the target, DEC with equal precision and scale).
 - Kernel domains and the tenant table are available to every package. Other kernel tables
   can neither be referenced nor extended.
+
+### Asset repositories
+
+`assets/templates/asset.json` of `TRFIN`:
+
+```json
+{
+  "description": { "en": "Finance print templates", "de": "Druckvorlagen Finanzen" },
+  "folders": { "invoice": { "description": { "en": "Invoices", "de": "Rechnungen" } } },
+  "files": {
+    "invoice/invoice.xsl": {
+      "languages": { "en": "invoice/invoice_en.xsl", "de": "invoice/invoice_de.xsl" }
+    },
+    "data/rates.dat": { "mimeType": "text/csv" }
+  }
+}
+```
+
+- The repository ID is the folder name: up to 32 lower-case letters, digits, `_` and `-`,
+  starting with a letter. `web` of `TRBASE` and `web` of `TRFIN` are separate repositories.
+  Repositories and assets are always addressed by package ID, repository ID and path.
+- `description` (the label) is mandatory and needs English. `folders` adds descriptions and
+  folders that may be missing on disk. `files` sets the media type, a description and
+  language variants per path.
+- A path with `languages` is language-dependent. Its variant files are reachable only through
+  that path; a file at the path itself is the language-independent version. Reading with a
+  language takes the requested language, then English, then the language-independent version;
+  without a language the language-independent version, then English. Variants in languages
+  that are not set up are rejected like texts.
+- Paths: segments of ASCII letters, digits, `.`, `_` and `-` that do not start with `.`, at
+  most 100 bytes per segment and 255 bytes per path, no leading, trailing or double slashes,
+  and no two paths that differ only in case.
+- Rejected: files directly below `assets/`, folders without `asset.json`, entries in
+  `asset.json` without file, and symbolic links anywhere in the package.
+- The media type comes from a fixed table of extensions; unknown extensions give
+  `application/octet-stream`. Files may have at most 16 MiB by default
+  (`Kernel.SetMaxAssetSize`, `--max-asset-size`, `RT_MAX_ASSET_SIZE`).
+- Contents are stored in the database in chunks of 256 KiB, addressed by their SHA-256 and
+  stored once. Reading streams chunk by chunk. Upgrades compare hashes: new assets are added,
+  changed ones replaced, removed ones dropped, and contents no longer referenced are deleted
+  in the same transaction. Asset changes are listed one by one in the plan and are never
+  destructive. `rt check` verifies every content against its hash.
+
+Reading at runtime:
+
+```go
+r, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice.xsl", "de")
+defer r.Close()
+info := r.Info() // MimeType, Size, ETag(), ModifiedAt, Language
+io.Copy(w, r)    // r is an io.ReadSeeker
+
+fsys, err := k.AssetFS(ctx, "TRFIN", "templates", "de") // io/fs.FS for one language
+tmpl, err := template.ParseFS(fsys, "mail/*.html")
+```
+
+`StatAsset`, `ListAssets`, `AssetExists` and `AssetRepositories` complete the API. Missing
+assets return `rterr.AssetNotFound`, which matches `fs.ErrNotExist`.
 
 ### Data classes
 
@@ -313,6 +377,10 @@ rt setting list
 rt setting show TRFIN_COMPANIES
 rt setting show TRFIN_COMPANIES --json
 rt show data-element:COUNTRY
+rt asset repos
+rt asset list TRFIN templates invoice
+rt asset show TRFIN templates invoice/invoice.xsl
+rt asset get TRFIN templates invoice/invoice.xsl --lang de -o invoice.xsl
 rt tenant create ACME --description "Acme Corp"
 rt tenant delete ACME --yes
 rt uninstall TROTTO --yes
@@ -320,7 +388,7 @@ rt log
 ```
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
-`--description`, `--name`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
+`--description`, `--name`, `--lang`, `-o`, `--max-asset-size`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
 failed and was rolled back, 1 other errors.
 
@@ -348,7 +416,9 @@ Executable code in packages, permissions, user interface, views, indexes beyond 
 data migrations with custom logic, remote package sources, installing from ZIP files (the
 loader already works on `fs.FS`), a data access layer that restricts queries to a tenant,
 reading and writing data through settings, display properties of fields, translation packages
-for objects of other packages, and export or protection of configuration by data class.
+for objects of other packages, export or protection of configuration by data class, serving
+assets over HTTP, assets uploaded at runtime or per tenant, extending asset repositories of
+other packages, references to assets from other objects, compression and image processing.
 
 ## License
 

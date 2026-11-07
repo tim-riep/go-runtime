@@ -27,7 +27,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"slices"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -66,6 +69,13 @@ Commands:
   tenant delete <id>       delete a tenant and all its data (needs --yes)
   setting list             list settings
   setting show <id>        show the resolved definition of a setting (--json for JSON)
+  asset repos [package]    list asset repositories
+  asset list <package> <repository> [folder]
+                           list a folder of an asset repository
+  asset show <package> <repository> <path>
+                           show an asset with its language variants
+  asset get <package> <repository> <path> -o <file> [--lang code]
+                           write an asset to a file, - for standard output
   language add <code>      set up a language (ISO 639-1, --name)
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
@@ -83,6 +93,9 @@ type cli struct {
 	yes            bool
 	description    string
 	name           string
+	lang           string
+	output         string
+	maxAssetSize   int64
 }
 
 func main() {
@@ -99,6 +112,18 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.BoolVar(&c.yes, "yes", false, "confirm deleting data")
 	c.fs.StringVar(&c.description, "description", "", "description of a new tenant")
 	c.fs.StringVar(&c.name, "name", "", "name of a new language (default: English name of the code)")
+	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read")
+	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
+	maxSize := int64(model.DefaultMaxAssetSize)
+	if env := os.Getenv("RT_MAX_ASSET_SIZE"); env != "" {
+		n, err := strconv.ParseInt(env, 10, 64)
+		if err != nil || n <= 0 {
+			fmt.Fprintln(stderr, "error: RT_MAX_ASSET_SIZE must be a positive number of bytes")
+			return exitUsage
+		}
+		maxSize = n
+	}
+	c.fs.Int64Var(&c.maxAssetSize, "max-asset-size", maxSize, "maximum size of one asset in bytes (default $RT_MAX_ASSET_SIZE or 16 MiB)")
 	c.fs.Usage = func() {
 		fmt.Fprint(stderr, usage)
 		c.fs.PrintDefaults()
@@ -123,6 +148,11 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return c.fail(err)
 	}
 	defer k.Close()
+	if c.maxAssetSize <= 0 {
+		fmt.Fprintln(stderr, "error: --max-asset-size must be positive")
+		return exitUsage
+	}
+	k.SetMaxAssetSize(c.maxAssetSize)
 	return c.dispatch(ctx, k, pos[0], pos[1:])
 }
 
@@ -250,6 +280,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.language(ctx, k, args)
 	case "setting":
 		return c.setting(ctx, k, args)
+	case "asset":
+		return c.asset(ctx, k, args)
 	}
 	fmt.Fprintf(c.stderr, "error: unknown command %q\n", cmd)
 	c.fs.Usage()
@@ -536,6 +568,179 @@ func (c *cli) setting(ctx context.Context, k *kernel.Kernel, args []string) int 
 	return exitUsage
 }
 
+func (c *cli) asset(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(c.stderr, "usage: rt asset repos|list|show|get")
+		return exitUsage
+	}
+	switch args[0] {
+	case "repos":
+		if len(args) > 2 {
+			fmt.Fprintln(c.stderr, "usage: rt asset repos [package]")
+			return exitUsage
+		}
+		var pkg model.PackageID
+		if len(args) == 2 {
+			pkg = model.PackageID(args[1])
+		}
+		repos, err := k.AssetRepositories(ctx, pkg)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(repos)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "PACKAGE\tREPOSITORY\tFILES\tFOLDERS\tBYTES\tLABEL")
+		for _, r := range repos {
+			fmt.Fprintf(w, "%s\t%s\t%d\t%d\t%d\t%s\n", r.Package, r.ID, r.Files, r.Folders, r.Size, r.Description[model.DefaultLanguage])
+		}
+		w.Flush()
+		return exitOK
+	case "list":
+		if len(args) != 3 && len(args) != 4 {
+			fmt.Fprintln(c.stderr, "usage: rt asset list <package> <repository> [folder]")
+			return exitUsage
+		}
+		dir := ""
+		if len(args) == 4 {
+			dir = args[3]
+		}
+		list, err := k.ListAssets(ctx, model.PackageID(args[1]), args[2], dir)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "KIND\tPATH\tBYTES\tMEDIA TYPE\tLANGUAGES")
+		for _, a := range list {
+			if a.Folder {
+				fmt.Fprintf(w, "folder\t%s/\t\t\t\n", a.Path)
+				continue
+			}
+			fmt.Fprintf(w, "file\t%s\t%d\t%s\t%s\n", a.Path, a.Size, a.MimeType, strings.Join(a.Variants, ", "))
+		}
+		w.Flush()
+		return exitOK
+	case "show":
+		if !c.need(args[1:], 3, "asset show <package> <repository> <path>") {
+			return exitUsage
+		}
+		return c.showAsset(ctx, k, model.PackageID(args[1]), args[2], args[3])
+	case "get":
+		if !c.need(args[1:], 3, "asset get <package> <repository> <path> -o <file> [--lang code]") {
+			return exitUsage
+		}
+		if c.output == "" {
+			fmt.Fprintln(c.stderr, "error: name the target file with -o, or - for standard output")
+			return exitUsage
+		}
+		r, err := k.OpenAsset(ctx, model.PackageID(args[1]), args[2], args[3], c.lang)
+		if err != nil {
+			return c.fail(err)
+		}
+		defer r.Close()
+		out := c.stdout
+		if c.output != "-" {
+			f, err := os.Create(c.output)
+			if err != nil {
+				return c.fail(err)
+			}
+			defer f.Close()
+			out = f
+		}
+		if _, err := io.Copy(out, r); err != nil {
+			return c.fail(err)
+		}
+		if c.output != "-" {
+			info := r.Info()
+			lang := info.Language
+			if lang == "" {
+				lang = "language-independent"
+			}
+			fmt.Fprintf(c.stderr, "Wrote %d bytes (%s, %s) to %s.\n", info.Size, info.MimeType, lang, c.output)
+		}
+		return exitOK
+	}
+	fmt.Fprintf(c.stderr, "error: unknown asset command %q\n", args[0])
+	return exitUsage
+}
+
+func (c *cli) showAsset(ctx context.Context, k *kernel.Kernel, pkg model.PackageID, repoID, path string) int {
+	info, err := k.StatAsset(ctx, pkg, repoID, path, "")
+	var nf *rterr.AssetNotFound
+	if errors.As(err, &nf) && nf.Path != "" {
+		// Assets with variants only have no version without a language.
+		info, err = k.StatAsset(ctx, pkg, repoID, path, model.DefaultLanguage)
+	}
+	if err != nil {
+		return c.fail(err)
+	}
+	type version struct {
+		Language string `json:"language,omitempty"`
+		Source   string `json:"source"`
+		Size     int64  `json:"size"`
+		SHA256   string `json:"sha256"`
+		Modified string `json:"modifiedAt"`
+	}
+	var versions []version
+	add := func(i *kernel.AssetInfo) {
+		versions = append(versions, version{i.Language, i.Source, i.Size, i.SHA256, i.ModifiedAt.Format("2006-01-02 15:04:05")})
+	}
+	if !info.Folder {
+		if info.HasNeutral {
+			n, err := k.StatAsset(ctx, pkg, repoID, path, "")
+			if err != nil {
+				return c.fail(err)
+			}
+			add(n)
+		}
+		for _, l := range info.Variants {
+			v, err := k.StatAsset(ctx, pkg, repoID, path, l)
+			if err != nil {
+				return c.fail(err)
+			}
+			add(v)
+		}
+	}
+	if c.asJSON {
+		c.json(struct {
+			*kernel.AssetInfo
+			Versions []version `json:"versions,omitempty"`
+		}{info, versions})
+		return exitOK
+	}
+	kind := "Asset"
+	if info.Folder {
+		kind = "Folder"
+	}
+	fmt.Fprintf(c.stdout, "%s %s\n  package %s, repository %s\n", kind, path, pkg, repoID)
+	if !info.Folder {
+		fmt.Fprintf(c.stdout, "  media type %s\n", info.MimeType)
+	}
+	for _, l := range slices.Sorted(maps.Keys(info.Description)) {
+		fmt.Fprintf(c.stdout, "  description (%s) %s\n", l, info.Description[l])
+	}
+	if len(versions) > 0 {
+		fmt.Fprintln(c.stdout)
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "  VERSION\tSOURCE\tBYTES\tSHA-256\tMODIFIED")
+		for _, v := range versions {
+			lang := v.Language
+			if lang == "" {
+				lang = "language-independent"
+			}
+			fmt.Fprintf(w, "  %s\t%s\t%d\t%s\t%s\n", lang, v.Source, v.Size, v.SHA256, v.Modified)
+		}
+		w.Flush()
+	}
+	return exitOK
+}
+
 func joinIDs(ids []model.PackageID) string {
 	s := make([]string, len(ids))
 	for i, id := range ids {
@@ -682,6 +887,7 @@ func (c *cli) fail(err error) int {
 		conf *rterr.ConfirmationRequired
 		ee   *rterr.ExecError
 		ml   *rterr.MissingLanguages
+		anf  *rterr.AssetNotFound
 	)
 	switch {
 	case errors.As(err, &dc):
@@ -690,6 +896,8 @@ func (c *cli) fail(err error) int {
 	case errors.As(err, &conf):
 		fmt.Fprintln(c.stderr, "hint: rerun with --yes, or with --dry-run to see the plan")
 		return exitNeedsPermit
+	case errors.As(err, &anf):
+		return exitError
 	case errors.As(err, &ml):
 		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
 		return exitInvalid
