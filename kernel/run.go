@@ -127,6 +127,10 @@ func (x *execution) finish(failure error) error {
 	var errs []error
 	for _, s := range x.sessions {
 		switch {
+		case x.test:
+			if err := s.discard(ctx); err != nil {
+				errs = append(errs, err)
+			}
 		case s.n == 1 && failure == nil && x.opts.End == CommitOnSuccess:
 			if err := s.Commit(ctx); err != nil {
 				errs = append(errs, fmt.Errorf("commit at the end of the execution: %w", err))

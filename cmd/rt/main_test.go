@@ -158,13 +158,6 @@ func TestLanguageCommands(t *testing.T) {
 	}{
 		{[]string{"fmt", "--check", dir}, exitOK, ""},
 		{[]string{"build", dir}, exitOK, "include /TRORDER/AUDIT does not exist and is skipped"},
-		{[]string{"test", dir}, exitOK, "3 tests, 3 passed, 0 failed"},
-		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]`}, exitOK, `"A1": "HIGH"`},
-		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "TO_ROWS", `[[{"ID":"A1","AMOUNT":"1","NOTE":"","PAID":false}]]`}, exitOK, `"NOTE": "",
-    "COUPON": null`},
-		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A3","AMOUNT":"-1","PAID":false}]]`}, exitError, "/TRORDER/CHECKS included from src/ORDER_RATING.class"},
-		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE"}, exitError, "no public static method RATE"},
-		{[]string{"run", dir, "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"","AMOUNT":"1","PAID":false}]]`}, exitError, "does not allow the empty string"},
 	} {
 		var out, errOut bytes.Buffer
 		code := run(context.Background(), s.args, &out, &errOut)
@@ -173,7 +166,7 @@ func TestLanguageCommands(t *testing.T) {
 			t.Errorf("rt %s: exit %d (want %d):\n%s", strings.Join(s.args, " "), code, s.code, all)
 		}
 	}
-	// The kernel installs the package; its sources are not stored yet.
+	// The kernel installs the package and runs its code for a tenant.
 	db := testutil.Databases(t)[0]
 	var out, errOut bytes.Buffer
 	if code := run(context.Background(), []string{"--db", db.DSN, "init"}, &out, &errOut); code != exitOK {
@@ -184,5 +177,32 @@ func TestLanguageCommands(t *testing.T) {
 	}
 	if code := run(context.Background(), []string{"--db", db.DSN, "install", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "/TRORDER/ORDERS") {
 		t.Fatalf("install: %d %s %s", code, out.String(), errOut.String())
+	}
+	if code := run(context.Background(), []string{"--db", db.DSN, "tenant", "create", "ACME"}, &out, &errOut); code != exitOK {
+		t.Fatalf("tenant: %s", errOut.String())
+	}
+	for _, s := range []struct {
+		args     []string
+		code     int
+		contains string
+	}{
+		{[]string{"test", dir}, exitOK, "3 tests, 3 passed, 0 failed"},
+		{[]string{"test", "TRORDER"}, exitOK, "3 tests, 3 passed, 0 failed"},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"A1": "HIGH"`},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "TO_ROWS", `[[{"ID":"A1","AMOUNT":"1","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"NOTE": "",
+    "COUPON": null`},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A3","AMOUNT":"-1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "/TRORDER/CHECKS included from src/ORDER_RATING.class"},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE", "--tenant", "ACME"}, exitError, "no public static method RATE"},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"","AMOUNT":"1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "does not allow the empty string"},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", "[[]]"}, exitUsage, "--tenant"},
+		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", "[[]]", "--tenant", "NOBODY"}, exitError, "tenant NOBODY not found"},
+		{[]string{"run", "TRFIN", "/TRFIN/X", "Y", "--tenant", "ACME"}, exitError, "package TRFIN not found"},
+	} {
+		var out, errOut bytes.Buffer
+		code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
+		all := out.String() + errOut.String()
+		if code != s.code || !strings.Contains(all, s.contains) {
+			t.Errorf("rt %s: exit %d (want %d):\n%s", strings.Join(s.args, " "), code, s.code, all)
+		}
 	}
 }

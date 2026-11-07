@@ -18,18 +18,23 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
+	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/testrun"
 	"github.com/tim-riep/go-runtime/lang/types"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
 
@@ -47,17 +52,6 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 			return exitUsage, true
 		}
 		return c.build(args[0]), true
-	case "test":
-		if !c.need(args, 1, "test <package directory>") {
-			return exitUsage, true
-		}
-		return c.test(ctx, args[0]), true
-	case "run":
-		if len(args) != 3 && len(args) != 4 {
-			fmt.Fprintln(c.stderr, "usage: rt run <package directory> <class> <method> [arguments as JSON array]")
-			return exitUsage, true
-		}
-		return c.run(ctx, args), true
 	}
 	return 0, false
 }
@@ -173,16 +167,20 @@ func (c *cli) build(dir string) int {
 	return exitOK
 }
 
-// run calls a public static method of a package and prints its result as
-// JSON.
-func (c *cli) run(ctx context.Context, args []string) int {
-	r, code := c.compile(args[0])
-	if r == nil {
-		return code
-	}
-	image, err := r.Image(false)
+// run calls a public static method of an installed package for a tenant
+// and prints its result as JSON.
+func (c *cli) run(ctx context.Context, k *kernel.Kernel, args []string) int {
+	pkg, class := args[0], args[1]
+	installed, err := k.Packages(ctx)
 	if err != nil {
 		return c.fail(err)
+	}
+	if !slices.ContainsFunc(installed, func(p *model.PackageInfo) bool { return string(p.Manifest.ID) == pkg }) {
+		return c.fail(&rterr.NotFound{Kind: "package", Name: pkg})
+	}
+	if !strings.HasPrefix(class, "/"+pkg+"/") {
+		fmt.Fprintf(c.stderr, "error: %s is not a class of package %s\n", class, pkg)
+		return exitUsage
 	}
 	var list []json.RawMessage
 	if len(args) == 4 {
@@ -191,12 +189,13 @@ func (c *cli) run(ctx context.Context, args []string) int {
 			return exitUsage
 		}
 	}
-	m, err := vm.New(image, vm.Options{Log: logWriter{c.stderr}})
+	opts := kernel.ExecOptions{Tenant: c.tenantID, Language: c.lang, VM: vm.Options{Log: logWriter{c.stderr}}}
+	out, err := k.Run(ctx, opts, class, args[2], list)
 	if err != nil {
-		return c.fail(err)
-	}
-	out, err := m.CallJSON(ctx, args[1], args[2], list)
-	if err != nil {
+		var nf *rterr.NotFound
+		if errors.As(err, &nf) {
+			return c.fail(err)
+		}
 		fmt.Fprintf(c.stderr, "error: %v\n", err)
 		return exitError
 	}
@@ -213,17 +212,19 @@ type logWriter struct{ w io.Writer }
 
 func (l logWriter) Log(level, text string) { fmt.Fprintf(l.w, "%s: %s\n", level, text) }
 
-// test runs the test classes of a package.
-func (c *cli) test(ctx context.Context, dir string) int {
-	r, code := c.compile(dir)
-	if r == nil {
-		return code
+// test runs the test classes of an installed package or of a package
+// directory.
+func (c *cli) test(ctx context.Context, k *kernel.Kernel, target string) int {
+	var dir *model.Package
+	id := model.PackageID(target)
+	if st, err := os.Stat(target); err == nil && st.IsDir() {
+		pkg, err := kernel.LoadDir(target)
+		if err != nil {
+			return c.fail(err)
+		}
+		dir = pkg
 	}
-	image, err := r.Image(true)
-	if err != nil {
-		return c.fail(err)
-	}
-	results, err := testrun.Run(ctx, image, string(r.Package.Manifest.ID), vm.Options{})
+	results, err := k.Test(ctx, id, dir, kernel.ExecOptions{})
 	if err != nil {
 		return c.fail(err)
 	}

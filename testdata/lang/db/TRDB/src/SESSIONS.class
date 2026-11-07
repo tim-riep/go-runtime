@@ -1,0 +1,106 @@
+# Several sessions of one execution, called by the kernel tests.
+public class /TRDB/SESSIONS
+
+  # The log session commits its row while the default session rolls back.
+  public static method LOG_AND_FAIL(id: STRING) raises /TRDB/MISSING
+    var audit = open session
+    var entry: /TRDB/ITEMS
+    entry.ITEM_ID = id
+    entry.NAME = "log"
+    insert entry using audit
+    commit audit
+    /TRDB/STORE.ADD(id + "X", "lost", 1.00)
+    raise /TRDB/MISSING with id
+  end
+
+  # A second session that is not committed is rolled back at the end.
+  public static method FORGET(id: STRING)
+    var other = open session
+    var entry: /TRDB/ITEMS
+    entry.ITEM_ID = id
+    entry.NAME = "forgotten"
+    insert entry using other
+  end
+
+  # Reads of another session see only committed rows.
+  public static method ISOLATED(id: STRING) returns STRING
+    /TRDB/STORE.ADD(id, "uncommitted", 1.00)
+    var other = open session
+    var seen = select count from /TRDB/ITEMS where ITEM_ID = id using other
+    commit
+    var later = select count from /TRDB/ITEMS where ITEM_ID = id using other
+    return "{seen} {later}"
+  end
+
+  # The second session waits for the lock of the first one.
+  public static method SELF_BLOCK(id: STRING) returns STRING
+    /TRDB/STORE.ADD(id, "first", 1.00)
+    commit
+    update /TRDB/ITEMS set NAME = "locked" where ITEM_ID = id
+    var other = open session
+    try
+      update /TRDB/ITEMS set NAME = "second" where ITEM_ID = id using other
+    catch e: /RT/LOCK_TIMEOUT
+      return "lock timeout"
+    catch e: /RT/SESSION_ERROR
+      return "session error"
+    end
+    return "updated"
+  end
+
+  # Two sessions write one after the other.
+  public static method ONE_AFTER_THE_OTHER(a: STRING, b: STRING)
+    /TRDB/STORE.ADD(a, "first", 1.00)
+    commit
+    var other = open session
+    var entry: /TRDB/ITEMS
+    entry.ITEM_ID = b
+    entry.NAME = "second"
+    insert entry using other
+    commit other
+  end
+
+  public static method TOO_MANY() returns INT4
+    var a = open session
+    var b = open session
+    var c = open session
+    var d = open session
+    return 4
+  end
+
+  public static method COMMIT_DEFAULT()
+    commit
+  end
+
+  # commit inside a called method while a cursor of the session is open.
+  public static method COMMIT_IN_LOOP() returns STRING
+    try
+      for item in select from /TRDB/ITEMS
+        COMMIT_DEFAULT()
+      end
+    catch e: /RT/SESSION_ERROR
+      return "session error"
+    end
+    return "committed"
+  end
+
+  # commit of another session inside a loop is allowed.
+  public static method COMMIT_OTHER_IN_LOOP() returns INT8
+    var other = open session
+    var n = 0
+    for item in select from /TRDB/ITEMS
+      n = n + 1
+      commit other
+    end
+    return n
+  end
+
+  public static method PASS_ON(s: SESSION) returns INT8
+    return select count from /TRDB/ITEMS using s
+  end
+
+  public static method WITH_PARAMETER() returns INT8
+    return PASS_ON(open session)
+  end
+
+end

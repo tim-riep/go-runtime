@@ -21,9 +21,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/lang/testrun"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
@@ -185,5 +187,113 @@ func TestTransactions(t *testing.T) {
 		// commit is allowed after it.
 		expectCall(t, k, "ACME", S, "EXCEPTION_IN_LOOP", "1")
 		expectCall(t, k, "ACME", S, "BREAK_IN_LOOP", "1")
+	})
+}
+
+// TestSessions checks several sessions of one execution.
+func TestSessions(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		dbKernel(t, k)
+		const S, X = "/TRDB/SESSIONS", "/TRDB/STORE"
+		sqlite := k.Dialect().Name() == "sqlite"
+		opts := kernel.ExecOptions{Tenant: "ACME", LockTimeout: 300 * time.Millisecond}
+
+		// A log session commits while the default session rolls back.
+		_, err := call(k, opts, S, "LOG_AND_FAIL", `"G"`)
+		if exceptionClass(err) != "/TRDB/MISSING" {
+			t.Fatalf("LOG_AND_FAIL: %v", err)
+		}
+		if mustCall(t, k, "ACME", X, "GET", `"G"`) == "null" {
+			t.Error("the row of the log session was not committed")
+		}
+		expectCall(t, k, "ACME", X, "GET", "null", `"GX"`)
+
+		// Sessions without commit are rolled back with a warning.
+		rec := &vm.LogRecorder{}
+		o := opts
+		o.VM.Log = rec
+		if _, err := call(k, o, S, "FORGET", `"H"`); err != nil {
+			t.Fatal(err)
+		}
+		expectCall(t, k, "ACME", X, "GET", "null", `"H"`)
+		if len(rec.Entries) != 1 || rec.Entries[0].Level != "warning" || rec.Entries[0].Text != "session 2 rolled back at the end of the execution" {
+			t.Errorf("log = %v", rec.Entries)
+		}
+
+		// Another session sees committed rows only. A read transaction of
+		// SQLite keeps its snapshot; PostgreSQL reads committed rows.
+		want := `"0 1"`
+		if sqlite {
+			want = `"0 0"`
+		}
+		if got, err := call(k, opts, S, "ISOLATED", `"I"`); err != nil || got != want {
+			t.Errorf("ISOLATED = %s, %v; want %s", got, err, want)
+		}
+
+		// A session that waits for a lock of another session of the same
+		// execution: a lock timeout on PostgreSQL, at once a session error
+		// on SQLite, which has only one writing transaction.
+		want = `"lock timeout"`
+		if sqlite {
+			want = `"session error"`
+		}
+		if got, err := call(k, opts, S, "SELF_BLOCK", `"J"`); err != nil || got != want {
+			t.Errorf("SELF_BLOCK = %s, %v; want %s", got, err, want)
+		}
+		if _, err := call(k, opts, S, "ONE_AFTER_THE_OTHER", `"M"`, `"N"`); err != nil {
+			t.Fatal(err)
+		}
+		for _, id := range []string{`"M"`, `"N"`} {
+			if mustCall(t, k, "ACME", X, "GET", id) == "null" {
+				t.Errorf("%s missing", id)
+			}
+		}
+
+		_, err = call(k, opts, S, "TOO_MANY")
+		if exceptionClass(err) != "/RT/SESSION_ERROR" {
+			t.Errorf("TOO_MANY: %v", err)
+		}
+		expectCall(t, k, "ACME", S, "COMMIT_IN_LOOP", `"session error"`)
+		n := mustCall(t, k, "ACME", X, "COUNT")
+		expectCall(t, k, "ACME", S, "COMMIT_OTHER_IN_LOOP", n)
+		expectCall(t, k, "ACME", S, "WITH_PARAMETER", n)
+	})
+}
+
+// TestTestIsolation runs test methods that write rows: each runs in a
+// tenant of its own, and nothing they do stays.
+func TestTestIsolation(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		dbKernel(t, k)
+		ctx := context.Background()
+		check := func(results []testrun.Result) {
+			t.Helper()
+			got := map[string]bool{}
+			for _, r := range results {
+				got[r.Method] = r.Passed
+			}
+			if len(results) != 3 || !got["ADDS_AND_COMMITS"] || !got["STARTS_EMPTY"] || got["FAILS"] {
+				t.Errorf("results = %+v", results)
+			}
+		}
+		results, err := k.Test(ctx, "TRDB", nil, kernel.ExecOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		check(results)
+		// The same tests from the directory, compiled but not installed.
+		results, err = k.Test(ctx, "", dbpkg(t, "TRDB"), kernel.ExecOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		check(results)
+		tenants, err := k.Tenants().List(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(tenants) != 2 {
+			t.Errorf("test tenants were not deleted: %v", tenants)
+		}
+		expectCall(t, k, "ACME", "/TRDB/STORE", "COUNT", "0")
 	})
 }

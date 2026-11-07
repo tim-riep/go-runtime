@@ -37,6 +37,10 @@ type execution struct {
 	tenant   string
 	opts     ExecOptions
 	sessions []*session
+	// test runs the execution for a test method: commit only sets a
+	// savepoint that rollback returns to, and everything is rolled back
+	// at the end.
+	test bool
 }
 
 // session is a database session: its own connection and a transaction
@@ -48,6 +52,7 @@ type session struct {
 	open    bool // a transaction is running
 	written bool // the transaction changed rows
 	cursors int  // cursors declared, for their names
+	saved   bool // a commit of a test set the savepoint rt_committed
 	after   []func()
 }
 
@@ -272,6 +277,14 @@ func (s *session) Commit(ctx context.Context) error {
 		s.runAfter()
 		return nil
 	}
+	if s.x.test {
+		if _, err := s.conn.ExecContext(ctx, "SAVEPOINT rt_committed"); err != nil {
+			return err
+		}
+		s.saved = true
+		s.runAfter()
+		return nil
+	}
 	if _, err := s.conn.ExecContext(ctx, "COMMIT"); err != nil {
 		s.end(ctx)
 		return s.x.classify(err)
@@ -294,8 +307,23 @@ func (s *session) Rollback(ctx context.Context) error {
 	if !s.open {
 		return nil
 	}
+	if s.x.test && s.saved {
+		_, err := s.conn.ExecContext(ctx, "ROLLBACK TO SAVEPOINT rt_committed")
+		return err
+	}
 	_, err := s.conn.ExecContext(ctx, "ROLLBACK")
 	s.open, s.written = false, false
+	return err
+}
+
+// discard rolls back everything at the end of a test.
+func (s *session) discard(ctx context.Context) error {
+	s.after = nil
+	if !s.open {
+		return nil
+	}
+	_, err := s.conn.ExecContext(ctx, "ROLLBACK")
+	s.open, s.written, s.saved = false, false, false
 	return err
 }
 

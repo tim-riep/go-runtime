@@ -81,13 +81,17 @@ Commands:
   language add <code>      set up a language (ISO 639-1, --name)
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
+  run <package> <class> <method> [json] --tenant <id> [--lang code]
+                           call a public static method of an installed package for a
+                           tenant; arguments and result are JSON
+  test <package|dir>       run the test classes of an installed package, or of a package
+                           directory compiled against the installed packages; every test
+                           method runs in a tenant of its own and nothing it writes stays
 
 Commands for source files (no database needed):
   fmt [path...]            format source files in canonical form (--check only lists them)
-  build <dir>              compile the sources of a package directory and show diagnostics
-  test <dir>               run the test classes of a package
-  run <dir> <class> <method> [json]
-                           call a public static method; arguments and result are JSON
+  build <dir>              compile the sources of a package directory and show diagnostics;
+                           required packages come from sibling directories
 
 Flags (anywhere on the command line):
 `
@@ -103,6 +107,7 @@ type cli struct {
 	description    string
 	name           string
 	lang           string
+	tenantID       string
 	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
@@ -123,7 +128,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.BoolVar(&c.yes, "yes", false, "confirm deleting data")
 	c.fs.StringVar(&c.description, "description", "", "description of a new tenant")
 	c.fs.StringVar(&c.name, "name", "", "name of a new language (default: English name of the code)")
-	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read")
+	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read, or of texts in run")
+	c.fs.StringVar(&c.tenantID, "tenant", "", "run: the tenant whose data the code reads and writes")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	maxSize := int64(model.DefaultMaxAssetSize)
@@ -203,6 +209,17 @@ func (c *cli) opts() kernel.Options {
 
 func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args []string) int {
 	switch cmd {
+	case "run":
+		if (len(args) != 3 && len(args) != 4) || c.tenantID == "" {
+			fmt.Fprintln(c.stderr, "usage: rt run <package> <class> <method> [arguments as JSON array] --tenant <id> [--lang code]")
+			return exitUsage
+		}
+		return c.run(ctx, k, args)
+	case "test":
+		if !c.need(args, 1, "test <package|directory>") {
+			return exitUsage
+		}
+		return c.test(ctx, k, args[0])
 	case "init":
 		if !c.need(args, 0, "init") {
 			return exitUsage

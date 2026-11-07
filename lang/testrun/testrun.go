@@ -42,6 +42,19 @@ type Result struct {
 // Run runs all test methods of the test classes of a package in an image,
 // in the order of classes and methods.
 func Run(ctx context.Context, image *vm.Image, pkg string, opts vm.Options) ([]Result, error) {
+	return RunEach(ctx, image, pkg, opts, nil)
+}
+
+// Wrap prepares the execution of one test method, such as its database
+// access, and calls run with the options for its machine.
+type Wrap func(ctx context.Context, opts vm.Options, run func(vm.Options) error) error
+
+// RunEach is Run with a wrap around every test method; nil runs them
+// directly.
+func RunEach(ctx context.Context, image *vm.Image, pkg string, opts vm.Options, wrap Wrap) ([]Result, error) {
+	if wrap == nil {
+		wrap = func(_ context.Context, o vm.Options, run func(vm.Options) error) error { return run(o) }
+	}
 	pr := image.Program(pkg)
 	if pr == nil {
 		return nil, errors.New("testrun: the image has no package " + pkg)
@@ -63,10 +76,13 @@ func Run(ctx context.Context, image *vm.Image, pkg string, opts vm.Options) ([]R
 			o.Log = rec
 			r := Result{Class: c.Name, Method: m.Name}
 			start := time.Now()
-			mach, err := vm.New(image, o)
-			if err == nil {
-				err = mach.CallMethod(ctx, c.Name, m.Name)
-			}
+			err := wrap(ctx, o, func(o vm.Options) error {
+				mach, err := vm.New(image, o)
+				if err != nil {
+					return err
+				}
+				return mach.CallMethod(ctx, c.Name, m.Name)
+			})
 			r.Duration = time.Since(start)
 			r.Log = rec.Entries
 			var e *vm.Exception
