@@ -114,6 +114,36 @@ func (c DataClass) IsConfiguration() bool { return c == Configuration || c == Ru
 type FixedValue struct {
 	Value       string           `json:"value"` // canonical text form
 	Description Optional[string] `json:"description"`
+	// Name is the name of the value in code. Without it, the value itself
+	// is the name if it has the form of a member name.
+	Name Optional[string] `json:"name"`
+}
+
+// CodeName returns the name of the value in code and whether it has one.
+func (v FixedValue) CodeName() (string, bool) {
+	if n, ok := v.Name.Get(); ok {
+		return n, true
+	}
+	if IsMemberName(v.Value) {
+		return v.Value, true
+	}
+	return "", false
+}
+
+// IsMemberName reports whether s has the form of a member name in code:
+// an upper-case letter followed by upper-case letters, digits and
+// underscores.
+func IsMemberName(s string) bool {
+	if s == "" || s[0] < 'A' || s[0] > 'Z' {
+		return false
+	}
+	for i := 1; i < len(s); i++ {
+		c := s[i]
+		if !(c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // Domain describes a technical type.
@@ -316,6 +346,27 @@ type Manifest struct {
 	Version     string           `json:"version"`
 	Description Optional[string] `json:"description"`
 	Requires    []Dependency     `json:"requires,omitempty"`
+	// LanguageVersion is the version of the language of the source files
+	// in src/; 0 when the package has none.
+	LanguageVersion int `json:"languageVersion,omitempty"`
+}
+
+// SourceKind is the kind of a source file, given by its extension.
+type SourceKind string
+
+// Source kinds.
+const (
+	SourceClass     SourceKind = "class"     // classes, exception classes and test classes
+	SourceInterface SourceKind = "interface" // interfaces
+	SourceInclude   SourceKind = "include"   // members and statements includes
+)
+
+// Source is a source file of a package below src/.
+type Source struct {
+	Name string // the global name the file defines
+	Kind SourceKind
+	File string // path in the package, e.g. src/ORDER_RATING.class
+	Text string
 }
 
 // Package is a loaded package.
@@ -331,6 +382,7 @@ type Package struct {
 	Structures          []Structure
 	ArrayTypes          []ArrayType
 	StructureExtensions []StructureExtension
+	Sources             []Source
 	Origin              string // where the package was loaded from
 }
 

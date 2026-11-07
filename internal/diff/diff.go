@@ -295,6 +295,10 @@ func compareDomains(c, w *model.Domain) (detail string, destructive, changed boo
 			destructive = true
 		}
 	}
+	if valueNames(c) != valueNames(w) {
+		changed = true
+		parts = append(parts, "value names")
+	}
 	return strings.Join(parts, "; "), destructive, changed
 }
 
@@ -319,6 +323,15 @@ func valueChanges(c, w *model.Domain) (added, removed []string) {
 		}
 	}
 	return added, removed
+}
+
+// valueNames returns the code names of the fixed values for comparison.
+func valueNames(d *model.Domain) string {
+	var parts []string
+	for _, v := range d.Values {
+		parts = append(parts, v.Value+"="+v.Name.Or(""))
+	}
+	return strings.Join(parts, "\x00")
 }
 
 // restricts reports whether the fixed values of w reject a value that c

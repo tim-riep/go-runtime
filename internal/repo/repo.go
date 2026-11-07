@@ -376,13 +376,13 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 			Type: model.BaseType(str(d["BASE_TYPE"])), Length: num(d["LENGTH"]), Decimals: num(d["DECIMALS"]),
 			Default: readDefault(d["DEFAULT_KIND"], d["DEFAULT_VALUE"]), AllowEmpty: optBool(d["ALLOW_EMPTY"])}
 	}
-	vals, err := r.selectRows(ctx, q, TDomainValues, []string{"DOMAIN_NAME", "VALUE", "DESCRIPTION"}, "DOMAIN_NAME", "POSITION")
+	vals, err := r.selectRows(ctx, q, TDomainValues, []string{"DOMAIN_NAME", "VALUE", "DESCRIPTION", "VALUE_NAME"}, "DOMAIN_NAME", "POSITION")
 	if err != nil {
 		return nil, err
 	}
 	for _, v := range vals {
 		if d := s.Domains[str(v["DOMAIN_NAME"])]; d != nil {
-			d.Values = append(d.Values, model.FixedValue{Value: str(v["VALUE"]), Description: opt(v["DESCRIPTION"])})
+			d.Values = append(d.Values, model.FixedValue{Value: str(v["VALUE"]), Description: opt(v["DESCRIPTION"]), Name: opt(v["VALUE_NAME"])})
 		}
 	}
 
@@ -685,7 +685,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			return err
 		}
 		for i, v := range d.Values {
-			if err := r.insert(ctx, q, TDomainValues, row{"DOMAIN_NAME": name, "POSITION": int64(i + 1), "VALUE": v.Value, "DESCRIPTION": val(v.Description)}); err != nil {
+			if err := r.insert(ctx, q, TDomainValues, row{"DOMAIN_NAME": name, "POSITION": int64(i + 1), "VALUE": v.Value, "DESCRIPTION": val(v.Description), "VALUE_NAME": val(v.Name)}); err != nil {
 				return err
 			}
 		}

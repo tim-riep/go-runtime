@@ -40,6 +40,11 @@
           }
         }
       }
+    },
+    "languageVersion": {
+      "description": "Version of the language of the source files in src/. Required when the package has source files.",
+      "type": "integer",
+      "minimum": 1
     }
   }
 }

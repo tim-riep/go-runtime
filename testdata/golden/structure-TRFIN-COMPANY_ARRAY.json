@@ -307,15 +307,18 @@
               "fixedValues": [
                 {
                   "value": "ACTIVE",
-                  "description": "Active"
+                  "description": "Active",
+                  "name": null
                 },
                 {
                   "value": "BLOCKED",
-                  "description": "Blocked for postings"
+                  "description": "Blocked for postings",
+                  "name": null
                 },
                 {
                   "value": "CLOSED",
-                  "description": "Closed"
+                  "description": "Closed",
+                  "name": null
                 }
               ],
               "allowEmpty": true,

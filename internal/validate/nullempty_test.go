@@ -105,3 +105,10 @@ func TestEmptyDefaultContradictsAllowEmpty(t *testing.T) {
 	e.fin.Tables[0].Fields[2].DefaultJSON = json.RawMessage(`""`) // BANK_ACCOUNTS.IBAN
 	expect(t, e.schema(t), rterr.CodeDefault, "does not allow")
 }
+
+func TestFixedValueNames(t *testing.T) {
+	e := load(t)
+	d := domainOf(e.fin, "/TRFIN/COMPANY_STATUS") // ACTIVE, BLOCKED, CLOSED
+	d.Values[2].Name = model.Some("ACTIVE")
+	expect(t, e.schema(t), rterr.CodeFixedValue, `fixed values "ACTIVE" and "CLOSED" have the same name ACTIVE in code`)
+}

@@ -1,0 +1,25 @@
+{
+  "name": "/RT/ASSET_BLOBS",
+  "description": "Stored contents, addressed by their hash and stored once",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256"
+    },
+    {
+      "name": "SIZE",
+      "domain": "/RT/BYTE_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "CHUNKS",
+      "domain": "/RT/LENGTH",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SHA256"
+  ]
+}

@@ -1,0 +1,35 @@
+# Bewertet Bestellungen und summiert offene Beträge
+public class /TRFIN/ORDER_RATING
+
+  public constant LIMIT: DEC(15,2) = 1000.00
+
+  private attribute HISTORY: array of /TRFIN/ORDER_INFO
+
+  public method RATE(order: /TRFIN/ORDER_INFO) returns /TRFIN/RATING raises /TRFIN/INVALID_ORDER
+    if order.AMOUNT < 0
+      raise /TRFIN/INVALID_ORDER with order.ID
+    end
+
+    var note = order.NOTE default ""
+    if order.COUPON is not null and not (order.COUPON is empty)
+      note = "{note} coupon {order.COUPON}"
+    end
+
+    HISTORY.APPEND(order)
+    if order.AMOUNT > LIMIT
+      return /TRFIN/RATING.HIGH
+    end
+    return /TRFIN/RATING.NORMAL
+  end
+
+  public method OPEN_TOTAL() returns DEC(15,2)
+    var total: DEC(15,2) = 0
+    for info in HISTORY.FILTER(function (o: /TRFIN/ORDER_INFO) returns BOOL
+      return not o.PAID
+    end)
+      total = total + info.AMOUNT
+    end
+    return total
+  end
+
+end

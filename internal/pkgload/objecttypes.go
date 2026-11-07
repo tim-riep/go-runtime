@@ -29,6 +29,8 @@ import (
 type NameRef struct {
 	Name    string
 	Pointer string
+	// Line and Column locate names in source files instead of Pointer.
+	Line, Column int
 }
 
 // ObjectType describes how the loader reads the files of one kind of
@@ -44,8 +46,11 @@ type ObjectType struct {
 	// Content reports whether a path is a plain file that belongs to an
 	// object of this type, such as an asset. Nil means the type has none.
 	Content func(p string) bool
-	// Schema is the JSON Schema file of the documents.
+	// Schema is the JSON Schema file of JSON documents.
 	Schema string
+	// Parse reads a source file instead of a JSON document. A type has
+	// either Schema or Parse.
+	Parse func(file string, data []byte) (any, []*rterr.ValidationError)
 	// NewDoc returns the value a document is decoded into.
 	NewDoc func() any
 	// FileName returns the file name a document must have, if any.
@@ -67,7 +72,8 @@ var objectTypes []ObjectType
 // register adds an object type. It panics if the type cannot take part in
 // the namespace check.
 func register(t ObjectType) {
-	if t.Kind == "" || t.Document == nil || t.Schema == "" || t.NewDoc == nil || t.Definitions == nil || t.References == nil || t.Build == nil {
+	if t.Kind == "" || t.Document == nil || (t.Schema == "") == (t.Parse == nil) || t.Schema != "" && t.NewDoc == nil ||
+		t.Definitions == nil || t.References == nil || t.Build == nil {
 		panic(fmt.Sprintf("pkgload: object type %q is incomplete; Definitions and References are required for the namespace check", t.Kind))
 	}
 	objectTypes = append(objectTypes, t)
@@ -126,14 +132,22 @@ func (l *loader) checkNamespaces(docs []loadedDoc, requires []model.Dependency) 
 	}
 	for _, d := range docs {
 		loc := l.loc(d.file)
+		at := func(n NameRef) rterr.Location {
+			if n.Line > 0 {
+				l := loc
+				l.Line, l.Column = n.Line, n.Column
+				return l
+			}
+			return loc.At(n.Pointer)
+		}
 		for _, n := range d.typ.Definitions(d.doc) {
 			if !strings.HasPrefix(n.Name, own) {
-				l.errs = append(l.errs, &rterr.NamespaceViolation{Location: loc.At(n.Pointer), Name: n.Name, Expected: []string{own}})
+				l.errs = append(l.errs, &rterr.NamespaceViolation{Location: at(n), Name: n.Name, Expected: []string{own}})
 			}
 		}
 		for _, n := range d.typ.References(d.doc) {
 			if !slices.ContainsFunc(allowed, func(ns string) bool { return strings.HasPrefix(n.Name, ns) }) {
-				l.errs = append(l.errs, &rterr.NamespaceViolation{Location: loc.At(n.Pointer), Name: n.Name, Expected: allowed, Reference: true})
+				l.errs = append(l.errs, &rterr.NamespaceViolation{Location: at(n), Name: n.Name, Expected: allowed, Reference: true})
 			}
 		}
 	}

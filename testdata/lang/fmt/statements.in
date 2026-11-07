@@ -1,0 +1,5 @@
+statements include /TRFIN/LOG_STEP
+  # uses the variable step of the including block
+  log info "step {step}"
+  step = step + 1
+end

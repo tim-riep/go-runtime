@@ -1,0 +1,57 @@
+#header comment
+#   indented header
+
+public class /TRFIN/COMMENTS implements /TRFIN/A, /TRFIN/B   # after class line
+  # before first member
+  public constant LIMIT: DEC(15,2) = 1000.00  # after constant
+  public constant OTHER: INT4 =    # after equals
+      42
+  # between members
+
+
+  private attribute LIST: array of INT4? # trailing
+  public method RUN(a: INT4,  # after first param
+       b: STRING) returns INT4 raises /TRFIN/E  # after signature
+    # first statement comment
+    var x = a +   # after plus
+        # own line in expression
+        1
+    var y = [1,   # in array
+      2,
+      3
+    ]
+    if x > 1  # after if
+      # inside if
+      x = 1
+      # before elseif
+    elseif x < 0   # after elseif
+      x = 2
+    # before else
+    else  # after else
+      x = 3
+      # before end of if
+    end   # after end
+    try   # after try
+      FOO(x)
+    # before catch
+    catch e: /TRFIN/E  # after catch
+      log warning "failed {e.TEXT}"
+    finally # after finally
+      x = 0
+    end
+    for i in LIST.FILTER(function (v: INT4?) returns BOOL # after function head
+      # inside closure
+      return v is not null
+      # before closure end
+    end)  # after closure end
+      x = x + 1
+    end
+    return MAX(x,
+        y.LENGTH()  # inside call
+    )
+    # last comment in method
+  end
+  # before class end
+end
+# footer comment
+

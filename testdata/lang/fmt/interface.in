@@ -1,0 +1,6 @@
+# Something that rates
+public interface /TRFIN/RATER extends /TRFIN/BASE
+  # rates one order
+  method RATE(o: /TRFIN/ORDER_INFO) returns /TRFIN/RATING raises /TRFIN/INVALID_ORDER
+  method RESET()   # no result
+end

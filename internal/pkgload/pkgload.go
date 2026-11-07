@@ -67,6 +67,7 @@ const (
 	StructuresDir          = "schema/structures"
 	ArrayTypesDir          = "schema/array-types"
 	StructureExtensionsDir = "schema/structure-extensions"
+	SourceDir              = "src"
 )
 
 // Options control loading.
@@ -116,6 +117,7 @@ type manifestDoc struct {
 		ID      string                 `json:"id"`
 		Version model.Optional[string] `json:"version"`
 	} `json:"requires"`
+	LanguageVersion int `json:"languageVersion"`
 }
 
 type fieldDoc struct {
@@ -148,6 +150,7 @@ type domainDoc struct {
 	Values      []struct {
 		Value       json.RawMessage        `json:"value"`
 		Description model.Optional[string] `json:"description"`
+		Name        model.Optional[string] `json:"name"`
 	} `json:"values"`
 }
 
@@ -203,7 +206,7 @@ func (l *loader) load() *model.Package {
 	if m.ID == model.KernelPackageID && !l.opts.Kernel {
 		l.fail(rterr.CodeName, l.loc(ManifestFile).At("/id"), "package ID %s is reserved for the kernel", m.ID)
 	}
-	pkg.Manifest = model.Manifest{ID: model.PackageID(m.ID), Version: m.Version, Description: m.Description}
+	pkg.Manifest = model.Manifest{ID: model.PackageID(m.ID), Version: m.Version, Description: m.Description, LanguageVersion: m.LanguageVersion}
 	if l.opts.Kernel {
 		pkg.Manifest.ID = model.Kernel
 	}
@@ -231,6 +234,10 @@ func (l *loader) load() *model.Package {
 			l.fail(rterr.CodeAsset, l.loc(p), "files directly below assets/ are not allowed; every folder below assets/ is an asset repository")
 		case t == nil:
 			l.fail(rterr.CodeFile, l.loc(p), "the file does not belong to any known object type")
+		case isDoc && t.Parse != nil:
+			if doc, ok := l.readSource(t, p); ok {
+				docs = append(docs, loadedDoc{typ: t, file: p, doc: doc})
+			}
 		case isDoc:
 			doc := t.NewDoc()
 			if l.readDoc(p, t.Schema, doc) {
@@ -239,6 +246,7 @@ func (l *loader) load() *model.Package {
 		}
 		return nil
 	})
+	l.checkLanguageVersion(m.LanguageVersion, docs)
 	for i := range objectTypes {
 		if c := objectTypes[i].Check; c != nil {
 			c(l)
@@ -277,7 +285,7 @@ func (l *loader) checkLayout() {
 		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir,
 			StructuresDir, ArrayTypesDir, StructureExtensionsDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/ and setting-extensions/")
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/, setting-extensions/, structures/, array-types/ and structure-extensions/")
 		}
 	}
 }
@@ -379,7 +387,9 @@ func compiled(name string) (*jsonschema.Schema, error) {
 		compiledMap = map[string]*jsonschema.Schema{}
 		names := []string{schemas.Manifest}
 		for _, t := range objectTypes {
-			names = append(names, t.Schema)
+			if t.Schema != "" {
+				names = append(names, t.Schema)
+			}
 		}
 		for _, n := range names {
 			s, err := c.Compile(schemas.BaseURL + n)
@@ -416,7 +426,7 @@ func (l *loader) domain(file string, doc *domainDoc) model.Domain {
 			l.fail(rterr.CodeFixedValue, loc.At(fmt.Sprintf("/values/%d/value", i)), "%v", err)
 			continue
 		}
-		d.Values = append(d.Values, model.FixedValue{Value: canon, Description: v.Description})
+		d.Values = append(d.Values, model.FixedValue{Value: canon, Description: v.Description, Name: v.Name})
 	}
 	return d
 }

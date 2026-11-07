@@ -82,6 +82,9 @@ Commands:
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
 
+Commands for source files (no database needed):
+  fmt [path...]            format source files in canonical form (--check only lists them)
+
 Flags (anywhere on the command line):
 `
 
@@ -99,6 +102,7 @@ type cli struct {
 	set            map[string]bool // flags given on the command line
 	output         string
 	maxAssetSize   int64
+	check          bool
 }
 
 func main() {
@@ -117,6 +121,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.name, "name", "", "name of a new language (default: English name of the code)")
 	c.fs.StringVar(&c.lang, "lang", "", "language of an asset to read")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
+	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	maxSize := int64(model.DefaultMaxAssetSize)
 	if env := os.Getenv("RT_MAX_ASSET_SIZE"); env != "" {
 		n, err := strconv.ParseInt(env, 10, 64)
@@ -143,6 +148,9 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(pos) == 0 {
 		c.fs.Usage()
 		return exitUsage
+	}
+	if code, ok := c.dispatchLang(ctx, pos[0], pos[1:]); ok {
+		return code
 	}
 	if c.db == "" {
 		fmt.Fprintln(stderr, "error: no database; use --db or set RT_DATABASE")

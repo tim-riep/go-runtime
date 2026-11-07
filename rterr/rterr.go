@@ -33,7 +33,7 @@ type Code string
 // Validation codes.
 const (
 	CodeSchema          Code = "schema"           // document does not match its JSON Schema
-	CodeSyntax          Code = "syntax"           // file is not valid JSON
+	CodeSyntax          Code = "syntax"           // file is not valid JSON, or a source file has a syntax error
 	CodeFile            Code = "file"             // unexpected, missing or misnamed file
 	CodeName            Code = "name"             // invalid or reserved name
 	CodeNameTooLong     Code = "name-too-long"    // identifier exceeds the byte limit
@@ -58,6 +58,7 @@ const (
 	CodeSetting         Code = "setting"          // invalid setting or setting extension
 	CodeAsset           Code = "asset"            // invalid asset repository, folder or asset
 	CodeStructure       Code = "structure"        // invalid structure, array type, include or structure extension
+	CodeSource          Code = "source"           // invalid source file or language version
 )
 
 // Location points at the place in a package that caused an error.
@@ -65,6 +66,9 @@ type Location struct {
 	Package string `json:"package,omitempty"`
 	File    string `json:"file,omitempty"`
 	Pointer string `json:"pointer,omitempty"` // JSON Pointer inside File
+	// Line and Column point into source files; Column counts characters.
+	Line   int `json:"line,omitempty"`
+	Column int `json:"column,omitempty"`
 }
 
 // IsZero reports whether no location information is present.
@@ -80,6 +84,9 @@ func (l Location) String() string {
 	}
 	if l.Pointer != "" {
 		parts = append(parts, "at "+l.Pointer)
+	}
+	if l.Line > 0 {
+		parts = append(parts, fmt.Sprintf("line %d, column %d", l.Line, l.Column))
 	}
 	return strings.Join(parts, ", ")
 }

@@ -1,0 +1,45 @@
+public open class /TRFIN/LAYOUT extends /TRFIN/BASE
+
+  public static attribute COUNT: INT8 = 0
+  private attribute NAMES: map of STRING to array of STRING?
+
+  public method NOTHING()
+  end
+
+  public override method SHOW(x: INT4?) returns STRING
+    var s = "a\"b\\c\{d\}\n\t{x default 0}"
+    var f = function (a: INT4, b: INT4) => a * b + -1
+    var m = ["a": 1, "b": 2]
+    var e = [:]
+    var n = new map of STRING to INT4
+    var o = new /TRFIN/ORDER_INFO(ID: "1", AMOUNT: 10.00)
+    var k = (a + b) * c mod 2 / d
+    var g = x is not null and not (x is empty) or y = 1
+    for i from 1 to 10 step 2
+      continue
+    end
+    for k, v in m
+      break
+    end
+    while true
+      i = i - 1
+    end
+    if a
+    end
+    assert a <> b, "must differ"
+    me.COUNT = COUNT + 1
+    super.SHOW(x)
+    list[1] = list[2] as INT8
+    commit
+    include /TRFIN/STEPS if found
+
+    return "x"
+  end
+
+  public method N() returns INT4 executed by kernel
+
+  public constructor(a: INT4) raises /TRFIN/E
+    super(a)
+  end
+
+end

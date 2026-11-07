@@ -66,6 +66,10 @@ TRFIN/
     structures/*.json          one structure per file, named <NAME>.json
     array-types/*.json         one array type per file, named <NAME>.json
     structure-extensions/*.json  one extension per extended structure
+  src/
+    <NAME>.class               a class, exception class or test class
+    <NAME>.interface           an interface
+    <NAME>.include             a members or statements include
   assets/
     <repository>/asset.json    every folder below assets/ is an asset repository
     <repository>/...           its files and folders
@@ -82,6 +86,9 @@ TRFIN/
 }
 ```
 
+A package with source files in `src/` states the version of the language in the manifest:
+`"languageVersion": 1`. Grammar and canonical form are defined per language version.
+
 Version constraints are comparisons separated by commas or spaces: `=1.2.3`, `>=1.0.0`,
 `<2.0.0`, `^1.2.0`, `~1.2.0`. An omitted constraint accepts every version.
 
@@ -89,8 +96,12 @@ Domain, table and extension (abridged; see [examples](examples)):
 
 ```json
 { "name": "/TRFIN/COMPANY_STATUS", "type": "CHAR", "length": 10,
-  "values": [{ "value": "ACTIVE" }, { "value": "CLOSED" }] }
+  "values": [{ "value": "ACTIVE" }, { "value": "c", "name": "CLOSED" }] }
 ```
+
+A fixed value is addressed in code by its `name`, e.g. `/TRFIN/COMPANY_STATUS.CLOSED`.
+Without a name, the value itself is the name if it consists of upper-case letters, digits
+and underscores and starts with a letter. Names are unique within a domain.
 
 ```json
 {
@@ -517,6 +528,11 @@ rt tenant create ACME --description "Acme Corp"
 rt tenant delete ACME --yes
 rt uninstall TROTTO --yes
 rt log
+```
+
+```bash
+rt fmt path/to/package
+rt fmt --check .
 ```
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,

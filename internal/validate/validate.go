@@ -223,6 +223,18 @@ func (v *validator) domain(d *model.Domain) {
 		}
 		seen[fv.Value] = true
 	}
+	// Names in code must be unique, whether given or taken from the value.
+	names := map[string]string{}
+	for i, fv := range d.Values {
+		name, ok := fv.CodeName()
+		if !ok {
+			continue
+		}
+		if other, dup := names[name]; dup {
+			v.fail(rterr.CodeFixedValue, d.Src.At(fmt.Sprintf("/values/%d", i)), obj, "fixed values %q and %q have the same name %s in code", other, fv.Value, name)
+		}
+		names[name] = fv.Value
+	}
 }
 
 // fieldDomain resolves the domain of a field declared by owner, directly or

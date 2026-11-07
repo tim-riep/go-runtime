@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -95,5 +96,35 @@ func TestCLI(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFmt(t *testing.T) {
+	dir := t.TempDir()
+	messy := filepath.Join(dir, "src", "A.class")
+	if err := os.MkdirAll(filepath.Dir(messy), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(messy, []byte("public class /X/A\n  public constant B:INT4=1\nend\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "src", "BAD.class"), []byte("public class /X/BAD\n  public constant\nend\n"), 0o644)
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), []string{"fmt", "--check", dir}, &out, &errOut); code != exitInvalid ||
+		!strings.Contains(out.String(), "A.class") || !strings.Contains(errOut.String(), "BAD.class:2:18") {
+		t.Fatalf("check: %d %s %s", code, out.String(), errOut.String())
+	}
+	os.Remove(filepath.Join(dir, "src", "BAD.class"))
+	if code := run(context.Background(), []string{"fmt", "--check", dir}, &out, &errOut); code != exitCheck {
+		t.Fatalf("check only: %d", code)
+	}
+	if code := run(context.Background(), []string{"fmt", dir}, &out, &errOut); code != exitOK {
+		t.Fatalf("fmt: %d %s", code, errOut.String())
+	}
+	b, _ := os.ReadFile(messy)
+	if string(b) != "public class /X/A\n\n  public constant B: INT4 = 1\n\nend\n" {
+		t.Fatalf("formatted: %q", b)
+	}
+	out.Reset()
+	if code := run(context.Background(), []string{"fmt", "--check", dir}, &out, &errOut); code != exitOK || out.Len() != 0 {
+		t.Fatalf("canonical: %d %s", code, out.String())
 	}
 }

@@ -200,3 +200,30 @@ func TestStructureLifecycle(t *testing.T) {
 		}
 	})
 }
+
+// TestFixedValueNames stores the names of fixed values in code and treats
+// a changed name as a change of the domain that is not destructive.
+func TestFixedValueNames(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		pkg := func(version, name string) *model.Package {
+			return &model.Package{Manifest: model.Manifest{ID: "TRN", Version: version},
+				Domains: []model.Domain{{Name: "/TRN/LEVEL", Type: model.Char, Length: 1,
+					Values: []model.FixedValue{{Value: "h", Name: model.Some(name)}, {Value: "N"}}}}}
+		}
+		if _, err := k.Install(ctx, []*model.Package{pkg("1.0.0", "HIGH")}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), pkg("1.0.0", "HIGH")))
+		p, err := k.Upgrade(ctx, pkg("1.1.0", "TOP"), kernel.Options{})
+		if err != nil || len(p.Destructive()) != 0 || change(p, plan.AlterDomain, "/TRN/LEVEL") == nil {
+			t.Fatalf("rename: %v %+v", err, p)
+		}
+		s, _ := k.Schema(ctx)
+		if n, _ := s.Domains["/TRN/LEVEL"].Values[0].CodeName(); n != "TOP" {
+			t.Fatalf("name after upgrade: %v", s.Domains["/TRN/LEVEL"].Values)
+		}
+		consistent(t, k)
+	})
+}
