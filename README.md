@@ -76,6 +76,7 @@ TRFIN/
     array-types/*.json         one array type per file, named <NAME>.json
     structure-extensions/*.json  one extension per extended structure
     http-services/*.json       one service node per file, any file name
+    authorization-objects/*.json  one authorization object per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -207,8 +208,8 @@ normalization (`1.0` vs `1.00`).
 
 Structure (`schema/structures/ADDRESS.json`), a table including it, an array type and a
 structure extension in another package. Every component has exactly one of `dataElement`,
-`domain`, `structure` (a structure or a table) and `arrayType`; elementary components may
-have `notNull`, `default` and `description`. An include is an entry `{ "include": ... }` at the
+`domain`, `structure` (a structure or a table) and `arrayType`; all may have `notNull` and
+`description`, elementary components also `default`. An include is an entry `{ "include": ... }` at the
 place where the components go, in `components` as in `fields`.
 
 ```json
@@ -417,7 +418,8 @@ origin, whether the parent key fills it and the value helps. The tenant field ne
 - Components of structure extensions follow the components of the structure, ordered by
   package. Structure extensions follow the rules of table extensions: names in the namespace
   of the extending package, nullable or with a default, no includes.
-- `default` and `notNull` exist only for elementary components.
+- `default` exists only for elementary components. A structure or array component with
+  `notNull` is never null: new values start with an empty structure or array.
 - Array keys consist of elementary top-level components of a structure or table row type.
 - A change of a structure changes the columns of every table that includes it, in every
   package; the plan shows the structure, e.g. `add-column /TRFIN/COMPANIES.REGION (CHAR(80))
@@ -435,6 +437,73 @@ origin, whether the parent key fills it and the value helps. The tenant field ne
 effective default and origin (declaring object, include chain, extending package); nested
 structures and array types are resolved as well. Setting fields name the include and the
 source of included columns.
+
+### Authorization objects
+
+An authorization object names the fields whose values grants will give, and with the field
+`ACTIVITY` the activities that can be granted (`schema/authorization-objects/COMPANY.json` of
+`TRFIN`):
+
+```json
+{
+  "name": "/TRFIN/COMPANY",
+  "texts": {
+    "en": { "label": "Company master data", "description": "Reading and changing companies by company and country" },
+    "de": { "label": "Stammdaten Firma" }
+  },
+  "fields": [
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" },
+    { "name": "ACTIVITY" }
+  ],
+  "activities": ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT"]
+}
+```
+
+- One to ten fields in a fixed order, with names of upper-case letters, digits and
+  underscores, unique in the object. Each has a data element or a domain of the own or a
+  required package, of the types `CHAR(n)`, `INT4`, `INT8`, `BOOL` or `UUID`: grants will
+  give single values, ranges and patterns, which other types do not support well. Fixed
+  values of the domain stay part of the field.
+- `ACTIVITY` is the field of the kernel. It has neither data element nor domain; its type is
+  the data element and domain `/RT/ACTIVITY`, `CHAR(16)` with the codes below as fixed
+  values. With it, `activities` lists the activities that can be granted, at least one and
+  none twice; without it, `activities` is not allowed. A field of its own named `ACTIVITY` is
+  an error.
+- A change of a data element or domain, also in another package, that gives a field another
+  type than these is rejected and names the object and field.
+- Upgrades may add fields and activities and change texts and order. Removing an object, a
+  field or an activity and changing the data element, domain or type of a field are
+  destructive, so grants of later versions stay valid; a longer `CHAR` is not destructive.
+- Data elements and domains list the fields of authorization objects that use them.
+
+| Activity | Meaning |
+|---|---|
+| `READ` | Display and read data |
+| `CREATE` | Create new data |
+| `UPDATE` | Change existing data |
+| `DELETE` | Delete data |
+| `EXECUTE` | Start a processing, evaluation or action |
+| `APPROVE` | Approve or release in business terms |
+| `REJECT` | Reject in business terms |
+| `CANCEL` | Cancel or reverse a posted or completed transaction |
+| `IMPORT` | Take over data from files or other systems |
+| `EXPORT` | Download data or output it as a file |
+| `PRINT` | Output and print |
+| `SEND` | Transmit to third parties, e.g. by e-mail or interface |
+| `ADMINISTER` | Maintain settings and administrative functions |
+
+The list is closed; packages cannot add activities. Every activity has a label and an
+explanation in English and German (`model.Activities`), and the kernel adds new ones at the
+end without changing a code. A placeholder for all activities belongs to the grants of a
+later version, not to the codes.
+
+`kernel.AuthorizationObject`, `AuthorizationObjects` and `Activities` return the resolved
+definitions from package [reflector](reflector): per field the data element with its labels
+in all languages set up, the domain, type, length and fixed values, and for `ACTIVITY` the
+allowed activities with their texts. `rt show authorization-object:/TRFIN/COMPANY`,
+`rt authorization-objects list [package]` and `rt activities list` show them, with `--json`
+in the form of the reflector. Code reads them with `/TRBASE/REFLECTOR`.
 
 ### Tenants
 
@@ -763,6 +832,9 @@ rt user tenant add anna BETA
 rt user list
 rt token create anna --label cli --expires 2027-01-31
 rt token list anna
+rt show authorization-object:/TRFIN/COMPANY
+rt authorization-objects list TRFIN
+rt activities list --lang de
 rt http list TRFIN
 rt http show /trfin/companies
 rt http activate /trfin
@@ -811,13 +883,14 @@ go test ./internal/planner ./setting ./kernel ./lang/syntax -update
 Stylesheets that include, import or read other stylesheets and documents, native methods
 with network or file access, outgoing HTTP connections, responses streamed from code,
 further ways of signing in, messages with texts per language, a
-language server and a debugger, permissions, user interface, views, indexes beyond keys,
+language server and a debugger, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
 loader already works on `fs.FS`), joins and aggregates other than `count` in code,
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression and image processing,
-the runtime meaning of `notNull` for nested and array components, includes in extensions.
+includes in extensions, authorization checks, roles, profiles and the assignment of grants
+to users.
 
 ## License
 

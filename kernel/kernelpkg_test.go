@@ -82,14 +82,14 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 			k.Close()
 
 			newer := testutil.Example(t, "TRBASE")
-			newer.Manifest.Version = "1.2.0"
+			newer.Manifest.Version = "1.3.0"
 			newer.Domains = append(newer.Domains, model.Domain{Name: "/TRBASE/NEWER", Type: model.Bool})
 			k, err = kernel.OpenConfig(ctx, db.DSN, kernel.Config{KernelPackages: []*model.Package{newer}})
 			if err != nil {
 				t.Fatal(err)
 			}
 			s, _ := k.Schema(ctx)
-			if s.Packages["TRBASE"].Manifest.Version != "1.2.0" || s.Domains["/TRBASE/NEWER"] == nil {
+			if s.Packages["TRBASE"].Manifest.Version != "1.3.0" || s.Domains["/TRBASE/NEWER"] == nil {
 				t.Fatalf("TRBASE was not upgraded: %s", s.Packages["TRBASE"].Manifest.Version)
 			}
 			if g := generation(t, k); g <= gen {
@@ -99,7 +99,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 			upgraded := false
 			for _, e := range log {
 				for _, p := range e.Packages {
-					upgraded = upgraded || strings.EqualFold(e.Operation, "upgrade") && p.ID == "TRBASE" && p.To.Or("") == "1.2.0"
+					upgraded = upgraded || strings.EqualFold(e.Operation, "upgrade") && p.ID == "TRBASE" && p.To.Or("") == "1.3.0"
 				}
 			}
 			if !upgraded {
@@ -109,7 +109,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 
 			// A TRBASE without the domain the code of TRFIN uses.
 			broken := testutil.Example(t, "TRBASE")
-			broken.Manifest.Version = "1.3.0"
+			broken.Manifest.Version = "1.4.0"
 			for i, d := range broken.DataElements {
 				if d.Name == "/TRBASE/NAME" {
 					broken.DataElements = append(broken.DataElements[:i], broken.DataElements[i+1:]...)
@@ -124,7 +124,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 			k, err = kernel.Open(ctx, db.DSN)
 			if err == nil {
 				defer k.Close()
-				if s, _ := k.Schema(ctx); s.Packages["TRBASE"].Manifest.Version != "1.2.0" {
+				if s, _ := k.Schema(ctx); s.Packages["TRBASE"].Manifest.Version != "1.3.0" {
 					t.Error("the failed upgrade changed TRBASE")
 				}
 			}

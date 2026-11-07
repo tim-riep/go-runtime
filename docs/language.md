@@ -85,7 +85,8 @@ The schema provides the other types: those of the own package and of the package
 requires, directly as listed in the manifest.
 
 - Structures and tables become structs with their resolved components. Components
-  without `notNull` are optional; key fields of tables never are. Tables have no tenant
+  without `notNull` are optional; key fields of tables never are. A structure or array
+  component with `notNull` is never null and starts empty. Tables have no tenant
   field, keys or foreign keys as structs. Fields that other packages add with extensions
   carry their full name, `company./TROTTO/OTTO_ID`; only the extending package and
   packages that require it use them, but every row holds them.
@@ -570,6 +571,7 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/XSLT_UTILITIES` | `RUN(stylesheet, input)`: a stylesheet known only at runtime |
 | `/TRBASE/XSLT_STYLESHEET` | native class: `COMPILE(stylesheet)` once, then `TRANSFORM(input)` many times |
 | `/TRBASE/ASSET_REPOSITORY` | native class: asset repositories of the own and of required packages, see [Asset repositories](#asset-repositories) |
+| `/TRBASE/REFLECTOR` | definitions of authorization objects and the activities, see [Reflector](#reflector) |
 | `/TRBASE/CLOCK` | `NOW()` and `TODAY()`, capability `clock` |
 | `/TRBASE/UUID` | `NEW()`: a random UUID |
 | `/TRBASE/HASH` | `SHA256(data)` |
@@ -596,8 +598,7 @@ for entry in repo.LIST("invoice")
   if entry.IS_FOLDER
     continue
   end
-  var languages = entry.LANGUAGES default []
-  log info "{entry.PATH} {languages.LENGTH()} language variants"
+  log info "{entry.PATH} {entry.LANGUAGES.LENGTH()} language variants"
 end
 ```
 
@@ -647,6 +648,42 @@ end
   `ASSET_NOT_FOUND`, `ASSET_PATH_INVALID`, `ASSET_ENCODING_INVALID` (with `PATH`) and
   `ASSET_TOO_LARGE` (with `PATH`, `SIZE` and `MAX_SIZE`). `raises /TRBASE/ASSET_ERROR`
   declares them all.
+
+## Reflector
+
+`/TRBASE/REFLECTOR` describes objects of the schema at runtime; in this version
+authorization objects (see the README) and the activities of the kernel.
+
+```
+var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRFIN/COMPANY")
+for field in obj.FIELDS
+  log info "{field.NAME}: {field.LABEL default field.NAME}"
+end
+if /TRBASE/REFLECTOR.ALLOWS(obj, /RT/ACTIVITY.APPROVE)
+  ...
+end
+```
+
+| Method | Result |
+|---|---|
+| `AUTHORIZATION_OBJECT(name)` | `/TRBASE/AUTHORIZATION_OBJECT`, or `/TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND` |
+| `AUTHORIZATION_OBJECT_EXISTS(name)` | `BOOL` |
+| `AUTHORIZATION_OBJECTS(pkg)` | `/TRBASE/AUTHORIZATION_OBJECT_ARRAY` of a package, of all for `null`, ordered by name |
+| `ACTIVITIES()` | `/TRBASE/ACTIVITY_ARRAY` with `CODE`, `LABEL` and `DESCRIPTION` |
+| `ALLOWS(object, activity)` | whether the activity can be granted for the object |
+
+- `/TRBASE/AUTHORIZATION_OBJECT` has `NAME`, `PACKAGE_ID`, `LABEL`, `DESCRIPTION`, `FIELDS`,
+  `ACTIVITIES` and `ACTIVITY_CODES`, the codes for `CONTAINS`. A field
+  (`/TRBASE/AUTHORIZATION_FIELD`) has `NAME`, `IS_ACTIVITY`, `DATA_ELEMENT`, `DOMAIN`, `TYPE`,
+  `LENGTH`, the labels of the data element `SHORT_LABEL`, `LABEL`, `LONG_LABEL` and `HEADING`,
+  and `VALUES` with the fixed values of the domain, for `ACTIVITY` the allowed activities.
+- Texts are in the language of the execution, else in English, and `null` when there is
+  none, never `""`. Fields with a domain have no labels.
+- Activities are values of the enum of the kernel domain: `/RT/ACTIVITY.APPROVE`.
+- Every package may read every object. With a string literal that names an object of the
+  own, a required or a kernel package, `AUTHORIZATION_OBJECT` is checked when the code
+  compiles and recorded as used, so an upgrade that removes the object fails when the code
+  is compiled again. Other names are looked up when the code runs.
 
 ## Transformations
 
