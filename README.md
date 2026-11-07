@@ -13,18 +13,21 @@ transaction together with its own bookkeeping.
 
 - **Package**: a directory with a manifest and schema files. Its ID consists of upper-case
   letters and digits and starts with a letter, e.g. `TRBASE`, `TRFIN`, `TROTTO`.
-- **Ownership**: every object belongs to exactly one package. A table created by `TRFIN`
-  belongs to `TRFIN`, even if `TROTTO` extends it.
+- **Ownership and namespace**: every object belongs to exactly one package, and its name
+  starts with the namespace of that package: `/TRFIN/COMPANIES` belongs to `TRFIN`, even if
+  `TROTTO` extends it. The full name is used everywhere, in package files for definitions and
+  references alike.
 - **Domain**: base type, length, decimals and optional fixed values. Usable by the owning
   package and by every package that requires it directly or transitively.
 - **Data element**: a domain with field labels in every language. A field references either a
   domain or a data element; fields without data element have no labels.
 - **Table**: fields, a primary key, foreign keys and the mandatory attributes
   `tenantSpecific` and `dataClass`.
-- **Extension**: additional fields and foreign keys for a table of a required package. Field
-  names receive the namespace of the extending package: `OTTO_ID` in package `TROTTO` becomes
-  the column `/TROTTO/OTTO_ID`. Extension fields are never key fields and must be nullable or
-  have a default. Several packages can extend the same table without collisions.
+- **Extension**: additional fields and foreign keys for a table of a required package. Their
+  names carry the namespace of the extending package, e.g. the column `/TROTTO/OTTO_ID` in
+  `/TRFIN/COMPANIES`. Extension fields are never key fields and must be nullable or have a
+  default. Several packages can extend the same table without collisions. Fields and foreign
+  keys declared by the table itself have no namespace.
 - **Repository**: kernel tables that describe all installed objects, their owners and the
   physical layout. The repository, not database introspection, is the basis for every
   comparison. `Check` compares it with the actual schema and reports discrepancies.
@@ -73,29 +76,30 @@ Version constraints are comparisons separated by commas or spaces: `=1.2.3`, `>=
 Domain, table and extension (abridged; see [examples](examples)):
 
 ```json
-{ "name": "COMPANY_STATUS", "type": "CHAR", "length": 10,
+{ "name": "/TRFIN/COMPANY_STATUS", "type": "CHAR", "length": 10,
   "values": [{ "value": "ACTIVE" }, { "value": "CLOSED" }] }
 ```
 
 ```json
 {
-  "name": "COMPANIES",
+  "name": "/TRFIN/COMPANIES",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
-    { "name": "COMPANY_ID", "dataElement": "COMPANY" },
-    { "name": "COUNTRY", "dataElement": "COUNTRY", "notNull": true },
-    { "name": "STATUS", "domain": "COMPANY_STATUS", "notNull": true, "default": "ACTIVE" }
+    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY", "notNull": true },
+    { "name": "STATUS", "domain": "/TRFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" },
+    { "name": "NOTE", "domain": "/TRBASE/TEXT", "default": null }
   ],
   "primaryKey": ["COMPANY_ID"],
   "foreignKeys": [
-    { "name": "COUNTRY", "table": "COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
+    { "name": "COUNTRY", "table": "/TRFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
   ]
 }
 ```
 
 ```json
-{ "table": "COMPANIES", "fields": [{ "name": "OTTO_ID", "domain": "OTTO_ID" }] }
+{ "table": "/TRFIN/COMPANIES", "fields": [{ "name": "/TROTTO/OTTO_ID", "dataElement": "/TROTTO/OTTO_PARTNER" }] }
 ```
 
 Every file is validated against the JSON Schemas in [schemas](schemas). Errors name the
@@ -107,8 +111,8 @@ language given; English is mandatory. Lengths in characters: `short` 10, `medium
 
 ```json
 {
-  "name": "COUNTRY",
-  "domain": "COUNTRY_CODE",
+  "name": "/TRBASE/COUNTRY",
+  "domain": "/TRBASE/COUNTRY_CODE",
   "texts": {
     "en": { "short": "Country", "medium": "Country", "long": "Country key", "heading": "Country" },
     "de": { "short": "Land", "medium": "Land", "long": "Länderschlüssel", "heading": "Land" }
@@ -116,17 +120,17 @@ language given; English is mandatory. Lengths in characters: `short` 10, `medium
 }
 ```
 
-Setting (`schema/settings/TRFIN_COMPANIES.json`) and an extension of it in another package
-(`schema/setting-extensions/TRFIN_COMPANIES.json`). `foreignKey` names the key of the table to
+Setting (`schema/settings/COMPANIES.json`) and an extension of it in another package
+(`schema/setting-extensions/COMPANIES.json`). `foreignKey` names the key of the table to
 its parent; labels have at most 60 characters.
 
 ```json
 {
-  "id": "TRFIN_COMPANIES",
+  "id": "/TRFIN/COMPANIES",
   "texts": { "en": { "label": "Companies" }, "de": { "label": "Firmen" } },
-  "root": { "table": "COMPANIES", "operations": { "create": true, "update": true, "delete": true } },
+  "root": { "table": "/TRFIN/COMPANIES", "operations": { "create": true, "update": true, "delete": true } },
   "tables": [
-    { "table": "BANK_ACCOUNTS", "parent": "COMPANIES", "foreignKey": "COMPANY",
+    { "table": "/TRFIN/BANK_ACCOUNTS", "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
       "operations": { "create": true, "update": true, "delete": false } }
   ]
 }
@@ -134,9 +138,9 @@ its parent; labels have at most 60 characters.
 
 ```json
 {
-  "setting": "TRFIN_COMPANIES",
+  "setting": "/TRFIN/COMPANIES",
   "tables": [
-    { "table": "OTTO_CONNECTIONS", "parent": "COMPANIES", "foreignKey": "COMPANY",
+    { "table": "/TROTTO/OTTO_CONNECTIONS", "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
       "operations": { "create": true, "update": true, "delete": true } }
   ]
 }
@@ -167,12 +171,20 @@ normalization (`1.0` vs `1.00`).
 
 ## Rules
 
-- Table and domain names are unique in the database. Names are always quoted in SQL.
-- Identifiers, including namespaces and generated constraint names such as
-  `COMPANIES#FK#/TROTTO/MAIN_SHOP`, are limited to 63 bytes in both dialects. Longer names
-  are rejected during validation instead of being truncated.
-- Constraint names: `<TABLE>#PK`, `<TABLE>#FK#<KEY>`, `<TABLE>#CK#<FIELD>`. `#` cannot occur
-  in package names, so constraint names never collide with tables.
+- Names of objects of a package are `/<PACKAGE-ID>/<NAME>`, where `<NAME>` consists of
+  upper-case letters, digits and underscores and starts with a letter. Table, domain, data
+  element and setting names are unique in the database. Names are always quoted in SQL.
+- The loader checks namespaces on import, right after the JSON Schema check and before any
+  object is built: definitions must carry the namespace of the package, references that of
+  the package, of a package listed in its manifest, or the kernel's. All violations are
+  reported together as `rterr.NamespaceViolation`, with file, JSON Pointer, the name found and
+  the expected namespaces. Files that belong to no known object type are rejected as well.
+  Every object type registers with the loader for this check.
+- Names defined by packages are limited to 63 bytes and rejected when longer, never shortened.
+- Generated names: `<TABLE>#PK`, `<TABLE>#FK#<KEY>`, `<TABLE>#CK#<FIELD>`. A generated name
+  longer than 63 bytes keeps its first 52 bytes followed by `~` and 10 hex digits of the
+  SHA-256 of the full name. The repository stores the generated names; `rt check` compares
+  them. `#` and `~` cannot occur in object names.
 - The kernel owns the namespace `/RT/`; the package ID `RT` is reserved.
 - A foreign key references the complete primary key of its target, which must belong to the
   same package or a required one. Field types must match (same base type, CHAR not longer
@@ -225,17 +237,37 @@ normalization (`1.0` vs `1.00`).
 Reading at runtime:
 
 ```go
-r, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice.xsl", "de")
+r, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
 defer r.Close()
 info := r.Info() // MimeType, Size, ETag(), ModifiedAt, Language
 io.Copy(w, r)    // r is an io.ReadSeeker
 
-fsys, err := k.AssetFS(ctx, "TRFIN", "templates", "de") // io/fs.FS for one language
+fsys, err := k.AssetFS(ctx, "TRFIN", "templates", model.Some("de")) // io/fs.FS for one language
 tmpl, err := template.ParseFS(fsys, "mail/*.html")
 ```
 
 `StatAsset`, `ListAssets`, `AssetExists` and `AssetRepositories` complete the API. Missing
 assets return `rterr.AssetNotFound`, which matches `fs.ErrNotExist`.
+
+### null and the empty string
+
+`null` means "no value"; `""` is a value. The kernel keeps them apart in package files,
+validation, repository, database, Go API, JSON and CLI and never converts one into the other.
+
+- A field with `notNull: false` accepts `null` and `""` as different values; `notNull: true`
+  rejects `null` but accepts `""`.
+- Domains of type CHAR and STRING may set `"allowEmpty": false` (default `true`); the kernel
+  then adds a check that rejects `""`. Fixed values may be `""`, never `null`.
+- Defaults have three cases, in domains and fields alike: no `default` attribute (no
+  default), `"default": null` (the explicit default null) and `"default": ""` or another value.
+  A field without own default takes the default of its domain. The DDL writes no DEFAULT,
+  `DEFAULT NULL` or `DEFAULT '…'` accordingly, and the repository stores the kind. A default
+  `null` on a `notNull` field is invalid.
+- CHAR(n) is `VARCHAR(n)` in PostgreSQL and a length check in SQLite: values are neither
+  padded nor trimmed, trailing spaces are kept.
+- In Go, values that may be absent are `model.Optional[T]`; defaults are `model.Default`. JSON
+  writes `null` for absent values, `""` for the empty string, and leaves out a default only if
+  there is none. The CLI shows `<null>` and quoted strings.
 
 ### Data classes
 
@@ -348,7 +380,7 @@ _, err = k.Upgrade(ctx, newVersion, kernel.Options{DryRun: true})
 var dc *rterr.DestructiveChange
 if errors.As(err, &dc) { ... }
 
-tenant, err := k.Tenants().Create(ctx, "ACME", "Acme Corp")
+tenant, err := k.Tenants().Create(ctx, "ACME", model.Some("Acme Corp"))
 discrepancies, err := k.Check(ctx)
 ```
 
@@ -371,12 +403,12 @@ rt install examples/TRBASE examples/TRFIN examples/TROTTO
 rt plan examples/upgrade/TROTTO
 rt upgrade examples/upgrade/TROTTO
 rt list
-rt show COMPANIES
+rt show /TRFIN/COMPANIES
 rt check
 rt setting list
-rt setting show TRFIN_COMPANIES
-rt setting show TRFIN_COMPANIES --json
-rt show data-element:COUNTRY
+rt setting show /TRFIN/COMPANIES
+rt setting show /TRFIN/COMPANIES --json
+rt show data-element:/TRBASE/COUNTRY
 rt asset repos
 rt asset list TRFIN templates invoice
 rt asset show TRFIN templates invoice/invoice.xsl
