@@ -1,0 +1,6 @@
+{
+  "name": "/RT/ASSET_REPOSITORY_ID",
+  "description": "ID of an asset repository: its folder name below assets/",
+  "type": "CHAR",
+  "length": 32
+}

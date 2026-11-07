@@ -78,6 +78,7 @@ const (
 	AddStructureExtension   ChangeKind = "add-structure-extension"
 	DropStructureExtension  ChangeKind = "drop-structure-extension"
 	AlterStructureExtension ChangeKind = "alter-structure-extension"
+	CompilePackage          ChangeKind = "compile-package" // the code of a package is compiled
 	CreateArrayType         ChangeKind = "create-array-type"
 	DropArrayType           ChangeKind = "drop-array-type"
 	AlterArrayType          ChangeKind = "alter-array-type"
@@ -104,7 +105,7 @@ func (k ChangeKind) Physical() bool {
 	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
 		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension,
 		CreateStructure, DropStructure, AlterStructure, AddStructureExtension, DropStructureExtension, AlterStructureExtension,
-		CreateArrayType, DropArrayType, AlterArrayType,
+		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant:
 		return false

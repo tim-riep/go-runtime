@@ -344,14 +344,14 @@ func (r *Repo) AddMigration(ctx context.Context, q dialect.Querier, version int,
 func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, error) {
 	s := model.NewSchema()
 
-	pkgs, err := r.selectRows(ctx, q, TPackages, []string{"PACKAGE_ID", "VERSION", "DESCRIPTION", "INSTALLED_AT", "UPDATED_AT"})
+	pkgs, err := r.selectRows(ctx, q, TPackages, []string{"PACKAGE_ID", "VERSION", "DESCRIPTION", "INSTALLED_AT", "UPDATED_AT", "LANGUAGE_VERSION"})
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range pkgs {
 		id := owner(p["PACKAGE_ID"])
 		s.Packages[id] = &model.PackageInfo{
-			Manifest:    model.Manifest{ID: id, Version: str(p["VERSION"]), Description: opt(p["DESCRIPTION"])},
+			Manifest:    model.Manifest{ID: id, Version: str(p["VERSION"]), Description: opt(p["DESCRIPTION"]), LanguageVersion: num(p["LANGUAGE_VERSION"])},
 			InstalledAt: tm(p["INSTALLED_AT"]), UpdatedAt: tm(p["UPDATED_AT"]),
 		}
 	}
@@ -521,6 +521,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadStructures(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadSources(ctx, q, s); err != nil {
+		return nil, err
+	}
 	if err := r.loadSettings(ctx, q, s); err != nil {
 		return nil, err
 	}
@@ -640,7 +643,7 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
+var deleteOrder = []string{TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
 
@@ -658,15 +661,21 @@ func (r *Repo) Clear(ctx context.Context, q dialect.Querier) error {
 	return nil
 }
 
-// Write replaces the content of the repository with s.
+// Write replaces the content of the repository with s. The compiled code
+// of packages that stay installed is kept.
 func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	code, err := r.LoadCode(ctx, q)
+	if err != nil {
+		return err
+	}
 	if err := r.Clear(ctx, q); err != nil {
 		return err
 	}
 	for _, id := range s.PackageIDs() {
 		p := s.Packages[id]
 		if err := r.insert(ctx, q, TPackages, row{"PACKAGE_ID": string(id), "VERSION": p.Manifest.Version,
-			"DESCRIPTION": val(p.Manifest.Description), "INSTALLED_AT": p.InstalledAt, "UPDATED_AT": p.UpdatedAt}); err != nil {
+			"DESCRIPTION": val(p.Manifest.Description), "INSTALLED_AT": p.InstalledAt, "UPDATED_AT": p.UpdatedAt,
+			"LANGUAGE_VERSION": nullableInt(p.Manifest.LanguageVersion, p.Manifest.LanguageVersion > 0)}); err != nil {
 			return err
 		}
 	}
@@ -747,7 +756,19 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	if err := r.writeSettings(ctx, q, s); err != nil {
 		return err
 	}
-	return r.writeAssets(ctx, q, s)
+	if err := r.writeSources(ctx, q, s); err != nil {
+		return err
+	}
+	if err := r.writeAssets(ctx, q, s); err != nil {
+		return err
+	}
+	var kept []*Code
+	for _, id := range s.PackageIDs() {
+		if c := code[id]; c != nil {
+			kept = append(kept, c)
+		}
+	}
+	return r.SaveCode(ctx, q, kept)
 }
 
 // LogPackage is a package affected by a logged operation.

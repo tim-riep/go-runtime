@@ -132,6 +132,13 @@ func Package(pkg *model.Package, deps []*model.Package) *Result {
 		}
 		return r
 	}
+	return CheckPackage(pkg, schema)
+}
+
+// CheckPackage checks the sources of a package against a valid schema that
+// contains the package and the packages it requires.
+func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
+	r := &Result{Package: pkg}
 	var units []*types.Unit
 	incs := includes{}
 	sources := append(kernelsrc.Sources(), pkg.Sources...)

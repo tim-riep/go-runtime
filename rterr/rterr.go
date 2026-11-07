@@ -444,3 +444,43 @@ var ErrNotInitialized = errors.New("database is not initialized for this kernel 
 // ErrNewerSchema is returned when the database was initialized by a newer
 // kernel version.
 var ErrNewerSchema = errors.New("database was initialized by a newer kernel version")
+
+// CompileDiagnostic is an error in the source files of a package.
+type CompileDiagnostic struct {
+	File    string `json:"file"`
+	Line    int    `json:"line"`
+	Column  int    `json:"column"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	// IncludedFrom lists the inclusions through which the code was
+	// inserted, innermost first, e.g. "/TRX/CHECKS included from src/A.class:4".
+	IncludedFrom []string `json:"includedFrom,omitempty"`
+}
+
+func (d CompileDiagnostic) String() string {
+	s := fmt.Sprintf("%s:%d:%d: %s: %s", d.File, d.Line, d.Column, d.Code, d.Message)
+	for _, i := range d.IncludedFrom {
+		s += "\n    " + i
+	}
+	return s
+}
+
+// CompileError reports that the code of a package does not compile. The
+// whole operation is rejected.
+type CompileError struct {
+	Package     string
+	Reason      string // why the package was compiled, e.g. "installed" or "requires TRFIN"
+	Diagnostics []CompileDiagnostic
+}
+
+func (e *CompileError) Error() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "package %s does not compile", e.Package)
+	if e.Reason != "" && e.Reason != "installed" {
+		fmt.Fprintf(&b, " (compiled because it %s)", e.Reason)
+	}
+	for _, d := range e.Diagnostics {
+		b.WriteString("\n" + d.String())
+	}
+	return b.String()
+}

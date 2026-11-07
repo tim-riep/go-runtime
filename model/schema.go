@@ -38,6 +38,9 @@ type Schema struct {
 	Structures          map[string]*Structure
 	ArrayTypes          map[string]*ArrayType
 	StructureExtensions map[StructureExtensionKey]*StructureExtension
+	// Sources holds the source files of each package, the only source for
+	// compiling its code.
+	Sources map[PackageID][]Source
 }
 
 // NewSchema returns an empty schema.
@@ -54,12 +57,16 @@ func NewSchema() *Schema {
 		Structures:          map[string]*Structure{},
 		ArrayTypes:          map[string]*ArrayType{},
 		StructureExtensions: map[StructureExtensionKey]*StructureExtension{},
+		Sources:             map[PackageID][]Source{},
 	}
 }
 
 // Clone returns a deep copy of s.
 func (s *Schema) Clone() *Schema {
 	c := NewSchema()
+	for k, v := range s.Sources {
+		c.Sources[k] = slices.Clone(v)
+	}
 	for k, v := range s.Packages {
 		p := *v
 		p.Manifest.Requires = slices.Clone(v.Manifest.Requires)
@@ -148,6 +155,9 @@ func cloneFKs(fks []ForeignKey) []ForeignKey {
 func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error {
 	var errs rterr.List
 	id := p.Manifest.ID
+	if len(p.Sources) > 0 {
+		s.Sources[id] = slices.Clone(p.Sources)
+	}
 	for i := range p.Domains {
 		d := cloneDomain(&p.Domains[i])
 		d.Owner = id
@@ -319,6 +329,7 @@ func (s *Schema) RemoveLanguage(code string) int {
 
 // RemovePackage removes all objects owned by id.
 func (s *Schema) RemovePackage(id PackageID) {
+	delete(s.Sources, id)
 	for name, d := range s.Domains {
 		if d.Owner == id {
 			delete(s.Domains, name)

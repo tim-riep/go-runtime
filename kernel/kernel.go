@@ -308,10 +308,15 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.validate(ctx, q, want); err != nil {
 			return err
 		}
+		code, compileChanges, err := k.compile(ctx, q, cur, want, started)
+		if err != nil {
+			return err
+		}
 		p, err := planner.Build(k.d, o.op, cur, want, o.packages(cur))
 		if err != nil {
 			return err
 		}
+		p.Changes = append(p.Changes, compileChanges...)
 		result = p
 		if o.check != nil {
 			if err := o.check(p); err != nil {
@@ -325,6 +330,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 			return err
 		}
 		if err := k.persist(ctx, q, want); err != nil {
+			return err
+		}
+		if err := k.saveCode(ctx, q, code, started); err != nil {
 			return err
 		}
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
