@@ -1,0 +1,532 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package vm
+
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math/bits"
+	"strconv"
+	"strings"
+
+	"github.com/tim-riep/go-runtime/lang/bytecode"
+	"github.com/tim-riep/go-runtime/lang/dec"
+)
+
+// Value is a value on the operand stack or in a local. Integers, dates,
+// timestamps, enum constants and BOOL are kept in N; DEC and UUID use N
+// and X; strings, BYTES, records, collections, functions and cells are
+// in R. null is a distinct R, so "" and null stay different.
+type Value struct {
+	N, X uint64
+	R    any
+}
+
+type nullType struct{}
+
+var nullRef = &nullType{}
+
+// Null is the value null.
+var Null = Value{R: nullRef}
+
+// IsNull reports null.
+func (v Value) IsNull() bool { return v.R == nullRef }
+
+// Int returns an integer value.
+func Int(n int64) Value { return Value{N: uint64(n)} }
+
+// Bool returns a BOOL value.
+func Bool(b bool) Value {
+	if b {
+		return Value{N: 1}
+	}
+	return Value{}
+}
+
+// Str returns a STRING value.
+func Str(s string) Value { return Value{R: s} }
+
+// DecValue returns a DEC value from its unscaled representation.
+func DecValue(d dec.Dec) Value { return Value{N: d.Lo, X: d.Hi} }
+
+func (v Value) int() int64      { return int64(v.N) }
+func (v Value) bool() bool      { return v.N != 0 }
+func (v Value) str() string     { s, _ := v.R.(string); return s }
+func (v Value) dec() dec.Dec    { return dec.Dec{Lo: v.N, Hi: v.X} }
+func (v Value) record() *Record { r, _ := v.R.(*Record); return r }
+func (v Value) array() *Array   { a, _ := v.R.(*Array); return a }
+func (v Value) mapv() *Map      { m, _ := v.R.(*Map); return m }
+
+// Record is an object of a class or a value of a struct: fixed size
+// values and bits in Data, references in Refs, both laid out by the
+// compiler.
+type Record struct {
+	Class  int // -1 for structs
+	Layout int
+	Data   []byte
+	Refs   []any
+}
+
+// Cell holds a local variable captured by a function literal.
+type Cell struct{ V Value }
+
+// Closure is a function value.
+type Closure struct {
+	Fn    int
+	Cells []*Cell
+	Me    Value
+}
+
+// Array is an array. Arrays of BOOL are bit sets. Arrays of array types
+// with a unique key keep an index of the positions by key.
+type Array struct {
+	Elem   int // TypeDesc of the elements
+	Vals   []Value
+	Bits   []uint64 // BOOL: values
+	Nulls  []uint64 // BOOL?: set bit means present
+	N      int      // length of bit sets
+	IsBits bool
+	Key    []int // key fields of struct elements
+	Unique bool
+	index  map[string]int
+	dirty  bool
+}
+
+// Map is a map that keeps the order of insertion.
+type Map struct {
+	Key, Elem int
+	Keys      []Value
+	Vals      []Value
+	index     map[string]int
+}
+
+// ---- data access ----
+
+func getBit(data []byte, off, bit int) bool { return data[off]&(1<<bit) != 0 }
+
+func setBit(data []byte, off, bit int, on bool) {
+	if on {
+		data[off] |= 1 << bit
+	} else {
+		data[off] &^= 1 << bit
+	}
+}
+
+// ---- arrays ----
+
+// Len returns the number of elements.
+func (a *Array) Len() int {
+	if a.IsBits {
+		return a.N
+	}
+	return len(a.Vals)
+}
+
+// Get returns element i (0-based).
+func (a *Array) Get(i int) Value {
+	if !a.IsBits {
+		return a.Vals[i]
+	}
+	if a.Nulls != nil && a.Nulls[i/64]&(1<<(i%64)) == 0 {
+		return Null
+	}
+	return Bool(a.Bits[i/64]&(1<<(i%64)) != 0)
+}
+
+// set stores element i without index maintenance.
+func (a *Array) set(i int, v Value) {
+	if !a.IsBits {
+		a.Vals[i] = v
+		return
+	}
+	w, b := i/64, uint64(1)<<(i%64)
+	if a.Nulls != nil {
+		if v.IsNull() {
+			a.Nulls[w] &^= b
+			a.Bits[w] &^= b
+			return
+		}
+		a.Nulls[w] |= b
+	}
+	if v.bool() {
+		a.Bits[w] |= b
+	} else {
+		a.Bits[w] &^= b
+	}
+}
+
+func (a *Array) grow() {
+	if a.IsBits {
+		if a.N%64 == 0 {
+			a.Bits = append(a.Bits, 0)
+			if a.Nulls != nil {
+				a.Nulls = append(a.Nulls, 0)
+			}
+		}
+		a.N++
+		return
+	}
+	a.Vals = append(a.Vals, Value{})
+}
+
+func (a *Array) shrink() {
+	if a.IsBits {
+		a.N--
+		return
+	}
+	a.Vals = a.Vals[:len(a.Vals)-1]
+}
+
+// ---- keys ----
+
+// keyOf encodes values of elementary types and enums as map keys.
+func keyOf(d *bytecode.TypeDesc, v Value) string {
+	if v.IsNull() {
+		return "n"
+	}
+	switch d.Kind {
+	case bytecode.TString:
+		return "s" + v.str()
+	case bytecode.TDec, bytecode.TUUID:
+		return "d" + strconv.FormatUint(v.N, 16) + ":" + strconv.FormatUint(v.X, 16)
+	case bytecode.TBytes:
+		b, _ := v.R.([]byte)
+		return "b" + string(b)
+	}
+	return "i" + strconv.FormatInt(v.int(), 10)
+}
+
+// ---- machine helpers for values ----
+
+// zero returns the zero value of a type: "" for STRING, 0 for numbers,
+// false, empty collections and structs of zero values. Optional types and
+// objects have null.
+func (m *Machine) zero(t int) Value {
+	d := &m.p.Types[t]
+	if d.Optional {
+		return Null
+	}
+	switch d.Kind {
+	case bytecode.TString:
+		return Str("")
+	case bytecode.TBytes:
+		return Value{R: []byte{}}
+	case bytecode.TStruct:
+		return Value{R: m.newRecord(-1, d.Layout)}
+	case bytecode.TArray:
+		return Value{R: m.newArray(t)}
+	case bytecode.TMap:
+		return Value{R: m.newMap(t)}
+	case bytecode.TObject, bytecode.TFunc:
+		return Null
+	}
+	return Value{}
+}
+
+func (m *Machine) newRecord(class, layout int) *Record {
+	l := &m.p.Layouts[layout]
+	r := &Record{Class: class, Layout: layout, Data: make([]byte, l.Size), Refs: make([]any, l.Refs)}
+	m.alloc(int64(l.Size + 16*l.Refs + 48))
+	for _, f := range l.Fields {
+		if f.Kind == bytecode.FRef && !f.Optional {
+			r.Refs[f.Ref] = m.zero(f.Type).R
+		}
+	}
+	return r
+}
+
+func (m *Machine) newArray(t int) *Array {
+	d := &m.p.Types[t]
+	a := &Array{Elem: d.Elem, Key: d.KeyFields, Unique: d.Unique}
+	if d.Elem >= 0 && m.p.Types[d.Elem].Kind == bytecode.TBool {
+		a.IsBits = true
+		if m.p.Types[d.Elem].Optional {
+			a.Nulls = []uint64{}
+		}
+	}
+	m.alloc(64)
+	return a
+}
+
+// newArrayOf creates an array with elements of type elem.
+func (m *Machine) newArrayOf(elem int) *Array {
+	a := &Array{Elem: elem}
+	if elem >= 0 && m.p.Types[elem].Kind == bytecode.TBool {
+		a.IsBits = true
+		if m.p.Types[elem].Optional {
+			a.Nulls = []uint64{}
+		}
+	}
+	return a
+}
+
+func (m *Machine) newMap(t int) *Map {
+	d := &m.p.Types[t]
+	m.alloc(64)
+	return &Map{Key: d.Key, Elem: d.Elem, index: map[string]int{}}
+}
+
+// refValue turns a reference slot into a value.
+func refValue(r any) Value {
+	if r == nil {
+		return Null
+	}
+	return Value{R: r}
+}
+
+// copyValue returns a deep copy of a value of a struct, array or map
+// type; other values are returned unchanged.
+func (m *Machine) copyValue(t int, v Value) Value {
+	if v.IsNull() || t < 0 {
+		return v
+	}
+	d := &m.p.Types[t]
+	switch d.Kind {
+	case bytecode.TStruct:
+		src := v.record()
+		l := &m.p.Layouts[src.Layout]
+		r := &Record{Class: -1, Layout: src.Layout, Data: append([]byte(nil), src.Data...), Refs: make([]any, len(src.Refs))}
+		m.alloc(int64(len(r.Data) + 16*len(r.Refs) + 48))
+		for _, f := range l.Fields {
+			if f.Kind == bytecode.FRef && src.Refs[f.Ref] != nil {
+				r.Refs[f.Ref] = m.copyValue(f.Type, Value{R: src.Refs[f.Ref]}).R
+			}
+		}
+		return Value{R: r}
+	case bytecode.TArray:
+		src := v.array()
+		a := &Array{Elem: src.Elem, IsBits: src.IsBits, N: src.N, Key: src.Key, Unique: src.Unique, dirty: true}
+		if src.IsBits {
+			a.Bits = append([]uint64(nil), src.Bits...)
+			if src.Nulls != nil {
+				a.Nulls = append([]uint64{}, src.Nulls...)
+			}
+		} else {
+			a.Vals = make([]Value, len(src.Vals))
+			for i, e := range src.Vals {
+				a.Vals[i] = m.copyValue(src.Elem, e)
+			}
+		}
+		m.alloc(int64(32 * a.Len()))
+		return Value{R: a}
+	case bytecode.TMap:
+		src := v.mapv()
+		mp := &Map{Key: src.Key, Elem: src.Elem, Keys: append([]Value(nil), src.Keys...), Vals: make([]Value, len(src.Vals)), index: make(map[string]int, len(src.index))}
+		for i, e := range src.Vals {
+			mp.Vals[i] = m.copyValue(src.Elem, e)
+		}
+		for k, i := range src.index {
+			mp.index[k] = i
+		}
+		m.alloc(int64(64 * len(mp.Keys)))
+		return Value{R: mp}
+	}
+	return v
+}
+
+// equal compares two values of type t.
+func (m *Machine) equal(t int, a, b Value) bool {
+	if a.IsNull() || b.IsNull() {
+		return a.IsNull() == b.IsNull()
+	}
+	d := &m.p.Types[t]
+	switch d.Kind {
+	case bytecode.TString:
+		return a.str() == b.str()
+	case bytecode.TBytes:
+		x, _ := a.R.([]byte)
+		y, _ := b.R.([]byte)
+		return bytes.Equal(x, y)
+	case bytecode.TDec, bytecode.TUUID:
+		return a.N == b.N && a.X == b.X
+	case bytecode.TStruct:
+		x, y := a.record(), b.record()
+		l := &m.p.Layouts[x.Layout]
+		for _, f := range l.Fields {
+			if !m.equal(f.Type, m.getField(x, f), m.getField(y, f)) {
+				return false
+			}
+		}
+		return true
+	case bytecode.TArray:
+		x, y := a.array(), b.array()
+		if x.Len() != y.Len() {
+			return false
+		}
+		for i := range x.Len() {
+			if !m.equal(x.Elem, x.Get(i), y.Get(i)) {
+				return false
+			}
+		}
+		return true
+	case bytecode.TMap:
+		x, y := a.mapv(), b.mapv()
+		if len(x.Keys) != len(y.Keys) {
+			return false
+		}
+		kd := &m.p.Types[x.Key]
+		for i, k := range x.Keys {
+			j, ok := y.index[keyOf(kd, k)]
+			if !ok || !m.equal(x.Elem, x.Vals[i], y.Vals[j]) {
+				return false
+			}
+		}
+		return true
+	case bytecode.TObject, bytecode.TFunc:
+		return a.R == b.R
+	}
+	return a.N == b.N
+}
+
+// getField reads a field of a record as value.
+func (m *Machine) getField(r *Record, f bytecode.Field) Value {
+	switch f.Kind {
+	case bytecode.FBool:
+		return Bool(getBit(r.Data, f.Offset, f.Bit))
+	case bytecode.FOptBool:
+		if !getBit(r.Data, f.Offset, f.Bit) {
+			return Null
+		}
+		return Bool(getBit(r.Data, f.Offset, f.Bit+1))
+	case bytecode.FRef:
+		if f.Present >= 0 && !getBit(r.Data, f.Present, f.PresBit) {
+			return Null
+		}
+		return refValue(r.Refs[f.Ref])
+	}
+	if f.Present >= 0 && !getBit(r.Data, f.Present, f.PresBit) {
+		return Null
+	}
+	return readFixed(r.Data, f.Offset, m.p.Types[f.Type].Kind)
+}
+
+// setField writes a field of a record.
+func (m *Machine) setField(r *Record, f bytecode.Field, v Value) {
+	switch f.Kind {
+	case bytecode.FBool:
+		setBit(r.Data, f.Offset, f.Bit, v.bool())
+		return
+	case bytecode.FOptBool:
+		setBit(r.Data, f.Offset, f.Bit, !v.IsNull())
+		setBit(r.Data, f.Offset, f.Bit+1, !v.IsNull() && v.bool())
+		return
+	case bytecode.FRef:
+		if f.Present >= 0 {
+			setBit(r.Data, f.Present, f.PresBit, !v.IsNull())
+		}
+		if v.IsNull() {
+			r.Refs[f.Ref] = nil
+		} else {
+			r.Refs[f.Ref] = v.R
+		}
+		return
+	}
+	if f.Present >= 0 {
+		setBit(r.Data, f.Present, f.PresBit, !v.IsNull())
+		if v.IsNull() {
+			return
+		}
+	}
+	writeFixed(r.Data, f.Offset, m.p.Types[f.Type].Kind, v)
+}
+
+func readFixed(data []byte, off int, k bytecode.TypeKind) Value {
+	le := binary.LittleEndian
+	switch k {
+	case bytecode.TInt4, bytecode.TDate:
+		return Int(int64(int32(le.Uint32(data[off:]))))
+	case bytecode.TInt8, bytecode.TTimestamp:
+		return Int(int64(le.Uint64(data[off:])))
+	case bytecode.TDec, bytecode.TUUID:
+		return Value{N: le.Uint64(data[off:]), X: le.Uint64(data[off+8:])}
+	case bytecode.TEnum:
+		return Int(int64(le.Uint16(data[off:])))
+	}
+	return Value{}
+}
+
+func writeFixed(data []byte, off int, k bytecode.TypeKind, v Value) {
+	le := binary.LittleEndian
+	switch k {
+	case bytecode.TInt4, bytecode.TDate:
+		le.PutUint32(data[off:], uint32(int32(v.int())))
+	case bytecode.TInt8, bytecode.TTimestamp:
+		le.PutUint64(data[off:], v.N)
+	case bytecode.TDec, bytecode.TUUID:
+		le.PutUint64(data[off:], v.N)
+		le.PutUint64(data[off+8:], v.X)
+	case bytecode.TEnum:
+		le.PutUint16(data[off:], uint16(v.N))
+	}
+}
+
+// ---- integer arithmetic with range checks ----
+
+func addInt(a, b int64) (int64, bool) {
+	s := a + b
+	return s, (s > a) == (b > 0)
+}
+
+func subInt(a, b int64) (int64, bool) {
+	s := a - b
+	return s, (s < a) == (b > 0)
+}
+
+func mulInt(a, b int64) (int64, bool) {
+	if a == 0 || b == 0 {
+		return 0, true
+	}
+	hi, lo := bits.Mul64(uint64(abs(a)), uint64(abs(b)))
+	neg := (a < 0) != (b < 0)
+	if hi != 0 || lo > 1<<63 || lo == 1<<63 && !neg {
+		return 0, false
+	}
+	if neg {
+		return -int64(lo), true
+	}
+	return int64(lo), true
+}
+
+func abs(n int64) int64 {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+func fitsInt4(n int64) bool { return n >= -1<<31 && n < 1<<31 }
+
+// ---- formatting ----
+
+func formatUUID(v Value) string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[:8], v.X)
+	binary.BigEndian.PutUint64(b[8:], v.N)
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+func parseUUID(s string) (Value, bool) {
+	h := strings.ReplaceAll(s, "-", "")
+	if len(h) != 32 || len(s) != 36 || s[8] != '-' || s[13] != '-' || s[18] != '-' || s[23] != '-' {
+		return Value{}, false
+	}
+	hi, err1 := strconv.ParseUint(h[:16], 16, 64)
+	lo, err2 := strconv.ParseUint(h[16:], 16, 64)
+	if err1 != nil || err2 != nil {
+		return Value{}, false
+	}
+	return Value{N: lo, X: hi}, true
+}

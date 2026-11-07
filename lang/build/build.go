@@ -30,6 +30,8 @@ import (
 	"github.com/tim-riep/go-runtime/internal/kernelsrc"
 	"github.com/tim-riep/go-runtime/internal/pkgload"
 	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/lang/bytecode"
+	"github.com/tim-riep/go-runtime/lang/compile"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/types"
 	"github.com/tim-riep/go-runtime/model"
@@ -181,4 +183,17 @@ func firstDifference(a, b string) int {
 		}
 	}
 	return min(len(al), len(bl))
+}
+
+// Compile compiles a successful build. Test classes are included only for
+// tests.
+func (r *Result) Compile(tests bool) (*bytecode.Program, error) {
+	if !r.OK() {
+		return nil, fmt.Errorf("the build of %s has errors", r.Package.Manifest.ID)
+	}
+	sources := map[string]string{}
+	for _, s := range append(kernelsrc.Sources(), r.Package.Sources...) {
+		sources[s.File] = s.Text
+	}
+	return compile.Compile(r.Program, compile.Options{Tests: tests, Sources: sources, LanguageVersion: r.Package.Manifest.LanguageVersion})
 }

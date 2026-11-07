@@ -324,6 +324,7 @@ func TestTypes(t *testing.T) {
 	expectError(t, class("public method M(r: /TRT/LEVEL) returns STRING\nreturn r.VALUE()\nend"), "enum", `fixed value "low" of /TRT/LEVEL needs a name`)
 	expectError(t, class("private attribute A: INT4\npublic static method M() returns INT4\nreturn A\nend"), "static", "needs an instance")
 	expectError(t, class("public method M()\nvar f = function () => 1\nvar x = 1\nvar g = function ()\nx = 2\nend\nend"), "statement", "cannot assign x of the enclosing method")
+	expectError(t, class("private attribute OTHER: /TRT/C"), "null-check", "needs an initial value or must be optional")
 	expectError(t, map[string]string{"src/C.class": "public class /TRT/C\npublic method M()\nvar o = new /TRT/D()\no.SECRET()\nend\nend\n",
 		"src/D.class": "public class /TRT/D\nprivate method SECRET()\nend\nend\n"}, "visibility", "SECRET is private to /TRT/D")
 }

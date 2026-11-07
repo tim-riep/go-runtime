@@ -15,8 +15,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -25,6 +28,7 @@ import (
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/lang/types"
+	"github.com/tim-riep/go-runtime/vm"
 )
 
 // sourceExts are the extensions of source files.
@@ -41,6 +45,12 @@ func (c *cli) dispatchLang(ctx context.Context, cmd string, args []string) (int,
 			return exitUsage, true
 		}
 		return c.build(args[0]), true
+	case "run":
+		if len(args) != 3 && len(args) != 4 {
+			fmt.Fprintln(c.stderr, "usage: rt run <package directory> <class> <method> [arguments as JSON array]")
+			return exitUsage, true
+		}
+		return c.run(ctx, args), true
 	}
 	return 0, false
 }
@@ -155,3 +165,43 @@ func (c *cli) build(dir string) int {
 	fmt.Fprintf(c.stdout, "build of %s succeeded: %d classes and interfaces\n", r.Package.Manifest.ID, n)
 	return exitOK
 }
+
+// run calls a public static method of a package and prints its result as
+// JSON.
+func (c *cli) run(ctx context.Context, args []string) int {
+	r, code := c.compile(args[0])
+	if r == nil {
+		return code
+	}
+	p, err := r.Compile(false)
+	if err != nil {
+		return c.fail(err)
+	}
+	var list []json.RawMessage
+	if len(args) == 4 {
+		if err := json.Unmarshal([]byte(args[3]), &list); err != nil {
+			fmt.Fprintf(c.stderr, "error: the arguments must be a JSON array: %v\n", err)
+			return exitUsage
+		}
+	}
+	m, err := vm.New(p, vm.Options{Log: logWriter{c.stderr}})
+	if err != nil {
+		return c.fail(err)
+	}
+	out, err := m.CallJSON(ctx, args[1], args[2], list)
+	if err != nil {
+		fmt.Fprintf(c.stderr, "error: %v\n", err)
+		return exitError
+	}
+	var pretty bytes.Buffer
+	if json.Indent(&pretty, out, "", "  ") == nil {
+		out = pretty.Bytes()
+	}
+	fmt.Fprintln(c.stdout, string(out))
+	return exitOK
+}
+
+// logWriter prints log statements of programs.
+type logWriter struct{ w io.Writer }
+
+func (l logWriter) Log(level, text string) { fmt.Fprintf(l.w, "%s: %s\n", level, text) }

@@ -85,6 +85,8 @@ Commands:
 Commands for source files (no database needed):
   fmt [path...]            format source files in canonical form (--check only lists them)
   build <dir>              compile the sources of a package directory and show diagnostics
+  run <dir> <class> <method> [json]
+                           call a public static method; arguments and result are JSON
 
 Flags (anywhere on the command line):
 `

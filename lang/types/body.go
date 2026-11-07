@@ -106,6 +106,13 @@ func (c *checker) bodies(k *Class) {
 	}
 	for _, a := range k.Attributes {
 		if a.Init == nil {
+			// Objects and functions have no zero value.
+			switch a.Type.(type) {
+			case *Class, *Func:
+				c.at(a.Site, func() {
+					c.errorf(a.Site.Pos, CodeNullCheck, "the attribute %s of type %s needs an initial value or must be optional", a.Name, a.Type)
+				})
+			}
 			continue
 		}
 		c.at(a.Site, func() {
@@ -325,6 +332,10 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 		c.block(f, sc, s.Body.Stmts, t)
 		f.loops--
 		e.replace(fl)
+		// while true without break never ends normally.
+		if lit, ok := s.Cond.(*syntax.LiteralExpr); ok && lit.Raw == "true" && !hasBreak(s.Body.Stmts) {
+			return true
+		}
 	case *syntax.ForStmt:
 		c.forStmt(f, sc, s, e)
 	case *syntax.BreakStmt, *syntax.ContinueStmt:
@@ -765,4 +776,35 @@ func (c *checker) includeStmt(f *fnCtx, sc *scope, s *syntax.IncludeStmt, e env)
 	c.loc = Site{File: u.File, Chain: chain}
 	defer func() { c.loc = saved }()
 	return c.stmts(f, sc, file.Include.Body.Stmts, e)
+}
+
+// hasBreak reports a break that leaves the loop with this body.
+func hasBreak(ss []syntax.Stmt) bool {
+	for _, s := range ss {
+		switch s := s.(type) {
+		case *syntax.BreakStmt:
+			return true
+		case *syntax.IfStmt:
+			for _, cl := range s.Clauses {
+				if hasBreak(cl.Body.Stmts) {
+					return true
+				}
+			}
+			if s.Else != nil && hasBreak(s.Else.Stmts) {
+				return true
+			}
+		case *syntax.TryStmt:
+			if hasBreak(s.Body.Stmts) || s.Finally != nil && hasBreak(s.Finally.Stmts) {
+				return true
+			}
+			for _, cc := range s.Catches {
+				if hasBreak(cc.Body.Stmts) {
+					return true
+				}
+			}
+		case *syntax.IncludeStmt:
+			return true // conservative: an include may contain break
+		}
+	}
+	return false
 }
