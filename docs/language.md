@@ -59,7 +59,8 @@ end
 
 Reserved for database access in a later language part: `commit`, `rollback`, `session`,
 `using`, `select`, `insert`, `update`, `delete`, `from`, `where`. `commit` and `rollback`
-already parse as statements and are rejected by the compiler until then.
+already parse as statements and are rejected by the compiler until then. `transform`,
+`parameters` and `into` are reserved for later language parts as well.
 
 ## Types
 

@@ -173,3 +173,12 @@ func tree(x syntax.Expr) string {
 	}
 	return syntax.PrintExpr(x)
 }
+
+func TestReservedWords(t *testing.T) {
+	for _, w := range append(append([]string{}, syntax.DatabaseKeywords...), syntax.FutureKeywords...) {
+		src := "public class /X/A\n\n  public static method M()\n    var " + w + " = 1\n  end\n\nend\n"
+		if _, errs := syntax.Parse("f", src); len(errs) == 0 {
+			t.Errorf("%s is accepted as a name", w)
+		}
+	}
+}
