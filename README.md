@@ -17,8 +17,10 @@ transaction together with its own bookkeeping.
   belongs to `TRFIN`, even if `TROTTO` extends it.
 - **Domain**: base type, length, decimals and optional fixed values. Usable by the owning
   package and by every package that requires it directly or transitively.
-- **Table**: fields referencing domains, a primary key, foreign keys and the mandatory flag
-  `tenantSpecific`.
+- **Data element**: a domain with field labels in every language. A field references either a
+  domain or a data element; fields without data element have no labels.
+- **Table**: fields, a primary key, foreign keys and the mandatory attributes
+  `tenantSpecific` and `dataClass`.
 - **Extension**: additional fields and foreign keys for a table of a required package. Field
   names receive the namespace of the extending package: `OTTO_ID` in package `TROTTO` becomes
   the column `/TROTTO/OTTO_ID`. Extension fields are never key fields and must be nullable or
@@ -28,6 +30,10 @@ transaction together with its own bookkeeping.
   comparison. `Check` compares it with the actual schema and reports discrepancies.
 - **Tenants**: the kernel table `/RT/TENANTS`. Tenant-specific tables get the field
   `/RT/TENANT` as first key field and a foreign key to the tenant table.
+- **Languages**: the kernel table `/RT/LANGUAGES` lists the languages translatable texts may
+  use. English always exists.
+- **Setting**: tables that together form one configuration, as a tree below a root table
+  connected through foreign keys. Other packages can add dependent tables to a setting.
 
 ## Package format
 
@@ -35,9 +41,12 @@ transaction together with its own bookkeeping.
 TRFIN/
   manifest.json
   schema/
-    domains/*.json      one domain per file, named <NAME>.json
-    tables/*.json       one table per file, named <NAME>.json
-    extensions/*.json   one extension per extended table
+    domains/*.json             one domain per file, named <NAME>.json
+    data-elements/*.json       one data element per file, named <NAME>.json
+    tables/*.json              one table per file, named <NAME>.json
+    extensions/*.json          one extension per extended table
+    settings/*.json            one setting per file, named <ID>.json
+    setting-extensions/*.json  one extension per extended setting, named <ID>.json
 ```
 
 `manifest.json`:
@@ -65,9 +74,10 @@ Domain, table and extension (abridged; see [examples](examples)):
 {
   "name": "COMPANIES",
   "tenantSpecific": true,
+  "dataClass": "configuration",
   "fields": [
-    { "name": "COMPANY_ID", "domain": "COMPANY_ID" },
-    { "name": "COUNTRY", "domain": "COUNTRY_CODE", "notNull": true },
+    { "name": "COMPANY_ID", "dataElement": "COMPANY" },
+    { "name": "COUNTRY", "dataElement": "COUNTRY", "notNull": true },
     { "name": "STATUS", "domain": "COMPANY_STATUS", "notNull": true, "default": "ACTIVE" }
   ],
   "primaryKey": ["COMPANY_ID"],
@@ -83,6 +93,47 @@ Domain, table and extension (abridged; see [examples](examples)):
 
 Every file is validated against the JSON Schemas in [schemas](schemas). Errors name the
 package, the file and the JSON Pointer inside the document.
+
+Data element (`schema/data-elements/COUNTRY.json`). All four labels are required for every
+language given; English is mandatory. Lengths in characters: `short` 10, `medium` 20, `long`
+40, `heading` 40.
+
+```json
+{
+  "name": "COUNTRY",
+  "domain": "COUNTRY_CODE",
+  "texts": {
+    "en": { "short": "Country", "medium": "Country", "long": "Country key", "heading": "Country" },
+    "de": { "short": "Land", "medium": "Land", "long": "Länderschlüssel", "heading": "Land" }
+  }
+}
+```
+
+Setting (`schema/settings/TRFIN_COMPANIES.json`) and an extension of it in another package
+(`schema/setting-extensions/TRFIN_COMPANIES.json`). `foreignKey` names the key of the table to
+its parent; labels have at most 60 characters.
+
+```json
+{
+  "id": "TRFIN_COMPANIES",
+  "texts": { "en": { "label": "Companies" }, "de": { "label": "Firmen" } },
+  "root": { "table": "COMPANIES", "operations": { "create": true, "update": true, "delete": true } },
+  "tables": [
+    { "table": "BANK_ACCOUNTS", "parent": "COMPANIES", "foreignKey": "COMPANY",
+      "operations": { "create": true, "update": true, "delete": false } }
+  ]
+}
+```
+
+```json
+{
+  "setting": "TRFIN_COMPANIES",
+  "tables": [
+    { "table": "OTTO_CONNECTIONS", "parent": "COMPANIES", "foreignKey": "COMPANY",
+      "operations": { "create": true, "update": true, "delete": true } }
+  ]
+}
+```
 
 ### Base types
 
@@ -122,6 +173,49 @@ normalization (`1.0` vs `1.00`).
 - Kernel domains and the tenant table are available to every package. Other kernel tables
   can neither be referenced nor extended.
 
+### Data classes
+
+| Class | Meaning |
+|---|---|
+| `configuration` | Defines the behavior of the application; set up once, rarely changed. |
+| `application` | Master and transactional data of the running business. |
+| `runtimeConfiguration` | Configuration maintained during operation, e.g. exchange rates. |
+| `system` | Reserved for the kernel's native tables. |
+
+Extensions inherit the class of their table. Changing a class on upgrade is not destructive
+and needs no statements; the plan marks it with `[DATA CLASS]`. Databases created by the first
+kernel version get the class `application` for all package tables when they are migrated, as
+a provisional value until each package is applied again.
+
+### Languages and texts
+
+Language codes are ISO 639-1 codes in lower case. Texts of data elements and settings are
+stored in text tables per language. Installing a package with texts in a language that is not
+set up fails with `rterr.MissingLanguages`, which names the missing languages. A language with
+texts can only be removed with confirmation, which removes its texts as well.
+
+### Settings
+
+- A setting contains only tables of the classes `configuration` or `runtimeConfiguration`, all
+  of the same class and the same tenant flag, which the setting takes over.
+- A table belongs to at most one setting. Tables without setting are allowed.
+- Tables of the setting belong to its owner or to a required package. A setting always covers
+  all fields of its tables, including extension fields of other packages.
+- An extending package must require the owner of the setting. It only adds dependent tables,
+  anywhere in the tree, also below tables added by packages it requires. It cannot remove
+  tables or change operations.
+- Value helps are not declared; they are derived from fixed values and foreign keys.
+- Settings carry no data, so their changes are never destructive. A change that would make
+  any installed setting invalid, also one of another package, is rejected and the error names
+  the setting. Uninstalling a package removes its setting extensions.
+
+`kernel.Setting` (and `rt setting show`) returns the resolved definition from package
+[setting](setting): the setting merged with all installed extensions as a tree of tables with
+parent key, operations, class, tenant flag and origin, and per field the data element with
+labels in all languages, domain, type, length, decimals, fixed values, nullability, key,
+origin, whether the parent key fills it and the value helps. The tenant field never appears.
+`Definition.JSON` serializes it; `FormatVersion` identifies the structure.
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -159,7 +253,7 @@ afterwards. With `DryRun` only the plan is returned.
 - **Uninstall**: only if no installed package requires the package; needs `Confirm`. Removes
   its tables, domains and its extension fields in tables of other packages.
 - **Check**: compares repository and database (tables, columns, types, nullability, defaults,
-  keys, foreign keys, constraint names).
+  keys, foreign keys, constraint names) and validates the repository, including all settings.
 
 ### Dialect notes
 
@@ -208,12 +302,17 @@ go install github.com/tim-riep/go-runtime/cmd/rt@latest
 ```bash
 export RT_DATABASE=sqlite:app.db
 rt init
+rt language add de
 rt install examples/TRBASE examples/TRFIN examples/TROTTO
 rt plan examples/upgrade/TROTTO
 rt upgrade examples/upgrade/TROTTO
 rt list
 rt show COMPANIES
 rt check
+rt setting list
+rt setting show TRFIN_COMPANIES
+rt setting show TRFIN_COMPANIES --json
+rt show data-element:COUNTRY
 rt tenant create ACME --description "Acme Corp"
 rt tenant delete ACME --yes
 rt uninstall TROTTO --yes
@@ -221,7 +320,7 @@ rt log
 ```
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
-`--description`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
+`--description`, `--name`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
 failed and was rolled back, 1 other errors.
 
@@ -240,14 +339,16 @@ works in its own schema that is dropped afterwards. The generated DDL per dialec
 with golden files in `testdata/golden`; after an intended change, update them with:
 
 ```bash
-go test ./internal/planner -update
+go test ./internal/planner ./setting -update
 ```
 
 ## Not included yet
 
 Executable code in packages, permissions, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
-loader already works on `fs.FS`) and a data access layer that restricts queries to a tenant.
+loader already works on `fs.FS`), a data access layer that restricts queries to a tenant,
+reading and writing data through settings, display properties of fields, translation packages
+for objects of other packages, and export or protection of configuration by data class.
 
 ## License
 
