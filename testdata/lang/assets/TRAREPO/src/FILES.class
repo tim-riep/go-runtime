@@ -1,0 +1,15 @@
+# Sends the documents of TRARLIB with SEND_ASSET, without loading them.
+public class /TRAREPO/FILES implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRARLIB", "docs")
+    var path = request.REST_PATH()
+    if not repo.EXISTS(path)
+      return false
+    end
+    response.WRITE_TEXT("dropped")
+    response.SEND_ASSET(request, repo, path)
+    return true
+  end
+
+end

@@ -19,6 +19,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -357,6 +359,48 @@ func TestAssetRepositoryLiterals(t *testing.T) {
 		var ce *rterr.CompileError
 		if !errors.As(err, &ce) || ce.Package != "TRAREPO" || !strings.Contains(err.Error(), "package TRARLIB has no asset repository docs") {
 			t.Fatalf("upgrade without docs: %v", err)
+		}
+	})
+}
+
+// TestSendAsset streams an asset that is too large to load into the
+// memory of an execution, with the headers of the asset handler.
+func TestSendAsset(t *testing.T) {
+	withAssetKernel(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		if err := k.ActivateHTTPService(ctx, "/trarepo"); err != nil {
+			t.Fatal(err)
+		}
+		k.SetMaxAssetRead(1024)
+		if got := runIn(t, k, "en", "DATA", `"TRARLIB"`, `"docs"`, `"big.txt"`); !strings.HasPrefix(got, "/TRBASE/ASSET_TOO_LARGE: ") {
+			t.Fatalf("GET of big.txt: %s", got)
+		}
+		srv := httptest.NewServer(k.HTTPHandler())
+		t.Cleanup(srv.Close)
+		c := client{t, srv.URL}
+
+		sent := c.do("GET", "/trarepo/files/big.txt", nil, "")
+		served := c.do("GET", "/trarepo/assets/big.txt", nil, "")
+		if sent.status != 200 || sent.body != strings.Repeat("x", 4096) {
+			t.Fatalf("SEND_ASSET: %d %.40q", sent.status, sent.body)
+		}
+		for _, h := range []string{"Content-Type", "Content-Length", "ETag", "Last-Modified", "Cache-Control"} {
+			if sent.header.Get(h) == "" || sent.header.Get(h) != served.header.Get(h) {
+				t.Errorf("%s: %q, the asset handler sends %q", h, sent.header.Get(h), served.header.Get(h))
+			}
+		}
+		etag := sent.header.Get("ETag")
+		if a := c.do("GET", "/trarepo/files/big.txt", func(r *http.Request) { r.Header.Set("If-None-Match", etag) }, ""); a.status != 304 || a.body != "" {
+			t.Errorf("If-None-Match: %d %q", a.status, a.body)
+		}
+		if a := c.do("HEAD", "/trarepo/files/big.txt", nil, ""); a.status != 200 || a.body != "" || a.header.Get("Content-Length") != "4096" {
+			t.Errorf("HEAD: %d %v", a.status, a.header)
+		}
+		if a := c.do("GET", "/trarepo/files/hello.txt?lang=de", nil, ""); a.status != 200 || a.body != "hallo" {
+			t.Errorf("language of the request: %d %q", a.status, a.body)
+		}
+		if a := c.do("GET", "/trarepo/files/nope.txt", nil, ""); a.status != 404 {
+			t.Errorf("missing asset: %d", a.status)
 		}
 	})
 }

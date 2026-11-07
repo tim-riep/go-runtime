@@ -1,0 +1,1 @@
+{ "path": "assets", "texts": { "en": { "label": "Documents of the asset handler" } }, "handlers": [{ "class": "/TRBASE/ASSET_HANDLER", "parameters": [{ "name": "package", "value": "TRARLIB" }, { "name": "repository", "value": "docs" }] }], "settings": { "anonymous": true } }

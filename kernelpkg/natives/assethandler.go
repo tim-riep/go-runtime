@@ -18,10 +18,8 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/fs"
 	"log/slog"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -30,26 +28,29 @@ import (
 	"github.com/tim-riep/go-runtime/native"
 )
 
-// assetMeta is what the kernel tells about an asset beyond fs.FileInfo.
-type assetMeta interface {
-	ETag() string
-	ContentType() string
-}
-
 func init() {
 	static("/TRBASE/ASSET_HANDLER", "SERVE", "(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE, pkg: STRING, repository: STRING) returns BOOL",
 		serveAsset)
+	instance("/TRBASE/HTTP_RESPONSE", "SEND_ASSET", "(request: /TRBASE/HTTP_REQUEST, repository: /TRBASE/ASSET_REPOSITORY, path: STRING) raises "+errAssetNotFound+", "+errPathInvalid,
+		func(c *native.Context, resp *HTTPResponse, req *HTTPRequest, a *assetRepository, p string) error {
+			content, err := a.asset(p, c.Language())
+			if err != nil {
+				return err
+			}
+			sendAsset(c, req, resp, a.src, a.r.Entries[p], content)
+			return nil
+		})
 }
 
-// serveAsset answers GET and HEAD with an asset at the rest path. The
-// content is streamed when the request is done.
+// serveAsset answers GET and HEAD with an asset at the rest path; the
+// package of the service node decides which repositories it may read.
 func serveAsset(c *native.Context, req *HTTPRequest, resp *HTTPResponse, pkg, repo string) (bool, error) {
 	r := req.R
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		return false, nil
 	}
 	name := req.Rest
-	if name == "" || !fs.ValidPath(name) || path.Clean(name) != name {
+	if model.CheckAssetPath(name) != "" {
 		return false, nil
 	}
 	src, err := c.Host.AssetRepository(req.Package, model.PackageID(pkg), repo)
@@ -60,46 +61,55 @@ func serveAsset(c *native.Context, req *HTTPRequest, resp *HTTPResponse, pkg, re
 	if err != nil {
 		return false, err
 	}
-	fsys := src.FS(c, model.Some(c.Language()))
-	info, err := fs.Stat(fsys, name)
-	if errors.Is(err, fs.ErrNotExist) || err == nil && info.IsDir() {
+	e := src.Repository().Entries[name]
+	if e == nil || e.Folder {
 		return false, nil
 	}
-	if err != nil {
-		return false, err
+	content, _ := model.ChooseAssetContent(e, model.Some(c.Language()))
+	if content == nil {
+		return false, nil
 	}
-	etag, ctype := "", "application/octet-stream"
-	if m, ok := info.Sys().(assetMeta); ok {
-		etag = m.ETag()
-		if t := m.ContentType(); t != "" {
-			ctype = t
-		}
-	}
-	modified := info.ModTime().UTC().Truncate(time.Second)
+	sendAsset(c, req, resp, src, e, content)
+	return true, nil
+}
+
+// sendAsset makes a version of an asset the response: Content-Type,
+// Content-Length, ETag, Last-Modified and Cache-Control, 304 for a
+// conditional request of an unchanged version, no body for HEAD, and
+// otherwise the content streamed from the database after the execution,
+// without loading it into its memory.
+func sendAsset(c *native.Context, req *HTTPRequest, resp *HTTPResponse, src native.AssetSource, e *model.AssetEntry, content *model.AssetContent) {
+	r := req.R
+	etag := `"` + content.SHA256 + `"`
+	modified := content.ModifiedAt.UTC().Truncate(time.Second)
+	resp.Body.Reset()
 	h := resp.Header
-	h.Set("Content-Type", ctype)
-	if etag != "" {
-		h.Set("ETag", etag)
-	}
+	h.Set("Content-Type", e.MimeType.Or("application/octet-stream"))
+	h.Set("ETag", etag)
 	h.Set("Last-Modified", modified.Format(http.TimeFormat))
 	h.Set("Cache-Control", "no-cache")
 	if notModified(r, etag, modified) {
 		resp.Status = http.StatusNotModified
 		h.Del("Content-Type")
-		return true, nil
+		h.Del("Content-Length")
+		resp.Serve = func(ctx context.Context, w http.ResponseWriter) int64 {
+			w.WriteHeader(http.StatusNotModified)
+			return 0
+		}
+		return
 	}
 	resp.Status = http.StatusOK
-	h.Set("Content-Length", strconv.FormatInt(info.Size(), 10))
-	if r.Method == http.MethodHead {
-		return true, nil
-	}
+	h.Set("Content-Length", strconv.FormatInt(content.Size, 10))
+	lang := model.Some(c.Language())
+	head := r.Method == http.MethodHead
 	resp.Serve = func(ctx context.Context, w http.ResponseWriter) int64 {
-		if c, ok := fsys.(interface{ WithContext(context.Context) fs.FS }); ok {
-			fsys = c.WithContext(ctx)
+		if head {
+			w.WriteHeader(http.StatusOK)
+			return 0
 		}
-		f, err := fsys.Open(name)
+		f, err := src.FS(ctx, lang).Open(e.Path)
 		if err != nil {
-			slog.Error("serving an asset", "package", pkg, "repository", repo, "path", name, "error", err)
+			slog.Error("serving an asset", "package", src.Repository().Package, "repository", src.Repository().ID, "path", e.Path, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return 0
 		}
@@ -107,11 +117,10 @@ func serveAsset(c *native.Context, req *HTTPRequest, resp *HTTPResponse, pkg, re
 		w.WriteHeader(http.StatusOK)
 		n, err := io.Copy(w, f)
 		if err != nil {
-			slog.Warn("streaming an asset", "path", name, "error", err)
+			slog.Warn("streaming an asset", "path", e.Path, "error", err)
 		}
 		return n
 	}
-	return true, nil
 }
 
 // notModified evaluates If-None-Match, or If-Modified-Since without it.

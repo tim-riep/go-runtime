@@ -84,6 +84,9 @@ func NewHTTPResponse(max int64) *HTTPResponse {
 }
 
 func (r *HTTPResponse) write(b []byte) error {
+	if r.Serve != nil {
+		return errors.New("the body of the response is an asset sent with SEND_ASSET")
+	}
 	if int64(r.Body.Len()+len(b)) > r.Max {
 		return &native.InputTooLarge{What: "the response", Size: int64(r.Body.Len() + len(b)), Max: r.Max}
 	}

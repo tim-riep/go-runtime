@@ -1,0 +1,1 @@
+{ "path": "files", "texts": { "en": { "label": "Documents sent by code" } }, "handlers": [{ "class": "/TRAREPO/FILES" }], "settings": { "anonymous": true } }

@@ -14,4 +14,12 @@ public class /TRBASE/HTTP_RESPONSE executed by kernel
 
   public method WRITE_TEXT(text: STRING) executed by kernel
 
+  # Makes an asset the body of the response, in the language of the
+  # request, with the headers of /TRBASE/ASSET_HANDLER: 304 for a
+  # conditional request of an unchanged asset, no body for HEAD. The
+  # content is streamed from the database when the request is done and
+  # never loaded into the memory of the execution. Earlier writes are
+  # dropped; writes after it fail.
+  public method SEND_ASSET(request: /TRBASE/HTTP_REQUEST, repository: /TRBASE/ASSET_REPOSITORY, path: STRING) raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID executed by kernel
+
 end
