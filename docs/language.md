@@ -569,13 +569,84 @@ The kernel package `TRBASE` brings:
 |---|---|
 | `/TRBASE/XSLT_UTILITIES` | `RUN(stylesheet, input)`: a stylesheet known only at runtime |
 | `/TRBASE/XSLT_STYLESHEET` | native class: `COMPILE(stylesheet)` once, then `TRANSFORM(input)` many times |
-| `/TRBASE/ASSETS` | `READ(pkg, repository, path)` and `READ_IN_LANGUAGE(pkg, repository, path, language)`: assets of the own package and of required packages, else `/TRBASE/ASSET_NOT_FOUND` |
+| `/TRBASE/ASSET_REPOSITORY` | native class: asset repositories of the own and of required packages, see [Asset repositories](#asset-repositories) |
 | `/TRBASE/CLOCK` | `NOW()` and `TODAY()`, capability `clock` |
 | `/TRBASE/UUID` | `NEW()`: a random UUID |
 | `/TRBASE/HASH` | `SHA256(data)` |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
 `LINE_NO`, the line in the stylesheet or `null`.
+
+## Asset repositories
+
+`/TRBASE/ASSET_REPOSITORY` reads the asset repositories of packages (see the README for
+their format). An object stands for one repository:
+
+```
+var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRFIN", "templates")
+
+if repo.EXISTS("invoice/invoice.xsl")
+  var info = repo.INFO("invoice/invoice.xsl")
+  var stylesheet = repo.GET("invoice/invoice.xsl")
+  var media_type = info.MIME_TYPE default "none"
+  log info "Loaded {info.PATH} ({info.SIZE} bytes, {media_type})"
+end
+
+for entry in repo.LIST("invoice")
+  if entry.IS_FOLDER
+    continue
+  end
+  var languages = entry.LANGUAGES default []
+  log info "{entry.PATH} {languages.LENGTH()} language variants"
+end
+```
+
+| Method | Result |
+|---|---|
+| `OPEN(pkg, repository)` | static: the repository, or `ASSET_REPOSITORY_NOT_FOUND`, `ASSET_ACCESS_DENIED` |
+| `LIST_REPOSITORIES(pkg)` | static: `/TRBASE/ASSET_REPOSITORY_ARRAY` of ID and label, ordered by ID |
+| `PACKAGE_ID()`, `ID()` | the key of the repository |
+| `EXISTS(path)` | `BOOL` for a folder or asset |
+| `INFO(path)` | `/TRBASE/ASSET_INFO` |
+| `LIST(path)`, `LIST_TREE(path)` | `/TRBASE/ASSET_ENTRY_ARRAY` of a folder, or of all entries below it, ordered by path |
+| `GET(path)`, `GET_IN_LANGUAGE(path, language)` | the content as `BYTES` |
+| `GET_TEXT(path)` | the content as `STRING`, decoded as UTF-8 |
+
+- Paths follow the rules of asset repositories; `""` is the top level. A path that breaks
+  them raises `ASSET_PATH_INVALID`, also in `EXISTS`. Language variants are no entries of
+  their own.
+- `GET` and `GET_TEXT` start from the language of the execution, `GET_IN_LANGUAGE` from the
+  given one; then come English and the language-independent version. A missing asset or a
+  folder raises `ASSET_NOT_FOUND`. An empty file gives empty `BYTES` and `""`; content that is
+  not UTF-8 raises `ASSET_ENCODING_INVALID` in `GET_TEXT`.
+- `/TRBASE/ASSET_INFO` has `PATH`, `IS_FOLDER`, `MIME_TYPE`, `SIZE`, `SHA256`, `ETAG`,
+  `MODIFIED_AT`, `DESCRIPTION`, `LANGUAGE`, `LANGUAGES` and `HAS_NEUTRAL`. Size, hash, entity
+  tag, time and `LANGUAGE` are those of the version `GET` returns, `LANGUAGE` being `null`
+  for the language-independent one. Folders have `null` for media type, hash, entity tag and
+  time and the size 0. `DESCRIPTION` is in the language of the execution, else in English,
+  and `null` when there is none; `""` is a description. `LANGUAGES` are the languages with a
+  variant, and `HAS_NEUTRAL` tells whether there is a language-independent version.
+- Code reads the repositories of its own package and of the packages it requires. `OPEN`
+  checks this against the package of the calling code, which the kernel takes from the
+  running methods, never from arguments: the innermost method outside of kernel packages
+  counts, so a method of a kernel package that another package calls reads with the rights
+  of that package. Kernel packages read any package when the kernel runs their code
+  directly, e.g. as handler of a service node. The object keeps the right for the rest of
+  the execution.
+- With two string literals `OPEN` is checked when the code compiles: the repository must
+  exist and be readable. It is recorded as used, so an upgrade that removes it fails when
+  the code is compiled again.
+- `GET` and `GET_TEXT` load at most 16 MiB (`kernel.Config.MaxAssetRead`,
+  `--max-asset-read`, `RT_MAX_ASSET_READ`) and raise `ASSET_TOO_LARGE` beyond, before
+  reading. `/TRBASE/HTTP_RESPONSE.SEND_ASSET` streams an asset of any size into a response.
+- An execution reads a content once, however often code asks for it. Contents up to 1 MiB
+  stay in a cache of the kernel, addressed by their hash, so an upgrade never gives an old
+  content.
+- All exceptions are checked and extend `/TRBASE/ASSET_ERROR`, with `PACKAGE_ID` and
+  `REPOSITORY`: `ASSET_REPOSITORY_NOT_FOUND`, `ASSET_ACCESS_DENIED` (with `CALLER`),
+  `ASSET_NOT_FOUND`, `ASSET_PATH_INVALID`, `ASSET_ENCODING_INVALID` (with `PATH`) and
+  `ASSET_TOO_LARGE` (with `PATH`, `SIZE` and `MAX_SIZE`). `raises /TRBASE/ASSET_ERROR`
+  declares them all.
 
 ## Transformations
 
@@ -700,6 +771,13 @@ when no handler catches it.
 | `SET_STATUS(code)`, `STATUS()`  | status code, 200 unless set                                |
 | `SET_HEADER(name, value)`, `ADD_HEADER(name, value)` | replace or add a header field          |
 | `WRITE(data)`, `WRITE_TEXT(text)` | append to the body                                       |
+| `SEND_ASSET(request, repository, path)` | an asset as body with the headers of `/TRBASE/ASSET_HANDLER`, streamed |
+
+`SEND_ASSET` sends an asset of an opened `/TRBASE/ASSET_REPOSITORY` in the language of the
+request: `Content-Type`, `Content-Length`, `ETag`, `Last-Modified` and `Cache-Control`, 304
+for conditional requests and no body for `HEAD`. The content is streamed when the request is
+done, without loading it into the memory of the execution; what was written before is dropped,
+and writing afterwards fails.
 
 The response is kept until the request ends, so status and header fields can change up to
 the end; a body over `maxResponseSize` raises `/RT/INPUT_TOO_LARGE`. The status decides

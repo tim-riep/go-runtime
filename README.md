@@ -297,7 +297,8 @@ place where the components go, in `components` as in `fields`.
   Repositories and assets are always addressed by package ID, repository ID and path.
 - `description` (the label) is mandatory and needs English. `folders` adds descriptions and
   folders that may be missing on disk. `files` sets the media type, a description and
-  language variants per path.
+  language variants per path. Descriptions of folders and files may be `""`, which differs
+  from no description.
 - A path with `languages` is language-dependent. Its variant files are reachable only through
   that path; a file at the path itself is the language-independent version. Reading with a
   language takes the requested language, then English, then the language-independent version;
@@ -329,7 +330,9 @@ fsys, err := k.AssetFS(ctx, "TRFIN", "templates", model.Some("de")) // io/fs.FS 
 tmpl, err := template.ParseFS(fsys, "mail/*.html")
 ```
 
-`StatAsset`, `ListAssets`, `AssetExists` and `AssetRepositories` complete the API. Missing
+`StatAsset`, `ListAssets`, `AssetExists` and `AssetRepositories` complete the API. Code
+reads asset repositories with `/TRBASE/ASSET_REPOSITORY`; see the
+[language reference](docs/language.md#asset-repositories). Missing
 assets return `rterr.AssetNotFound`, which matches `fs.ErrNotExist`.
 
 ### null and the empty string
@@ -774,7 +777,7 @@ classes of an installed package, or of a directory compiled against the installe
 packages; every test method runs in a tenant of its own and leaves no rows.
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
-`--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`, `--label`,
+`--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`, `--max-asset-read`, `--label`,
 `--expires`, `--addr`, `--tls-cert`, `--tls-key`, `--read-timeout`, `--write-timeout`,
 `--shutdown-timeout`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
