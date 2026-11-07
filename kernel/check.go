@@ -112,7 +112,9 @@ func compareCatalogs(want, got *dialect.Catalog) []Discrepancy {
 			add(name, "table is not in the repository")
 		}
 	}
-	slices.SortFunc(out, func(a, b Discrepancy) int { return cmp.Or(cmp.Compare(a.Object, b.Object), cmp.Compare(a.Problem, b.Problem)) })
+	slices.SortFunc(out, func(a, b Discrepancy) int {
+		return cmp.Or(cmp.Compare(a.Object, b.Object), cmp.Compare(a.Problem, b.Problem))
+	})
 	return out
 }
 

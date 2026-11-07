@@ -412,7 +412,7 @@ func (*Dialect) ClassifyError(err error) error {
 		cv.Kind = rterr.ViolationNotNull
 	case "23505":
 		cv.Kind = rterr.ViolationUnique
-	case "22001", "22003": // value too long for the type, numeric overflow
+	case "22001", "22003", "22007", "22008": // too long, numeric overflow, invalid date or time
 		cv.Kind = rterr.ViolationCheck
 	default:
 		return err
