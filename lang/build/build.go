@@ -85,26 +85,29 @@ func Dir(dir string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := Package(pkg, deps)
-	if !r.OK() {
-		return r, nil
+	schema, err := Schema(pkg, deps)
+	if err != nil {
+		return Package(pkg, deps), nil
 	}
-	// The packages it requires are compiled first, in installation order.
-	r.Deps = map[model.PackageID]*bytecode.Program{}
+	// The packages it requires are compiled first, in installation order,
+	// so that the capabilities of kernel packages are known.
+	programs := map[model.PackageID]*bytecode.Program{}
 	for _, dep := range deps {
 		if len(dep.Sources) == 0 {
 			continue
 		}
-		dr := CheckPackage(dep, r.Schema)
+		dr := CheckPackageOpts(dep, schema, Options{Programs: programs})
 		if !dr.OK() {
 			return nil, fmt.Errorf("the required package %s does not compile: %v", dep.Manifest.ID, dr.Errors())
 		}
-		p, err := dr.Compile(false, r.Deps)
+		p, err := dr.Compile(false, programs)
 		if err != nil {
 			return nil, err
 		}
-		r.Deps[dep.Manifest.ID] = p
+		programs[dep.Manifest.ID] = p
 	}
+	r := CheckPackageOpts(pkg, schema, Options{Programs: programs})
+	r.Deps = programs
 	return r, nil
 }
 
@@ -271,6 +274,25 @@ func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
 
 // CheckPackageWith is CheckPackage with the native methods of a registry.
 func CheckPackageWith(pkg *model.Package, schema *model.Schema, natives *native.Registry) *Result {
+	return CheckPackageOpts(pkg, schema, Options{Natives: natives})
+}
+
+// Options control the check of a package.
+type Options struct {
+	// Natives are the native methods of the kernel; nil means
+	// native.Default.
+	Natives *native.Registry
+	// Programs are compiled programs of required packages; the
+	// capabilities of the methods of kernel packages come from them.
+	Programs map[model.PackageID]*bytecode.Program
+}
+
+// CheckPackageOpts is CheckPackage with options.
+func CheckPackageOpts(pkg *model.Package, schema *model.Schema, opts Options) *Result {
+	natives := opts.Natives
+	if natives == nil {
+		natives = native.Default
+	}
 	r := &Result{Package: pkg, Schema: schema, natives: natives}
 	id := pkg.Manifest.ID
 	if _, err := KernelProgram(); err != nil {
@@ -330,9 +352,9 @@ func CheckPackageWith(pkg *model.Package, schema *model.Schema, natives *native.
 		}
 	}
 	var visible []model.PackageID
-	kernelPackage := pkg.Manifest.KernelPackage
+	kernelPackage, caps := pkg.Manifest.KernelPackage, pkg.Manifest.Capabilities
 	if info := schema.Packages[id]; info != nil {
-		kernelPackage = info.Manifest.KernelPackage
+		kernelPackage, caps = info.Manifest.KernelPackage, info.Manifest.Capabilities
 		for _, req := range info.Manifest.Requires {
 			visible = append(visible, req.ID)
 		}
@@ -342,7 +364,7 @@ func CheckPackageWith(pkg *model.Package, schema *model.Schema, natives *native.
 		}
 	}
 	prog, diags := types.Check(types.Config{Package: id, Schema: schema, Units: units, Libraries: libraries, Visible: visible, Includes: incs,
-		KernelPackage: kernelPackage, Natives: natives})
+		KernelPackage: kernelPackage, Natives: natives, Capabilities: caps, LibraryCapabilities: libraryCapabilities(schema, opts.Programs)})
 	r.Program = prog
 	r.Diagnostics = append(r.Diagnostics, diags...)
 	for name, u := range incs {
@@ -412,4 +434,21 @@ func (r *Result) Image(tests bool) (*vm.Image, error) {
 		}
 	}
 	return vm.LinkWith(0, r.natives, append(progs, p)...)
+}
+
+// libraryCapabilities returns the capabilities of the methods of the
+// compiled kernel packages.
+func libraryCapabilities(schema *model.Schema, programs map[model.PackageID]*bytecode.Program) func(class, method string) []string {
+	return func(class, method string) []string {
+		id, _, _ := model.SplitName(class)
+		if info := schema.Packages[id]; info == nil || !info.Manifest.KernelPackage {
+			return nil
+		}
+		p := programs[id]
+		if p == nil {
+			return nil
+		}
+		m, _ := p.Method(class, method)
+		return m.Capabilities
+	}
 }

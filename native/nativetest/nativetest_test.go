@@ -22,10 +22,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tim-riep/go-runtime/internal/pkgload"
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/lang/build"
+	"github.com/tim-riep/go-runtime/lang/bytecode"
+	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/native/gen"
 	"github.com/tim-riep/go-runtime/vm"
@@ -191,5 +194,80 @@ func TestNativeClass(t *testing.T) {
 	// Objects of native classes cannot leave or enter through JSON.
 	if _, err := callClass(t, m, "/TRTEST/COUNTER", "START", "1"); err == nil {
 		t.Error("rt run returned an object of a native class")
+	}
+}
+
+// TestLimits stops native methods at the time limit of the execution and
+// of the method, and inputs above the maximum size.
+func TestLimits(t *testing.T) {
+	r, _ := load(t, Registry)
+	image, err := r.Image(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := vm.New(image, vm.Options{MaxNativeInput: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, err = m.CallJSON(ctx, "/TRTEST/NATIVES", "SLOW", nil)
+	var le *vm.LimitError
+	if !errors.As(err, &le) || le.Limit != "time limit" || time.Since(start) > 5*time.Second {
+		t.Errorf("SLOW: %v", err)
+	}
+	_, err = call(t, m, "SLOW_LIMITED")
+	var e *vm.Exception
+	if !errors.As(err, &e) || e.Class != "/RT/NATIVE_ERROR" || !strings.Contains(e.Text, "time limit of 50ms") {
+		t.Errorf("SLOW_LIMITED: %v", err)
+	}
+	if got, err := call(t, m, "SIZE", `"AAAA"`); err != nil || got != "3" {
+		t.Errorf("SIZE of 3 bytes: %s, %v", got, err)
+	}
+	_, err = call(t, m, "SIZE", `"AAAAAAAAAAAA"`)
+	if !errors.As(err, &e) || e.Class != "/RT/INPUT_TOO_LARGE" || !strings.Contains(e.Text, "the data has 9 bytes, more than the limit of 8") {
+		t.Errorf("SIZE of 9 bytes: %v", err)
+	}
+}
+
+// TestCapabilities requires the capability clock in the manifest of a
+// package that calls a method of a kernel package with it, directly or
+// through a wrapper of the kernel package.
+func TestCapabilities(t *testing.T) {
+	trtest, _ := load(t, Registry)
+	prog, err := trtest.Compile(false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mr, _ := prog.Method("/TRTEST/NATIVES", "TICK_TWICE"); len(mr.Capabilities) != 1 || mr.Capabilities[0] != "clock" {
+		t.Fatalf("capabilities of the wrapper: %v", mr.Capabilities)
+	}
+	dir := filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "native", "TRCAP")
+	check := func(caps []string) *build.Result {
+		pkg, err := pkgload.Load(os.DirFS(dir), dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pkg.Manifest.Capabilities = caps
+		schema, err := build.Schema(pkg, []*model.Package{trtest.Package})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return build.CheckPackageOpts(pkg, schema, build.Options{Natives: Registry, Programs: map[model.PackageID]*bytecode.Program{"TRTEST": prog}})
+	}
+	r := check(nil)
+	var msgs []string
+	for _, d := range r.Errors() {
+		if d.Code == "capability" {
+			msgs = append(msgs, d.String())
+		}
+	}
+	if len(msgs) != 2 || !strings.Contains(msgs[0], "/TRTEST/NATIVES.TICK needs the capability clock; add it to capabilities in the manifest") ||
+		!strings.Contains(msgs[1], "TICK_TWICE needs the capability clock") {
+		t.Errorf("without capability: %v", r.Diagnostics)
+	}
+	if r := check([]string{"clock"}); !r.OK() {
+		t.Errorf("with capability: %v", r.Diagnostics)
 	}
 }

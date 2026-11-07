@@ -58,6 +58,12 @@ type ExecOptions struct {
 	LockTimeout time.Duration
 	// MaxRows limits the rows a select reads into an array; 0 means 10 000.
 	MaxRows int
+	// Timeout limits the time of the execution, also in native methods;
+	// 0 means 60 seconds.
+	Timeout time.Duration
+	// MaxNativeInput is the largest input of a native method in bytes; 0
+	// means 16 MiB.
+	MaxNativeInput int64
 	// VM are the limits and the log of the VM; its Database is set by the
 	// kernel.
 	VM vm.Options
@@ -73,13 +79,19 @@ func (o *ExecOptions) defaults() {
 	if o.MaxRows <= 0 {
 		o.MaxRows = 10_000
 	}
+	if o.Timeout <= 0 {
+		o.Timeout = 60 * time.Second
+	}
+	if o.MaxNativeInput <= 0 {
+		o.MaxNativeInput = 16 << 20
+	}
 }
 
 // Run executes a public static method of an installed package with
 // arguments in JSON and returns its result in JSON.
 func (k *Kernel) Run(ctx context.Context, opts ExecOptions, class, method string, args []json.RawMessage) ([]byte, error) {
 	var out []byte
-	err := k.Execute(ctx, opts, func(m *vm.Machine) error {
+	err := k.Execute(ctx, opts, func(ctx context.Context, m *vm.Machine) error {
 		var err error
 		out, err = m.CallJSON(ctx, class, method, args)
 		return err
@@ -88,11 +100,14 @@ func (k *Kernel) Run(ctx context.Context, opts ExecOptions, class, method string
 }
 
 // Execute prepares a machine with the code of all installed packages and
-// the database access for a tenant, and runs fn on it. At the end it
-// commits or rolls back the default session as opts.End says and rolls
-// back the other sessions.
-func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(m *vm.Machine) error) (err error) {
+// the database access for a tenant, and runs fn on it with a context that
+// ends with the time limit of the execution. At the end it commits or
+// rolls back the default session as opts.End says and rolls back the
+// other sessions.
+func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(ctx context.Context, m *vm.Machine) error) (err error) {
 	opts.defaults()
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
 	if err := k.requireInit(ctx, k.db); err != nil {
 		return err
 	}
@@ -114,12 +129,14 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(m *vm.Ma
 	vo := opts.VM
 	vo.Database = x
 	vo.MaxRows = opts.MaxRows
+	vo.MaxNativeInput = opts.MaxNativeInput
+	vo.Host = x
 	m, err := vm.New(image, vo)
 	if err != nil {
 		return err
 	}
 	defer func() { err = errors.Join(err, m.ReleaseHandles()) }()
-	return fn(m)
+	return fn(ctx, m)
 }
 
 // finish ends the sessions of an execution.

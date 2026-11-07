@@ -342,7 +342,8 @@ func (c *compiler) declareClass(k *types.Class) {
 		idx := c.newFunc(k.Name+"."+m.Name, k, m.Site, func(f *fn) { f.method(m) })
 		c.funcs[m] = idx
 		ref := bytecode.MakeRef(0, idx)
-		mr := bytecode.MethodRef{Name: m.Name, Func: ref, Static: m.Static, Public: m.Visibility == syntax.Public, Test: m.Test}
+		mr := bytecode.MethodRef{Name: m.Name, Func: ref, Static: m.Static, Public: m.Visibility == syntax.Public, Test: m.Test,
+			Capabilities: m.Capabilities}
 		if i := slices.IndexFunc(methods, func(o bytecode.MethodRef) bool { return o.Name == m.Name }); i >= 0 {
 			methods[i] = mr
 		} else {

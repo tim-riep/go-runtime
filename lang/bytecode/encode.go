@@ -178,6 +178,7 @@ func Encode(p *Program) []byte {
 			w.bool(m.Static)
 			w.bool(m.Public)
 			w.bool(m.Test)
+			w.strs(m.Capabilities)
 		}
 	}
 	w.int(len(p.Funcs))
@@ -400,7 +401,7 @@ func Decode(b []byte) (*Program, error) {
 		c.Supers = r.ints()
 		c.Methods = make([]MethodRef, r.count())
 		for j := range c.Methods {
-			c.Methods[j] = MethodRef{Name: r.str(), Func: r.int(), Static: r.bool(), Public: r.bool(), Test: r.bool()}
+			c.Methods[j] = MethodRef{Name: r.str(), Func: r.int(), Static: r.bool(), Public: r.bool(), Test: r.bool(), Capabilities: r.strs()}
 		}
 		p.Classes[i] = c
 	}

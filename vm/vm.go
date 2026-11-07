@@ -403,6 +403,9 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 			return Value{}, nil, &LimitError{Limit: "budget", Msg: fmt.Sprintf("the execution exceeded its budget of %d instructions", m.opts.Budget)}
 		}
 		if m.steps++; m.steps&1023 == 0 && m.ctx.Err() != nil {
+			if errors.Is(m.ctx.Err(), context.DeadlineExceeded) {
+				return Value{}, nil, &LimitError{Limit: "time limit", Msg: "the execution exceeded its time limit"}
+			}
 			return Value{}, nil, &LimitError{Limit: "canceled", Msg: "the execution was canceled: " + m.ctx.Err().Error()}
 		}
 		start = pc

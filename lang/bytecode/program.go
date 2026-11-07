@@ -213,6 +213,9 @@ type MethodRef struct {
 	Static bool
 	Public bool
 	Test   bool
+	// Capabilities are those a method of a kernel package uses, also
+	// through the methods it calls.
+	Capabilities []string
 }
 
 // Func is a compiled method, constructor or function literal.

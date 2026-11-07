@@ -57,6 +57,11 @@ type Config struct {
 	KernelPackage bool
 	// Natives are the native methods registered in the kernel.
 	Natives Natives
+	// Capabilities are those the manifest of the package declares.
+	Capabilities []string
+	// LibraryCapabilities returns the capabilities of a method of a
+	// required kernel package, from its compiled code.
+	LibraryCapabilities func(class, method string) []string
 }
 
 // Natives looks up the registrations of native methods.
@@ -66,6 +71,8 @@ type Natives interface {
 	NativeMethod(pkg model.PackageID, class, method string) (static bool, signature string, ok bool)
 	// NativeClass reports whether a native class is registered.
 	NativeClass(pkg model.PackageID, class string) bool
+	// NativeCapabilities returns the capabilities of a native method.
+	NativeCapabilities(pkg model.PackageID, class, method string) []string
 }
 
 // Program is a checked program.
@@ -196,7 +203,8 @@ type checker struct {
 	schema   *schemaTypes
 	info     *Info
 	diags    []Diagnostic
-	loc      Site // file and include chain of the code being checked
+	calls    map[*Method][]capCall // calls of methods of kernel packages, by caller
+	loc      Site                  // file and include chain of the code being checked
 	included map[string]bool
 	quiet    bool // declarations of libraries were checked with their package
 }
@@ -228,6 +236,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 			c.bodies(k)
 		}
 	}
+	c.capabilities()
 	p := &Program{Package: cfg.Package, Info: c.info, Includes: c.included}
 	for _, k := range c.sorted() {
 		if k.External {

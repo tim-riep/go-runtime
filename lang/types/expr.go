@@ -1182,6 +1182,7 @@ func (c *checker) methodCall(f *fnCtx, sc *scope, x *syntax.CallExpr, m *Method,
 		c.errorf(pos, CodeTest, "test methods are run by rt test")
 	}
 	c.info.Calls[x] = &Call{Kind: kind, Method: m, Receiver: recv, Args: argValues(x)}
+	c.recordCall(f, m, pos)
 	e.call()
 	return m.Sig.Result
 }

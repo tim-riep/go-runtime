@@ -1,0 +1,16 @@
+# Uses methods of the kernel package TRTEST that need the capability clock.
+public class /TRCAP/USER
+
+  public static method DIRECT() returns TIMESTAMP
+    return /TRTEST/NATIVES.TICK()
+  end
+
+  public static method WRAPPED() returns INT8
+    return /TRTEST/NATIVES.TICK_TWICE().LENGTH()
+  end
+
+  public static method WITHOUT(data: BYTES) returns INT8
+    return /TRTEST/NATIVES.SIZE(data)
+  end
+
+end

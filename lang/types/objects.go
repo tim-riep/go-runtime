@@ -223,6 +223,9 @@ type Method struct {
 	Site       Site
 	Overrides  *Method // the base method this one overrides
 	Func       *FuncInfo
+	// Capabilities are the capabilities a method of a kernel package uses
+	// directly or through the methods of kernel packages it calls.
+	Capabilities []string
 }
 
 // Abstract reports interface methods.
@@ -329,6 +332,7 @@ const (
 	CodeInclude    = "include"
 	CodeNotYet     = "not-yet"
 	CodeNative     = "native"
+	CodeCapability = "capability"
 	CodeConstant   = "constant"
 	CodeTest       = "test"
 	CodeStatement  = "statement"

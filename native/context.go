@@ -17,6 +17,7 @@ package native
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"time"
@@ -55,15 +56,30 @@ type Context struct {
 	MaxInput int64 // largest input in bytes a method should accept
 }
 
-// Tenant returns the tenant of the execution.
-func (c *Context) Tenant() string { return c.Host.Tenant() }
+// Tenant returns the tenant of the execution, "" without kernel.
+func (c *Context) Tenant() string {
+	if c.Host == nil {
+		return ""
+	}
+	return c.Host.Tenant()
+}
 
 // Language returns the language of the execution.
-func (c *Context) Language() string { return c.Host.Language() }
+func (c *Context) Language() string {
+	if c.Host == nil {
+		return model.DefaultLanguage
+	}
+	return c.Host.Language()
+}
 
 // Now returns the time of the kernel's clock, for methods with the
 // capability clock.
-func (c *Context) Now() time.Time { return c.Host.Now() }
+func (c *Context) Now() time.Time {
+	if c.Host == nil {
+		return time.Now().UTC()
+	}
+	return c.Host.Now()
+}
 
 // CheckSize fails with /RT/INPUT_TOO_LARGE when an input of n bytes is
 // larger than MaxInput.
@@ -77,7 +93,20 @@ func (c *Context) CheckSize(what string, n int) error {
 // AfterCommit registers an effect that runs after the next successful
 // commit of a session and is discarded by rollback. Session 0 is the
 // default session.
-func (c *Context) AfterCommit(session int, e Effect) error { return c.Host.AfterCommit(session, e) }
+func (c *Context) AfterCommit(session int, e Effect) error {
+	if c.Host == nil {
+		return errors.New("native: effects need the kernel")
+	}
+	return c.Host.AfterCommit(session, e)
+}
+
+// Assets returns an asset repository of a package for reading.
+func (c *Context) Assets(pkg model.PackageID, repo string, lang model.Optional[string]) (fs.FS, error) {
+	if c.Host == nil {
+		return nil, errors.New("native: assets need the kernel")
+	}
+	return c.Host.Assets(pkg, repo, lang)
+}
 
 // Effect is an effect outside of the VM and the database. It is
 // serializable so that a failed effect can be run again.

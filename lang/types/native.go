@@ -172,3 +172,118 @@ func nativeObject(t Type) *Class {
 	}
 	return nil
 }
+
+// capCall is a call of a method of a kernel package.
+type capCall struct {
+	callee *Method
+	site   Site
+}
+
+// kernelMethod reports whether a method belongs to a kernel package.
+func (c *checker) kernelMethod(m *Method) bool {
+	if m.Owner.Kernel {
+		return false // the classes of /RT/ have no capabilities
+	}
+	if m.Owner.Package == c.cfg.Package {
+		return c.cfg.KernelPackage
+	}
+	info := c.cfg.Schema.Packages[m.Owner.Package]
+	return info != nil && info.Manifest.KernelPackage
+}
+
+// recordCall notes a call of a method of a kernel package for the
+// capabilities.
+func (c *checker) recordCall(f *fnCtx, m *Method, pos syntax.Pos) {
+	if !c.kernelMethod(m) {
+		return
+	}
+	if c.calls == nil {
+		c.calls = map[*Method][]capCall{}
+	}
+	site := c.site(pos)
+	c.calls[f.method] = append(c.calls[f.method], capCall{callee: m, site: site})
+}
+
+// capabilitiesOf returns the capabilities of a method of a kernel
+// package; those of the own package must have been computed.
+func (c *checker) capabilitiesOf(m *Method) []string {
+	if m.Owner.Package != c.cfg.Package {
+		if c.cfg.LibraryCapabilities == nil {
+			return nil
+		}
+		return c.cfg.LibraryCapabilities(m.Owner.Name, m.Name)
+	}
+	return m.Capabilities
+}
+
+// capabilities computes the capabilities of the methods of a kernel
+// package, a fixed point over the calls of methods of kernel packages,
+// and checks that a normal package declares every capability of the
+// methods of kernel packages it calls.
+func (c *checker) capabilities() {
+	if c.cfg.KernelPackage {
+		var own []*Method
+		for _, k := range c.sorted() {
+			if k.External {
+				continue
+			}
+			for _, m := range k.Methods {
+				if m.Native && c.cfg.Natives != nil {
+					m.Capabilities = slices.Clone(c.cfg.Natives.NativeCapabilities(c.cfg.Package, k.Name, m.Name))
+				}
+				own = append(own, m)
+			}
+		}
+		for changed := true; changed; {
+			changed = false
+			for _, m := range own {
+				for _, call := range c.calls[m] {
+					for _, cap := range c.capabilitiesOf(call.callee) {
+						if !slices.Contains(m.Capabilities, cap) {
+							m.Capabilities = append(m.Capabilities, cap)
+							changed = true
+						}
+					}
+				}
+			}
+		}
+		for _, m := range own {
+			slices.Sort(m.Capabilities)
+			if len(m.Capabilities) == 0 {
+				continue
+			}
+			if m.Open || m.Override || c.implementsInterface(m) {
+				c.at(m.Site, func() {
+					c.errorf(m.Site.Pos, CodeCapability, "%s uses the capability %s and cannot be open, override or implement an interface method, since calls through them would hide it",
+						m, strings.Join(m.Capabilities, ", "))
+				})
+			}
+		}
+		return
+	}
+	for _, calls := range c.calls {
+		for _, call := range calls {
+			for _, cap := range c.capabilitiesOf(call.callee) {
+				if !slices.Contains(c.cfg.Capabilities, cap) {
+					c.at(call.site, func() {
+						c.errorf(call.site.Pos, CodeCapability, "%s.%s needs the capability %s; add it to capabilities in the manifest",
+							call.callee.Owner.Name, call.callee.Name, cap)
+					})
+				}
+			}
+		}
+	}
+}
+
+// implementsInterface reports whether a method implements a method of an
+// interface of its class.
+func (c *checker) implementsInterface(m *Method) bool {
+	for k := m.Owner; k != nil; k = k.Base {
+		for _, i := range k.Interfaces {
+			if i.Member(m.Name) != nil {
+				return true
+			}
+		}
+	}
+	return false
+}

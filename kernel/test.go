@@ -71,13 +71,13 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 			pkg = &model.Package{Manifest: s.Packages[id].Manifest, Sources: dir.Sources}
 		}
 	}
-	r := build.CheckPackageWith(pkg, schema, k.natives)
-	if !r.OK() {
-		return nil, compileError(id, "test", r.Diagnostics)
-	}
 	programs, err := k.storedPrograms(ctx, k.db)
 	if err != nil {
 		return nil, err
+	}
+	r := build.CheckPackageOpts(pkg, schema, build.Options{Natives: k.natives, Programs: programs})
+	if !r.OK() {
+		return nil, compileError(id, "test", r.Diagnostics)
 	}
 	prog, err := r.Compile(true, programs)
 	if err != nil {
@@ -107,6 +107,8 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 		x.sessions = []*session{{x: x, n: 1}}
 		vo.Database = x
 		vo.MaxRows = opts.MaxRows
+		vo.MaxNativeInput = opts.MaxNativeInput
+		vo.Host = x
 		err = run(vo)
 		err = errors.Join(err, x.finish(err))
 		if _, derr := k.Tenants().Delete(context.Background(), tenant, Options{Confirm: true}); derr != nil {

@@ -220,3 +220,11 @@ func (r *Registry) NativeClass(pkg model.PackageID, class string) bool {
 	c, ok := r.LookupClass(class)
 	return ok && c.Package == pkg
 }
+
+// NativeCapabilities implements the lookup of the compiler.
+func (r *Registry) NativeCapabilities(pkg model.PackageID, class, method string) []string {
+	if m, ok := r.Lookup(pkg, class, method); ok {
+		return m.Capabilities
+	}
+	return nil
+}

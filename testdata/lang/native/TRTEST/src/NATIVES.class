@@ -19,6 +19,19 @@ public class /TRTEST/NATIVES
 
   public static method PANIC() executed by kernel
 
+  public static method SLOW() executed by kernel
+
+  public static method SLOW_LIMITED() executed by kernel
+
+  public static method SIZE(data: BYTES) returns INT8 executed by kernel
+
+  public static method TICK() returns TIMESTAMP executed by kernel
+
+  # A wrapper around a method with the capability clock.
+  public static method TICK_TWICE() returns array of TIMESTAMP
+    return [TICK(), TICK()]
+  end
+
   # A method with a body around a native method.
   public static method FAIL_CODE(code: INT4) returns INT4
     try

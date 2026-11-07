@@ -21,6 +21,7 @@ import (
 	"errors"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/tim-riep/go-runtime/lang/dec"
 	"github.com/tim-riep/go-runtime/model"
@@ -97,4 +98,25 @@ func init() {
 	register("UNDECLARED", "()", func(c *native.Context) error { return native.Raise("/TRTEST/FAILED", "not declared", 1) })
 	register("BROKEN", "() returns STRING", func(c *native.Context) (string, error) { return "", errors.New("the disk is full") })
 	register("PANIC", "()", func(c *native.Context) error { panic("something impossible") })
+	register("SLOW", "()", func(c *native.Context) error {
+		select {
+		case <-c.Done():
+			return c.Err()
+		case <-time.After(10 * time.Second):
+			return nil
+		}
+	})
+	Registry.Register(native.Method{Package: "TRTEST", Class: class, Method: "SLOW_LIMITED", Static: true, Signature: "()", Timeout: 50 * time.Millisecond,
+		Func: func(c *native.Context) error {
+			<-c.Done()
+			return c.Err()
+		}})
+	register("SIZE", "(data: BYTES) returns INT8", func(c *native.Context, data []byte) (int64, error) {
+		if err := c.CheckSize("the data", len(data)); err != nil {
+			return 0, err
+		}
+		return int64(len(data)), nil
+	})
+	Registry.Register(native.Method{Package: "TRTEST", Class: class, Method: "TICK", Static: true, Signature: "() returns TIMESTAMP",
+		Capabilities: []string{model.CapabilityClock}, Func: func(c *native.Context) (time.Time, error) { return c.Now(), nil }})
 }
