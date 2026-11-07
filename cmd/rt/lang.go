@@ -180,7 +180,7 @@ func (c *cli) run(ctx context.Context, args []string) int {
 	if r == nil {
 		return code
 	}
-	p, err := r.Compile(false)
+	image, err := r.Image(false)
 	if err != nil {
 		return c.fail(err)
 	}
@@ -191,7 +191,7 @@ func (c *cli) run(ctx context.Context, args []string) int {
 			return exitUsage
 		}
 	}
-	m, err := vm.New(p, vm.Options{Log: logWriter{c.stderr}})
+	m, err := vm.New(image, vm.Options{Log: logWriter{c.stderr}})
 	if err != nil {
 		return c.fail(err)
 	}
@@ -219,11 +219,11 @@ func (c *cli) test(ctx context.Context, dir string) int {
 	if r == nil {
 		return code
 	}
-	p, err := r.Compile(true)
+	image, err := r.Image(true)
 	if err != nil {
 		return c.fail(err)
 	}
-	results, err := testrun.Run(ctx, p, vm.Options{})
+	results, err := testrun.Run(ctx, image, string(r.Package.Manifest.ID), vm.Options{})
 	if err != nil {
 		return c.fail(err)
 	}

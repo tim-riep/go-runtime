@@ -19,23 +19,44 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 1
+const FormatVersion = 2
+
+// Ref is a direct reference to a class or function of a program or one of
+// its imports: the slot of the program (0 for the program itself, n for
+// Imports[n-1]) and the index in its table.
+type Ref = int
+
+// RefBits is the number of bits of the index in a Ref.
+const RefBits = 20
+
+// MakeRef returns the reference to entry idx of the program in slot.
+func MakeRef(slot, idx int) Ref { return slot<<RefBits | idx }
+
+// RefSlot returns the slot of a reference.
+func RefSlot(r Ref) int { return r >> RefBits }
+
+// RefIndex returns the index of a reference.
+func RefIndex(r Ref) int { return r & (1<<RefBits - 1) }
 
 // Program is a compiled package.
 type Program struct {
 	Package         string
 	LanguageVersion int
-	Files           []File      // source files, referenced by index
-	Chains          []Chain     // include chains, referenced by index; 0 is the empty chain
-	Strings         []string    // string constants
-	Bytes           [][]byte    // BYTES constants
-	Decs            [][2]uint64 // DEC constants: low and high word of the unscaled value
-	Types           []TypeDesc  // type descriptions, referenced by index
-	Layouts         []Layout
-	Enums           []Enum
-	Classes         []Class
-	Funcs           []Func
-	Tests           bool // contains test classes
+	// Imports are the packages whose classes and functions the program
+	// refers to: the kernel and all packages it requires, also indirectly,
+	// in installation order.
+	Imports []string
+	Files   []File      // source files, referenced by index
+	Chains  []Chain     // include chains, referenced by index; 0 is the empty chain
+	Strings []string    // string constants
+	Bytes   [][]byte    // BYTES constants
+	Decs    [][2]uint64 // DEC constants: low and high word of the unscaled value
+	Types   []TypeDesc  // type descriptions, referenced by index
+	Layouts []Layout
+	Enums   []Enum
+	Classes []Class
+	Funcs   []Func
+	Tests   bool // contains test classes
 }
 
 // File is a source file.
@@ -92,7 +113,7 @@ type TypeDesc struct {
 	Key       int // map key
 	Layout    int // struct
 	Enum      int
-	Class     int
+	Class     Ref
 	// Arrays of array types with a unique key keep an index over these
 	// fields of their struct elements.
 	KeyFields []int
@@ -162,27 +183,28 @@ type Class struct {
 	Kernel    bool
 	Test      bool
 	Exception bool // extends /RT/EXCEPTION or is a runtime error
-	Base      int  // -1 without base class
+	Base      Ref  // -1 without base class
 	Layout    int  // instance layout, -1 for interfaces
 	Statics   int  // layout of the static attributes, -1 if none
 	Ctor      int  // constructor function, -1 for interfaces
 	Init      int  // function setting the static attributes, -1 if none
-	VTable    []int
+	VTable    []Ref
+	VSlots    []string // the method of every slot of VTable
 	ITables   []ITable
-	Supers    []int // the class itself, its base classes and all interfaces, for type tests
+	Supers    []Ref // the class itself, its base classes and all interfaces, for type tests
 	Methods   []MethodRef
 }
 
 // ITable maps the methods of an interface to the functions of a class.
 type ITable struct {
-	Interface int
-	Funcs     []int
+	Interface Ref
+	Funcs     []Ref
 }
 
 // MethodRef names a method of a class for calls from outside.
 type MethodRef struct {
 	Name   string
-	Func   int
+	Func   Ref
 	Static bool
 	Public bool
 	Test   bool
@@ -208,7 +230,7 @@ type Func struct {
 type Handler struct {
 	Start, End int
 	Target     int
-	Class      int // -1 catches everything (finally)
+	Class      Ref // -1 catches everything (finally)
 }
 
 // Line maps code from PC on to a source position.

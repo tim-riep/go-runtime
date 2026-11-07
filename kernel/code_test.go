@@ -22,6 +22,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
@@ -109,4 +110,38 @@ func TestCompileOnInstall(t *testing.T) {
 		}
 		consistent(t, k)
 	})
+}
+
+// TestRecompileOnFormatChange compiles all code again when the stored code
+// has another bytecode format.
+func TestRecompileOnFormatChange(t *testing.T) {
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			ctx := context.Background()
+			k, err := kernel.Open(ctx, db.DSN)
+			if err != nil {
+				t.Fatal(err)
+			}
+			initialized(t, k)
+			if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, orderPackage(t, nil))}, kernel.Options{}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := k.DB().Exec(`UPDATE "/RT/BYTECODE" SET "FORMAT_VERSION" = 1, "CODE" = `+k.Dialect().Placeholder(1), []byte("old")); err != nil {
+				t.Fatal(err)
+			}
+			k.Close()
+			k, err = kernel.Open(ctx, db.DSN)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer k.Close()
+			var v int
+			if err := k.DB().QueryRow(`SELECT "FORMAT_VERSION" FROM "/RT/BYTECODE"`).Scan(&v); err != nil || v != bytecode.FormatVersion || generation(t, k) != 2 {
+				t.Fatalf("format %d, generation %d, %v", v, generation(t, k), err)
+			}
+			if _, err := k.Image(ctx); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }

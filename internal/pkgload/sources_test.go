@@ -87,3 +87,17 @@ func TestSourceErrors(t *testing.T) {
 		t.Fatalf("placeholder reference: %v", err)
 	}
 }
+
+// TestIncludeIfFoundIsExempt allows include ... if found to name an include
+// of any package, but no other reference.
+func TestIncludeIfFoundIsExempt(t *testing.T) {
+	fsys := sourceFS()
+	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TROTTO/HOOK if found\n  end\n\nend\n")
+	if _, err := Load(fsys, "mem"); err != nil {
+		t.Fatalf("if found: %v", err)
+	}
+	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TROTTO/HOOK\n  end\n\nend\n")
+	if _, err := Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "reference /TROTTO/HOOK") {
+		t.Fatalf("plain include: %v", err)
+	}
+}

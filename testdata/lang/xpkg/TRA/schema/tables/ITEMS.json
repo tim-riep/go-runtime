@@ -1,0 +1,3 @@
+{ "name": "/TRA/ITEMS", "tenantSpecific": true, "dataClass": "application",
+  "fields": [{ "name": "ITEM_ID", "domain": "/TRA/CODE" }, { "name": "NAME", "domain": "/TRA/CODE" }],
+  "primaryKey": ["ITEM_ID"] }

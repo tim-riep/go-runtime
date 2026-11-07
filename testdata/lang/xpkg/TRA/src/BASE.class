@@ -1,0 +1,26 @@
+public open class /TRA/BASE
+
+  public attribute LABEL: STRING = "base"
+
+  public open method DESCRIBE() returns STRING
+    return "TRA {LABEL}"
+  end
+
+  public static method TWICE(n: INT4) returns INT4
+    return n * 2
+  end
+
+  public static method DIVIDE(a: INT4, b: INT4) returns INT4
+    return a / b
+  end
+
+  public static method CHECK(n: INT4) raises /TRA/FAILED
+    if n < 0
+      raise /TRA/FAILED with "negative {n}"
+    end
+  end
+
+  package method HIDDEN()
+  end
+
+end

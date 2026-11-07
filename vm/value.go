@@ -74,8 +74,9 @@ func (v Value) mapv() *Map      { m, _ := v.R.(*Map); return m }
 // values and bits in Data, references in Refs, both laid out by the
 // compiler.
 type Record struct {
-	Class  int // -1 for structs
-	Layout int
+	Class  *LinkedClass // nil for structs
+	Layout *bytecode.Layout
+	P      *bytecode.Program // the program whose types the layout refers to
 	Data   []byte
 	Refs   []any
 }
@@ -85,7 +86,7 @@ type Cell struct{ V Value }
 
 // Closure is a function value.
 type Closure struct {
-	Fn    int
+	Fn    *LinkedFunc
 	Cells []*Cell
 	Me    Value
 }
@@ -93,7 +94,8 @@ type Closure struct {
 // Array is an array. Arrays of BOOL are bit sets. Arrays of array types
 // with a unique key keep an index of the positions by key.
 type Array struct {
-	Elem   int // TypeDesc of the elements
+	P      *bytecode.Program
+	Elem   int // TypeDesc of the elements in P
 	Vals   []Value
 	Bits   []uint64 // BOOL: values
 	Nulls  []uint64 // BOOL?: set bit means present
@@ -107,6 +109,7 @@ type Array struct {
 
 // Map is a map that keeps the order of insertion.
 type Map struct {
+	P         *bytecode.Program
 	Key, Elem int
 	Keys      []Value
 	Vals      []Value
@@ -211,11 +214,11 @@ func keyOf(d *bytecode.TypeDesc, v Value) string {
 
 // ---- machine helpers for values ----
 
-// zero returns the zero value of a type: "" for STRING, 0 for numbers,
-// false, empty collections and structs of zero values. Optional types and
-// objects have null.
-func (m *Machine) zero(t int) Value {
-	d := &m.p.Types[t]
+// zero returns the zero value of type t of program p: "" for STRING, 0
+// for numbers, false, empty collections and structs of zero values.
+// Optional types and objects have null.
+func (m *Machine) zero(p *bytecode.Program, t int) Value {
+	d := &p.Types[t]
 	if d.Optional {
 		return Null
 	}
@@ -225,58 +228,57 @@ func (m *Machine) zero(t int) Value {
 	case bytecode.TBytes:
 		return Value{R: []byte{}}
 	case bytecode.TStruct:
-		return Value{R: m.newRecord(-1, d.Layout)}
+		return Value{R: m.newRecord(nil, p, &p.Layouts[d.Layout])}
 	case bytecode.TArray:
-		return Value{R: m.newArray(t)}
+		return Value{R: m.newArray(p, t)}
 	case bytecode.TMap:
-		return Value{R: m.newMap(t)}
+		return Value{R: m.newMap(p, t)}
 	case bytecode.TObject, bytecode.TFunc:
 		return Null
 	}
 	return Value{}
 }
 
-func (m *Machine) newRecord(class, layout int) *Record {
-	l := &m.p.Layouts[layout]
-	r := &Record{Class: class, Layout: layout, Data: make([]byte, l.Size), Refs: make([]any, l.Refs)}
+// newRecord creates an object of a class or a struct value with zero
+// values; l and its field types belong to program p.
+func (m *Machine) newRecord(class *LinkedClass, p *bytecode.Program, l *bytecode.Layout) *Record {
+	r := &Record{Class: class, Layout: l, P: p, Data: make([]byte, l.Size), Refs: make([]any, l.Refs)}
 	m.alloc(int64(l.Size + 16*l.Refs + 48))
 	for _, f := range l.Fields {
 		if f.Kind == bytecode.FRef && !f.Optional {
-			r.Refs[f.Ref] = m.zero(f.Type).R
+			r.Refs[f.Ref] = m.zero(p, f.Type).R
 		}
 	}
 	return r
 }
 
-func (m *Machine) newArray(t int) *Array {
-	d := &m.p.Types[t]
-	a := &Array{Elem: d.Elem, Key: d.KeyFields, Unique: d.Unique}
-	if d.Elem >= 0 && m.p.Types[d.Elem].Kind == bytecode.TBool {
-		a.IsBits = true
-		if m.p.Types[d.Elem].Optional {
-			a.Nulls = []uint64{}
-		}
-	}
+// newObject creates an object of a class.
+func (m *Machine) newObject(c *LinkedClass) *Record { return m.newRecord(c, c.Prog.P, c.Layout) }
+
+func (m *Machine) newArray(p *bytecode.Program, t int) *Array {
+	d := &p.Types[t]
+	a := m.newArrayOf(p, d.Elem)
+	a.Key, a.Unique = d.KeyFields, d.Unique
 	m.alloc(64)
 	return a
 }
 
-// newArrayOf creates an array with elements of type elem.
-func (m *Machine) newArrayOf(elem int) *Array {
-	a := &Array{Elem: elem}
-	if elem >= 0 && m.p.Types[elem].Kind == bytecode.TBool {
+// newArrayOf creates an array with elements of type elem of program p.
+func (m *Machine) newArrayOf(p *bytecode.Program, elem int) *Array {
+	a := &Array{P: p, Elem: elem}
+	if elem >= 0 && p.Types[elem].Kind == bytecode.TBool {
 		a.IsBits = true
-		if m.p.Types[elem].Optional {
+		if p.Types[elem].Optional {
 			a.Nulls = []uint64{}
 		}
 	}
 	return a
 }
 
-func (m *Machine) newMap(t int) *Map {
-	d := &m.p.Types[t]
+func (m *Machine) newMap(p *bytecode.Program, t int) *Map {
+	d := &p.Types[t]
 	m.alloc(64)
-	return &Map{Key: d.Key, Elem: d.Elem, index: map[string]int{}}
+	return &Map{P: p, Key: d.Key, Elem: d.Elem, index: map[string]int{}}
 }
 
 // refValue turns a reference slot into a value.
@@ -288,27 +290,17 @@ func refValue(r any) Value {
 }
 
 // copyValue returns a deep copy of a value of a struct, array or map
-// type; other values are returned unchanged.
-func (m *Machine) copyValue(t int, v Value) Value {
+// type t of program p; other values are returned unchanged.
+func (m *Machine) copyValue(p *bytecode.Program, t int, v Value) Value {
 	if v.IsNull() || t < 0 {
 		return v
 	}
-	d := &m.p.Types[t]
-	switch d.Kind {
+	switch p.Types[t].Kind {
 	case bytecode.TStruct:
-		src := v.record()
-		l := &m.p.Layouts[src.Layout]
-		r := &Record{Class: -1, Layout: src.Layout, Data: append([]byte(nil), src.Data...), Refs: make([]any, len(src.Refs))}
-		m.alloc(int64(len(r.Data) + 16*len(r.Refs) + 48))
-		for _, f := range l.Fields {
-			if f.Kind == bytecode.FRef && src.Refs[f.Ref] != nil {
-				r.Refs[f.Ref] = m.copyValue(f.Type, Value{R: src.Refs[f.Ref]}).R
-			}
-		}
-		return Value{R: r}
+		return m.copyRecord(v)
 	case bytecode.TArray:
 		src := v.array()
-		a := &Array{Elem: src.Elem, IsBits: src.IsBits, N: src.N, Key: src.Key, Unique: src.Unique, dirty: true}
+		a := &Array{P: src.P, Elem: src.Elem, IsBits: src.IsBits, N: src.N, Key: src.Key, Unique: src.Unique, dirty: true}
 		if src.IsBits {
 			a.Bits = append([]uint64(nil), src.Bits...)
 			if src.Nulls != nil {
@@ -317,16 +309,16 @@ func (m *Machine) copyValue(t int, v Value) Value {
 		} else {
 			a.Vals = make([]Value, len(src.Vals))
 			for i, e := range src.Vals {
-				a.Vals[i] = m.copyValue(src.Elem, e)
+				a.Vals[i] = m.copyValue(src.P, src.Elem, e)
 			}
 		}
 		m.alloc(int64(32 * a.Len()))
 		return Value{R: a}
 	case bytecode.TMap:
 		src := v.mapv()
-		mp := &Map{Key: src.Key, Elem: src.Elem, Keys: append([]Value(nil), src.Keys...), Vals: make([]Value, len(src.Vals)), index: make(map[string]int, len(src.index))}
+		mp := &Map{P: src.P, Key: src.Key, Elem: src.Elem, Keys: append([]Value(nil), src.Keys...), Vals: make([]Value, len(src.Vals)), index: make(map[string]int, len(src.index))}
 		for i, e := range src.Vals {
-			mp.Vals[i] = m.copyValue(src.Elem, e)
+			mp.Vals[i] = m.copyValue(src.P, src.Elem, e)
 		}
 		for k, i := range src.index {
 			mp.index[k] = i
@@ -337,13 +329,24 @@ func (m *Machine) copyValue(t int, v Value) Value {
 	return v
 }
 
-// equal compares two values of type t.
-func (m *Machine) equal(t int, a, b Value) bool {
+func (m *Machine) copyRecord(v Value) Value {
+	src := v.record()
+	r := &Record{Layout: src.Layout, P: src.P, Data: append([]byte(nil), src.Data...), Refs: make([]any, len(src.Refs))}
+	m.alloc(int64(len(r.Data) + 16*len(r.Refs) + 48))
+	for _, f := range src.Layout.Fields {
+		if f.Kind == bytecode.FRef && src.Refs[f.Ref] != nil {
+			r.Refs[f.Ref] = m.copyValue(src.P, f.Type, Value{R: src.Refs[f.Ref]}).R
+		}
+	}
+	return Value{R: r}
+}
+
+// equal compares two values of type t of program p.
+func (m *Machine) equal(p *bytecode.Program, t int, a, b Value) bool {
 	if a.IsNull() || b.IsNull() {
 		return a.IsNull() == b.IsNull()
 	}
-	d := &m.p.Types[t]
-	switch d.Kind {
+	switch p.Types[t].Kind {
 	case bytecode.TString:
 		return a.str() == b.str()
 	case bytecode.TBytes:
@@ -354,9 +357,8 @@ func (m *Machine) equal(t int, a, b Value) bool {
 		return a.N == b.N && a.X == b.X
 	case bytecode.TStruct:
 		x, y := a.record(), b.record()
-		l := &m.p.Layouts[x.Layout]
-		for _, f := range l.Fields {
-			if !m.equal(f.Type, m.getField(x, f), m.getField(y, f)) {
+		for _, f := range x.Layout.Fields {
+			if !m.equal(x.P, f.Type, m.getField(x, f), m.getField(y, f)) {
 				return false
 			}
 		}
@@ -367,7 +369,7 @@ func (m *Machine) equal(t int, a, b Value) bool {
 			return false
 		}
 		for i := range x.Len() {
-			if !m.equal(x.Elem, x.Get(i), y.Get(i)) {
+			if !m.equal(x.P, x.Elem, x.Get(i), y.Get(i)) {
 				return false
 			}
 		}
@@ -377,10 +379,10 @@ func (m *Machine) equal(t int, a, b Value) bool {
 		if len(x.Keys) != len(y.Keys) {
 			return false
 		}
-		kd := &m.p.Types[x.Key]
+		kd := &x.P.Types[x.Key]
 		for i, k := range x.Keys {
 			j, ok := y.index[keyOf(kd, k)]
-			if !ok || !m.equal(x.Elem, x.Vals[i], y.Vals[j]) {
+			if !ok || !m.equal(x.P, x.Elem, x.Vals[i], y.Vals[j]) {
 				return false
 			}
 		}
@@ -410,7 +412,7 @@ func (m *Machine) getField(r *Record, f bytecode.Field) Value {
 	if f.Present >= 0 && !getBit(r.Data, f.Present, f.PresBit) {
 		return Null
 	}
-	return readFixed(r.Data, f.Offset, m.p.Types[f.Type].Kind)
+	return readFixed(r.Data, f.Offset, r.P.Types[f.Type].Kind)
 }
 
 // setField writes a field of a record.
@@ -440,7 +442,7 @@ func (m *Machine) setField(r *Record, f bytecode.Field, v Value) {
 			return
 		}
 	}
-	writeFixed(r.Data, f.Offset, m.p.Types[f.Type].Kind, v)
+	writeFixed(r.Data, f.Offset, r.P.Types[f.Type].Kind, v)
 }
 
 func readFixed(data []byte, off int, k bytecode.TypeKind) Value {

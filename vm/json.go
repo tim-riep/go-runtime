@@ -32,17 +32,21 @@ import (
 // constants; structs are objects, maps with STRING keys objects and other
 // maps lists of [key, value] pairs. null and "" stay apart.
 func (m *Machine) CallJSON(ctx context.Context, class, method string, args []json.RawMessage) ([]byte, error) {
-	ref, ok := m.p.Method(class, method)
-	if !ok || !ref.Static || !ref.Public {
+	c := m.image.Class(class)
+	if c == nil {
+		return nil, fmt.Errorf("unknown class %s", class)
+	}
+	mi, ok := c.Method(method)
+	if !ok || !mi.Static || !mi.Public || c.Def.Test {
 		return nil, fmt.Errorf("%s has no public static method %s", class, method)
 	}
-	f := &m.p.Funcs[ref.Func]
+	f, p := mi.Func.Def, mi.Func.Prog.P
 	if len(args) != len(f.ParamTypes) {
 		return nil, fmt.Errorf("%s.%s takes %d arguments, %d given", class, method, len(f.ParamTypes), len(args))
 	}
 	vals := make([]Value, len(args))
 	for i, a := range args {
-		v, err := m.FromJSON(f.ParamTypes[i], a)
+		v, err := m.FromJSON(p, f.ParamTypes[i], a)
 		if err != nil {
 			return nil, fmt.Errorf("argument %d: %w", i+1, err)
 		}
@@ -55,24 +59,24 @@ func (m *Machine) CallJSON(ctx context.Context, class, method string, args []jso
 	if f.Result < 0 {
 		return []byte("null"), nil
 	}
-	return m.ToJSON(f.Result, v)
+	return m.ToJSON(p, f.Result, v)
 }
 
 // ToJSON encodes a value of type t.
-func (m *Machine) ToJSON(t int, v Value) ([]byte, error) {
+func (m *Machine) ToJSON(p *Program, t int, v Value) ([]byte, error) {
 	var b bytes.Buffer
-	if err := m.writeJSON(&b, t, v); err != nil {
+	if err := m.writeJSON(&b, p, t, v); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil
 }
 
-func (m *Machine) writeJSON(b *bytes.Buffer, t int, v Value) error {
+func (m *Machine) writeJSON(b *bytes.Buffer, p *Program, t int, v Value) error {
 	if v.IsNull() {
 		b.WriteString("null")
 		return nil
 	}
-	d := &m.p.Types[t]
+	d := &p.Types[t]
 	str := func(s string) {
 		out, _ := json.Marshal(s)
 		b.Write(out)
@@ -87,19 +91,19 @@ func (m *Machine) writeJSON(b *bytes.Buffer, t int, v Value) error {
 	case TDec:
 		str(dec.String(v.dec(), d.Scale))
 	case TDate, TTimestamp, TUUID, TBytes:
-		str(m.format(d.Kind, 0, v))
+		str(m.format(p, d.Kind, 0, v))
 	case TEnum:
-		str(m.p.Enums[d.Enum].Names[v.int()])
+		str(p.Enums[d.Enum].Names[v.int()])
 	case TStruct:
 		r := v.record()
 		b.WriteByte('{')
-		for i, f := range m.p.Layouts[d.Layout].Fields {
+		for i, f := range r.Layout.Fields {
 			if i > 0 {
 				b.WriteByte(',')
 			}
 			str(f.Name)
 			b.WriteByte(':')
-			if err := m.writeJSON(b, f.Type, m.getField(r, f)); err != nil {
+			if err := m.writeJSON(b, r.P, f.Type, m.getField(r, f)); err != nil {
 				return err
 			}
 		}
@@ -111,14 +115,14 @@ func (m *Machine) writeJSON(b *bytes.Buffer, t int, v Value) error {
 			if i > 0 {
 				b.WriteByte(',')
 			}
-			if err := m.writeJSON(b, a.Elem, a.Get(i)); err != nil {
+			if err := m.writeJSON(b, a.P, a.Elem, a.Get(i)); err != nil {
 				return err
 			}
 		}
 		b.WriteByte(']')
 	case TMap:
 		mp := v.mapv()
-		obj := m.p.Types[mp.Key].Kind == TString
+		obj := mp.P.Types[mp.Key].Kind == TString
 		if obj {
 			b.WriteByte('{')
 		} else {
@@ -133,12 +137,12 @@ func (m *Machine) writeJSON(b *bytes.Buffer, t int, v Value) error {
 				b.WriteByte(':')
 			} else {
 				b.WriteByte('[')
-				if err := m.writeJSON(b, mp.Key, k); err != nil {
+				if err := m.writeJSON(b, mp.P, mp.Key, k); err != nil {
 					return err
 				}
 				b.WriteByte(',')
 			}
-			if err := m.writeJSON(b, mp.Elem, mp.Vals[i]); err != nil {
+			if err := m.writeJSON(b, mp.P, mp.Elem, mp.Vals[i]); err != nil {
 				return err
 			}
 			if !obj {
@@ -157,8 +161,8 @@ func (m *Machine) writeJSON(b *bytes.Buffer, t int, v Value) error {
 }
 
 // FromJSON decodes a value of type t.
-func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
-	d := &m.p.Types[t]
+func (m *Machine) FromJSON(p *Program, t int, raw json.RawMessage) (Value, error) {
+	d := &p.Types[t]
 	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
 		if !d.Optional {
 			return Value{}, fmt.Errorf("null is not allowed for a value that is not optional")
@@ -208,9 +212,9 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 			return Value{}, err
 		}
 		var t *thrown
-		v, t = m.convert(TString, d.Kind, 0, 0, 0, Str(s))
+		v, t = m.convert(p, TString, d.Kind, 0, 0, 0, Str(s))
 		if t != nil {
-			return Value{}, fmt.Errorf("%s", m.getField(t.obj, m.textF).str())
+			return Value{}, fmt.Errorf("%s", m.getField(t.obj, m.image.textField).str())
 		}
 	case TBytes:
 		s, err := text()
@@ -227,7 +231,7 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 		if err != nil {
 			return Value{}, err
 		}
-		e := &m.p.Enums[d.Enum]
+		e := &p.Enums[d.Enum]
 		found := -1
 		for i, n := range e.Names {
 			if n == s {
@@ -243,8 +247,8 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 		if err := json.Unmarshal(raw, &fields); err != nil {
 			return Value{}, fmt.Errorf("expected an object for %s", d.Name)
 		}
-		r := m.newRecord(-1, d.Layout)
-		l := &m.p.Layouts[d.Layout]
+		l := &p.Layouts[d.Layout]
+		r := m.newRecord(nil, p, l)
 		for name := range fields {
 			if l.Field(name) < 0 {
 				return Value{}, fmt.Errorf("%s has no component %s", d.Name, name)
@@ -258,12 +262,12 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 				}
 				continue
 			}
-			fv, err := m.FromJSON(f.Type, fr)
+			fv, err := m.FromJSON(p, f.Type, fr)
 			if err != nil {
 				return Value{}, fmt.Errorf("%s: %w", f.Name, err)
 			}
-			if t := m.check(f.Type, fv); t != nil {
-				return Value{}, fmt.Errorf("%s: %s", f.Name, m.getField(t.obj, m.textF).str())
+			if t := m.check(p, f.Type, fv); t != nil {
+				return Value{}, fmt.Errorf("%s: %s", f.Name, m.getField(t.obj, m.image.textField).str())
 			}
 			m.setField(r, f, fv)
 		}
@@ -273,20 +277,20 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 		if err := json.Unmarshal(raw, &items); err != nil {
 			return Value{}, fmt.Errorf("expected a list")
 		}
-		a := m.newArray(t)
+		a := m.newArray(p, t)
 		for i, it := range items {
-			ev, err := m.FromJSON(d.Elem, it)
+			ev, err := m.FromJSON(p, d.Elem, it)
 			if err != nil {
 				return Value{}, fmt.Errorf("element %d: %w", i+1, err)
 			}
 			if th := m.appendElem(a, ev); th != nil {
-				return Value{}, fmt.Errorf("element %d: %s", i+1, m.getField(th.obj, m.textF).str())
+				return Value{}, fmt.Errorf("element %d: %s", i+1, m.getField(th.obj, m.image.textField).str())
 			}
 		}
 		v = Value{R: a}
 	case TMap:
-		mp := m.newMap(t)
-		if m.p.Types[d.Key].Kind == TString {
+		mp := m.newMap(p, t)
+		if p.Types[d.Key].Kind == TString {
 			var obj map[string]json.RawMessage
 			if err := json.Unmarshal(raw, &obj); err != nil {
 				return Value{}, fmt.Errorf("expected an object")
@@ -299,7 +303,7 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 				var ignore json.RawMessage
 				dec.Decode(&ignore)
 				k := kt.(string)
-				ev, err := m.FromJSON(d.Elem, obj[k])
+				ev, err := m.FromJSON(p, d.Elem, obj[k])
 				if err != nil {
 					return Value{}, fmt.Errorf("%s: %w", k, err)
 				}
@@ -310,12 +314,12 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 			if err := json.Unmarshal(raw, &pairs); err != nil {
 				return Value{}, fmt.Errorf("expected a list of [key, value] pairs")
 			}
-			for _, p := range pairs {
-				kv, err := m.FromJSON(d.Key, p[0])
+			for _, pair := range pairs {
+				kv, err := m.FromJSON(p, d.Key, pair[0])
 				if err != nil {
 					return Value{}, err
 				}
-				ev, err := m.FromJSON(d.Elem, p[1])
+				ev, err := m.FromJSON(p, d.Elem, pair[1])
 				if err != nil {
 					return Value{}, err
 				}
@@ -327,8 +331,8 @@ func (m *Machine) FromJSON(t int, raw json.RawMessage) (Value, error) {
 		return Value{}, fmt.Errorf("values of this type cannot be read from JSON")
 	}
 	if d.Named {
-		if t := m.check(t, v); t != nil {
-			return Value{}, fmt.Errorf("%s", m.getField(t.obj, m.textF).str())
+		if t := m.check(p, t, v); t != nil {
+			return Value{}, fmt.Errorf("%s", m.getField(t.obj, m.image.textField).str())
 		}
 	}
 	return v, nil

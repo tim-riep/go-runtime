@@ -46,7 +46,7 @@ func formatTimestamp(us int64) string {
 
 // format returns the text of a value for placeholders, log and conversion
 // to STRING. extra is the scale of DEC and the enum of enum constants.
-func (m *Machine) format(k TypeKind, extra int, v Value) string {
+func (m *Machine) format(p *Program, k TypeKind, extra int, v Value) string {
 	if v.IsNull() {
 		return "null"
 	}
@@ -69,22 +69,22 @@ func (m *Machine) format(k TypeKind, extra int, v Value) string {
 		b, _ := v.R.([]byte)
 		return base64.StdEncoding.EncodeToString(b)
 	case TEnum:
-		return m.p.Enums[extra].Names[v.int()]
+		return p.Enums[extra].Names[v.int()]
 	}
 	return fmt.Sprint(v.R)
 }
 
 // convert converts a value explicitly (as). p and s describe a DEC target,
 // extra the scale of a DEC source or the enum of an enum source.
-func (m *Machine) convert(from, to TypeKind, p, s, extra int, v Value) (Value, *thrown) {
+func (m *Machine) convert(prog *Program, from, to TypeKind, p, s, extra int, v Value) (Value, *thrown) {
 	bad := func(format string, args ...any) (Value, *thrown) {
 		return Value{}, m.fail("/RT/CONVERSION_ERROR", format, args...)
 	}
 	overflow := func() (Value, *thrown) {
-		return Value{}, m.fail("/RT/OVERFLOW", "%s does not fit into the target type", m.format(from, extra, v))
+		return Value{}, m.fail("/RT/OVERFLOW", "%s does not fit into the target type", m.format(prog, from, extra, v))
 	}
 	if from == TEnum {
-		e := &m.p.Enums[extra]
+		e := &prog.Enums[extra]
 		text := e.Values[v.int()]
 		if to == TString {
 			return Str(text), nil
@@ -97,7 +97,7 @@ func (m *Machine) convert(from, to TypeKind, p, s, extra int, v Value) (Value, *
 	case from == to && from != TDec:
 		return v, nil
 	case to == TString:
-		return Str(m.format(from, extra, v)), nil
+		return Str(m.format(prog, from, extra, v)), nil
 	case isInt(from) && isInt(to):
 		if to == TInt4 && !fitsInt4(v.int()) {
 			return overflow()
@@ -125,7 +125,7 @@ func (m *Machine) convert(from, to TypeKind, p, s, extra int, v Value) (Value, *
 	case from == TDate && to == TTimestamp:
 		return Int(v.int() * 86_400_000_000), nil
 	case from == TTimestamp && to == TDate:
-		r, _, _ := m.builtin(int(types.TsDate), -1, -1, []Value{v})
+		r, _, _ := m.builtin(prog, int(types.TsDate), -1, -1, []Value{v})
 		return r, nil
 	case from == TString:
 		text := v.str()
@@ -180,11 +180,11 @@ func (m *Machine) convert(from, to TypeKind, p, s, extra int, v Value) (Value, *
 }
 
 // check enforces the rules of a named type when a value is stored.
-func (m *Machine) check(t int, v Value) *thrown {
+func (m *Machine) check(p *Program, t int, v Value) *thrown {
 	if v.IsNull() {
 		return nil
 	}
-	d := &m.p.Types[t]
+	d := &p.Types[t]
 	switch d.Kind {
 	case TString:
 		s := v.str()

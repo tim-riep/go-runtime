@@ -95,26 +95,23 @@ type LimitError struct {
 
 func (e *LimitError) Error() string { return e.Msg }
 
-// Machine runs a program. It is not safe for concurrent use; programs can
-// be shared between machines.
+// Machine runs code of an image. It is not safe for concurrent use;
+// images can be shared between machines. Static attributes belong to the
+// machine.
 type Machine struct {
-	p        *Program
-	opts     Options
-	statics  []*Record
-	budget   int64
-	depth    int
-	mem      int64
-	ctx      context.Context
-	itabs    map[[2]int][]int
-	rtClass  map[string]int
-	textF    Field
-	steps    int
-	excClass int
+	image   *Image
+	opts    Options
+	statics map[*LinkedClass]*Record
+	budget  int64
+	depth   int
+	mem     int64
+	ctx     context.Context
+	steps   int
 }
 
-// New prepares a program for execution and runs the initial values of
+// New prepares an image for execution and runs the initial values of
 // static attributes.
-func New(p *Program, opts Options) (*Machine, error) {
+func New(image *Image, opts Options) (*Machine, error) {
 	if opts.Budget <= 0 {
 		opts.Budget = 10_000_000
 	}
@@ -127,45 +124,41 @@ func New(p *Program, opts Options) (*Machine, error) {
 	if opts.MaxCollectionLength <= 0 {
 		opts.MaxCollectionLength = 10_000_000
 	}
-	m := &Machine{p: p, opts: opts, statics: make([]*Record, len(p.Classes)), itabs: map[[2]int][]int{}, rtClass: map[string]int{}, ctx: context.Background()}
-	for i, c := range p.Classes {
-		if c.Kernel {
-			m.rtClass[c.Name] = i
-		}
-		if c.Statics >= 0 {
-			m.statics[i] = m.newRecord(-1, c.Statics)
-		}
-		for _, it := range c.ITables {
-			m.itabs[[2]int{i, it.Interface}] = it.Funcs
-		}
-	}
-	rt, ok := m.rtClass["/RT/RUNTIME_ERROR"]
-	if !ok {
-		return nil, errors.New("vm: the program lacks the kernel classes")
-	}
-	l := &p.Layouts[p.Classes[rt].Layout]
-	m.textF = l.Fields[l.Field("TEXT")]
+	m := &Machine{image: image, opts: opts, statics: map[*LinkedClass]*Record{}, ctx: context.Background()}
 	m.budget = opts.Budget
-	for i, c := range p.Classes {
-		if c.Init >= 0 {
-			if _, err := m.run(c.Init, Value{}, nil, nil); err != nil {
-				return nil, fmt.Errorf("initial values of %s: %w", p.Classes[i].Name, err)
+	for _, pr := range image.order {
+		for _, c := range pr.Classes {
+			if c.Statics != nil {
+				m.statics[c] = m.newRecord(nil, pr.P, c.Statics)
+			}
+		}
+	}
+	for _, pr := range image.order {
+		for _, c := range pr.Classes {
+			if c.Init != nil {
+				if _, err := m.run(c.Init, Value{}, nil, nil); err != nil {
+					return nil, fmt.Errorf("initial values of %s: %w", c.Name, err)
+				}
 			}
 		}
 	}
 	return m, nil
 }
 
-// Program returns the program of the machine.
-func (m *Machine) Program() *Program { return m.p }
+// Image returns the image of the machine.
+func (m *Machine) Image() *Image { return m.image }
 
 // Call runs a static method. The budget and memory limits start anew.
 func (m *Machine) Call(ctx context.Context, class, method string, args ...Value) (Value, error) {
-	ref, ok := m.p.Method(class, method)
+	c := m.image.Class(class)
+	if c == nil {
+		return Value{}, fmt.Errorf("vm: unknown class %s", class)
+	}
+	mi, ok := c.Method(method)
 	if !ok {
 		return Value{}, fmt.Errorf("vm: %s has no method %s", class, method)
 	}
-	f := &m.p.Funcs[ref.Func]
+	f := mi.Func.Def
 	if f.Instance {
 		return Value{}, fmt.Errorf("vm: %s.%s is not static", class, method)
 	}
@@ -173,23 +166,26 @@ func (m *Machine) Call(ctx context.Context, class, method string, args ...Value)
 		return Value{}, fmt.Errorf("vm: %s.%s takes %d arguments, %d given", class, method, f.Params, len(args))
 	}
 	m.ctx, m.budget, m.mem, m.depth = ctx, m.opts.Budget, 0, 0
-	return m.run(ref.Func, Value{}, args, nil)
+	return m.run(mi.Func, Value{}, args, nil)
 }
 
 // CallMethod creates an object of a class with its constructor without
 // arguments and calls a method without arguments on it, for test methods.
 func (m *Machine) CallMethod(ctx context.Context, class, method string) error {
-	ci := m.p.Class(class)
-	ref, ok := m.p.Method(class, method)
-	if ci < 0 || !ok {
+	c := m.image.Class(class)
+	if c == nil {
+		return fmt.Errorf("vm: unknown class %s", class)
+	}
+	mi, ok := c.Method(method)
+	if !ok {
 		return fmt.Errorf("vm: %s has no method %s", class, method)
 	}
 	m.ctx, m.budget, m.mem, m.depth = ctx, m.opts.Budget, 0, 0
-	obj := Value{R: m.newRecord(ci, m.p.Classes[ci].Layout)}
-	if _, err := m.run(m.p.Classes[ci].Ctor, obj, nil, nil); err != nil {
+	obj := Value{R: m.newObject(c)}
+	if _, err := m.run(c.Ctor, obj, nil, nil); err != nil {
 		return err
 	}
-	_, err := m.run(ref.Func, obj, nil, nil)
+	_, err := m.run(mi.Func, obj, nil, nil)
 	return err
 }
 
@@ -211,15 +207,14 @@ func (m *Machine) alloc(n int64) {
 
 // fail raises a runtime error of the VM.
 func (m *Machine) fail(class, format string, args ...any) *thrown {
-	ci := m.rtClass[class]
-	r := m.newRecord(ci, m.p.Classes[ci].Layout)
-	m.setField(r, m.textF, Str(fmt.Sprintf(format, args...)))
+	r := m.newObject(m.image.rt[class])
+	m.setField(r, m.image.textField, Str(fmt.Sprintf(format, args...)))
 	return &thrown{obj: r, pc: -1}
 }
 
 // run executes a function and converts the result: an uncaught exception
 // becomes *Exception at the outermost call.
-func (m *Machine) run(fi int, me Value, args []Value, cl *Closure) (v Value, err error) {
+func (m *Machine) run(fi *LinkedFunc, me Value, args []Value, cl *Closure) (v Value, err error) {
 	v, t, err := m.exec(fi, me, args, cl)
 	if err != nil {
 		return Value{}, err
@@ -231,42 +226,39 @@ func (m *Machine) run(fi int, me Value, args []Value, cl *Closure) (v Value, err
 }
 
 func (m *Machine) exception(t *thrown) *Exception {
-	e := &Exception{Class: m.p.Classes[t.obj.Class].Name, Object: t.obj, Trace: t.trace}
-	e.Text = m.getField(t.obj, m.textF).str()
+	e := &Exception{Class: t.obj.Class.Name, Object: t.obj, Trace: t.trace}
+	e.Text = m.getField(t.obj, m.image.textField).str()
 	return e
 }
 
 // frameError adds the current function to the trace of an exception.
-func (m *Machine) traceFrame(f *Func, pc int) TraceFrame {
+func (m *Machine) traceFrame(fn *LinkedFunc, pc int) TraceFrame {
+	f, p := fn.Def, fn.Prog.P
 	tf := TraceFrame{Func: f.Name}
 	if l, ok := f.Position(pc); ok {
-		tf.File, tf.Line = m.p.Files[l.File].Path, l.Line
-		for _, s := range m.p.Chains[l.Chain].Sites {
-			tf.Chain = append(tf.Chain, fmt.Sprintf("%s included from %s:%d", s.Include, m.p.Files[s.File].Path, s.Line))
+		tf.File, tf.Line = p.Files[l.File].Path, l.Line
+		for _, s := range p.Chains[l.Chain].Sites {
+			tf.Chain = append(tf.Chain, fmt.Sprintf("%s included from %s:%d", s.Include, p.Files[s.File].Path, s.Line))
 		}
 	}
 	return tf
 }
 
 // isA reports whether an object is of class c or a subclass.
-func (m *Machine) isA(obj *Record, c int) bool {
-	for _, s := range m.p.Classes[obj.Class].Supers {
-		if s == c {
-			return true
-		}
-	}
-	return false
+func (m *Machine) isA(obj *Record, c *LinkedClass) bool {
+	return obj.Class != nil && obj.Class.Supers[c]
 }
 
 // exec runs a function. It returns the result, an exception that leaves
 // the function, or a limit error.
-func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Value, exc *thrown, err error) {
+func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (result Value, exc *thrown, err error) {
 	m.depth++
 	defer func() { m.depth-- }()
 	if m.depth > m.opts.MaxCallDepth {
 		return Value{}, nil, &LimitError{Limit: "call depth", Msg: fmt.Sprintf("more than %d nested calls", m.opts.MaxCallDepth)}
 	}
-	f := &m.p.Funcs[fi]
+	f, pr := fn.Def, fn.Prog
+	p := pr.P
 	locals := make([]Value, f.Locals)
 	copy(locals, args)
 	stack := make([]Value, 0, 16)
@@ -304,7 +296,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			at = t.pc // the trace shows where the exception came from
 		}
 		for _, h := range f.Handlers {
-			if start >= h.Start && start < h.End && (h.Class < 0 || m.isA(t.obj, h.Class)) {
+			if start >= h.Start && start < h.End && (h.Class < 0 || m.isA(t.obj, pr.class(h.Class))) {
 				if h.Class < 0 {
 					if pending == nil {
 						pending = map[*Record]*thrown{}
@@ -318,12 +310,12 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				return true
 			}
 		}
-		t.trace = append(t.trace, m.traceFrame(f, at))
+		t.trace = append(t.trace, m.traceFrame(fn, at))
 		t.pc = -1
 		return false
 	}
-	call := func(target int, argc int, closure *Closure) bool {
-		callee := &m.p.Funcs[target]
+	call := func(target *LinkedFunc, argc int, closure *Closure) bool {
+		callee := target.Def
 		base := len(stack) - argc
 		var recv Value
 		cargs := stack[base:]
@@ -376,12 +368,12 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 		case CONST_I64:
 			push(Int(int64(uint64(uint32(arg(0)))<<32 | uint64(uint32(arg(1))))))
 		case CONST_DEC, CONST_UUID:
-			d := m.p.Decs[arg(0)]
+			d := p.Decs[arg(0)]
 			push(Value{N: d[0], X: d[1]})
 		case CONST_STR:
-			push(Str(m.p.Strings[arg(0)]))
+			push(Str(p.Strings[arg(0)]))
 		case CONST_BYTES:
-			push(Value{R: m.p.Bytes[arg(0)]})
+			push(Value{R: p.Bytes[arg(0)]})
 		case TRUE:
 			push(Bool(true))
 		case FALSE:
@@ -389,7 +381,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 		case NULL:
 			push(Null)
 		case ZERO:
-			push(m.zero(arg(0)))
+			push(m.zero(p, arg(0)))
 		case LOAD:
 			push(locals[arg(0)])
 		case STORE:
@@ -418,7 +410,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			n := len(stack)
 			stack[n-1], stack[n-2] = stack[n-2], stack[n-1]
 		case COPY:
-			push(m.copyValue(arg(0), pop()))
+			push(m.copyValue(p, arg(0), pop()))
 
 		case ADD_I4, SUB_I4, MUL_I4, DIV_I4, MOD_I4, ADD_I8, SUB_I8, MUL_I8, DIV_I8, MOD_I8:
 			b, a := pop().int(), pop().int()
@@ -534,7 +526,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				push(Str(sb.String()))
 			}
 		case FMT:
-			push(Str(m.format(TypeKind(arg(0)), arg(1), pop())))
+			push(Str(m.format(p, TypeKind(arg(0)), arg(1), pop())))
 
 		case CMP_I:
 			b, a := pop().int(), pop().int()
@@ -563,7 +555,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			push(Int(int64(bytes.Compare(x, y))))
 		case EQ_VALUE:
 			b, a := pop(), pop()
-			push(Bool(m.equal(arg(0), a, b)))
+			push(Bool(m.equal(p, arg(0), a, b)))
 		case EQ_REF:
 			b, a := pop(), pop()
 			push(Bool(a.R == b.R))
@@ -604,12 +596,12 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				push(Bool(false))
 			}
 		case CONV:
-			v, ct := m.convert(TypeKind(arg(0)), TypeKind(arg(1)), arg(2), arg(3), arg(4), pop())
+			v, ct := m.convert(p, TypeKind(arg(0)), TypeKind(arg(1)), arg(2), arg(3), arg(4), pop())
 			if t = ct; t == nil {
 				push(v)
 			}
 		case CHECK:
-			t = m.check(arg(0), stack[len(stack)-1])
+			t = m.check(p, arg(0), stack[len(stack)-1])
 
 		case JUMP:
 			pc = arg(0)
@@ -684,20 +676,19 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				r.Refs[arg(0)] = v.R
 			}
 		case STATICS:
-			push(Value{R: m.statics[arg(0)]})
+			push(Value{R: m.statics[pr.class(arg(0))]})
 
 		case NEW_OBJ:
-			c := arg(0)
-			push(Value{R: m.newRecord(c, m.p.Classes[c].Layout)})
+			push(Value{R: m.newObject(pr.class(arg(0)))})
 		case NEW_STRUCT:
-			push(Value{R: m.newRecord(-1, arg(0))})
+			push(Value{R: m.newRecord(nil, p, &p.Layouts[arg(0)])})
 		case NEW_ARRAY:
-			push(Value{R: m.newArray(arg(0))})
+			push(Value{R: m.newArray(p, arg(0))})
 		case NEW_MAP:
-			push(Value{R: m.newMap(arg(0))})
+			push(Value{R: m.newMap(p, arg(0))})
 		case ARRAY_LIT:
 			n := arg(1)
-			a := m.newArray(arg(0))
+			a := m.newArray(p, arg(0))
 			for _, v := range stack[len(stack)-n:] {
 				if t = m.appendElem(a, v); t != nil {
 					break
@@ -709,7 +700,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			}
 		case MAP_LIT:
 			n := arg(1)
-			mp := m.newMap(arg(0))
+			mp := m.newMap(p, arg(0))
 			items := stack[len(stack)-2*n:]
 			for i := 0; i < n && t == nil; i++ {
 				t = m.mapSet(mp, items[2*i], items[2*i+1])
@@ -738,9 +729,10 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 		case MINDEX_GET:
 			k := pop()
 			mp := pop().mapv()
-			i, ok := mp.index[keyOf(&m.p.Types[mp.Key], k)]
+			kd := &mp.P.Types[mp.Key]
+			i, ok := mp.index[keyOf(kd, k)]
 			if !ok {
-				t = m.fail("/RT/KEY_ERROR", "the map has no key %s", m.format(m.p.Types[mp.Key].Kind, m.p.Types[mp.Key].Scale, k))
+				t = m.fail("/RT/KEY_ERROR", "the map has no key %s", m.format(mp.P, kd.Kind, kd.Scale, k))
 				break
 			}
 			push(mp.Vals[i])
@@ -750,7 +742,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			t = m.mapSet(pop().mapv(), k, v)
 
 		case CALL:
-			if !call(arg(0), arg(1), nil) {
+			if !call(pr.fn(arg(0)), arg(1), nil) {
 				t, exc = exc, nil
 			}
 		case CALL_VIRT:
@@ -760,13 +752,17 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				t = m.fail("/RT/VALUE_ERROR", "method called on null")
 				break
 			}
-			if !call(m.p.Classes[recv.Class].VTable[arg(0)], argc, nil) {
+			if !call(recv.Class.VTable[arg(0)], argc, nil) {
 				t, exc = exc, nil
 			}
 		case CALL_IFACE:
 			argc := arg(2)
 			recv := stack[len(stack)-argc].record()
-			funcs := m.itabs[[2]int{recv.Class, arg(0)}]
+			if recv == nil {
+				t = m.fail("/RT/VALUE_ERROR", "method called on null")
+				break
+			}
+			funcs := recv.Class.ITabs[pr.class(arg(0))]
 			if !call(funcs[arg(1)], argc, nil) {
 				t, exc = exc, nil
 			}
@@ -783,7 +779,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 				t = tt
 				break
 			}
-			if m.p.Funcs[clo.Fn].Result >= 0 {
+			if clo.Fn.Def.Result >= 0 {
 				push(v)
 			}
 		case CALL_BUILTIN:
@@ -794,7 +790,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			}
 			vals := append([]Value(nil), stack[len(stack)-n:]...)
 			stack = stack[:len(stack)-n]
-			v, tt, e := m.builtin(arg(0), arg(2), arg(3), vals)
+			v, tt, e := m.builtin(p, arg(0), arg(2), arg(3), vals)
 			if e != nil {
 				return Value{}, nil, e
 			}
@@ -807,7 +803,7 @@ func (m *Machine) exec(fi int, me Value, args []Value, cl *Closure) (result Valu
 			}
 		case MAKE_FN:
 			n := arg(1)
-			clo := &Closure{Fn: arg(0), Me: me}
+			clo := &Closure{Fn: pr.Funcs[arg(0)], Me: me}
 			for _, c := range stack[len(stack)-n:] {
 				clo.Cells = append(clo.Cells, c.R.(*Cell))
 			}

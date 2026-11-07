@@ -61,6 +61,10 @@ func Encode(p *Program) []byte {
 	w.int(FormatVersion)
 	w.str(p.Package)
 	w.int(p.LanguageVersion)
+	w.int(len(p.Imports))
+	for _, i := range p.Imports {
+		w.str(i)
+	}
 	w.bool(p.Tests)
 	w.int(len(p.Files))
 	for _, f := range p.Files {
@@ -149,6 +153,10 @@ func Encode(p *Program) []byte {
 		w.int(c.Ctor)
 		w.int(c.Init)
 		w.ints(c.VTable)
+		w.int(len(c.VSlots))
+		for _, v := range c.VSlots {
+			w.str(v)
+		}
 		w.int(len(c.ITables))
 		for _, it := range c.ITables {
 			w.int(it.Interface)
@@ -279,7 +287,11 @@ func Decode(b []byte) (*Program, error) {
 	if v := r.int(); v != FormatVersion {
 		return nil, fmt.Errorf("bytecode: format version %d is not supported, expected %d", v, FormatVersion)
 	}
-	p := &Program{Package: r.str(), LanguageVersion: r.int(), Tests: r.bool()}
+	p := &Program{Package: r.str(), LanguageVersion: r.int()}
+	for n := r.count(); n > 0; n-- {
+		p.Imports = append(p.Imports, r.str())
+	}
+	p.Tests = r.bool()
 	p.Files = make([]File, r.count())
 	for i := range p.Files {
 		p.Files[i] = File{Path: r.str(), SHA256: r.str()}
@@ -333,6 +345,9 @@ func Decode(b []byte) (*Program, error) {
 	for i := range p.Classes {
 		c := Class{Name: r.str(), Interface: r.bool(), Kernel: r.bool(), Test: r.bool(), Exception: r.bool(), Base: r.int(), Layout: r.int(),
 			Statics: r.int(), Ctor: r.int(), Init: r.int(), VTable: r.ints()}
+		for n := r.count(); n > 0; n-- {
+			c.VSlots = append(c.VSlots, r.str())
+		}
 		c.ITables = make([]ITable, r.count())
 		for j := range c.ITables {
 			c.ITables[j] = ITable{Interface: r.int(), Funcs: r.ints()}
@@ -377,8 +392,15 @@ func Decode(b []byte) (*Program, error) {
 
 // Verify checks that instructions and the indexes in a program are valid,
 // so that a decoded program cannot make the VM read outside its tables.
+// References into imports are checked when programs are linked.
 func (p *Program) Verify() error {
 	in := func(i, n int) bool { return i >= 0 && i < n }
+	ref := func(r Ref, n int) bool {
+		if RefSlot(r) == 0 {
+			return in(RefIndex(r), n)
+		}
+		return RefSlot(r) <= len(p.Imports) && r >= 0
+	}
 	for fi := range p.Funcs {
 		f := &p.Funcs[fi]
 		for pc := 0; pc < len(f.Code); {
@@ -407,14 +429,14 @@ func (p *Program) Verify() error {
 				ok = in(arg(0), f.Locals) && in(arg(1), f.Locals) && in(arg(2), f.Locals) && in(arg(3), len(f.Code)+1)
 			case JUMP, JUMP_FALSE, JUMP_TRUE, JUMP_NULL, JUMP_NOTNULL:
 				ok = in(arg(0), len(f.Code)+1)
-			case NEW_OBJ, STATICS:
-				ok = in(arg(0), len(p.Classes))
+			case NEW_OBJ, STATICS, CALL_IFACE:
+				ok = ref(arg(0), len(p.Classes))
 			case NEW_STRUCT:
 				ok = in(arg(0), len(p.Layouts))
-			case CALL, MAKE_FN:
+			case CALL:
+				ok = ref(arg(0), len(p.Funcs))
+			case MAKE_FN:
 				ok = in(arg(0), len(p.Funcs))
-			case CALL_IFACE:
-				ok = in(arg(0), len(p.Classes))
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -422,16 +444,19 @@ func (p *Program) Verify() error {
 			pc += 1 + op.Operands()
 		}
 		for _, h := range f.Handlers {
-			if !in(h.Target, len(f.Code)) || h.Class >= len(p.Classes) {
+			if !in(h.Target, len(f.Code)) || h.Class != -1 && !ref(h.Class, len(p.Classes)) {
 				return fmt.Errorf("bytecode: %s: invalid exception handler", f.Name)
 			}
 		}
 	}
 	for _, c := range p.Classes {
 		for _, v := range c.VTable {
-			if !in(v, len(p.Funcs)) {
+			if !ref(v, len(p.Funcs)) {
 				return fmt.Errorf("bytecode: %s: invalid method table", c.Name)
 			}
+		}
+		if len(c.VSlots) != len(c.VTable) {
+			return fmt.Errorf("bytecode: %s: invalid method table", c.Name)
 		}
 	}
 	return nil

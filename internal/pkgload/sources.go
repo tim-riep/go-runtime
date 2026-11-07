@@ -86,9 +86,17 @@ func parseSource(file string, data []byte, kind syntax.FileKind, what string) (a
 	}
 	d := &sourceDoc{file: f, text: text}
 	def := f.Name().Pos
+	// include ... if found may name an include of any package; it is the
+	// only reference exempt from the namespace check.
+	exempt := map[syntax.Pos]bool{}
+	syntax.Includes(f, func(n syntax.Name, ifFound bool) {
+		if ifFound {
+			exempt[n.Pos] = true
+		}
+	})
 	toks, _ := syntax.Lex(text)
 	for _, t := range toks {
-		if t.Kind == syntax.GLOBAL && t.Pos != def {
+		if t.Kind == syntax.GLOBAL && t.Pos != def && !exempt[t.Pos] {
 			d.refs = append(d.refs, NameRef{Name: t.Text, Line: t.Pos.Line, Column: t.Pos.Col})
 		}
 		if t.Kind == syntax.STRING {

@@ -64,3 +64,85 @@ func Inspect(x Expr, fn func(Expr)) {
 		Inspect(x.Short, fn)
 	}
 }
+
+// Includes calls fn for every include of a file: among members, in
+// statements and in the bodies of function literals.
+func Includes(f *File, fn func(name Name, ifFound bool)) {
+	var members func(ms []Member)
+	var stmts func(ss []Stmt)
+	exprs := func(xs ...Expr) {
+		for _, x := range xs {
+			Inspect(x, func(e Expr) {
+				if fe, ok := e.(*FuncExpr); ok && fe.Body != nil {
+					stmts(fe.Body.Stmts)
+				}
+			})
+		}
+	}
+	block := func(b *Block) {
+		if b != nil {
+			stmts(b.Stmts)
+		}
+	}
+	stmts = func(ss []Stmt) {
+		for _, s := range ss {
+			switch s := s.(type) {
+			case *IncludeStmt:
+				fn(s.Name, s.IfFound)
+			case *VarStmt:
+				exprs(s.Value)
+			case *AssignStmt:
+				exprs(s.Target, s.Value)
+			case *ExprStmt:
+				exprs(s.X)
+			case *ReturnStmt:
+				exprs(s.Value)
+			case *RaiseStmt:
+				exprs(s.Args...)
+			case *AssertStmt:
+				exprs(s.Cond, s.Message)
+			case *LogStmt:
+				exprs(s.Value)
+			case *IfStmt:
+				for _, c := range s.Clauses {
+					exprs(c.Cond)
+					block(c.Body)
+				}
+				block(s.Else)
+			case *ForStmt:
+				exprs(s.In, s.From, s.To, s.Step)
+				block(s.Body)
+			case *WhileStmt:
+				exprs(s.Cond)
+				block(s.Body)
+			case *TryStmt:
+				block(s.Body)
+				for _, c := range s.Catches {
+					block(c.Body)
+				}
+				block(s.Finally)
+			}
+		}
+	}
+	members = func(ms []Member) {
+		for _, m := range ms {
+			switch m := m.(type) {
+			case *IncludeMember:
+				fn(m.Name, m.IfFound)
+			case *MethodDecl:
+				block(m.Body)
+			case *ConstantDecl:
+				exprs(m.Value)
+			case *AttributeDecl:
+				exprs(m.Value)
+			}
+		}
+	}
+	switch {
+	case f.Class != nil:
+		members(f.Class.Members)
+	case f.Include != nil:
+		members(f.Include.Members)
+		block(f.Include.Body)
+	}
+}

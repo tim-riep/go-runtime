@@ -94,11 +94,11 @@ func TestLanguageReference(t *testing.T) {
 	if !r.OK() {
 		t.FailNow()
 	}
-	p, err := r.Compile(true)
+	image, err := r.Image(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	results, err := testrun.Run(context.Background(), p, vm.Options{})
+	results, err := testrun.Run(context.Background(), image, "TRORDER", vm.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

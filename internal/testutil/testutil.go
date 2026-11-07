@@ -139,3 +139,14 @@ func LoadDir(t testing.TB, dir string) *model.Package {
 	}
 	return pkg
 }
+
+// CopyDir copies a directory into a temporary directory of the same name
+// and returns it.
+func CopyDir(t testing.TB, src string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), filepath.Base(src))
+	if err := os.CopyFS(dir, os.DirFS(src)); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}

@@ -17,7 +17,9 @@ package kernel
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"slices"
 	"time"
 
@@ -101,13 +103,24 @@ func (k *Kernel) compile(ctx context.Context, q dialect.Querier, cur, want *mode
 			}
 		}
 	}
+	return k.compileSet(ctx, q, want, reasons, now)
+}
+
+// compileSet compiles the given packages, with the reason for each, in
+// installation order against the target schema.
+func (k *Kernel) compileSet(ctx context.Context, q dialect.Querier, want *model.Schema, reasons map[model.PackageID]string, now time.Time) (*compiled, []plan.Change, error) {
 	var ids []model.PackageID
 	for id := range reasons {
 		ids = append(ids, id)
 	}
+	programs, err := k.storedPrograms(ctx, q)
+	if err != nil {
+		return nil, nil, err
+	}
 	out := &compiled{}
 	var changes []plan.Change
 	for _, id := range installOrder(want, ids) {
+		delete(programs, id)
 		out.packages = append(out.packages, id)
 		sources := want.Sources[id]
 		if len(sources) == 0 {
@@ -119,10 +132,11 @@ func (k *Kernel) compile(ctx context.Context, q dialect.Querier, cur, want *mode
 		if !r.OK() {
 			return nil, nil, compileError(id, reasons[id], r.Diagnostics)
 		}
-		prog, err := r.Compile(false)
+		prog, err := r.Compile(false, programs)
 		if err != nil {
 			return nil, nil, err
 		}
+		programs[id] = prog
 		b := bytecode.Encode(prog)
 		sum := sha256.Sum256(b)
 		out.codes = append(out.codes, &repo.Code{Package: id, FormatVersion: bytecode.FormatVersion, LanguageVersion: info.Manifest.LanguageVersion,
@@ -175,4 +189,61 @@ func (k *Kernel) saveCode(ctx context.Context, q dialect.Querier, c *compiled, n
 		code.Generation = gen
 	}
 	return k.repo.ReplaceCode(ctx, q, c.packages, c.codes)
+}
+
+// storedPrograms decodes the compiled code in the repository.
+func (k *Kernel) storedPrograms(ctx context.Context, q dialect.Querier) (map[model.PackageID]*bytecode.Program, error) {
+	codes, err := k.repo.LoadCode(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	out := map[model.PackageID]*bytecode.Program{}
+	for id, c := range codes {
+		p, err := bytecode.Decode(c.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("the compiled code of %s: %w", id, err)
+		}
+		out[id] = p
+	}
+	return out, nil
+}
+
+// recompileOutdated compiles all packages again when stored code has an
+// older bytecode format, e.g. after the kernel was updated.
+func (k *Kernel) recompileOutdated(ctx context.Context) error {
+	v, err := k.repo.KernelVersion(ctx, k.db)
+	if err != nil || v != k.target || !k.repo.HasCode() {
+		return err
+	}
+	codes, err := k.repo.LoadCode(ctx, k.db)
+	if err != nil {
+		return err
+	}
+	outdated := false
+	for _, c := range codes {
+		outdated = outdated || c.FormatVersion != bytecode.FormatVersion
+	}
+	if !outdated {
+		return nil
+	}
+	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+		s, err := k.repo.Load(ctx, tx)
+		if err != nil {
+			return err
+		}
+		// Old code cannot be decoded; everything is compiled from the sources.
+		if err := k.repo.ReplaceCode(ctx, tx, s.PackageIDs(), nil); err != nil {
+			return err
+		}
+		reasons := map[model.PackageID]string{}
+		for id := range s.Sources {
+			reasons[id] = "bytecode format changed"
+		}
+		now := k.timestamp()
+		c, _, err := k.compileSet(ctx, tx, s, reasons, now)
+		if err != nil {
+			return err
+		}
+		return k.saveCode(ctx, tx, c, now)
+	})
 }

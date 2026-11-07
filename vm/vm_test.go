@@ -46,7 +46,14 @@ var schemaFiles = map[string]string{
 }
 
 // program builds and compiles a package with the schema above.
-func program(t testing.TB, sources map[string]string) *bytecode.Program {
+func program(t testing.TB, sources map[string]string) *vm.Image {
+	t.Helper()
+	image, _ := compiled(t, sources)
+	return image
+}
+
+// compiled returns the image and the compiled program of the package.
+func compiled(t testing.TB, sources map[string]string) (*vm.Image, *bytecode.Program) {
 	t.Helper()
 	fsys := fstest.MapFS{}
 	all := map[string]string{}
@@ -77,11 +84,19 @@ func program(t testing.TB, sources map[string]string) *bytecode.Program {
 	if !r.OK() {
 		t.FailNow()
 	}
-	p, err := r.Compile(true)
+	p, err := r.Compile(true, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return p
+	kernel, err := build.KernelProgram()
+	if err != nil {
+		t.Fatal(err)
+	}
+	image, err := vm.Link(0, kernel, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return image, p
 }
 
 // run calls the static method RUN of class /TRV/C.
@@ -475,7 +490,7 @@ public static method RUN() returns array of STRING
 end
 end
 `, "src/TEXTS.class": "public class /TRV/TEXTS\npublic attribute TEXT: STRING?\nend\n"})
-	l := p.Layouts[p.Classes[p.Class("/TRV/FLAGS")].Layout]
+	l := *p.Class("/TRV/FLAGS").Layout
 	// Eight optional BOOL take exactly two bytes.
 	bools := 0
 	for _, f := range l.Fields {
@@ -533,7 +548,7 @@ func TestIncludeLines(t *testing.T) {
 }
 
 func TestBytecodeRoundTrip(t *testing.T) {
-	p := program(t, map[string]string{"src/C.class": "public class /TRV/C\npublic static method RUN(n: INT4) returns STRING\nvar s = \"\"\nfor i from 1 to n\ns = s + \"{i}\"\nend\nreturn s\nend\nend\n"})
+	_, p := compiled(t, map[string]string{"src/C.class": "public class /TRV/C\npublic static method RUN(n: INT4) returns STRING\nvar s = \"\"\nfor i from 1 to n\ns = s + \"{i}\"\nend\nreturn s\nend\nend\n"})
 	b := bytecode.Encode(p)
 	q, err := bytecode.Decode(b)
 	if err != nil {
@@ -542,7 +557,12 @@ func TestBytecodeRoundTrip(t *testing.T) {
 	if !bytesEqual(bytecode.Encode(q), b) || len(q.Funcs) != len(p.Funcs) || q.Package != p.Package {
 		t.Fatal("decoded program differs")
 	}
-	m, _ := vm.New(q, vm.Options{})
+	kernel, _ := build.KernelProgram()
+	image, err := vm.Link(0, kernel, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, _ := vm.New(image, vm.Options{})
 	out, err := m.CallJSON(context.Background(), "/TRV/C", "RUN", []json.RawMessage{json.RawMessage("4")})
 	if err != nil || string(out) != `"1234"` {
 		t.Fatalf("%s %v", out, err)

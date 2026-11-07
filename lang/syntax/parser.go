@@ -175,6 +175,17 @@ func (p *parser) ident() Ident {
 	return id
 }
 
+// memberName reads a member name, which is a global name for fields
+// added by extensions of other packages, e.g. /TROTTO/OTTO_ID.
+func (p *parser) memberName() Ident {
+	if p.tok.Kind == GLOBAL {
+		id := Ident{Pos: p.tok.Pos, Name: p.tok.Text}
+		p.next()
+		return id
+	}
+	return p.ident()
+}
+
 func (p *parser) global() Name {
 	n := Name{Pos: p.tok.Pos, Name: p.tok.Text}
 	if p.tok.Kind != GLOBAL {
@@ -990,7 +1001,7 @@ func (p *parser) postfix(x Expr) Expr {
 		switch {
 		case p.isOp("."):
 			p.next()
-			x = &SelectExpr{X: x, Name: p.ident()}
+			x = &SelectExpr{X: x, Name: p.memberName()}
 		case p.isOp("("):
 			c := &CallExpr{Fun: x}
 			c.Args, c.List = p.args()
@@ -1017,8 +1028,8 @@ func (p *parser) args() ([]Arg, List) {
 	l.Open = p.brk()
 	for !p.isOp(")") && p.tok.Kind != EOF && p.tok.Kind != NEWLINE {
 		var a Arg
-		if p.tok.Kind == IDENT && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == OP && p.toks[p.i+1].Text == ":" {
-			id := p.ident()
+		if (p.tok.Kind == IDENT || p.tok.Kind == GLOBAL) && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == OP && p.toks[p.i+1].Text == ":" {
+			id := p.memberName()
 			a.Name = &id
 			p.next()
 		}

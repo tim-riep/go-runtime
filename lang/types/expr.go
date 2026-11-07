@@ -499,7 +499,7 @@ func (c *checker) visible(f *fnCtx, owner *Class, v syntax.Visibility, name stri
 			c.errorf(pos, CodeVisibility, "%s is private to %s", name, owner.Name)
 		}
 	case syntax.Package:
-		if owner.Kernel != f.class.Kernel {
+		if owner.Package != f.class.Package {
 			c.errorf(pos, CodeVisibility, "%s is only visible in the package of %s", name, owner.Name)
 		}
 	}
@@ -509,6 +509,7 @@ func (c *checker) visible(f *fnCtx, owner *Class, v syntax.Visibility, name stri
 // other type of the schema.
 func (c *checker) global(x *syntax.GlobalExpr) any {
 	if k, ok := c.classes[x.Name.Name]; ok {
+		c.classVisible(k, x.Name.Pos)
 		c.info.Globals[x] = k
 		return k
 	}
@@ -577,6 +578,7 @@ func (c *checker) selectExpr(f *fnCtx, sc *scope, x *syntax.SelectExpr, e env) T
 			c.errorf(x.Name.Pos, CodeUnknown, "%s has no component %s", r.Name, name)
 			return TypInvalid
 		}
+		c.fieldVisible(name, x.Name.Pos)
 		c.info.Selects[x] = &Selection{Kind: SelectField, Field: i}
 		return r.Fields[i].Type
 	case *Class:
@@ -938,6 +940,7 @@ func (c *checker) newExpr(f *fnCtx, sc *scope, x *syntax.NewExpr, e env) Type {
 				continue
 			}
 			fld := t.Field(a.Name.Name)
+			c.fieldVisible(a.Name.Name, a.Name.Pos)
 			if fld == nil {
 				c.errorf(a.Name.Pos, CodeUnknown, "%s has no component %s", t.Name, a.Name.Name)
 				c.expr(f, sc, a.Value, e, nil)

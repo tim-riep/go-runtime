@@ -1,0 +1,37 @@
+public class /TRB/SUB extends /TRA/BASE implements /TRA/NAMED
+
+  public override method DESCRIBE() returns STRING
+    return "TRB and " + super.DESCRIBE()
+  end
+
+  public method NAME() returns STRING
+    return "sub"
+  end
+
+  public static method RUN() returns array of STRING
+    var out: array of STRING = []
+    var named: /TRA/NAMED = new /TRB/SUB()
+    out.APPEND(named.NAME())
+    var base: /TRA/BASE = new /TRB/SUB()
+    out.APPEND(base.DESCRIBE())
+    out.APPEND("{/TRA/BASE.TWICE(21)}")
+    var item = new /TRA/ITEMS(ITEM_ID: "1", NAME: "first", /TRB/ACTIVE: true)
+    out.APPEND("{item.NAME default "-"} {item./TRB/ACTIVE default false}")
+    try
+      /TRA/BASE.CHECK(-1)
+    catch e: /TRA/FAILED
+      out.APPEND(e.MESSAGE())
+    end
+    try
+      out.APPEND("{/TRA/BASE.DIVIDE(1, 0)}")
+    catch e: /RT/DIVISION_BY_ZERO
+      out.APPEND("runtime error from TRA")
+    end
+    var count = 0
+    include /TRA/STEP
+    include /TRC/HOOK if found
+    out.APPEND("count {count}")
+    return out
+  end
+
+end

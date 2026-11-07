@@ -176,7 +176,7 @@ func (f *fn) ctor(k *types.Class) {
 					f.line(es.Pos)
 					f.emit(LOAD_ME)
 					f.args(ci.Args)
-					f.emit(CALL, f.c.ctors[k.Base], len(ci.Args)+1)
+					f.emit(CALL, f.c.ctorRef(k.Base), len(ci.Args)+1)
 					body = body[1:]
 					superDone = true
 				}
@@ -185,9 +185,9 @@ func (f *fn) ctor(k *types.Class) {
 	}
 	if !superDone && k.Base != nil {
 		f.emit(LOAD_ME)
-		f.emit(CALL, f.c.ctors[k.Base], 1)
+		f.emit(CALL, f.c.ctorRef(k.Base), 1)
 	}
-	layout := &f.c.out.Layouts[f.c.inst[k]]
+	layout := f.c.instLayout(k)
 	for _, a := range k.Attributes {
 		if a.Static || a.Init == nil {
 			continue
@@ -209,14 +209,14 @@ func (f *fn) ctor(k *types.Class) {
 
 func (f *fn) staticInit(k *types.Class) {
 	f.info = &types.FuncInfo{}
-	layout := &f.c.out.Layouts[f.c.statics[k]]
+	layout := f.c.staticLayout(k)
 	for _, a := range k.Attributes {
 		if !a.Static || a.Init == nil {
 			continue
 		}
 		f.file, f.chain = a.Site.File, a.Site.Chain
 		f.line(a.Site.Pos)
-		f.emit(STATICS, f.c.classes[k])
+		f.emit(STATICS, f.c.classRef(k))
 		f.valueOwn(a.Init)
 		f.setField(layout.Fields[layout.Field(a.Name)])
 	}
@@ -296,10 +296,10 @@ func (f *fn) stmt(s syntax.Stmt) {
 		f.emit(RETURN)
 	case *syntax.RaiseStmt:
 		k := info.Raises[s]
-		f.emit(NEW_OBJ, f.c.classes[k])
+		f.emit(NEW_OBJ, f.c.classRef(k))
 		f.emit(DUP)
 		f.args(s.Args)
-		f.emit(CALL, f.c.ctors[k], len(s.Args)+1)
+		f.emit(CALL, f.c.ctorRef(k), len(s.Args)+1)
 		f.line(s.Pos)
 		f.emit(RAISE)
 	case *syntax.TryStmt:
@@ -400,7 +400,7 @@ func (f *fn) assign(s *syntax.AssignStmt) {
 			f.setAttr(sel.Attribute)
 			return
 		case types.SelectStatic:
-			f.emit(STATICS, f.c.classes[sel.Attribute.Owner])
+			f.emit(STATICS, f.c.classRef(sel.Attribute.Owner))
 			f.valueOwn(s.Value)
 			f.setAttr(sel.Attribute)
 			return
@@ -425,7 +425,7 @@ func (f *fn) assign(s *syntax.AssignStmt) {
 // attrTarget pushes the object that holds an attribute.
 func (f *fn) attrTarget(a *types.Attribute) {
 	if a.Static {
-		f.emit(STATICS, f.c.classes[a.Owner])
+		f.emit(STATICS, f.c.classRef(a.Owner))
 	} else {
 		f.emit(LOAD_ME)
 	}
@@ -434,9 +434,9 @@ func (f *fn) attrTarget(a *types.Attribute) {
 func (f *fn) attrField(a *types.Attribute) bytecode.Field {
 	var l *bytecode.Layout
 	if a.Static {
-		l = &f.c.out.Layouts[f.c.statics[a.Owner]]
+		l = f.c.staticLayout(a.Owner)
 	} else {
-		l = &f.c.out.Layouts[f.c.inst[a.Owner]]
+		l = f.c.instLayout(a.Owner)
 	}
 	return l.Fields[l.Field(a.Name)]
 }
@@ -584,7 +584,7 @@ func (f *fn) tryStmt(s *syntax.TryStmt) {
 		f.line(cc.Pos)
 		f.storeLocal(l, true)
 		f.stmts(cc.Body.Stmts)
-		handlers = append(handlers, handler{pc, f.c.classes[k]})
+		handlers = append(handlers, handler{pc, f.c.classRef(k)})
 		t.closeAll(len(f.code))
 		f.inlineFinally(t)
 		ends = append(ends, f.jump(JUMP))
@@ -1065,7 +1065,7 @@ func (f *fn) selectExpr(x *syntax.SelectExpr) {
 		f.expr(x.X)
 		f.getAttr(sel.Attribute)
 	case types.SelectStatic:
-		f.emit(STATICS, f.c.classes[sel.Attribute.Owner])
+		f.emit(STATICS, f.c.classRef(sel.Attribute.Owner))
 		f.getAttr(sel.Attribute)
 	case types.SelectConstant:
 		f.constant(sel.Constant)
@@ -1114,7 +1114,8 @@ func (f *fn) call(x *syntax.CallExpr) {
 		f.args(ci.Args)
 		switch ci.Kind {
 		case types.CallVirtual:
-			f.emit(CALL_VIRT, f.c.vslot[rootMethod(m)], argc)
+			slot, _ := f.c.vslot(m)
+			f.emit(CALL_VIRT, slot, argc)
 		case types.CallInterface:
 			iface := m.Owner
 			if ci.Receiver != nil {
@@ -1122,13 +1123,9 @@ func (f *fn) call(x *syntax.CallExpr) {
 					iface = k
 				}
 			}
-			f.emit(CALL_IFACE, f.c.classes[iface], slices.Index(f.c.ifaces[iface], m.Name), argc)
+			f.emit(CALL_IFACE, f.c.classRef(iface), slices.Index(f.c.ifaces[iface], m.Name), argc)
 		default:
-			idx, ok := f.c.funcs[m]
-			if !ok {
-				f.c.failf("no code for %s", m)
-			}
-			f.emit(CALL, idx, argc)
+			f.emit(CALL, f.c.funcRef(m), argc)
 		}
 	}
 }
@@ -1136,14 +1133,14 @@ func (f *fn) call(x *syntax.CallExpr) {
 func (f *fn) newExpr(x *syntax.NewExpr, t types.Type) {
 	switch tt := types.NonOpt(t).(type) {
 	case *types.Class:
-		f.emit(NEW_OBJ, f.c.classes[tt])
+		f.emit(NEW_OBJ, f.c.classRef(tt))
 		f.emit(DUP)
 		var args []syntax.Expr
 		for _, a := range x.Args {
 			args = append(args, a.Value)
 		}
 		f.args(args)
-		f.emit(CALL, f.c.ctors[tt], len(args)+1)
+		f.emit(CALL, f.c.ctorRef(tt), len(args)+1)
 	case *types.Struct:
 		li := f.c.structLayout(tt)
 		f.emit(NEW_STRUCT, li)

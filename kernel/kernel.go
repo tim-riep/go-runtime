@@ -97,6 +97,10 @@ func Open(ctx context.Context, dsn string) (*Kernel, error) {
 	}
 	k := New(db, d)
 	k.ownsDB = true
+	if err := k.recompileOutdated(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("compiling the code of an older bytecode format: %w", err)
+	}
 	return k, nil
 }
 

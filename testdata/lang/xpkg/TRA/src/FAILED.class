@@ -1,0 +1,7 @@
+public class /TRA/FAILED extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -39,6 +39,16 @@ type Options struct {
 	Sources map[string]string
 	// LanguageVersion of the package.
 	LanguageVersion int
+	// Imports are the compiled programs of the kernel and of all packages
+	// the package requires, also indirectly, in installation order. Their
+	// classes and functions are referred to by direct indexes.
+	Imports []*bytecode.Program
+}
+
+// lib is an imported program.
+type lib struct {
+	prog *bytecode.Program
+	slot int
 }
 
 type compiler struct {
@@ -46,11 +56,11 @@ type compiler struct {
 	info    *types.Info
 	opts    Options
 	out     *bytecode.Program
+	libs    map[string]*lib // by package
 	classes map[*types.Class]int
 	ctors   map[*types.Class]int
 	inits   map[*types.Class]int
 	funcs   map[*types.Method]int
-	vslot   map[*types.Method]int
 	ifaces  map[*types.Class][]string // methods of an interface, including extended ones
 	layouts map[*types.Struct]int
 	inst    map[*types.Class]int // instance layout
@@ -75,12 +85,16 @@ type pendingFunc struct {
 
 // Compile compiles a checked program without errors.
 func Compile(tp *types.Program, opts Options) (prog *bytecode.Program, err error) {
-	c := &compiler{tp: tp, info: tp.Info, opts: opts, classes: map[*types.Class]int{}, ctors: map[*types.Class]int{}, inits: map[*types.Class]int{},
-		funcs: map[*types.Method]int{}, vslot: map[*types.Method]int{}, ifaces: map[*types.Class][]string{}, layouts: map[*types.Struct]int{},
+	c := &compiler{tp: tp, info: tp.Info, opts: opts, libs: map[string]*lib{}, classes: map[*types.Class]int{}, ctors: map[*types.Class]int{},
+		inits: map[*types.Class]int{}, funcs: map[*types.Method]int{}, ifaces: map[*types.Class][]string{}, layouts: map[*types.Struct]int{},
 		inst: map[*types.Class]int{}, statics: map[*types.Class]int{}, enums: map[*types.Enum]int{}, tdescs: map[string]int{},
 		strs: map[string]int{}, decs: map[[2]uint64]int{}, files: map[string]int{}, chains: map[string]int{}}
 	c.out = &bytecode.Program{Package: string(tp.Package), LanguageVersion: opts.LanguageVersion, Tests: opts.Tests,
 		Chains: []bytecode.Chain{{}}}
+	for i, p := range opts.Imports {
+		c.libs[p.Package] = &lib{prog: p, slot: i + 1}
+		c.out.Imports = append(c.out.Imports, p.Package)
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(compileError); ok {
@@ -101,6 +115,11 @@ func Compile(tp *types.Program, opts Options) (prog *bytecode.Program, err error
 		c.classes[k] = i
 		c.out.Classes = append(c.out.Classes, bytecode.Class{Name: k.Name, Interface: k.IsInterface(), Kernel: k.Kernel, Test: k.Test,
 			Exception: k.IsException(), Base: -1, Layout: -1, Statics: -1, Ctor: -1, Init: -1})
+	}
+	for _, k := range append(slices.Clone(tp.Libraries), classes...) {
+		if k.IsInterface() {
+			c.ifaces[k] = interfaceMethods(k)
+		}
 	}
 	// Bases first, so that subclasses extend the layouts and method tables
 	// of their bases.
@@ -146,29 +165,141 @@ func (c *compiler) newFunc(name string, class *types.Class, site types.Site, gen
 	return idx
 }
 
+// ---- references into this program and its imports ----
+
+// external returns the imported program and index of a class of another
+// package.
+func (c *compiler) external(k *types.Class) (*lib, int) {
+	l := c.libs[string(k.Package)]
+	if l == nil {
+		c.failf("%s belongs to package %s, which is not imported", k.Name, k.Package)
+	}
+	i := l.prog.Class(k.Name)
+	if i < 0 {
+		c.failf("the compiled code of %s has no class %s", k.Package, k.Name)
+	}
+	return l, i
+}
+
+// translate turns a reference of an imported program into one of this
+// program.
+func (c *compiler) translate(l *lib, r bytecode.Ref) bytecode.Ref {
+	if r < 0 {
+		return r
+	}
+	pkg := l.prog.Package
+	if s := bytecode.RefSlot(r); s > 0 {
+		pkg = l.prog.Imports[s-1]
+	}
+	if pkg == c.out.Package {
+		return bytecode.MakeRef(0, bytecode.RefIndex(r))
+	}
+	target := c.libs[pkg]
+	if target == nil {
+		c.failf("package %s is not imported", pkg)
+	}
+	return bytecode.MakeRef(target.slot, bytecode.RefIndex(r))
+}
+
+// classDef returns the compiled class of a class of this program or an
+// import, with the import (nil for this program).
+func (c *compiler) classDef(k *types.Class) (*bytecode.Class, *lib) {
+	if i, ok := c.classes[k]; ok {
+		return &c.out.Classes[i], nil
+	}
+	l, i := c.external(k)
+	return &l.prog.Classes[i], l
+}
+
+func (c *compiler) classRef(k *types.Class) bytecode.Ref {
+	if i, ok := c.classes[k]; ok {
+		return bytecode.MakeRef(0, i)
+	}
+	l, i := c.external(k)
+	return bytecode.MakeRef(l.slot, i)
+}
+
+func (c *compiler) ctorRef(k *types.Class) bytecode.Ref {
+	if f, ok := c.ctors[k]; ok {
+		return bytecode.MakeRef(0, f)
+	}
+	l, i := c.external(k)
+	return bytecode.MakeRef(l.slot, l.prog.Classes[i].Ctor)
+}
+
+// funcRef returns the function of a method that is called without dynamic
+// dispatch.
+func (c *compiler) funcRef(m *types.Method) bytecode.Ref {
+	if f, ok := c.funcs[m]; ok {
+		return bytecode.MakeRef(0, f)
+	}
+	def, l := c.classDef(m.Owner)
+	if m.Ctor {
+		return c.ctorRef(m.Owner)
+	}
+	for _, mr := range def.Methods {
+		if mr.Name == m.Name {
+			if l == nil {
+				return mr.Func
+			}
+			return c.translate(l, mr.Func)
+		}
+	}
+	c.failf("no code for %s", m)
+	return 0
+}
+
+// vslot returns the slot of an open or overriding method in the method
+// table of its class.
+func (c *compiler) vslot(m *types.Method) (int, bool) {
+	if !m.Open && !m.Override {
+		return 0, false
+	}
+	def, _ := c.classDef(m.Owner)
+	i := slices.Index(def.VSlots, m.Name)
+	return i, i >= 0
+}
+
+// instLayout returns the layout of the objects of a class.
+func (c *compiler) instLayout(k *types.Class) *bytecode.Layout {
+	if i, ok := c.inst[k]; ok {
+		return &c.out.Layouts[i]
+	}
+	l, i := c.external(k)
+	return &l.prog.Layouts[l.prog.Classes[i].Layout]
+}
+
+// staticLayout returns the layout of the static attributes of a class.
+func (c *compiler) staticLayout(k *types.Class) *bytecode.Layout {
+	if i, ok := c.statics[k]; ok {
+		return &c.out.Layouts[i]
+	}
+	l, i := c.external(k)
+	return &l.prog.Layouts[l.prog.Classes[i].Statics]
+}
+
 func (c *compiler) declareClass(k *types.Class) {
 	ci := c.classes[k]
 	bc := &c.out.Classes[ci]
 	if k.Base != nil {
-		bc.Base = c.classes[k.Base]
+		bc.Base = c.classRef(k.Base)
 	}
-	bc.Supers = append(bc.Supers, ci)
+	bc.Supers = append(bc.Supers, bytecode.MakeRef(0, ci))
 	for b := k.Base; b != nil; b = b.Base {
-		bc.Supers = append(bc.Supers, c.classes[b])
+		bc.Supers = append(bc.Supers, c.classRef(b))
 	}
 	for _, i := range allInterfaces(k) {
-		if idx, ok := c.classes[i]; ok && !slices.Contains(bc.Supers, idx) {
-			bc.Supers = append(bc.Supers, idx)
+		if r := c.classRef(i); !slices.Contains(bc.Supers, r) {
+			bc.Supers = append(bc.Supers, r)
 		}
 	}
 	if k.IsInterface() {
-		c.ifaces[k] = interfaceMethods(k)
 		return
 	}
 	// Instance layout: the fields of the base class keep their places.
 	var base *bytecode.Layout
 	if k.Base != nil {
-		base = &c.out.Layouts[c.inst[k.Base]]
+		base = c.instLayout(k.Base)
 	}
 	var own, statics []fieldSpec
 	for _, a := range k.Attributes {
@@ -186,35 +317,46 @@ func (c *compiler) declareClass(k *types.Class) {
 		c.out.Classes[ci].Statics = c.statics[k]
 	}
 	// Method table: inherited slots, overriding methods replace them, open
-	// methods get new ones.
-	var vt []int
+	// methods get new ones. Methods callable by name include inherited ones.
+	var vt []bytecode.Ref
+	var names []string
+	var methods []bytecode.MethodRef
 	if k.Base != nil {
-		vt = slices.Clone(c.out.Classes[c.classes[k.Base]].VTable)
+		def, l := c.classDef(k.Base)
+		for _, r := range def.VTable {
+			if l != nil {
+				r = c.translate(l, r)
+			}
+			vt = append(vt, r)
+		}
+		names = slices.Clone(def.VSlots)
+		for _, m := range def.Methods {
+			if l != nil {
+				m.Func = c.translate(l, m.Func)
+			}
+			methods = append(methods, m)
+		}
 	}
 	for _, m := range k.Methods {
 		idx := c.newFunc(k.Name+"."+m.Name, k, m.Site, func(f *fn) { f.method(m) })
 		c.funcs[m] = idx
-		c.out.Classes[ci].Methods = append(c.out.Classes[ci].Methods, bytecode.MethodRef{Name: m.Name, Func: idx, Static: m.Static,
-			Public: m.Visibility == syntax.Public, Test: m.Test})
-		switch {
-		case m.Override && m.Overrides != nil:
-			slot := c.vslot[rootMethod(m)]
-			c.vslot[m] = slot
-			vt[slot] = idx
+		ref := bytecode.MakeRef(0, idx)
+		mr := bytecode.MethodRef{Name: m.Name, Func: ref, Static: m.Static, Public: m.Visibility == syntax.Public, Test: m.Test}
+		if i := slices.IndexFunc(methods, func(o bytecode.MethodRef) bool { return o.Name == m.Name }); i >= 0 {
+			methods[i] = mr
+		} else {
+			methods = append(methods, mr)
+		}
+		switch slot := slices.Index(names, m.Name); {
+		case m.Override && slot >= 0:
+			vt[slot] = ref
 		case m.Open:
-			c.vslot[m] = len(vt)
-			vt = append(vt, idx)
+			names = append(names, m.Name)
+			vt = append(vt, ref)
 		}
 	}
-	// Inherited methods callable on this class by name.
-	if k.Base != nil {
-		for _, m := range c.out.Classes[c.classes[k.Base]].Methods {
-			if !slices.ContainsFunc(c.out.Classes[ci].Methods, func(o bytecode.MethodRef) bool { return o.Name == m.Name }) {
-				c.out.Classes[ci].Methods = append(c.out.Classes[ci].Methods, m)
-			}
-		}
-	}
-	c.out.Classes[ci].VTable = vt
+	c.out.Classes[ci].Methods = methods
+	c.out.Classes[ci].VTable, c.out.Classes[ci].VSlots = vt, names
 	site := types.Site{File: k.File}
 	ctorSite := site
 	if k.Ctor != nil {
@@ -229,15 +371,6 @@ func (c *compiler) declareClass(k *types.Class) {
 		c.inits[k] = c.newFunc(k.Name+".static", k, site, func(f *fn) { f.staticInit(k) })
 		c.out.Classes[ci].Init = c.inits[k]
 	}
-}
-
-// rootMethod returns the method that introduced the slot of an overriding
-// method.
-func rootMethod(m *types.Method) *types.Method {
-	for m.Overrides != nil {
-		m = m.Overrides
-	}
-	return m
 }
 
 func allInterfaces(k *types.Class) []*types.Class {
@@ -286,11 +419,7 @@ func (c *compiler) itables(k *types.Class) {
 	}
 	ci := c.classes[k]
 	for _, i := range allInterfaces(k) {
-		ii, ok := c.classes[i]
-		if !ok {
-			continue
-		}
-		it := bytecode.ITable{Interface: ii}
+		it := bytecode.ITable{Interface: c.classRef(i)}
 		for _, name := range c.ifaces[i] {
 			m, _ := k.Member(name).(*types.Method)
 			if m == nil {
@@ -303,11 +432,17 @@ func (c *compiler) itables(k *types.Class) {
 }
 
 // dispatch returns the function a method resolves to for objects of k.
-func (c *compiler) dispatch(k *types.Class, m *types.Method) int {
-	if slot, ok := c.vslot[m]; ok {
-		return c.out.Classes[c.classes[k]].VTable[slot]
+func (c *compiler) dispatch(k *types.Class, m *types.Method) bytecode.Ref {
+	def := &c.out.Classes[c.classes[k]]
+	if slot := slices.Index(def.VSlots, m.Name); slot >= 0 {
+		return def.VTable[slot]
 	}
-	return c.funcs[m]
+	for _, mr := range def.Methods {
+		if mr.Name == m.Name {
+			return mr.Func
+		}
+	}
+	return c.funcRef(m)
 }
 
 // ---- tables ----
@@ -490,9 +625,7 @@ func (c *compiler) typeDesc(t types.Type) int {
 		d.Key, d.Elem = c.typeDesc(x.Key), c.typeDesc(x.Elem)
 	case *types.Class:
 		d.Name = x.Name
-		if ci, ok := c.classes[x]; ok {
-			d.Class = ci
-		}
+		d.Class = c.classRef(x)
 	}
 	c.out.Types[idx] = d
 	return idx

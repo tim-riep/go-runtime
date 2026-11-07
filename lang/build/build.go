@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
@@ -36,6 +38,7 @@ import (
 	"github.com/tim-riep/go-runtime/lang/types"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/vm"
 )
 
 // Result is the outcome of a build.
@@ -43,6 +46,14 @@ type Result struct {
 	Package     *model.Package
 	Program     *types.Program // nil when the sources could not be checked
 	Diagnostics []types.Diagnostic
+	Schema      *model.Schema
+	// Imports are the kernel and the packages the package requires, also
+	// indirectly, in installation order.
+	Imports []model.PackageID
+	// Deps are the compiled programs of the required packages when the
+	// build read them from directories.
+	Deps     map[model.PackageID]*bytecode.Program
+	includes includes
 }
 
 // Errors returns the diagnostics with severity Error.
@@ -71,7 +82,27 @@ func Dir(dir string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Package(pkg, deps), nil
+	r := Package(pkg, deps)
+	if !r.OK() {
+		return r, nil
+	}
+	// The packages it requires are compiled first, in installation order.
+	r.Deps = map[model.PackageID]*bytecode.Program{}
+	for _, dep := range deps {
+		if len(dep.Sources) == 0 {
+			continue
+		}
+		dr := CheckPackage(dep, r.Schema)
+		if !dr.OK() {
+			return nil, fmt.Errorf("the required package %s does not compile: %v", dep.Manifest.ID, dr.Errors())
+		}
+		p, err := dr.Compile(false, r.Deps)
+		if err != nil {
+			return nil, err
+		}
+		r.Deps[dep.Manifest.ID] = p
+	}
+	return r, nil
 }
 
 func dependencies(parent string, pkg *model.Package, seen map[model.PackageID]bool) ([]*model.Package, error) {
@@ -99,7 +130,7 @@ func dependencies(parent string, pkg *model.Package, seen map[model.PackageID]bo
 	return out, nil
 }
 
-// includes finds includes of the package.
+// includes finds includes of all packages.
 type includes map[string]*types.Unit
 
 func (m includes) Include(name string) (*types.Unit, bool) {
@@ -111,18 +142,8 @@ func (m includes) Include(name string) (*types.Unit, bool) {
 // requires, in installation order.
 func Package(pkg *model.Package, deps []*model.Package) *Result {
 	r := &Result{Package: pkg}
-	schema, err := kernelschema.Schema(kernelschema.Latest())
+	schema, err := Schema(pkg, deps)
 	if err != nil {
-		r.fail("", 0, 0, "schema", err.Error())
-		return r
-	}
-	for _, p := range append(deps, pkg) {
-		if err := schema.AddPackage(p, time.Time{}, time.Time{}); err != nil {
-			r.fail("", 0, 0, "schema", err.Error())
-			return r
-		}
-	}
-	if err := validate.Schema(schema, validate.Options{}); err != nil {
 		var list rterr.List
 		if !errors.As(err, &list) {
 			list = rterr.List{err}
@@ -135,29 +156,126 @@ func Package(pkg *model.Package, deps []*model.Package) *Result {
 	return CheckPackage(pkg, schema)
 }
 
+// Schema returns the valid schema of the kernel with deps and pkg.
+func Schema(pkg *model.Package, deps []*model.Package) (*model.Schema, error) {
+	schema, err := kernelschema.Schema(kernelschema.Latest())
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range append(slices.Clone(deps), pkg) {
+		if err := schema.AddPackage(p, time.Time{}, time.Time{}); err != nil {
+			return nil, err
+		}
+	}
+	if err := validate.Schema(schema, validate.Options{}); err != nil {
+		return nil, err
+	}
+	return schema, nil
+}
+
+// requiredPackages returns the packages pkg requires, also indirectly, in
+// installation order.
+func requiredPackages(s *model.Schema, id model.PackageID) []model.PackageID {
+	var out []model.PackageID
+	seen := map[model.PackageID]bool{id: true}
+	var visit func(p model.PackageID)
+	visit = func(p model.PackageID) {
+		info := s.Packages[p]
+		if info == nil {
+			return
+		}
+		for _, r := range info.Manifest.Requires {
+			if !seen[r.ID] {
+				seen[r.ID] = true
+				visit(r.ID)
+				out = append(out, r.ID)
+			}
+		}
+	}
+	visit(id)
+	return out
+}
+
+func parseUnit(pkg model.PackageID, file string, s model.Source) (*types.Unit, []syntax.Error) {
+	f, errs := syntax.Parse(file, s.Text)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+	return &types.Unit{Package: pkg, File: file, Name: s.Name, Kind: s.Kind, Text: s.Text, AST: f}, nil
+}
+
+// fileOf returns the name of a source file of another package in messages
+// and line tables: "PKG:src/NAME.include".
+func fileOf(pkg model.PackageID, file string) string { return string(pkg) + ":" + file }
+
+var (
+	kernelOnce sync.Once
+	kernelProg *bytecode.Program
+	kernelErr  error
+	kernelLib  []*types.Unit
+)
+
+// KernelProgram returns the compiled classes of the kernel, which every
+// image contains.
+func KernelProgram() (*bytecode.Program, error) {
+	kernelOnce.Do(func() {
+		sources := map[string]string{}
+		var units []*types.Unit
+		for _, s := range kernelsrc.Sources() {
+			u, errs := parseUnit(model.Kernel, s.File, s)
+			if len(errs) > 0 {
+				kernelErr = fmt.Errorf("kernel source %s: %v", s.File, errs)
+				return
+			}
+			units = append(units, u)
+			sources[s.File] = s.Text
+		}
+		kernelLib = units
+		prog, diags := types.Check(types.Config{Package: model.Kernel, Units: units, Includes: includes{}})
+		for _, d := range diags {
+			if d.Severity == types.Error {
+				kernelErr = fmt.Errorf("kernel source: %s", d)
+				return
+			}
+		}
+		kernelProg, kernelErr = compile.Compile(prog, compile.Options{Sources: sources, LanguageVersion: syntax.LanguageVersion})
+		if kernelProg != nil {
+			kernelProg.Package = string(model.Kernel)
+		}
+	})
+	return kernelProg, kernelErr
+}
+
 // CheckPackage checks the sources of a package against a valid schema that
-// contains the package and the packages it requires.
+// contains the package and the packages it requires, also indirectly. The
+// classes of required packages are taken from their sources in the
+// schema, includes from all packages.
 func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
-	r := &Result{Package: pkg}
+	r := &Result{Package: pkg, Schema: schema}
+	id := pkg.Manifest.ID
+	if _, err := KernelProgram(); err != nil {
+		r.fail("", 0, 0, "kernel", err.Error())
+		return r
+	}
 	var units []*types.Unit
 	incs := includes{}
-	sources := append(kernelsrc.Sources(), pkg.Sources...)
-	for _, s := range sources {
-		f, errs := syntax.Parse(s.File, s.Text)
+	own := map[string]bool{}
+	for _, s := range pkg.Sources {
+		u, errs := parseUnit(id, s.File, s)
 		if len(errs) > 0 {
 			for _, e := range errs {
 				r.fail(s.File, e.Pos.Line, e.Pos.Col, types.CodeSyntax, e.Msg)
 			}
 			continue
 		}
-		if canon := syntax.Print(f); canon != s.Text {
+		if canon := syntax.Print(u.AST); canon != s.Text {
 			line := firstDifference(s.Text, canon)
 			r.fail(s.File, line, 1, types.CodeCanonical, "the file is not in canonical form from this line on; run rt fmt")
 			continue
 		}
-		u := &types.Unit{File: s.File, Name: s.Name, Kind: s.Kind, Text: s.Text, AST: f}
 		if s.Kind == model.SourceInclude {
 			incs[s.Name] = u
+			own[s.Name] = true
 			continue
 		}
 		units = append(units, u)
@@ -165,15 +283,52 @@ func CheckPackage(pkg *model.Package, schema *model.Schema) *Result {
 	if len(r.Diagnostics) > 0 {
 		return r
 	}
-	prog, diags := types.Check(types.Config{Package: pkg.Manifest.ID, Schema: schema, Units: units, Includes: incs})
+	libraries := slices.Clone(kernelLib)
+	r.Imports = []model.PackageID{model.Kernel}
+	for _, dep := range requiredPackages(schema, id) {
+		r.Imports = append(r.Imports, dep)
+		for _, s := range schema.Sources[dep] {
+			if s.Kind == model.SourceInclude {
+				continue
+			}
+			if u, errs := parseUnit(dep, fileOf(dep, s.File), s); len(errs) == 0 {
+				libraries = append(libraries, u)
+			}
+		}
+	}
+	for other, sources := range schema.Sources {
+		if other == id {
+			continue
+		}
+		for _, s := range sources {
+			if s.Kind != model.SourceInclude {
+				continue
+			}
+			if u, errs := parseUnit(other, fileOf(other, s.File), s); len(errs) == 0 {
+				incs[s.Name] = u
+			}
+		}
+	}
+	var visible []model.PackageID
+	if info := schema.Packages[id]; info != nil {
+		for _, req := range info.Manifest.Requires {
+			visible = append(visible, req.ID)
+		}
+	} else {
+		for _, req := range pkg.Manifest.Requires {
+			visible = append(visible, req.ID)
+		}
+	}
+	prog, diags := types.Check(types.Config{Package: id, Schema: schema, Units: units, Libraries: libraries, Visible: visible, Includes: incs})
 	r.Program = prog
 	r.Diagnostics = append(r.Diagnostics, diags...)
 	for name, u := range incs {
-		if !prog.Includes[name] {
+		if own[name] && !prog.Includes[name] {
 			r.Diagnostics = append(r.Diagnostics, types.Diagnostic{Severity: types.Note, Level: "note", File: u.File, Code: types.CodeInclude,
 				Message: fmt.Sprintf("include %s is not included anywhere; it is only parsed and formatted", name)})
 		}
 	}
+	r.includes = incs
 	return r
 }
 
@@ -192,15 +347,46 @@ func firstDifference(a, b string) int {
 	return min(len(al), len(bl))
 }
 
-// Compile compiles a successful build. Test classes are included only for
-// tests.
-func (r *Result) Compile(tests bool) (*bytecode.Program, error) {
+// Compile compiles a successful build against the compiled programs of the
+// packages it requires; a required package without code has none. Test
+// classes are included only for tests.
+func (r *Result) Compile(tests bool, programs map[model.PackageID]*bytecode.Program) (*bytecode.Program, error) {
 	if !r.OK() {
 		return nil, fmt.Errorf("the build of %s has errors", r.Package.Manifest.ID)
 	}
+	kernel, err := KernelProgram()
+	if err != nil {
+		return nil, err
+	}
+	imports := []*bytecode.Program{kernel}
+	for _, id := range r.Imports[1:] {
+		if p := programs[id]; p != nil {
+			imports = append(imports, p)
+		}
+	}
 	sources := map[string]string{}
-	for _, s := range append(kernelsrc.Sources(), r.Package.Sources...) {
+	for _, s := range r.Package.Sources {
 		sources[s.File] = s.Text
 	}
-	return compile.Compile(r.Program, compile.Options{Tests: tests, Sources: sources, LanguageVersion: r.Package.Manifest.LanguageVersion})
+	for _, u := range r.includes {
+		sources[u.File] = u.Text
+	}
+	return compile.Compile(r.Program, compile.Options{Tests: tests, Sources: sources, LanguageVersion: r.Package.Manifest.LanguageVersion, Imports: imports})
+}
+
+// Image compiles a successful build and links it with the kernel and the
+// packages it requires, for running it without a database.
+func (r *Result) Image(tests bool) (*vm.Image, error) {
+	p, err := r.Compile(tests, r.Deps)
+	if err != nil {
+		return nil, err
+	}
+	kernel, _ := KernelProgram()
+	progs := []*bytecode.Program{kernel}
+	for _, id := range r.Imports[1:] {
+		if dp := r.Deps[id]; dp != nil {
+			progs = append(progs, dp)
+		}
+	}
+	return vm.Link(0, append(progs, p)...)
 }

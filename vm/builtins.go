@@ -36,11 +36,10 @@ func (m *Machine) callFn(c *Closure, args ...Value) (Value, *thrown, error) {
 
 func (m *Machine) recordKey(a *Array, v Value) string {
 	r := v.record()
-	l := &m.p.Layouts[m.p.Types[a.Elem].Layout]
 	var b strings.Builder
 	for _, fi := range a.Key {
-		f := l.Fields[fi]
-		b.WriteString(keyOf(&m.p.Types[f.Type], m.getField(r, f)))
+		f := r.Layout.Fields[fi]
+		b.WriteString(keyOf(&r.P.Types[f.Type], m.getField(r, f)))
 		b.WriteByte(0)
 	}
 	return b.String()
@@ -100,7 +99,7 @@ func (m *Machine) setElem(a *Array, i int, v Value) *thrown {
 }
 
 func (m *Machine) mapSet(mp *Map, k, v Value) *thrown {
-	key := keyOf(&m.p.Types[mp.Key], k)
+	key := keyOf(&mp.P.Types[mp.Key], k)
 	if i, ok := mp.index[key]; ok {
 		mp.Vals[i] = v
 		return nil
@@ -143,7 +142,7 @@ func (m *Machine) elems(a *Array) []Value {
 }
 
 func (m *Machine) fromElems(like *Array, elem int, vals []Value) *Array {
-	a := m.newArrayOf(elem)
+	a := m.newArrayOf(like.P, elem)
 	a.Key, a.Unique, a.dirty = like.Key, like.Unique, true
 	for _, v := range vals {
 		a.grow()
@@ -155,7 +154,7 @@ func (m *Machine) fromElems(like *Array, elem int, vals []Value) *Array {
 
 // builtin runs a built-in method. vals holds the receiver, if any, and the
 // arguments.
-func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, error) {
+func (m *Machine) builtin(p *Program, id, recvT, resT int, vals []Value) (Value, *thrown, error) {
 	b := types.BuiltinID(id)
 	var recv Value
 	args := vals
@@ -200,7 +199,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 	case types.ArrContains, types.ArrIndexOf:
 		a := recv.array()
 		for i := range a.Len() {
-			if m.equal(a.Elem, a.Get(i), args[0]) {
+			if m.equal(a.P, a.Elem, a.Get(i), args[0]) {
 				if b == types.ArrContains {
 					return Bool(true), nil, nil
 				}
@@ -216,19 +215,19 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		f := args[0].R.(*Closure)
 		var keep []Value
 		for _, v := range m.elems(a) {
-			r, t, err := m.callFn(f, m.copyValue(a.Elem, v))
+			r, t, err := m.callFn(f, m.copyValue(a.P, a.Elem, v))
 			if t != nil || err != nil {
 				return Value{}, t, err
 			}
 			switch {
 			case b == types.ArrFind && r.bool():
-				return m.copyValue(a.Elem, v), nil, nil
+				return m.copyValue(a.P, a.Elem, v), nil, nil
 			case b == types.ArrAny && r.bool():
 				return Bool(true), nil, nil
 			case b == types.ArrAll && !r.bool():
 				return Bool(false), nil, nil
 			case b == types.ArrFilter && r.bool():
-				keep = append(keep, m.copyValue(a.Elem, v))
+				keep = append(keep, m.copyValue(a.P, a.Elem, v))
 			}
 		}
 		switch b {
@@ -244,9 +243,9 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 	case types.ArrMap:
 		a := recv.array()
 		f := args[0].R.(*Closure)
-		out := m.newArrayOf(m.p.Types[resT].Elem)
+		out := m.newArrayOf(p, p.Types[resT].Elem)
 		for _, v := range m.elems(a) {
-			r, t, err := m.callFn(f, m.copyValue(a.Elem, v))
+			r, t, err := m.callFn(f, m.copyValue(a.P, a.Elem, v))
 			if t != nil || err != nil {
 				return Value{}, t, err
 			}
@@ -259,18 +258,18 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		a := recv.array()
 		vs := m.elems(a)
 		keys := vs
-		kd := &m.p.Types[a.Elem]
+		kd := &a.P.Types[a.Elem]
 		if b == types.ArrSortBy {
 			f := args[0].R.(*Closure)
 			keys = make([]Value, len(vs))
 			for i, v := range vs {
-				r, t, err := m.callFn(f, m.copyValue(a.Elem, v))
+				r, t, err := m.callFn(f, m.copyValue(a.P, a.Elem, v))
 				if t != nil || err != nil {
 					return Value{}, t, err
 				}
 				keys[i] = r
 			}
-			kd = &m.p.Types[m.p.Funcs[f.Fn].Result]
+			kd = &f.Fn.Prog.P.Types[f.Fn.Def.Result]
 		}
 		idx := make([]int, len(vs))
 		for i := range idx {
@@ -279,7 +278,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		sort.SliceStable(idx, func(i, j int) bool { return m.compareKind(kd, keys[idx[i]], keys[idx[j]]) < 0 })
 		sorted := make([]Value, len(vs))
 		for i, k := range idx {
-			sorted[i] = m.copyValue(a.Elem, vs[k])
+			sorted[i] = m.copyValue(a.P, a.Elem, vs[k])
 		}
 		return Value{R: m.fromElems(a, a.Elem, sorted)}, nil, nil
 	case types.ArrReverse:
@@ -287,7 +286,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		vs := m.elems(a)
 		out := make([]Value, len(vs))
 		for i, v := range vs {
-			out[len(vs)-1-i] = m.copyValue(a.Elem, v)
+			out[len(vs)-1-i] = m.copyValue(a.P, a.Elem, v)
 		}
 		return Value{R: m.fromElems(a, a.Elem, out)}, nil, nil
 	case types.ArrSlice:
@@ -299,7 +298,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		vs := m.elems(a)[from-1 : to]
 		out := make([]Value, len(vs))
 		for i, v := range vs {
-			out[i] = m.copyValue(a.Elem, v)
+			out[i] = m.copyValue(a.P, a.Elem, v)
 		}
 		return Value{R: m.fromElems(a, a.Elem, out)}, nil, nil
 	case types.ArrJoin:
@@ -314,35 +313,35 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		if t := m.reindex(a); t != nil {
 			return Value{}, t, nil
 		}
-		l := &m.p.Layouts[m.p.Types[a.Elem].Layout]
+		l := &a.P.Layouts[a.P.Types[a.Elem].Layout]
 		var k strings.Builder
 		for i, fi := range a.Key {
-			k.WriteString(keyOf(&m.p.Types[l.Fields[fi].Type], args[i]))
+			k.WriteString(keyOf(&a.P.Types[l.Fields[fi].Type], args[i]))
 			k.WriteByte(0)
 		}
 		i, ok := a.index[k.String()]
 		if !ok {
 			return Null, nil, nil
 		}
-		return m.copyValue(a.Elem, a.Get(i)), nil, nil
+		return m.copyValue(a.P, a.Elem, a.Get(i)), nil, nil
 
 	case types.MapLength:
 		return Int(int64(len(recv.mapv().Keys))), nil, nil
 	case types.MapGet, types.MapContains:
 		mp := recv.mapv()
-		i, ok := mp.index[keyOf(&m.p.Types[mp.Key], args[0])]
+		i, ok := mp.index[keyOf(&mp.P.Types[mp.Key], args[0])]
 		if b == types.MapContains {
 			return Bool(ok), nil, nil
 		}
 		if !ok {
 			return Null, nil, nil
 		}
-		return m.copyValue(mp.Elem, mp.Vals[i]), nil, nil
+		return m.copyValue(mp.P, mp.Elem, mp.Vals[i]), nil, nil
 	case types.MapSet:
 		return Value{}, m.mapSet(recv.mapv(), args[0], args[1]), nil
 	case types.MapRemove:
 		mp := recv.mapv()
-		key := keyOf(&m.p.Types[mp.Key], args[0])
+		key := keyOf(&mp.P.Types[mp.Key], args[0])
 		i, ok := mp.index[key]
 		if !ok {
 			return Value{}, nil, nil
@@ -351,7 +350,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		mp.Vals = append(mp.Vals[:i], mp.Vals[i+1:]...)
 		mp.index = make(map[string]int, len(mp.Keys))
 		for j, k := range mp.Keys {
-			mp.index[keyOf(&m.p.Types[mp.Key], k)] = j
+			mp.index[keyOf(&mp.P.Types[mp.Key], k)] = j
 		}
 		return Value{}, nil, nil
 	case types.MapKeys, types.MapValues:
@@ -360,10 +359,10 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		if b == types.MapValues {
 			src, elem = mp.Vals, mp.Elem
 		}
-		out := m.newArrayOf(elem)
+		out := m.newArrayOf(mp.P, elem)
 		for _, v := range src {
 			out.grow()
-			out.set(out.Len()-1, m.copyValue(elem, v))
+			out.set(out.Len()-1, m.copyValue(mp.P, elem, v))
 		}
 		return Value{R: out}, nil, nil
 	case types.MapClear:
@@ -412,10 +411,10 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		if args[0].str() == "" {
 			return Value{}, m.fail("/RT/VALUE_ERROR", "SPLIT needs a separator"), nil
 		}
-		out := m.newArrayOf(m.p.Types[resT].Elem)
-		for _, p := range strings.Split(recv.str(), args[0].str()) {
+		out := m.newArrayOf(p, p.Types[resT].Elem)
+		for _, part := range strings.Split(recv.str(), args[0].str()) {
 			out.grow()
-			out.set(out.Len()-1, Str(p))
+			out.set(out.Len()-1, Str(part))
 		}
 		return Value{R: out}, nil, nil
 	case types.BytesLength:
@@ -448,8 +447,8 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		return Int(days), nil, nil
 
 	case types.EnumParse:
-		e := &m.p.Enums[m.p.Types[recvT].Enum]
-		text := m.format(e.Base, 0, args[0])
+		e := &p.Enums[p.Types[recvT].Enum]
+		text := m.format(p, e.Base, 0, args[0])
 		for i, v := range e.Values {
 			if v == text {
 				return Int(int64(i)), nil, nil
@@ -457,7 +456,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		}
 		return Null, nil, nil
 	case types.EnumValueOf:
-		e := &m.p.Enums[m.p.Types[recvT].Enum]
+		e := &p.Enums[p.Types[recvT].Enum]
 		v := e.Values[recv.int()]
 		if e.Base == TString {
 			return Str(v), nil, nil
@@ -465,7 +464,7 @@ func (m *Machine) builtin(id, recvT, resT int, vals []Value) (Value, *thrown, er
 		n, _ := parseInt(v)
 		return Int(n), nil, nil
 	case types.EnumName:
-		e := &m.p.Enums[m.p.Types[recvT].Enum]
+		e := &p.Enums[p.Types[recvT].Enum]
 		return Str(e.Names[recv.int()]), nil, nil
 	}
 	return Value{}, nil, errUnknownBuiltin(id)

@@ -26,11 +26,12 @@ import (
 
 // Unit is a source file to check.
 type Unit struct {
-	File string
-	Name string
-	Kind model.SourceKind
-	Text string
-	AST  *syntax.File
+	Package model.PackageID
+	File    string
+	Name    string
+	Kind    model.SourceKind
+	Text    string
+	AST     *syntax.File
 }
 
 // IncludeSource finds includes by name. The package itself is the only
@@ -41,18 +42,25 @@ type IncludeSource interface {
 
 // Config is the input of Check.
 type Config struct {
-	Package  model.PackageID
-	Schema   *model.Schema // valid schema with the package and the packages it requires
-	Units    []*Unit       // classes and interfaces of the package and the kernel
+	Package model.PackageID
+	Schema  *model.Schema // valid schema with the package and the packages it requires
+	Units   []*Unit       // classes and interfaces of the package
+	// Libraries are the classes and interfaces of the kernel and of the
+	// packages the package requires. Only their declarations are used.
+	Libraries []*Unit
+	// Visible are the packages whose objects the package may use: those it
+	// requires. The package itself and the kernel always are.
+	Visible  []model.PackageID
 	Includes IncludeSource
 }
 
 // Program is a checked program.
 type Program struct {
-	Package  model.PackageID
-	Classes  []*Class // ordered by name
-	Info     *Info
-	Includes map[string]bool // includes that were inserted somewhere
+	Package   model.PackageID
+	Classes   []*Class // classes of the package, ordered by name
+	Libraries []*Class // classes of the kernel and required packages it may use
+	Info      *Info
+	Includes  map[string]bool // includes that were inserted somewhere
 }
 
 // Class returns the class with the given name, or nil.
@@ -147,6 +155,7 @@ type checker struct {
 	diags    []Diagnostic
 	loc      Site // file and include chain of the code being checked
 	included map[string]bool
+	quiet    bool // declarations of libraries were checked with their package
 }
 
 // Check checks a program. Diagnostics with severity Error make the
@@ -161,15 +170,28 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 	c.declareClasses()
 	c.hierarchy()
 	for _, k := range c.sorted() {
+		c.quiet = k.External
 		c.members(k)
 	}
+	c.quiet = false
 	for _, k := range c.sorted() {
-		c.classRules(k)
+		if !k.External {
+			c.classRules(k)
+		}
 	}
 	for _, k := range c.sorted() {
-		c.bodies(k)
+		if !k.External {
+			c.bodies(k)
+		}
 	}
-	p := &Program{Package: cfg.Package, Classes: c.sorted(), Info: c.info, Includes: c.included}
+	p := &Program{Package: cfg.Package, Info: c.info, Includes: c.included}
+	for _, k := range c.sorted() {
+		if k.External {
+			p.Libraries = append(p.Libraries, k)
+		} else {
+			p.Classes = append(p.Classes, k)
+		}
+	}
 	sort.SliceStable(c.diags, func(i, j int) bool {
 		a, b := c.diags[i], c.diags[j]
 		if a.File != b.File {
@@ -198,6 +220,9 @@ func (c *checker) errorf(pos syntax.Pos, code, format string, args ...any) {
 }
 
 func (c *checker) report(sev Severity, file string, pos syntax.Pos, chain []IncludeSite, code, format string, args ...any) {
+	if c.quiet {
+		return
+	}
 	level := "error"
 	if sev == Note {
 		level = "note"
@@ -243,9 +268,13 @@ func (c *checker) checkLocalName(id syntax.Ident, what string) {
 	}
 }
 
-// declareClasses creates the classes and interfaces.
+// declareClasses creates the classes and interfaces of the package and of
+// its libraries.
 func (c *checker) declareClasses() {
-	for _, u := range c.cfg.Units {
+	units := append(append([]*Unit(nil), c.cfg.Units...), c.cfg.Libraries...)
+	for i, u := range units {
+		external := i >= len(c.cfg.Units)
+		c.quiet = external
 		f := u.AST
 		c.loc = Site{File: u.File}
 		var k *Class
@@ -268,6 +297,11 @@ func (c *checker) declareClasses() {
 			continue
 		}
 		k.Kernel = strings.HasPrefix(k.Name, model.KernelNamespace)
+		k.External = external
+		k.Package = u.Package
+		if u.Package == "" {
+			k.Package = c.cfg.Package
+		}
 		k.members = map[string]any{}
 		if _, dup := c.classes[k.Name]; dup {
 			c.errorf(f.Name().Pos, CodeDuplicate, "%s is defined twice", k.Name)
@@ -278,12 +312,23 @@ func (c *checker) declareClasses() {
 		}
 		c.classes[k.Name] = k
 	}
+	c.quiet = false
 	c.loc = Site{}
+}
+
+// classVisible reports classes of other packages that are not public.
+func (c *checker) classVisible(k *Class, pos syntax.Pos) bool {
+	if k.Package == c.cfg.Package || k.Visibility == syntax.Public {
+		return true
+	}
+	c.errorf(pos, CodeVisibility, "%s is not public; only the package %s uses it", k.Name, k.Package)
+	return false
 }
 
 // classRef resolves a class or interface name used in a declaration.
 func (c *checker) classRef(n syntax.Name) *Class {
 	if k, ok := c.classes[n.Name]; ok {
+		c.classVisible(k, n.Pos)
 		return k
 	}
 	if !c.visibleNamespace(n) {
@@ -293,18 +338,30 @@ func (c *checker) classRef(n syntax.Name) *Class {
 	return nil
 }
 
-// visibleNamespace reports names of the package or the kernel and reports
-// names of other packages, whose objects come with a later language part.
+// visibleNamespace reports names of the package, of packages it requires
+// or of the kernel, and reports all others.
 func (c *checker) visibleNamespace(n syntax.Name) bool {
-	if strings.HasPrefix(n.Name, c.own) || strings.HasPrefix(n.Name, model.KernelNamespace) {
+	if c.visiblePackage(n.Name) {
 		return true
 	}
-	c.errorf(n.Pos, CodeNotYet, "%s belongs to another package; objects of other packages are not available in code yet", n.Name)
+	id, _, _ := model.SplitName(n.Name)
+	c.errorf(n.Pos, CodeVisibility, "%s belongs to package %s, which %s does not require", n.Name, id, c.cfg.Package)
 	return false
+}
+
+// visiblePackage reports names of the package, the packages it requires or
+// the kernel.
+func (c *checker) visiblePackage(name string) bool {
+	if strings.HasPrefix(name, c.own) || strings.HasPrefix(name, model.KernelNamespace) {
+		return true
+	}
+	id, _, ok := model.SplitName(name)
+	return ok && slices.Contains(c.cfg.Visible, id)
 }
 
 func (c *checker) hierarchy() {
 	for _, k := range c.sorted() {
+		c.quiet = k.External
 		c.loc = Site{File: k.File}
 		if d := k.Class; d != nil {
 			if d.Extends != nil {
@@ -376,6 +433,7 @@ func (c *checker) hierarchy() {
 		}
 	}
 	c.loc = Site{}
+	c.quiet = false
 }
 
 func (k *Class) pos() syntax.Pos {
@@ -472,6 +530,7 @@ func mapKey(t Type) bool {
 // globalType resolves a global name used as type.
 func (c *checker) globalType(n syntax.Name) Type {
 	if k, ok := c.classes[n.Name]; ok {
+		c.classVisible(k, n.Pos)
 		return k
 	}
 	if !c.visibleNamespace(n) {
@@ -582,7 +641,8 @@ func (c *checker) memberInclude(k *Class, m *syntax.IncludeMember, stack []strin
 // with "if found" is noted.
 func (c *checker) findInclude(n syntax.Name, ifFound bool, stack []string) (*Unit, bool) {
 	c.checkGlobalName(n)
-	if !c.visibleNamespace(n) {
+	// include ... if found may insert the include of any package.
+	if !ifFound && !c.visibleNamespace(n) {
 		return nil, false
 	}
 	if i := slices.Index(stack, n.Name); i >= 0 {
@@ -804,4 +864,15 @@ func ownerOf(m any) *Class {
 		return m.Owner
 	}
 	return nil
+}
+
+// fieldVisible reports extension fields of packages that the package does
+// not require; only the extending package and those requiring it use them.
+func (c *checker) fieldVisible(name string, pos syntax.Pos) bool {
+	if !strings.HasPrefix(name, "/") || c.visiblePackage(name) {
+		return true
+	}
+	id, _, _ := model.SplitName(name)
+	c.errorf(pos, CodeVisibility, "the field %s belongs to package %s, which %s does not require", name, id, c.cfg.Package)
+	return false
 }

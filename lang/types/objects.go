@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tim-riep/go-runtime/model"
+
 	"github.com/tim-riep/go-runtime/lang/syntax"
 )
 
@@ -71,6 +73,8 @@ type Class struct {
 	Open       bool
 	Test       bool
 	Kernel     bool // defined by the kernel
+	Package    model.PackageID
+	External   bool // a class of another package, known by its declaration
 	Base       *Class
 	Interfaces []*Class
 	Attributes []*Attribute // own attributes in order

@@ -39,19 +39,23 @@ type Result struct {
 	Log      []vm.LogEntry `json:"log,omitempty"`
 }
 
-// Run runs all test methods of a program compiled with test classes, in
-// the order of classes and methods.
-func Run(ctx context.Context, p *bytecode.Program, opts vm.Options) ([]Result, error) {
-	if !p.Tests {
+// Run runs all test methods of the test classes of a package in an image,
+// in the order of classes and methods.
+func Run(ctx context.Context, image *vm.Image, pkg string, opts vm.Options) ([]Result, error) {
+	pr := image.Program(pkg)
+	if pr == nil {
+		return nil, errors.New("testrun: the image has no package " + pkg)
+	}
+	if !pr.P.Tests {
 		return nil, errors.New("testrun: the program was compiled without test classes")
 	}
 	var out []Result
-	for _, c := range p.Classes {
+	for _, c := range pr.P.Classes {
 		if !c.Test {
 			continue
 		}
 		for _, m := range c.Methods {
-			if !m.Test {
+			if !m.Test || bytecode.RefSlot(m.Func) != 0 {
 				continue
 			}
 			rec := &vm.LogRecorder{}
@@ -59,7 +63,7 @@ func Run(ctx context.Context, p *bytecode.Program, opts vm.Options) ([]Result, e
 			o.Log = rec
 			r := Result{Class: c.Name, Method: m.Name}
 			start := time.Now()
-			mach, err := vm.New(p, o)
+			mach, err := vm.New(image, o)
 			if err == nil {
 				err = mach.CallMethod(ctx, c.Name, m.Name)
 			}
