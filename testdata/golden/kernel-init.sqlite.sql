@@ -231,7 +231,7 @@ CREATE TABLE "/RT/CODE_USES" (
   CONSTRAINT "/RT/CODE_USES#CK#FILE_PATH" CHECK ("FILE_PATH" IS NULL OR (length("FILE_PATH") <= 255)),
   CONSTRAINT "/RT/CODE_USES#CK#LINE_NO" CHECK ("LINE_NO" IS NULL OR ("LINE_NO" BETWEEN -2147483648 AND 2147483647)),
   CONSTRAINT "/RT/CODE_USES#CK#COLUMN_NO" CHECK ("COLUMN_NO" IS NULL OR ("COLUMN_NO" BETWEEN -2147483648 AND 2147483647)),
-  CONSTRAINT "/RT/CODE_USES#CK#OBJECT_KIND" CHECK ("OBJECT_KIND" IS NULL OR (length("OBJECT_KIND") <= 16 AND "OBJECT_KIND" IN ('table', 'field', 'structure', 'component', 'array-type', 'data-element', 'domain', 'fixed-value', 'class', 'interface', 'method', 'attribute', 'constant', 'include', 'transformation'))),
+  CONSTRAINT "/RT/CODE_USES#CK#OBJECT_KIND" CHECK ("OBJECT_KIND" IS NULL OR (length("OBJECT_KIND") <= 16 AND "OBJECT_KIND" IN ('table', 'field', 'structure', 'component', 'array-type', 'data-element', 'domain', 'fixed-value', 'class', 'interface', 'method', 'attribute', 'constant', 'include', 'transformation', 'asset-repository'))),
   CONSTRAINT "/RT/CODE_USES#CK#OBJECT_NAME" CHECK ("OBJECT_NAME" IS NULL OR (length("OBJECT_NAME") <= 63)),
   CONSTRAINT "/RT/CODE_USES#CK#MEMBER_NAME" CHECK ("MEMBER_NAME" IS NULL OR (length("MEMBER_NAME") <= 63)),
   CONSTRAINT "/RT/CODE_USES#CK#OBJECT_PACKAGE" CHECK ("OBJECT_PACKAGE" IS NULL OR (length("OBJECT_PACKAGE") <= 16))

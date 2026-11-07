@@ -334,6 +334,7 @@ const (
 	CodeNative     = "native"
 	CodeCapability = "capability"
 	CodeHandler    = "handler"
+	CodeAsset      = "asset"
 	CodeConstant   = "constant"
 	CodeTest       = "test"
 	CodeStatement  = "statement"

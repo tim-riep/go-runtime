@@ -213,7 +213,7 @@ CREATE TABLE "/RT/CODE_USES" (
   "OBJECT_PACKAGE" VARCHAR(16),
   CONSTRAINT "/RT/CODE_USES#PK" PRIMARY KEY ("PACKAGE_ID", "POSITION"),
   CONSTRAINT "/RT/CODE_USES#FK#PACKAGE" FOREIGN KEY ("PACKAGE_ID") REFERENCES "/RT/PACKAGES" ("PACKAGE_ID") DEFERRABLE INITIALLY IMMEDIATE,
-  CONSTRAINT "/RT/CODE_USES#CK#OBJECT_KIND" CHECK ("OBJECT_KIND" IN ('table', 'field', 'structure', 'component', 'array-type', 'data-element', 'domain', 'fixed-value', 'class', 'interface', 'method', 'attribute', 'constant', 'include', 'transformation'))
+  CONSTRAINT "/RT/CODE_USES#CK#OBJECT_KIND" CHECK ("OBJECT_KIND" IN ('table', 'field', 'structure', 'component', 'array-type', 'data-element', 'domain', 'fixed-value', 'class', 'interface', 'method', 'attribute', 'constant', 'include', 'transformation', 'asset-repository'))
 );
 
 -- create-table /RT/DOMAINS

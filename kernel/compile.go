@@ -429,6 +429,9 @@ func codeReferences(r *build.Result) ([]repo.CodeUse, []repo.CodeInclude) {
 		if id, _, ok := model.SplitName(ref.Object); ok {
 			u.ObjectPackage = model.Some(id)
 		}
+		if ref.Kind == "asset-repository" { // the object is the package ID
+			u.ObjectPackage = model.Some(model.PackageID(ref.Object))
+		}
 		if !seen[u] {
 			seen[u] = true
 			uses = append(uses, u)

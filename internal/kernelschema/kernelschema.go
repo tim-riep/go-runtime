@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9
+//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -43,14 +43,15 @@ type Migration struct {
 // never change a released one.
 var Migrations = []Migration{
 	{Version: 1, Dir: "v1"},
-	{Version: 2, Dir: "v2"}, // data classes, languages, data elements, settings
-	{Version: 3, Dir: "v3"}, // asset repositories
-	{Version: 4, Dir: "v4"}, // generated constraint names, defaults, empty strings
-	{Version: 5, Dir: "v5"}, // structures, array types, includes
-	{Version: 6, Dir: "v6"}, // names of fixed values in code
-	{Version: 7, Dir: "v7"}, // source files, bytecode and uses of code
-	{Version: 8, Dir: "v8"}, // kernel packages and capabilities
-	{Version: 9, Dir: "v9"}, // http services and users
+	{Version: 2, Dir: "v2"},   // data classes, languages, data elements, settings
+	{Version: 3, Dir: "v3"},   // asset repositories
+	{Version: 4, Dir: "v4"},   // generated constraint names, defaults, empty strings
+	{Version: 5, Dir: "v5"},   // structures, array types, includes
+	{Version: 6, Dir: "v6"},   // names of fixed values in code
+	{Version: 7, Dir: "v7"},   // source files, bytecode and uses of code
+	{Version: 8, Dir: "v8"},   // kernel packages and capabilities
+	{Version: 9, Dir: "v9"},   // http services and users
+	{Version: 10, Dir: "v10"}, // uses of asset repositories
 }
 
 // Latest returns the newest version.

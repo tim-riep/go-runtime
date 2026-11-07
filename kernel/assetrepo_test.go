@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -317,4 +318,45 @@ func TestAssetsClassRemoved(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestAssetRepositoryLiterals checks OPEN with string literals when the
+// code compiles: the repository must exist and be readable, it is
+// recorded as used, and an upgrade that removes it is rejected.
+func TestAssetRepositoryLiterals(t *testing.T) {
+	withAssetKernel(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		uses, err := k.CodeUses(ctx, "TRARLIB")
+		if err != nil || len(uses) == 0 || uses[0].Package != "TRAREPO" || uses[0].Kind != "asset-repository" || uses[0].Member != model.Some("docs") {
+			t.Fatalf("uses of TRARLIB: %+v %v", uses, err)
+		}
+
+		for src, want := range map[string]string{
+			`OPEN("TRAROTHER", "misc")`: "TRAUSE may not read the asset repositories of package TRAROTHER: TRAUSE does not require TRAROTHER",
+			`OPEN("TRARLIB", "nope")`:   "package TRARLIB has no asset repository nope",
+		} {
+			dir := t.TempDir()
+			testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRAUSE", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRARLIB" }] }`))
+			testutil.WriteFile(t, dir, "src/USE.class", []byte("public class /TRAUSE/USE\n\n  public static method M() raises /TRBASE/ASSET_ERROR\n    var repo = /TRBASE/ASSET_REPOSITORY."+src+"\n  end\n\nend\n"))
+			_, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{})
+			var ce *rterr.CompileError
+			if !errors.As(err, &ce) || !strings.Contains(err.Error(), want) {
+				t.Errorf("%s: %v", src, err)
+			}
+		}
+
+		// Without the repository docs, TRAREPO does not compile.
+		dir := testutil.CopyDir(t, filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "assets", "TRARLIB"))
+		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRARLIB", "version": "1.1.0" }`))
+		if err := os.RemoveAll(filepath.Join(dir, "assets", "docs")); err != nil {
+			t.Fatal(err)
+		}
+		testutil.WriteFile(t, dir, "assets/other/asset.json", []byte(`{ "description": { "en": "Other" } }`))
+		testutil.WriteFile(t, dir, "assets/other/o.txt", []byte("o"))
+		_, err = k.Upgrade(ctx, testutil.LoadDir(t, dir), kernel.Options{})
+		var ce *rterr.CompileError
+		if !errors.As(err, &ce) || ce.Package != "TRAREPO" || !strings.Contains(err.Error(), "package TRARLIB has no asset repository docs") {
+			t.Fatalf("upgrade without docs: %v", err)
+		}
+	})
 }
