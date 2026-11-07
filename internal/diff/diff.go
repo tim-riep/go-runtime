@@ -23,6 +23,7 @@ package diff
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -34,6 +35,7 @@ import (
 func Diff(cur, want *model.Schema) []plan.Change {
 	var out []plan.Change
 	out = append(out, domains(cur, want)...)
+	out = append(out, dataElements(cur, want)...)
 	out = append(out, tables(cur.Physical(), want.Physical())...)
 	return out
 }
@@ -57,6 +59,41 @@ func domains(cur, want *model.Schema) []plan.Change {
 		}
 	}
 	return out
+}
+
+func dataElements(cur, want *model.Schema) []plan.Change {
+	var out []plan.Change
+	for _, name := range want.DataElementNames() {
+		w := want.DataElements[name]
+		c, ok := cur.DataElements[name]
+		if !ok {
+			out = append(out, plan.Change{Kind: plan.CreateDataElement, Name: name, Detail: "domain " + w.Domain})
+			continue
+		}
+		var parts []string
+		if c.Domain != w.Domain {
+			parts = append(parts, "domain "+c.Domain+" -> "+w.Domain)
+		}
+		if !reflect.DeepEqual(c.Texts, w.Texts) {
+			parts = append(parts, "texts")
+		}
+		if len(parts) > 0 {
+			out = append(out, plan.Change{Kind: plan.AlterDataElement, Name: name, Detail: strings.Join(parts, "; ")})
+		}
+	}
+	for _, name := range cur.DataElementNames() {
+		if _, ok := want.DataElements[name]; !ok {
+			out = append(out, plan.Change{Kind: plan.DropDataElement, Name: name})
+		}
+	}
+	return out
+}
+
+func describeReference(f *model.Field) string {
+	if f.DataElement != "" {
+		return "data element " + f.DataElement
+	}
+	return "domain " + f.Domain
 }
 
 // compareDomains describes the type and value differences of two versions
@@ -164,6 +201,10 @@ func columns(cur, want *model.Physical, c, w *model.Table) []plan.Change {
 			}
 			out = append(out, ch)
 			continue
+		}
+		if cf.DataElement != wf.DataElement {
+			out = append(out, plan.Change{Kind: plan.AlterFieldReference, Table: t, Column: wf.Name,
+				Detail: describeReference(cf) + " -> " + describeReference(wf)})
 		}
 		cd := cur.Domain(cf)
 		if cd.TypeString() != wd.TypeString() {

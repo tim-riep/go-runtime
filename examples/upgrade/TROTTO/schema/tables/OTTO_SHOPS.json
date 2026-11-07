@@ -10,12 +10,12 @@
     },
     {
       "name": "COMPANY_ID",
-      "domain": "COMPANY_ID",
+      "dataElement": "COMPANY",
       "notNull": true
     },
     {
       "name": "NAME",
-      "domain": "NAME",
+      "dataElement": "NAME",
       "notNull": true
     }
   ],

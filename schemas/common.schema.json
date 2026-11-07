@@ -30,11 +30,20 @@
       "description": "A field of a table or an extension.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "domain"],
+      "required": [
+        "name"
+      ],
       "properties": {
-        "name": { "$ref": "#/$defs/localName" },
-        "description": { "$ref": "#/$defs/description" },
-        "domain": { "$ref": "#/$defs/reference" },
+        "name": {
+          "$ref": "#/$defs/localName"
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "domain": {
+          "$ref": "#/$defs/reference",
+          "description": "Domain of the field. Use either domain or dataElement."
+        },
         "notNull": {
           "description": "Whether the field rejects NULL. Primary key fields are always NOT NULL.",
           "type": "boolean",
@@ -42,18 +51,46 @@
         },
         "default": {
           "description": "Default value. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
-          "type": ["string", "integer", "boolean"]
+          "type": [
+            "string",
+            "integer",
+            "boolean"
+          ]
+        },
+        "dataElement": {
+          "$ref": "#/$defs/reference",
+          "description": "Data element of the field; its domain gives the type. Use either domain or dataElement."
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "domain"
+          ]
+        },
+        {
+          "required": [
+            "dataElement"
+          ]
+        }
+      ]
     },
     "foreignKey": {
       "description": "A foreign key referencing the complete primary key of a target table.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "table", "fields"],
+      "required": [
+        "name",
+        "table",
+        "fields"
+      ],
       "properties": {
-        "name": { "$ref": "#/$defs/localName" },
-        "table": { "$ref": "#/$defs/reference" },
+        "name": {
+          "$ref": "#/$defs/localName"
+        },
+        "table": {
+          "$ref": "#/$defs/reference"
+        },
         "fields": {
           "description": "Mapping of local fields to key fields of the target table. The tenant field is added automatically.",
           "type": "array",
@@ -61,12 +98,74 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["field", "references"],
+            "required": [
+              "field",
+              "references"
+            ],
             "properties": {
-              "field": { "$ref": "#/$defs/localName" },
-              "references": { "$ref": "#/$defs/localName" }
+              "field": {
+                "$ref": "#/$defs/localName"
+              },
+              "references": {
+                "$ref": "#/$defs/localName"
+              }
             }
           }
+        }
+      }
+    },
+    "language": {
+      "description": "ISO 639-1 language code in lower case.",
+      "type": "string",
+      "pattern": "^[a-z]{2}$"
+    },
+    "operations": {
+      "description": "Operations allowed on the rows of a table in a setting.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "update": {
+          "type": "boolean"
+        },
+        "delete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "settingTable": {
+      "description": "A dependent table of a setting: it references its parent table in the setting through one of its foreign keys.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "table",
+        "parent",
+        "foreignKey",
+        "operations"
+      ],
+      "properties": {
+        "table": {
+          "$ref": "#/$defs/reference"
+        },
+        "parent": {
+          "$ref": "#/$defs/reference",
+          "description": "Parent table in the setting."
+        },
+        "foreignKey": {
+          "description": "Name of the foreign key of the table to the parent table; extension keys carry their namespace.",
+          "type": "string",
+          "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
+          "maxLength": 63
+        },
+        "operations": {
+          "$ref": "#/$defs/operations"
         }
       }
     }

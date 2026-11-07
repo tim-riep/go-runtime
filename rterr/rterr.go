@@ -290,7 +290,7 @@ type Ambiguous struct {
 }
 
 func (e *Ambiguous) Error() string {
-	return fmt.Sprintf("%s is ambiguous, it names a %s; qualify it as kind:name", e.Name, strings.Join(e.Kinds, " and a "))
+	return fmt.Sprintf("%s is ambiguous, it names a %s; qualify it as %s", e.Name, strings.Join(e.Kinds, " and a "), strings.Join(e.Kinds, ":"+e.Name+" or ")+":"+e.Name)
 }
 
 // InvalidArgument reports an invalid argument passed to the API.

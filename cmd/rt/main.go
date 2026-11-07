@@ -57,7 +57,7 @@ Commands:
   upgrade <package>        upgrade an installed package
   uninstall <id>           remove a package and its data (needs --yes)
   list                     list installed packages
-  show <object>            show a package, table or domain (kind:name to disambiguate)
+  show <object>            show a package, table, domain or data element (kind:name to disambiguate)
   check                    compare the repository with the database schema
   log                      show the operation log
   tenant create <id>       create a tenant (--description)
@@ -335,7 +335,7 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		t := d.Table
 		fmt.Fprintf(c.stdout, "Table %s (owner %s, tenant-specific %v)\n  %s\n\n", t.Name, t.Owner, t.TenantSpecific, t.Description)
 		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  FIELD\tDOMAIN\tKEY\tNOT NULL\tDEFAULT\tOWNER\tORIGIN")
+		fmt.Fprintln(w, "  FIELD\tDATA ELEMENT\tDOMAIN\tKEY\tNOT NULL\tDEFAULT\tOWNER\tORIGIN")
 		for _, f := range t.Fields {
 			key := ""
 			if t.IsKey(f.Name) {
@@ -345,7 +345,7 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 			if f.Default != nil {
 				def = *f.Default
 			}
-			fmt.Fprintf(w, "  %s\t%s\t%s\t%v\t%s\t%s\t%s\n", f.Name, f.Domain, key, f.NotNull, def, f.Owner, f.Origin)
+			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%v\t%s\t%s\t%s\n", f.Name, f.DataElement, f.Domain, key, f.NotNull, def, f.Owner, f.Origin)
 		}
 		w.Flush()
 		for _, fk := range t.ForeignKeys {
@@ -357,6 +357,31 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 		for _, r := range d.ReferencedBy {
 			fmt.Fprintf(c.stdout, "  referenced by %s\n", r)
+		}
+	case kernel.KindDataElement:
+		d, err := k.DataElement(ctx, name)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(d)
+			return exitOK
+		}
+		de := d.DataElement
+		typ := ""
+		if d.Domain != nil {
+			typ = " " + d.Domain.TypeString()
+		}
+		fmt.Fprintf(c.stdout, "Data element %s (owner %s)\n  domain %s%s\n\n", de.Name, de.Owner, de.Domain, typ)
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "  LANGUAGE\tSHORT\tMEDIUM\tLONG\tHEADING\tDESCRIPTION")
+		for _, lang := range de.Languages() {
+			t := de.Texts[lang]
+			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\t%s\n", lang, t.Short, t.Medium, t.Long, t.Heading, t.Description)
+		}
+		w.Flush()
+		for _, u := range d.UsedBy {
+			fmt.Fprintf(c.stdout, "  used by %s\n", u)
 		}
 	case kernel.KindDomain:
 		d, err := k.Domain(ctx, name)
@@ -522,6 +547,7 @@ func (c *cli) fail(err error) int {
 		dc   *rterr.DestructiveChange
 		conf *rterr.ConfirmationRequired
 		ee   *rterr.ExecError
+		ml   *rterr.MissingLanguages
 	)
 	switch {
 	case errors.As(err, &dc):
@@ -530,6 +556,9 @@ func (c *cli) fail(err error) int {
 	case errors.As(err, &conf):
 		fmt.Fprintln(c.stderr, "hint: rerun with --yes, or with --dry-run to see the plan")
 		return exitNeedsPermit
+	case errors.As(err, &ml):
+		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
+		return exitInvalid
 	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc):
 		return exitInvalid
 	case errors.As(err, &ee):

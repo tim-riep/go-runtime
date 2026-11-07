@@ -1,0 +1,18 @@
+{
+  "name": "COMPANY",
+  "domain": "COMPANY_ID",
+  "texts": {
+    "en": {
+      "short": "Company",
+      "medium": "Company",
+      "long": "Company ID",
+      "heading": "Company"
+    },
+    "de": {
+      "short": "Firma",
+      "medium": "Firma",
+      "long": "Firmennummer",
+      "heading": "Firma"
+    }
+  }
+}

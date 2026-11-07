@@ -27,19 +27,21 @@ import (
 // declared by their owner; extensions are kept separately so that each
 // object has exactly one owner. Physical combines them.
 type Schema struct {
-	Packages   map[PackageID]*PackageInfo
-	Domains    map[string]*Domain
-	Tables     map[string]*Table
-	Extensions map[ExtensionKey]*Extension
+	Packages     map[PackageID]*PackageInfo
+	Domains      map[string]*Domain
+	DataElements map[string]*DataElement
+	Tables       map[string]*Table
+	Extensions   map[ExtensionKey]*Extension
 }
 
 // NewSchema returns an empty schema.
 func NewSchema() *Schema {
 	return &Schema{
-		Packages:   map[PackageID]*PackageInfo{},
-		Domains:    map[string]*Domain{},
-		Tables:     map[string]*Table{},
-		Extensions: map[ExtensionKey]*Extension{},
+		Packages:     map[PackageID]*PackageInfo{},
+		Domains:      map[string]*Domain{},
+		DataElements: map[string]*DataElement{},
+		Tables:       map[string]*Table{},
+		Extensions:   map[ExtensionKey]*Extension{},
 	}
 }
 
@@ -53,6 +55,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.Domains {
 		c.Domains[k] = cloneDomain(v)
+	}
+	for k, v := range s.DataElements {
+		c.DataElements[k] = cloneDataElement(v)
 	}
 	for k, v := range s.Tables {
 		c.Tables[k] = cloneTable(v)
@@ -69,6 +74,15 @@ func (s *Schema) Clone() *Schema {
 func cloneDomain(d *Domain) *Domain {
 	c := *d
 	c.Values = slices.Clone(d.Values)
+	return &c
+}
+
+func cloneDataElement(d *DataElement) *DataElement {
+	c := *d
+	c.Texts = make(map[string]DataElementText, len(d.Texts))
+	for l, t := range d.Texts {
+		c.Texts[l] = t
+	}
 	return &c
 }
 
@@ -114,6 +128,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Domains[d.Name] = d
 	}
+	for i := range p.DataElements {
+		d := cloneDataElement(&p.DataElements[i])
+		d.Owner = id
+		if old, ok := s.DataElements[d.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "data element", Name: d.Name, Owner: string(old.Owner), Package: string(id), Location: d.Src})
+			continue
+		}
+		s.DataElements[d.Name] = d
+	}
 	for i := range p.Tables {
 		t := cloneTable(&p.Tables[i])
 		t.Owner = id
@@ -143,7 +166,14 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 // RemoveLanguage removes all texts in a language and returns how many were
 // removed.
 func (s *Schema) RemoveLanguage(code string) int {
-	return 0
+	n := 0
+	for _, d := range s.DataElements {
+		if _, ok := d.Texts[code]; ok {
+			delete(d.Texts, code)
+			n++
+		}
+	}
+	return n
 }
 
 // RemovePackage removes all objects owned by id.
@@ -151,6 +181,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, d := range s.Domains {
 		if d.Owner == id {
 			delete(s.Domains, name)
+		}
+	}
+	for name, d := range s.DataElements {
+		if d.Owner == id {
+			delete(s.DataElements, name)
 		}
 	}
 	for name, t := range s.Tables {
@@ -224,6 +259,21 @@ func (s *Schema) TableNames() []string { return sortedKeys(s.Tables) }
 // DomainNames returns all domain names in sorted order.
 func (s *Schema) DomainNames() []string { return sortedKeys(s.Domains) }
 
+// DataElementNames returns all data element names in sorted order.
+func (s *Schema) DataElementNames() []string { return sortedKeys(s.DataElements) }
+
+// FieldDomain returns the name of the domain of a field, resolving its data
+// element.
+func (s *Schema) FieldDomain(f *Field) string {
+	if f.DataElement != "" {
+		if d, ok := s.DataElements[f.DataElement]; ok {
+			return d.Domain
+		}
+		return ""
+	}
+	return f.Domain
+}
+
 // ExtensionsOf returns the extensions of a table ordered by package ID.
 func (s *Schema) ExtensionsOf(table string) []*Extension {
 	var out []*Extension
@@ -261,8 +311,9 @@ func sortedKeys[V any](m map[string]V) []string {
 // its tenant field, its own fields and all extension fields, and every
 // foreign key including the tenant mapping.
 type Physical struct {
-	Tables  map[string]*Table
-	Domains map[string]*Domain
+	Tables       map[string]*Table
+	Domains      map[string]*Domain
+	DataElements map[string]*DataElement
 }
 
 // TableNames returns the physical table names in sorted order.
@@ -273,7 +324,7 @@ func (p *Physical) Domain(f *Field) *Domain { return p.Domains[f.Domain] }
 
 // Physical computes the database layout of the schema.
 func (s *Schema) Physical() *Physical {
-	p := &Physical{Tables: map[string]*Table{}, Domains: s.Domains}
+	p := &Physical{Tables: map[string]*Table{}, Domains: s.Domains, DataElements: s.DataElements}
 	tenant := func(name string) bool {
 		t, ok := s.Tables[name]
 		return ok && t.TenantSpecific
@@ -316,6 +367,7 @@ func (s *Schema) Physical() *Physical {
 			if t.IsKey(t.Fields[i].Name) {
 				t.Fields[i].NotNull = true
 			}
+			t.Fields[i].Domain = s.FieldDomain(&t.Fields[i])
 		}
 		p.Tables[name] = t
 	}

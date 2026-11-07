@@ -1,0 +1,18 @@
+{
+  "name": "OTTO_PARTNER",
+  "domain": "OTTO_ID",
+  "texts": {
+    "en": {
+      "short": "Partner",
+      "medium": "OTTO partner",
+      "long": "Partner ID on OTTO",
+      "heading": "OTTO partner"
+    },
+    "de": {
+      "short": "Partner",
+      "medium": "OTTO-Partner",
+      "long": "Partner-ID bei OTTO",
+      "heading": "OTTO-Partner"
+    }
+  }
+}

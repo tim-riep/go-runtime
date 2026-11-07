@@ -4,7 +4,7 @@
   "fields": [
     {
       "name": "OTTO_ID",
-      "domain": "OTTO_ID",
+      "dataElement": "OTTO_PARTNER",
       "description": "Partner ID of the company"
     }
   ]

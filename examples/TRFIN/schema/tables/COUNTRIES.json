@@ -6,16 +6,16 @@
   "fields": [
     {
       "name": "COUNTRY_CODE",
-      "domain": "COUNTRY_CODE"
+      "dataElement": "COUNTRY"
     },
     {
       "name": "NAME",
-      "domain": "NAME",
+      "dataElement": "NAME",
       "notNull": true
     },
     {
       "name": "CURRENCY",
-      "domain": "CURRENCY"
+      "dataElement": "CURRENCY"
     }
   ],
   "primaryKey": [

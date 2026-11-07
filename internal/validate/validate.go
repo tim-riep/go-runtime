@@ -22,6 +22,7 @@ package validate
 import (
 	"fmt"
 	"slices"
+	"unicode/utf8"
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
@@ -40,6 +41,9 @@ func Schema(s *model.Schema, opts Options) error {
 	v := &validator{s: s, opts: opts, missing: map[string][]string{}}
 	for _, name := range s.DomainNames() {
 		v.domain(s.Domains[name])
+	}
+	for _, name := range s.DataElementNames() {
+		v.dataElement(s.DataElements[name])
 	}
 	for _, name := range s.TableNames() {
 		v.table(s.Tables[name])
@@ -138,6 +142,69 @@ func (v *validator) domain(d *model.Domain) {
 	}
 }
 
+// fieldDomain resolves the domain of a field declared by owner, directly or
+// through its data element, and reports problems on the way.
+func (v *validator) fieldDomain(f *model.Field, owner model.PackageID, obj string) *model.Domain {
+	switch {
+	case f.Domain != "" && f.DataElement != "":
+		v.fail(rterr.CodeDataElement, f.Src, obj, "a field references either a domain or a data element, not both")
+		return nil
+	case f.Domain == "" && f.DataElement == "":
+		v.fail(rterr.CodeDataElement, f.Src, obj, "a field needs a domain or a data element")
+		return nil
+	case f.DataElement != "":
+		de, ok := v.s.DataElements[f.DataElement]
+		if !ok {
+			v.fail(rterr.CodeDataElement, f.Src.At("/dataElement"), obj, "data element %s does not exist", f.DataElement)
+			return nil
+		}
+		if !v.s.Visible(owner, de.Owner) {
+			v.fail(rterr.CodeNotVisible, f.Src.At("/dataElement"), obj, "data element %s belongs to package %s, which %s does not require", de.Name, de.Owner, owner)
+		}
+		// Problems of the data element itself are reported for the data
+		// element.
+		return v.s.Domains[de.Domain]
+	}
+	d, ok := v.s.Domains[f.Domain]
+	if !ok {
+		v.fail(rterr.CodeUnknownDomain, f.Src.At("/domain"), obj, "domain %s does not exist", f.Domain)
+		return nil
+	}
+	if !v.s.Visible(owner, d.Owner) {
+		v.fail(rterr.CodeNotVisible, f.Src.At("/domain"), obj, "domain %s belongs to package %s, which %s does not require", d.Name, d.Owner, owner)
+	}
+	return d
+}
+
+// dataElement checks a data element and its texts.
+func (v *validator) dataElement(de *model.DataElement) {
+	obj := "data element " + de.Name
+	v.identifier(de.Name, de.Src.At("/name"), obj)
+	if model.IsKernelName(de.Name) != (de.Owner == model.Kernel) {
+		v.fail(rterr.CodeName, de.Src.At("/name"), obj, "only kernel data elements may use the kernel namespace")
+	}
+	d, ok := v.s.Domains[de.Domain]
+	switch {
+	case !ok:
+		v.fail(rterr.CodeUnknownDomain, de.Src.At("/domain"), obj, "domain %s does not exist", de.Domain)
+	case !v.s.Visible(de.Owner, d.Owner):
+		v.fail(rterr.CodeNotVisible, de.Src.At("/domain"), obj, "domain %s belongs to package %s, which %s does not require", d.Name, d.Owner, de.Owner)
+	}
+	for _, lang := range de.Languages() {
+		t := de.Texts[lang]
+		loc := de.Src.At("/texts/" + lang)
+		for _, l := range []struct {
+			name, text string
+			max        int
+		}{{"short", t.Short, model.MaxShortLabel}, {"medium", t.Medium, model.MaxMediumLabel}, {"long", t.Long, model.MaxLongLabel}, {"heading", t.Heading, model.MaxHeading}} {
+			if n := utf8.RuneCountInString(l.text); n == 0 || n > l.max {
+				v.fail(rterr.CodeText, loc.At("/"+l.name), obj, "%s label in %s must have 1 to %d characters", l.name, lang, l.max)
+			}
+		}
+	}
+	v.languages(obj, de.Src, de.Languages())
+}
+
 // field checks a field declared by owner and normalizes its default.
 func (v *validator) field(table string, f *model.Field, owner model.PackageID) {
 	obj := "field " + table + "." + f.Name
@@ -146,13 +213,9 @@ func (v *validator) field(table string, f *model.Field, owner model.PackageID) {
 	if model.IsKernelName(f.Name) && owner != model.Kernel {
 		v.fail(rterr.CodeName, f.Src.At("/name"), obj, "names in the kernel namespace are reserved")
 	}
-	d, ok := v.s.Domains[f.Domain]
-	if !ok {
-		v.fail(rterr.CodeUnknownDomain, f.Src.At("/domain"), obj, "domain %s does not exist", f.Domain)
+	d := v.fieldDomain(f, owner, obj)
+	if d == nil {
 		return
-	}
-	if !v.s.Visible(owner, d.Owner) {
-		v.fail(rterr.CodeNotVisible, f.Src.At("/domain"), obj, "domain %s belongs to package %s, which %s does not require", d.Name, d.Owner, owner)
 	}
 	if len(f.DefaultJSON) > 0 {
 		canon, err := d.ParseJSON(f.DefaultJSON)
@@ -311,7 +374,7 @@ func (v *validator) foreignKey(src *model.Table, fk *model.ForeignKey, owner mod
 			v.fail(rterr.CodeForeignKey, loc.At("/references"), obj, "key field %s is referenced twice", c.References)
 		}
 		refs[c.References] = true
-		sd, td := v.s.Domains[f.Domain], v.s.Domains[tf.Domain]
+		sd, td := v.s.Domains[v.s.FieldDomain(f)], v.s.Domains[v.s.FieldDomain(tf)]
 		if sd != nil && td != nil && !Compatible(sd, td) {
 			v.fail(rterr.CodeTypeMismatch, loc, obj, "%s has type %s, %s.%s has type %s", f.Name, sd.TypeString(), target.Name, tf.Name, td.TypeString())
 		}

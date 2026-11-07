@@ -114,12 +114,13 @@ func TestKernelTablesAreSystem(t *testing.T) {
 
 func TestUnknownDomain(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[0].Fields[0].Domain = "NOPE"
+	e.fin.Tables[0].Fields[2].Domain = "NOPE" // BANK_ACCOUNTS.IBAN
 	expect(t, e.schema(t), rterr.CodeUnknownDomain, "NOPE")
 }
 
 func TestDomainNotVisible(t *testing.T) {
 	e := load(t)
+	e.fin.Tables[2].Fields[1].DataElement = ""   // COUNTRIES.NAME
 	e.fin.Tables[2].Fields[1].Domain = "OTTO_ID" // TRFIN does not require TROTTO
 	expect(t, e.schema(t), rterr.CodeNotVisible, "OTTO_ID")
 }
@@ -151,6 +152,7 @@ func TestForeignKeyMustCoverKey(t *testing.T) {
 
 func TestForeignKeyTypeMismatch(t *testing.T) {
 	e := load(t)
+	e.fin.Tables[0].Fields[0].DataElement = ""
 	e.fin.Tables[0].Fields[0].Domain = "IBAN" // CHAR(34) referencing CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(34)")
 }

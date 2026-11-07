@@ -41,10 +41,18 @@ func forEachDB(t *testing.T, fn func(t *testing.T, k *kernel.Kernel)) {
 	}
 }
 
+// initialized initializes the kernel and sets up German, the second
+// language of the examples. Kernel versions without languages skip that.
 func initialized(t *testing.T, k *kernel.Kernel) {
 	t.Helper()
-	if _, err := k.Init(context.Background(), kernel.Options{}); err != nil {
+	ctx := context.Background()
+	if _, err := k.Init(ctx, kernel.Options{}); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := k.Languages().List(ctx); err == nil {
+		if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

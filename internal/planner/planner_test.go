@@ -145,3 +145,50 @@ func TestDestructiveClassification(t *testing.T) {
 		}
 	}
 }
+
+func TestDataElementChanges(t *testing.T) {
+	_, installed, _, _ := schemas(t)
+	build := func(f func(s *model.Schema)) *plan.Plan {
+		want := installed.Clone()
+		f(want)
+		p, err := Build(sqlite.New(), plan.Upgrade, installed, want, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	// Switching a field to a data element with the same domain changes only
+	// the repository.
+	p := build(func(s *model.Schema) {
+		f := s.Tables["BANK_ACCOUNTS"].Field("IBAN")
+		s.DataElements["IBAN"] = &model.DataElement{Name: "IBAN", Owner: "TRFIN", Domain: "IBAN", Texts: map[string]model.DataElementText{}}
+		f.Domain, f.DataElement = "", "IBAN"
+	})
+	if got := kinds(p); !slices.Equal(got, []plan.ChangeKind{plan.CreateDataElement, plan.AlterFieldReference}) || len(p.Steps) != 0 {
+		t.Fatalf("changes %v, %d steps", got, len(p.Steps))
+	}
+	// Texts never need statements.
+	p = build(func(s *model.Schema) {
+		en := s.DataElements["NAME"].Texts["en"]
+		en.Long = "Full name"
+		s.DataElements["NAME"].Texts["en"] = en
+	})
+	if len(p.Steps) != 0 || len(p.Destructive()) != 0 || kinds(p)[0] != plan.AlterDataElement {
+		t.Fatalf("text change: %v", p.Changes)
+	}
+	// A new domain of a data element changes the type of every field using
+	// it and follows the rules of type changes.
+	p = build(func(s *model.Schema) { s.DataElements["NAME"].Domain = "CURRENCY" })
+	n := 0
+	for _, c := range p.Changes {
+		if c.Kind == plan.AlterType {
+			n++
+			if !c.Destructive {
+				t.Errorf("CHAR(80) -> CHAR(3) must be destructive: %v", c)
+			}
+		}
+	}
+	if n != 2 { // COMPANIES.NAME and COUNTRIES.NAME
+		t.Fatalf("expected a type change per field, got %v", p.Changes)
+	}
+}

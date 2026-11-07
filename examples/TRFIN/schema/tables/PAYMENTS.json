@@ -18,12 +18,12 @@
     },
     {
       "name": "AMOUNT",
-      "domain": "AMOUNT",
+      "dataElement": "AMOUNT",
       "notNull": true
     },
     {
       "name": "CURRENCY",
-      "domain": "CURRENCY",
+      "dataElement": "CURRENCY",
       "notNull": true
     },
     {

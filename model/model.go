@@ -127,6 +127,36 @@ type Domain struct {
 	Src         rterr.Location `json:"-"`
 }
 
+// Maximum lengths of data element labels in characters.
+const (
+	MaxShortLabel  = 10
+	MaxMediumLabel = 20
+	MaxLongLabel   = 40
+	MaxHeading     = 40
+)
+
+// DataElementText holds the labels of a data element in one language.
+type DataElementText struct {
+	Short       string `json:"short"`
+	Medium      string `json:"medium"`
+	Long        string `json:"long"`
+	Heading     string `json:"heading"` // column heading
+	Description string `json:"description,omitempty"`
+}
+
+// DataElement gives a domain a meaning: it carries the field labels in
+// every language. Fields reference either a domain or a data element.
+type DataElement struct {
+	Name   string                     `json:"name"`
+	Owner  PackageID                  `json:"owner"`
+	Domain string                     `json:"domain"`
+	Texts  map[string]DataElementText `json:"texts"` // by language code
+	Src    rterr.Location             `json:"-"`
+}
+
+// Languages returns the languages of the texts in sorted order.
+func (d *DataElement) Languages() []string { return sortedKeys(d.Texts) }
+
 // FieldOrigin tells where a physical column comes from.
 type FieldOrigin string
 
@@ -144,9 +174,13 @@ type Field struct {
 	Description string      `json:"description,omitempty"`
 	Owner       PackageID   `json:"owner"`
 	Origin      FieldOrigin `json:"origin"`
-	Domain      string      `json:"domain"`
-	NotNull     bool        `json:"notNull"`
-	Default     *string     `json:"default,omitempty"` // canonical text form
+	// Domain is the domain of the field. For fields with a data element it
+	// is empty in Schema.Tables and set to the data element's domain by
+	// Schema.Physical.
+	Domain      string  `json:"domain"`
+	DataElement string  `json:"dataElement,omitempty"`
+	NotNull     bool    `json:"notNull"`
+	Default     *string `json:"default,omitempty"` // canonical text form
 
 	// DefaultJSON holds the default as written in the package until the
 	// validator converts it into Default.
@@ -259,11 +293,12 @@ type Manifest struct {
 
 // Package is a loaded package.
 type Package struct {
-	Manifest   Manifest
-	Domains    []Domain
-	Tables     []Table
-	Extensions []Extension
-	Origin     string // where the package was loaded from
+	Manifest     Manifest
+	Domains      []Domain
+	DataElements []DataElement
+	Tables       []Table
+	Extensions   []Extension
+	Origin       string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

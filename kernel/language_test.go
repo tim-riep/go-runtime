@@ -19,6 +19,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/rterr"
 )
@@ -26,7 +27,9 @@ import (
 func TestLanguages(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
-		initialized(t, k)
+		if _, err := k.Init(ctx, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
 		langs := k.Languages()
 		list, err := langs.List(ctx)
 		if err != nil || len(list) != 1 || list[0].Code != "en" || list[0].Name != "English" {
@@ -58,6 +61,57 @@ func TestLanguages(t *testing.T) {
 		list, _ = langs.List(ctx)
 		if len(list) != 2 || list[0].Code != "de" || list[1].Code != "en" {
 			t.Fatalf("languages: %+v", list)
+		}
+	})
+}
+
+func TestLanguageMissingForPackage(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		if _, err := k.Init(ctx, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		_, err := k.Install(ctx, examples(t), kernel.Options{})
+		var ml *rterr.MissingLanguages
+		if !errors.As(err, &ml) || len(ml.Languages) != 1 || ml.Languages[0] != "de" {
+			t.Fatalf("expected the missing language de, got %v", err)
+		}
+		if s, _ := k.Schema(ctx); len(s.Packages) != 0 {
+			t.Fatal("packages installed")
+		}
+	})
+}
+
+func TestLanguageRemoveWithTexts(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, examples(t), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		var conf *rterr.ConfirmationRequired
+		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{}); !errors.As(err, &conf) {
+			t.Fatalf("expected ConfirmationRequired, got %v", err)
+		}
+		dry, err := k.Languages().Remove(ctx, "de", kernel.Options{DryRun: true})
+		if err != nil || dry.Changes[0].Detail != "6 texts" {
+			t.Fatalf("dry run: %v %+v", err, dry)
+		}
+		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {
+			t.Fatal(err)
+		}
+		d, err := k.DataElement(ctx, "COUNTRY")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := d.DataElement.Texts["de"]; ok || d.DataElement.Texts["en"].Long != "Country key" {
+			t.Fatalf("texts: %+v", d.DataElement.Texts)
+		}
+		consistent(t, k)
+		// Packages with German texts need the language again.
+		var ml *rterr.MissingLanguages
+		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRBASE"), kernel.Options{}); !errors.As(err, &ml) {
+			t.Fatalf("expected MissingLanguages, got %v", err)
 		}
 	})
 }

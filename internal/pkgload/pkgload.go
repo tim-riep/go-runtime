@@ -48,11 +48,14 @@ import (
 
 // Paths inside a package.
 const (
-	ManifestFile  = "manifest.json"
-	SchemaDir     = "schema"
-	DomainsDir    = "schema/domains"
-	TablesDir     = "schema/tables"
-	ExtensionsDir = "schema/extensions"
+	ManifestFile         = "manifest.json"
+	SchemaDir            = "schema"
+	DomainsDir           = "schema/domains"
+	TablesDir            = "schema/tables"
+	ExtensionsDir        = "schema/extensions"
+	DataElementsDir      = "schema/data-elements"
+	SettingsDir          = "schema/settings"
+	SettingExtensionsDir = "schema/setting-extensions"
 )
 
 // Options control loading.
@@ -109,6 +112,7 @@ type fieldDoc struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Domain      string          `json:"domain"`
+	DataElement string          `json:"dataElement"`
 	NotNull     bool            `json:"notNull"`
 	Default     json.RawMessage `json:"default"`
 }
@@ -132,6 +136,12 @@ type domainDoc struct {
 		Value       json.RawMessage `json:"value"`
 		Description string          `json:"description"`
 	} `json:"values"`
+}
+
+type dataElementDoc struct {
+	Name   string                           `json:"name"`
+	Domain string                           `json:"domain"`
+	Texts  map[string]model.DataElementText `json:"texts"`
 }
 
 type tableDoc struct {
@@ -176,6 +186,13 @@ func (l *loader) load() *model.Package {
 			pkg.Domains = append(pkg.Domains, l.domain(file, &d))
 		}
 	}
+	for _, file := range l.files(DataElementsDir) {
+		var d dataElementDoc
+		if l.readDoc(file, schemas.DataElement, &d) {
+			l.checkFileName(file, d.Name, l.loc(file))
+			pkg.DataElements = append(pkg.DataElements, model.DataElement{Name: d.Name, Owner: l.owner(), Domain: l.ref(d.Domain), Texts: d.Texts, Src: l.loc(file)})
+		}
+	}
 	for _, file := range l.files(TablesDir) {
 		var t tableDoc
 		if l.readDoc(file, schemas.Table, &t) {
@@ -200,8 +217,9 @@ func (l *loader) checkLayout() {
 	}
 	for _, e := range entries {
 		p := path.Join(SchemaDir, e.Name())
-		if !e.IsDir() || (p != DomainsDir && p != TablesDir && p != ExtensionsDir) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, tables/ and extensions/")
+		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir}
+		if !e.IsDir() || !slices.Contains(known, p) {
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/ and setting-extensions/")
 		}
 	}
 }
@@ -322,7 +340,7 @@ func compiled(name string) (*jsonschema.Schema, error) {
 			}
 		}
 		compiledMap = map[string]*jsonschema.Schema{}
-		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.Table, schemas.Extension} {
+		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension} {
 			s, err := c.Compile(schemas.BaseURL + n)
 			if err != nil {
 				compileErr = err
@@ -387,8 +405,12 @@ func (l *loader) checkFileName(file, name string, loc rterr.Location) {
 func (l *loader) field(doc fieldDoc, ext bool, loc rterr.Location) model.Field {
 	f := model.Field{
 		Name: doc.Name, LocalName: doc.Name, Description: doc.Description, Owner: l.owner(),
-		Origin: model.OriginTable, Domain: l.ref(doc.Domain), NotNull: doc.NotNull, Src: loc,
+		Origin: model.OriginTable, NotNull: doc.NotNull, Src: loc,
 	}
+	if doc.Domain != "" {
+		f.Domain = l.ref(doc.Domain)
+	}
+	f.DataElement = doc.DataElement
 	if len(doc.Default) > 0 {
 		f.DefaultJSON = doc.Default
 	}

@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "COMPANY_ID",
-      "domain": "COMPANY_ID"
+      "dataElement": "COMPANY"
     },
     {
       "name": "ENDPOINT",

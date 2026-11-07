@@ -27,9 +27,12 @@ const BaseURL = "https://github.com/tim-riep/go-runtime/schemas/"
 
 // Schema file names.
 const (
-	Common    = "common.schema.json"
-	Manifest  = "manifest.schema.json"
-	Domain    = "domain.schema.json"
-	Table     = "table.schema.json"
-	Extension = "extension.schema.json"
+	Common           = "common.schema.json"
+	Manifest         = "manifest.schema.json"
+	Domain           = "domain.schema.json"
+	Table            = "table.schema.json"
+	Extension        = "extension.schema.json"
+	DataElement      = "data-element.schema.json"
+	Setting          = "setting.schema.json"
+	SettingExtension = "setting-extension.schema.json"
 )

@@ -1,0 +1,20 @@
+{
+  "name": "CURRENCY",
+  "domain": "CURRENCY",
+  "texts": {
+    "en": {
+      "short": "Currency",
+      "medium": "Currency",
+      "long": "Currency key",
+      "heading": "Currency",
+      "description": "ISO 4217 code"
+    },
+    "de": {
+      "short": "Währung",
+      "medium": "Währung",
+      "long": "Währungsschlüssel",
+      "heading": "Währung",
+      "description": "Code nach ISO 4217"
+    }
+  }
+}

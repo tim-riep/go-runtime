@@ -1,0 +1,18 @@
+{
+  "name": "AMOUNT",
+  "domain": "AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Amount",
+      "medium": "Amount",
+      "long": "Amount",
+      "heading": "Amount"
+    },
+    "de": {
+      "short": "Betrag",
+      "medium": "Betrag",
+      "long": "Betrag",
+      "heading": "Betrag"
+    }
+  }
+}

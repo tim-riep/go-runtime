@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/data-element.schema.json",
+  "title": "Data element",
+  "description": "A domain with field labels per language (schema/data-elements/<NAME>.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "domain",
+    "texts"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/localName"
+    },
+    "domain": {
+      "$ref": "common.schema.json#/$defs/reference"
+    },
+    "texts": {
+      "description": "Labels by language code. English (en) is mandatory.",
+      "type": "object",
+      "required": [
+        "en"
+      ],
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/language"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "short",
+          "medium",
+          "long",
+          "heading"
+        ],
+        "properties": {
+          "short": {
+            "description": "Short label.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10
+          },
+          "medium": {
+            "description": "Medium label.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "long": {
+            "description": "Long label.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "heading": {
+            "description": "Column heading.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "description": {
+            "description": "Explanation of the field.",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

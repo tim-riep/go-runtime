@@ -72,7 +72,14 @@ func TestMigrateFromVersion1(t *testing.T) {
 			t.Errorf("data lost: %v", v)
 		}
 
-		// Applying the package again sets its real classes.
+		// Applying the packages again sets their real classes and restores
+		// the data elements, which the first kernel version did not store.
+		if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRBASE"), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
 		up, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{})
 		if err != nil {
 			t.Fatal(err)

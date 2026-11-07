@@ -142,18 +142,49 @@ func (k *Kernel) Domain(ctx context.Context, name string) (*DomainDetail, error)
 	return d, nil
 }
 
+// DataElementDetail describes a data element and where it is used.
+type DataElementDetail struct {
+	DataElement *model.DataElement `json:"dataElement"`
+	Domain      *model.Domain      `json:"domain"`
+	UsedBy      []string           `json:"usedBy,omitempty"` // "TABLE.FIELD"
+}
+
+// DataElement returns a data element with its domain and the fields that
+// use it.
+func (k *Kernel) DataElement(ctx context.Context, name string) (*DataElementDetail, error) {
+	s, err := k.Schema(ctx)
+	if err != nil {
+		return nil, err
+	}
+	de, ok := s.DataElements[name]
+	if !ok {
+		return nil, &rterr.NotFound{Kind: "data element", Name: name}
+	}
+	d := &DataElementDetail{DataElement: de, Domain: s.Domains[de.Domain]}
+	p := s.Physical()
+	for _, tn := range p.TableNames() {
+		for _, f := range p.Tables[tn].Fields {
+			if f.DataElement == name {
+				d.UsedBy = append(d.UsedBy, tn+"."+f.Name)
+			}
+		}
+	}
+	return d, nil
+}
+
 // Object kinds understood by Resolve.
 const (
-	KindPackage = "package"
-	KindTable   = "table"
-	KindDomain  = "domain"
+	KindPackage     = "package"
+	KindTable       = "table"
+	KindDomain      = "domain"
+	KindDataElement = "data-element"
 )
 
 // Resolve determines which kind of object a name refers to. A prefix
-// "package:", "table:" or "domain:" selects the kind explicitly; a bare name
+// "package:", "table:", "domain:" or "data-element:" selects the kind explicitly; a bare name
 // that matches several kinds is reported as rterr.Ambiguous.
 func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, err error) {
-	if kd, n, ok := strings.Cut(ref, ":"); ok && (kd == KindPackage || kd == KindTable || kd == KindDomain) {
+	if kd, n, ok := strings.Cut(ref, ":"); ok && (kd == KindPackage || kd == KindTable || kd == KindDomain || kd == KindDataElement) {
 		return kd, n, nil
 	}
 	s, err := k.Schema(ctx)
@@ -169,6 +200,9 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	}
 	if _, ok := s.Domains[ref]; ok {
 		kinds = append(kinds, KindDomain)
+	}
+	if _, ok := s.DataElements[ref]; ok {
+		kinds = append(kinds, KindDataElement)
 	}
 	switch len(kinds) {
 	case 0:

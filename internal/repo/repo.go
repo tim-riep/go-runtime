@@ -313,6 +313,26 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		}
 	}
 
+	des, err := r.selectRows(ctx, q, TDataElements, []string{"DATA_ELEMENT", "PACKAGE_ID", "DOMAIN_NAME"})
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range des {
+		name := str(d["DATA_ELEMENT"])
+		s.DataElements[name] = &model.DataElement{Name: name, Owner: model.PackageID(str(d["PACKAGE_ID"])), Domain: str(d["DOMAIN_NAME"]),
+			Texts: map[string]model.DataElementText{}}
+	}
+	deTexts, err := r.selectRows(ctx, q, TDataElementTexts, []string{"DATA_ELEMENT", "LANGUAGE", "SHORT_LABEL", "MEDIUM_LABEL", "LONG_LABEL", "HEADING", "DESCRIPTION"})
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range deTexts {
+		if d := s.DataElements[str(t["DATA_ELEMENT"])]; d != nil {
+			d.Texts[str(t["LANGUAGE"])] = model.DataElementText{Short: str(t["SHORT_LABEL"]), Medium: str(t["MEDIUM_LABEL"]),
+				Long: str(t["LONG_LABEL"]), Heading: str(t["HEADING"]), Description: str(t["DESCRIPTION"])}
+		}
+	}
+
 	tabs, err := r.selectRows(ctx, q, TTables, []string{"TABLE_NAME", "PACKAGE_ID", "DESCRIPTION", "TENANT_SPECIFIC", "DATA_CLASS"})
 	if err != nil {
 		return nil, err
@@ -336,7 +356,7 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	}
 
 	fields, err := r.selectRows(ctx, q, TFields, []string{"TABLE_NAME", "FIELD_NAME", "LOCAL_NAME", "DESCRIPTION", "PACKAGE_ID", "ORIGIN",
-		"DOMAIN_NAME", "NOT_NULL", "DEFAULT_VALUE", "KEY_POSITION"}, "TABLE_NAME", "POSITION")
+		"DOMAIN_NAME", "NOT_NULL", "DEFAULT_VALUE", "KEY_POSITION", "DATA_ELEMENT"}, "TABLE_NAME", "POSITION")
 	if err != nil {
 		return nil, err
 	}
@@ -349,6 +369,11 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		fld := model.Field{Name: str(f["FIELD_NAME"]), LocalName: str(f["LOCAL_NAME"]), Description: str(f["DESCRIPTION"]),
 			Owner: model.PackageID(str(f["PACKAGE_ID"])), Origin: model.FieldOrigin(str(f["ORIGIN"])), Domain: str(f["DOMAIN_NAME"]),
 			NotNull: flag(f["NOT_NULL"]), Default: optStr(f["DEFAULT_VALUE"])}
+		// The repository stores the effective domain; the declaration
+		// references only the data element.
+		if de := str(f["DATA_ELEMENT"]); de != "" {
+			fld.DataElement, fld.Domain = de, ""
+		}
 		switch fld.Origin {
 		case model.OriginTable:
 			t := s.Tables[table]
@@ -480,6 +505,19 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			}
 		}
 	}
+	for _, name := range s.DataElementNames() {
+		d := s.DataElements[name]
+		if err := r.insert(ctx, q, TDataElements, row{"DATA_ELEMENT": name, "PACKAGE_ID": string(d.Owner), "DOMAIN_NAME": d.Domain}); err != nil {
+			return err
+		}
+		for _, lang := range d.Languages() {
+			t := d.Texts[lang]
+			if err := r.insert(ctx, q, TDataElementTexts, row{"DATA_ELEMENT": name, "LANGUAGE": lang, "SHORT_LABEL": t.Short, "MEDIUM_LABEL": t.Medium,
+				"LONG_LABEL": t.Long, "HEADING": t.Heading, "DESCRIPTION": nullable(t.Description)}); err != nil {
+				return err
+			}
+		}
+	}
 	for _, name := range s.TableNames() {
 		t := s.Tables[name]
 		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": nullable(string(t.Owner)), "DESCRIPTION": nullable(t.Description),
@@ -503,7 +541,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			}
 			if err := r.insert(ctx, q, TFields, row{"TABLE_NAME": name, "FIELD_NAME": f.Name, "POSITION": int64(i + 1), "LOCAL_NAME": f.LocalName,
 				"DESCRIPTION": nullable(f.Description), "PACKAGE_ID": nullable(string(f.Owner)), "ORIGIN": string(f.Origin), "DOMAIN_NAME": f.Domain,
-				"NOT_NULL": f.NotNull, "DEFAULT_VALUE": def, "KEY_POSITION": nullableInt(key+1, key >= 0)}); err != nil {
+				"NOT_NULL": f.NotNull, "DEFAULT_VALUE": def, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": nullable(f.DataElement)}); err != nil {
 				return err
 			}
 		}
