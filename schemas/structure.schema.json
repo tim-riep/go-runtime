@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/structure.schema.json",
+  "title": "Structure",
+  "description": "A data structure without database table (schema/structures/<name without namespace>.json). Components and includes keep their order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "texts",
+    "components"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/component"
+          },
+          {
+            "$ref": "common.schema.json#/$defs/include"
+          }
+        ]
+      }
+    }
+  }
+}

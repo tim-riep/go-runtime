@@ -27,27 +27,33 @@ import (
 // declared by their owner; extensions are kept separately so that each
 // object has exactly one owner. Physical combines them.
 type Schema struct {
-	Packages          map[PackageID]*PackageInfo
-	Domains           map[string]*Domain
-	DataElements      map[string]*DataElement
-	Tables            map[string]*Table
-	Extensions        map[ExtensionKey]*Extension
-	Settings          map[string]*Setting
-	SettingExtensions map[SettingExtensionKey]*SettingExtension
-	AssetRepositories map[AssetRepositoryKey]*AssetRepository
+	Packages            map[PackageID]*PackageInfo
+	Domains             map[string]*Domain
+	DataElements        map[string]*DataElement
+	Tables              map[string]*Table
+	Extensions          map[ExtensionKey]*Extension
+	Settings            map[string]*Setting
+	SettingExtensions   map[SettingExtensionKey]*SettingExtension
+	AssetRepositories   map[AssetRepositoryKey]*AssetRepository
+	Structures          map[string]*Structure
+	ArrayTypes          map[string]*ArrayType
+	StructureExtensions map[StructureExtensionKey]*StructureExtension
 }
 
 // NewSchema returns an empty schema.
 func NewSchema() *Schema {
 	return &Schema{
-		Packages:          map[PackageID]*PackageInfo{},
-		Domains:           map[string]*Domain{},
-		DataElements:      map[string]*DataElement{},
-		Tables:            map[string]*Table{},
-		Extensions:        map[ExtensionKey]*Extension{},
-		Settings:          map[string]*Setting{},
-		SettingExtensions: map[SettingExtensionKey]*SettingExtension{},
-		AssetRepositories: map[AssetRepositoryKey]*AssetRepository{},
+		Packages:            map[PackageID]*PackageInfo{},
+		Domains:             map[string]*Domain{},
+		DataElements:        map[string]*DataElement{},
+		Tables:              map[string]*Table{},
+		Extensions:          map[ExtensionKey]*Extension{},
+		Settings:            map[string]*Setting{},
+		SettingExtensions:   map[SettingExtensionKey]*SettingExtension{},
+		AssetRepositories:   map[AssetRepositoryKey]*AssetRepository{},
+		Structures:          map[string]*Structure{},
+		ArrayTypes:          map[string]*ArrayType{},
+		StructureExtensions: map[StructureExtensionKey]*StructureExtension{},
 	}
 }
 
@@ -82,6 +88,17 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.AssetRepositories {
 		c.AssetRepositories[k] = cloneAssetRepository(v)
+	}
+	for k, v := range s.Structures {
+		c.Structures[k] = cloneStructure(v)
+	}
+	for k, v := range s.ArrayTypes {
+		c.ArrayTypes[k] = cloneArrayType(v)
+	}
+	for k, v := range s.StructureExtensions {
+		e := *v
+		e.Components = cloneComponents(v.Components)
+		c.StructureExtensions[k] = &e
 	}
 	return c
 }
@@ -153,8 +170,8 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		t := cloneTable(&p.Tables[i])
 		t.Owner = id
 		setOwner(t.Fields, t.ForeignKeys, id)
-		if old, ok := s.Tables[t.Name]; ok {
-			errs = append(errs, &rterr.NameConflict{Kind: "table", Name: t.Name, Owner: string(old.Owner), Package: string(id), Location: t.Src})
+		if old, ok := s.TypeOwner(t.Name); ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "table", Name: t.Name, Owner: string(old), Package: string(id), Location: t.Src})
 			continue
 		}
 		s.Tables[t.Name] = t
@@ -194,6 +211,44 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		r.Package = id
 		s.AssetRepositories[r.Key()] = r
 	}
+	// Structures, tables and array types share one namespace.
+	typeTaken := func(name string) (PackageID, bool) { return s.TypeOwner(name) }
+	for i := range p.Structures {
+		st := cloneStructure(&p.Structures[i])
+		st.Owner = id
+		for _, e := range st.Elements {
+			if e.Component != nil {
+				e.Component.Owner, e.Component.Origin = id, ComponentStructure
+			}
+		}
+		if old, ok := typeTaken(st.Name); ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "structure", Name: st.Name, Owner: string(old), Package: string(id), Location: st.Src})
+			continue
+		}
+		s.Structures[st.Name] = st
+	}
+	for i := range p.ArrayTypes {
+		a := cloneArrayType(&p.ArrayTypes[i])
+		a.Owner = id
+		if old, ok := typeTaken(a.Name); ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "array type", Name: a.Name, Owner: string(old), Package: string(id), Location: a.Src})
+			continue
+		}
+		s.ArrayTypes[a.Name] = a
+	}
+	for i := range p.StructureExtensions {
+		e := p.StructureExtensions[i]
+		e.Package = id
+		e.Components = cloneComponents(e.Components)
+		for j := range e.Components {
+			e.Components[j].Owner, e.Components[j].Origin = id, ComponentExtension
+		}
+		if _, ok := s.StructureExtensions[e.Key()]; ok {
+			errs = append(errs, &rterr.ValidationError{Code: rterr.CodeDuplicate, Location: e.Src, Object: "extension of structure " + e.Structure, Message: "package extends this structure more than once"})
+			continue
+		}
+		s.StructureExtensions[e.Key()] = &e
+	}
 	if id != Kernel {
 		s.Packages[id] = &PackageInfo{Manifest: p.Manifest, InstalledAt: installedAt, UpdatedAt: updatedAt}
 	}
@@ -218,6 +273,18 @@ func (s *Schema) RemoveLanguage(code string) int {
 	for _, d := range s.DataElements {
 		if _, ok := d.Texts[code]; ok {
 			delete(d.Texts, code)
+			n++
+		}
+	}
+	for _, st := range s.Structures {
+		if _, ok := st.Texts[code]; ok {
+			delete(st.Texts, code)
+			n++
+		}
+	}
+	for _, a := range s.ArrayTypes {
+		if _, ok := a.Texts[code]; ok {
+			delete(a.Texts, code)
 			n++
 		}
 	}
@@ -280,6 +347,21 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for k := range s.SettingExtensions {
 		if k.Package == id {
 			delete(s.SettingExtensions, k)
+		}
+	}
+	for n, st := range s.Structures {
+		if st.Owner == id {
+			delete(s.Structures, n)
+		}
+	}
+	for n, a := range s.ArrayTypes {
+		if a.Owner == id {
+			delete(s.ArrayTypes, n)
+		}
+	}
+	for k := range s.StructureExtensions {
+		if k.Package == id {
+			delete(s.StructureExtensions, k)
 		}
 	}
 	for k := range s.AssetRepositories {

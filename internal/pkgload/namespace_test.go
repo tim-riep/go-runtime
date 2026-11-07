@@ -133,6 +133,9 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"extension": {"schema/extensions/X.json", `{"table":"/TRZ/X","fields":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
 		"setting": {"schema/settings/X.json", `{"id":"/TRZ/X","texts":{"en":{"label":"X"}},
 			"root":{"table":"/TRX/ORDERS","operations":{"create":true,"update":true,"delete":true}}}`},
+		"structure":           {"schema/structures/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"components":[{"name":"A","domain":"/TRX/QTY"}]}`},
+		"array type":          {"schema/array-types/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"rowType":{"domain":"/TRX/QTY"}}`},
+		"structure extension": {"schema/structure-extensions/X.json", `{"structure":"/TRZ/X","components":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
 		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
 			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}

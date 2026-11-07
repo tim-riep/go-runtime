@@ -15,6 +15,7 @@
 package pkgload
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"slices"
@@ -242,6 +243,68 @@ func init() {
 			pkg.SettingExtensions = append(pkg.SettingExtensions, e)
 		},
 	})
+	register(ObjectType{
+		Kind: "structure", Document: jsonIn(StructuresDir), Schema: "structure.schema.json",
+		NewDoc:      func() any { return &structureDoc{} },
+		FileName:    func(doc any) (string, bool) { return fileNameOf(doc.(*structureDoc).Name) },
+		Definitions: func(doc any) []NameRef { return ref(doc.(*structureDoc).Name, "/name") },
+		References:  func(doc any) []NameRef { return componentRefs(doc.(*structureDoc).Components, "/components") },
+		Build: func(l *loader, file string, doc any, pkg *model.Package) {
+			d := doc.(*structureDoc)
+			loc := l.loc(file)
+			st := model.Structure{Name: d.Name, Owner: l.owner(), Texts: d.Texts, Src: loc}
+			for i, c := range d.Components {
+				cloc := loc.At(fmt.Sprintf("/components/%d", i))
+				if inc, ok := c.Included.Get(); ok {
+					st.Elements = append(st.Elements, model.Element{Included: model.Some(inc), Src: cloc})
+					continue
+				}
+				comp := c.component(l.owner(), model.ComponentStructure, cloc)
+				st.Elements = append(st.Elements, model.Element{Component: &comp, Src: cloc})
+			}
+			pkg.Structures = append(pkg.Structures, st)
+		},
+	})
+	register(ObjectType{
+		Kind: "array type", Document: jsonIn(ArrayTypesDir), Schema: "array-type.schema.json",
+		NewDoc:      func() any { return &arrayTypeDoc{} },
+		FileName:    func(doc any) (string, bool) { return fileNameOf(doc.(*arrayTypeDoc).Name) },
+		Definitions: func(doc any) []NameRef { return ref(doc.(*arrayTypeDoc).Name, "/name") },
+		References: func(doc any) []NameRef {
+			t := doc.(*arrayTypeDoc).RowType.typeRef()
+			return ref(t.Name, "/rowType/"+string(t.Kind))
+		},
+		Build: func(l *loader, file string, doc any, pkg *model.Package) {
+			d := doc.(*arrayTypeDoc)
+			a := model.ArrayType{Name: d.Name, Owner: l.owner(), Texts: d.Texts, Row: d.RowType.typeRef(), Key: d.Key, Src: l.loc(file)}
+			pkg.ArrayTypes = append(pkg.ArrayTypes, a)
+		},
+	})
+	register(ObjectType{
+		Kind: "structure extension", Document: jsonIn(StructureExtensionsDir), Schema: "structure-extension.schema.json",
+		NewDoc:   func() any { return &structureExtensionDoc{} },
+		FileName: func(any) (string, bool) { return "", false },
+		Definitions: func(doc any) []NameRef {
+			var out []NameRef
+			for i, c := range doc.(*structureExtensionDoc).Components {
+				out = append(out, ref(c.Name, fmt.Sprintf("/components/%d/name", i))...)
+			}
+			return out
+		},
+		References: func(doc any) []NameRef {
+			d := doc.(*structureExtensionDoc)
+			return append(ref(d.Structure, "/structure"), componentRefs(d.Components, "/components")...)
+		},
+		Build: func(l *loader, file string, doc any, pkg *model.Package) {
+			d := doc.(*structureExtensionDoc)
+			loc := l.loc(file)
+			e := model.StructureExtension{Package: l.owner(), Structure: d.Structure, Src: loc}
+			for i, c := range d.Components {
+				e.Components = append(e.Components, c.component(l.owner(), model.ComponentExtension, loc.At(fmt.Sprintf("/components/%d", i))))
+			}
+			pkg.StructureExtensions = append(pkg.StructureExtensions, e)
+		},
+	})
 	// Asset repositories are identified by package and folder name; they
 	// define and reference no names, which the empty lists state
 	// explicitly.
@@ -272,6 +335,9 @@ func init() {
 func fieldRefs(fs []fieldDoc) []NameRef {
 	var out []NameRef
 	for i, f := range fs {
+		if inc, ok := f.Included.Get(); ok {
+			out = append(out, ref(inc, fmt.Sprintf("/fields/%d/include", i))...)
+		}
 		out = append(out, ref(f.Domain, fmt.Sprintf("/fields/%d/domain", i))...)
 		if de, ok := f.DataElement.Get(); ok {
 			out = append(out, ref(de, fmt.Sprintf("/fields/%d/dataElement", i))...)
@@ -308,4 +374,71 @@ func nodeRefs(ts []settingTableDoc) []NameRef {
 
 func settingTable(d settingTableDoc, loc rterr.Location) model.SettingTable {
 	return model.SettingTable{Table: d.Table, Parent: d.Parent, ForeignKey: d.ForeignKey, Operations: d.Operations, Src: loc}
+}
+
+// typeDoc holds the type keys of a component or row type; exactly one is set.
+type typeDoc struct {
+	DataElement model.Optional[string] `json:"dataElement"`
+	Domain      model.Optional[string] `json:"domain"`
+	Structure   model.Optional[string] `json:"structure"`
+	ArrayType   model.Optional[string] `json:"arrayType"`
+}
+
+func (t typeDoc) typeRef() model.TypeRef {
+	for _, c := range []struct {
+		o    model.Optional[string]
+		kind model.TypeKind
+	}{{t.DataElement, model.TypeDataElement}, {t.Domain, model.TypeDomain}, {t.Structure, model.TypeStructure}, {t.ArrayType, model.TypeArray}} {
+		if n, ok := c.o.Get(); ok {
+			return model.TypeRef{Kind: c.kind, Name: n}
+		}
+	}
+	return model.TypeRef{}
+}
+
+type componentDoc struct {
+	typeDoc
+	Name        string                 `json:"name"`
+	Description model.Optional[string] `json:"description"`
+	NotNull     bool                   `json:"notNull"`
+	Default     json.RawMessage        `json:"default"`
+	Included    model.Optional[string] `json:"include"`
+}
+
+func (c componentDoc) component(owner model.PackageID, origin model.ComponentOrigin, loc rterr.Location) model.Component {
+	return model.Component{Name: c.Name, Owner: owner, Origin: origin, Description: c.Description, Type: c.typeRef(),
+		NotNull: c.NotNull, DefaultJSON: c.Default, Src: loc}
+}
+
+type structureDoc struct {
+	Name       string                 `json:"name"`
+	Texts      map[string]model.Label `json:"texts"`
+	Components []componentDoc         `json:"components"`
+}
+
+type arrayTypeDoc struct {
+	Name    string                 `json:"name"`
+	Texts   map[string]model.Label `json:"texts"`
+	RowType typeDoc                `json:"rowType"`
+	Key     *model.ArrayKey        `json:"key"`
+}
+
+type structureExtensionDoc struct {
+	Structure  string         `json:"structure"`
+	Components []componentDoc `json:"components"`
+}
+
+// componentRefs lists the types and includes of components.
+func componentRefs(cs []componentDoc, base string) []NameRef {
+	var out []NameRef
+	for i, c := range cs {
+		p := fmt.Sprintf("%s/%d", base, i)
+		if inc, ok := c.Included.Get(); ok {
+			out = append(out, ref(inc, p+"/include")...)
+			continue
+		}
+		t := c.typeRef()
+		out = append(out, ref(t.Name, p+"/"+string(t.Kind))...)
+	}
+	return out
 }

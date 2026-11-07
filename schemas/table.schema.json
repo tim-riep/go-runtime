@@ -36,8 +36,16 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "common.schema.json#/$defs/field"
-      }
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/field"
+          },
+          {
+            "$ref": "common.schema.json#/$defs/include"
+          }
+        ]
+      },
+      "description": "Fields of the table in order. An entry {\"include\": name} inserts the components of a flat structure or of a table at its place."
     },
     "primaryKey": {
       "description": "Names of the key fields in key order, without the tenant field.",

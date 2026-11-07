@@ -180,6 +180,7 @@ const (
 	OriginTable     FieldOrigin = "TABLE"     // declared by the table
 	OriginExtension FieldOrigin = "EXTENSION" // added by an extension
 	OriginTenant    FieldOrigin = "TENANT"    // added by the kernel for tenant-specific tables
+	OriginInclude   FieldOrigin = "INCLUDE"   // component of an included structure or table
 )
 
 // Field is a column of a table.
@@ -199,6 +200,11 @@ type Field struct {
 	// ResolvedDefault is the effective default: the declared one, else that
 	// of the domain. Schema.Physical sets it.
 	ResolvedDefault Default `json:"-"`
+	// Included is the include of the table the column comes from, Source the
+	// structure or table that declares the component. Schema.Physical sets
+	// both for included columns.
+	Included Optional[string] `json:"include"`
+	Source   Optional[string] `json:"source"`
 
 	// DefaultJSON holds the default as written in the package until the
 	// validator converts it into Default.
@@ -240,9 +246,12 @@ type Table struct {
 	TenantSpecific bool             `json:"tenantSpecific"`
 	DataClass      DataClass        `json:"dataClass"`
 	Fields         []Field          `json:"fields"`
-	PrimaryKey     []string         `json:"primaryKey"`
-	ForeignKeys    []ForeignKey     `json:"foreignKeys,omitempty"`
-	Src            rterr.Location   `json:"-"`
+	// Includes insert the components of structures or tables between the
+	// fields.
+	Includes    []TableInclude `json:"includes,omitempty"`
+	PrimaryKey  []string       `json:"primaryKey"`
+	ForeignKeys []ForeignKey   `json:"foreignKeys,omitempty"`
+	Src         rterr.Location `json:"-"`
 }
 
 // Field returns the field with the given physical name.
@@ -311,15 +320,18 @@ type Manifest struct {
 
 // Package is a loaded package.
 type Package struct {
-	Manifest          Manifest
-	Domains           []Domain
-	DataElements      []DataElement
-	Tables            []Table
-	Extensions        []Extension
-	Settings          []Setting
-	SettingExtensions []SettingExtension
-	AssetRepositories []AssetRepository
-	Origin            string // where the package was loaded from
+	Manifest            Manifest
+	Domains             []Domain
+	DataElements        []DataElement
+	Tables              []Table
+	Extensions          []Extension
+	Settings            []Setting
+	SettingExtensions   []SettingExtension
+	AssetRepositories   []AssetRepository
+	Structures          []Structure
+	ArrayTypes          []ArrayType
+	StructureExtensions []StructureExtension
+	Origin              string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

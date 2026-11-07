@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/array-type.schema.json",
+  "title": "Array type",
+  "description": "An array of rows of dynamic length (schema/array-types/<name without namespace>.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "texts",
+    "rowType"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "rowType": {
+      "description": "Type of the rows: exactly one of structure (a structure or a table), dataElement and domain.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "structure": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "Structure or table: a nested component."
+        },
+        "dataElement": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "Data element of the component."
+        },
+        "domain": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "Domain of the component."
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "structure"
+          ]
+        },
+        {
+          "required": [
+            "dataElement"
+          ]
+        },
+        {
+          "required": [
+            "domain"
+          ]
+        }
+      ]
+    },
+    "key": {
+      "description": "Optional key of the array: elementary components of a structure or table row type. A unique key allows indexed access.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fields",
+        "unique"
+      ],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "common.schema.json#/$defs/localName"
+          }
+        },
+        "unique": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

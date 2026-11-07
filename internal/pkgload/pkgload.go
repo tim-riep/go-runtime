@@ -56,14 +56,17 @@ import (
 
 // Paths inside a package.
 const (
-	ManifestFile         = "manifest.json"
-	SchemaDir            = "schema"
-	DomainsDir           = "schema/domains"
-	TablesDir            = "schema/tables"
-	ExtensionsDir        = "schema/extensions"
-	DataElementsDir      = "schema/data-elements"
-	SettingsDir          = "schema/settings"
-	SettingExtensionsDir = "schema/setting-extensions"
+	ManifestFile           = "manifest.json"
+	SchemaDir              = "schema"
+	DomainsDir             = "schema/domains"
+	TablesDir              = "schema/tables"
+	ExtensionsDir          = "schema/extensions"
+	DataElementsDir        = "schema/data-elements"
+	SettingsDir            = "schema/settings"
+	SettingExtensionsDir   = "schema/setting-extensions"
+	StructuresDir          = "schema/structures"
+	ArrayTypesDir          = "schema/array-types"
+	StructureExtensionsDir = "schema/structure-extensions"
 )
 
 // Options control loading.
@@ -122,6 +125,7 @@ type fieldDoc struct {
 	DataElement model.Optional[string] `json:"dataElement"`
 	NotNull     bool                   `json:"notNull"`
 	Default     json.RawMessage        `json:"default"`
+	Included    model.Optional[string] `json:"include"` // set for include entries
 }
 
 type fkDoc struct {
@@ -270,7 +274,8 @@ func (l *loader) checkLayout() {
 	}
 	for _, e := range entries {
 		p := path.Join(SchemaDir, e.Name())
-		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir}
+		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir,
+			StructuresDir, ArrayTypesDir, StructureExtensionsDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
 			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/ and setting-extensions/")
 		}
@@ -449,7 +454,12 @@ func (l *loader) table(file string, doc *tableDoc) model.Table {
 		TenantSpecific: doc.TenantSpecific, DataClass: model.DataClass(doc.DataClass), PrimaryKey: doc.PrimaryKey, Src: loc,
 	}
 	for i, f := range doc.Fields {
-		t.Fields = append(t.Fields, l.field(f, false, loc.At(fmt.Sprintf("/fields/%d", i))))
+		floc := loc.At(fmt.Sprintf("/fields/%d", i))
+		if name, ok := f.Included.Get(); ok {
+			t.Includes = append(t.Includes, model.TableInclude{Name: name, After: len(t.Fields), Src: floc})
+			continue
+		}
+		t.Fields = append(t.Fields, l.field(f, false, floc))
 	}
 	for i, fk := range doc.ForeignKeys {
 		t.ForeignKeys = append(t.ForeignKeys, l.foreignKey(fk, false, loc.At(fmt.Sprintf("/foreignKeys/%d", i))))

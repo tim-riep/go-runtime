@@ -33,10 +33,7 @@ type Operations struct {
 }
 
 // SettingText holds the label of a setting in one language.
-type SettingText struct {
-	Label       string           `json:"label"`
-	Description Optional[string] `json:"description"`
-}
+type SettingText = Label
 
 // SettingTable is a table of a setting. Every table but the root names its
 // parent table in the setting and its foreign key to that parent.

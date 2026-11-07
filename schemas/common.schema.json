@@ -258,6 +258,180 @@
           }
         }
       }
+    },
+    "include": {
+      "description": "Includes a structure or table: its components take the place of this entry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "include"
+      ],
+      "properties": {
+        "include": {
+          "$ref": "#/$defs/objectName"
+        }
+      }
+    },
+    "labels": {
+      "description": "Label by language code. English (en) is mandatory.",
+      "type": "object",
+      "required": [
+        "en"
+      ],
+      "propertyNames": {
+        "$ref": "#/$defs/language"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "component": {
+      "description": "A component of a structure. Its type is exactly one of dataElement, domain, structure (a structure or a table) and arrayType.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/localName"
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "dataElement": {
+          "$ref": "#/$defs/objectName",
+          "description": "Data element of the component."
+        },
+        "domain": {
+          "$ref": "#/$defs/objectName",
+          "description": "Domain of the component."
+        },
+        "structure": {
+          "$ref": "#/$defs/objectName",
+          "description": "Structure or table: a nested component."
+        },
+        "arrayType": {
+          "$ref": "#/$defs/objectName",
+          "description": "Array type: an array component."
+        },
+        "notNull": {
+          "description": "Whether the component rejects null; the empty string stays allowed unless the domain forbids it.",
+          "type": "boolean"
+        },
+        "default": {
+          "description": "Default value. A missing default, null and \"\" are three different cases: no default, the explicit default null, and the empty string. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "type": [
+            "string",
+            "integer",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "dataElement"
+          ]
+        },
+        {
+          "required": [
+            "domain"
+          ]
+        },
+        {
+          "required": [
+            "structure"
+          ]
+        },
+        {
+          "required": [
+            "arrayType"
+          ]
+        }
+      ]
+    },
+    "extensionComponent": {
+      "description": "A component added by a structure extension. Its name carries the namespace of the extending package.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/objectName"
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "dataElement": {
+          "$ref": "#/$defs/objectName",
+          "description": "Data element of the component."
+        },
+        "domain": {
+          "$ref": "#/$defs/objectName",
+          "description": "Domain of the component."
+        },
+        "structure": {
+          "$ref": "#/$defs/objectName",
+          "description": "Structure or table: a nested component."
+        },
+        "arrayType": {
+          "$ref": "#/$defs/objectName",
+          "description": "Array type: an array component."
+        },
+        "notNull": {
+          "description": "Whether the component rejects null; the empty string stays allowed unless the domain forbids it.",
+          "type": "boolean"
+        },
+        "default": {
+          "description": "Default value. A missing default, null and \"\" are three different cases: no default, the explicit default null, and the empty string. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "type": [
+            "string",
+            "integer",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "dataElement"
+          ]
+        },
+        {
+          "required": [
+            "domain"
+          ]
+        },
+        {
+          "required": [
+            "structure"
+          ]
+        },
+        {
+          "required": [
+            "arrayType"
+          ]
+        }
+      ]
     }
   }
 }
