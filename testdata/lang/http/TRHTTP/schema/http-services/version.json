@@ -1,0 +1,1 @@
+{ "path": "version", "texts": { "en": { "label": "Version of the code" } }, "handlers": [{ "class": "/TRHTTP/VERSION" }] }

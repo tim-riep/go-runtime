@@ -614,6 +614,28 @@ var order = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/ORDER
 - `/TRBASE/IDENTITY` copies its input: `transform value using /TRBASE/IDENTITY` gives the
   canonical XML of a value, and `transform xml using /TRBASE/IDENTITY into T` reads it back.
 
+### JSON
+
+`/TRBASE/JSON` is a native transformation: the kernel converts values to and from JSON
+without a stylesheet, in the format of `rt run`.
+
+```
+var json = transform companies using /TRBASE/JSON
+var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFIN/COMPANIES
+```
+
+- Structures and tables are objects with their components in order, an extension field by
+  its full name; arrays are lists and maps with `STRING` keys objects.
+- `null` is `null` and `""` is `""`. A missing optional component is `null` when the kernel
+  reads a value.
+- `DEC` is a string with all digits of its scale (`"12.50"`), integers are numbers, `DATE`
+  and `TIMESTAMP` are ISO 8601, `BYTES` base64 and enum constants their name.
+- JSON that does not fit the type of `into` raises `/TRBASE/TRANSFORM_RESULT_INVALID` with
+  the path and the reason. There are no parameters, and the output is compact.
+
+Only kernel packages define native transformations, with `"native": "json"` in the
+description file and no stylesheet.
+
 ### Canonical XML format
 
 ```xml
@@ -637,6 +659,56 @@ var order = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/ORDER
 - `DEC` has all digits of its scale, `DATE` is `2026-11-07`, `TIMESTAMP`
   `2026-11-07T10:30:00.000000Z`, `BOOL` `true` or `false`, `UUID` lower-case hex, `BYTES`
   base64, and enum constants are their fixed value.
+
+## Handlers of http services
+
+A handler of a service node (see the README) implements `/TRBASE/HTTP_HANDLER`:
+
+```
+public class /TRFIN/COMPANY_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    if request.METHOD() <> "GET"
+      return false
+    end
+    var companies = select from /TRFIN/COMPANIES order by NAME limit 100
+    response.SET_HEADER("Content-Type", "application/json")
+    response.WRITE_TEXT(transform companies using /TRBASE/JSON)
+    return true
+  end
+
+end
+```
+
+`true` ends the request, `false` passes it to the next handler of the node. `HANDLE` may
+raise any exception; one that no handler catches ends the request with 500 and a rollback.
+
+| `/TRBASE/HTTP_REQUEST`          | Result                                                     |
+| ------------------------------- | ---------------------------------------------------------- |
+| `METHOD()`                      | `GET`, `POST`, ...                                         |
+| `PATH()`, `REST_PATH()`         | path of the node, and the rest of the request path below it |
+| `QUERY(name)`, `QUERY_ALL(name)` | the first value of a query parameter or `null`, all values |
+| `HEADER(name)`, `HEADER_ALL(name)` | the same for header fields                              |
+| `BODY()`, `BODY_TEXT()`         | the body as `BYTES`, or as `STRING` if it is UTF-8         |
+| `HANDLER_PARAMETER(name)`       | a parameter of the handler entry, or `null`                |
+
+A body over `maxBodySize` raises `/RT/INPUT_TOO_LARGE`, which the kernel answers with 413
+when no handler catches it.
+
+| `/TRBASE/HTTP_RESPONSE`         | Effect                                                     |
+| ------------------------------- | ---------------------------------------------------------- |
+| `SET_STATUS(code)`, `STATUS()`  | status code, 200 unless set                                |
+| `SET_HEADER(name, value)`, `ADD_HEADER(name, value)` | replace or add a header field          |
+| `WRITE(data)`, `WRITE_TEXT(text)` | append to the body                                       |
+
+The response is kept until the request ends, so status and header fields can change up to
+the end; a body over `maxResponseSize` raises `/RT/INPUT_TOO_LARGE`. The status decides
+about the commit: below 400 the changes of the request are committed, otherwise rolled back.
+
+`/TRBASE/CONTEXT.USER()` is the signed-in user, `null` for anonymous requests and in
+`rt run`; `TENANT()` the tenant or `null`, and `LANGUAGE()` the language of the execution.
+Without tenant, statements on tenant-specific tables raise `/RT/SESSION_ERROR`. Log
+statements of requests go to the log of the server with the node.
 
 ## Test classes
 

@@ -19,6 +19,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/vm"
 )
 
 // TargetVersion returns the kernel schema version the kernel works with.
@@ -30,6 +31,9 @@ func (k *Kernel) SetTargetVersion(v int) {
 	k.target = v
 	k.repo = k.repo.At(v)
 }
+
+// SetHTTPLog replaces the sink for the log statements of requests.
+func (k *Kernel) SetHTTPLog(s vm.LogSink) { k.httpLog = s }
 
 // UpgradeKernelPackage upgrades a kernel package with any package, for
 // tests that use TRBASE as an ordinary package.

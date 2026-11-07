@@ -75,6 +75,7 @@ TRFIN/
     structures/*.json          one structure per file, named <NAME>.json
     array-types/*.json         one array type per file, named <NAME>.json
     structure-extensions/*.json  one extension per extended structure
+    http-services/*.json       one service node per file, any file name
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -575,6 +576,114 @@ out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC
 results, err := k.Test(ctx, "TRFIN", nil, kernel.ExecOptions{})
 ```
 
+## HTTP services
+
+A package offers endpoints over HTTP with service nodes. Every installed package has a root
+node `/<package ID in lower case>`; a file in `schema/http-services` adds a node below it:
+
+```json
+{
+  "path": "companies",
+  "texts": { "en": { "label": "Companies" }, "de": { "label": "Firmen" } },
+  "handlers": [{ "class": "/TRFIN/COMPANY_API" }, { "class": "/TRFIN/COMPANY_INTAKE" }],
+  "settings": { "maxBodySize": 65536 }
+}
+```
+
+- The path is relative to the root node of the package; `""` is the root node itself.
+  Segments consist of `A-Z a-z 0-9 . _ ~ -`, start with a letter or digit and are
+  case-sensitive. Missing nodes in between exist without handlers. A request goes to the
+  deepest node whose path is a prefix of the request path, segment by segment; the rest is
+  the rest path of the request.
+- Handlers are classes of the own or a required package that implement
+  `/TRBASE/HTTP_HANDLER` and have a public constructor without parameters. The kernel
+  creates a new object for every request and calls `HANDLE` of one handler after the other
+  until one returns `true`. `parameters` gives a handler entry name-value pairs that the
+  handler reads with `HANDLER_PARAMETER`. Installation and upgrades check the references
+  and record them as uses of the classes.
+- Settings that a node does not set come from its parent; the root nodes have the defaults
+  of the kernel:
+
+  | Setting           | Default                     | Meaning                                         |
+  | ----------------- | --------------------------- | ----------------------------------------------- |
+  | `authentication`  | `["basic", "token"]`        | accepted ways of signing in                     |
+  | `anonymous`       | `false`                     | requests without credentials are allowed        |
+  | `anonymousTenant` | `null`                      | tenant of anonymous requests; `null` runs without tenant |
+  | `tenantSources`   | `["header", "query", "user"]` | `X-Tenant`, `?tenant=`, default tenant of the user |
+  | `languageSources` | `["query", "header", "user"]` | `?lang=`, `Accept-Language`, language of the user |
+  | `maxBodySize`     | 1 MiB                       | larger request bodies are answered with 413     |
+  | `maxResponseSize` | 16 MiB                      | larger responses fail with 500                  |
+  | `timeoutSeconds`  | 30                          | longer requests are answered with 503           |
+  | `budget`          | 10 000 000                  | instructions per request                        |
+
+Nodes are not reachable after installation. `rt http activate <path>` activates a node and
+the nodes below it that were never activated; `rt http deactivate <path>` deactivates one.
+A node is reachable when it and all nodes above it are active; other nodes answer 404 as if
+they did not exist. The activation is runtime configuration: upgrades keep it, new nodes
+start inactive, and uninstalling a package removes it. Activations, installations and
+upgrades take effect with the next request, without a restart.
+
+### Users and signing in
+
+Users have a password (stored as Argon2id hash), a status, a default language, a default
+tenant and the tenants they may work in. `basic` signs in with user name and password,
+`token` with `Authorization: Bearer <token>` and an API token of the user, which is shown
+only when it is created and stored as SHA-256 hash. After 5 failed logins in a row
+(`kernel.Config.MaxFailedLogins`) a user is locked until `rt user unlock`. Every failure
+answers 401 with `WWW-Authenticate` and does not tell whether the user exists.
+
+The tenant of a request comes from the first source of the node that gives one; a tenant the
+user is not assigned to is answered with 403, a request without tenant with 400. Anonymous
+requests run in `anonymousTenant` only. The language is the first one of the sources that is
+set up, else English.
+
+### Requests
+
+A request runs as one execution with the tenant, language and user of the request and the
+time limit and budget of the node. Its changes are committed when a handler returned `true`
+and the status is below 400; a status of 400 or more, an exception that no handler catches,
+and requests that no handler takes are rolled back. Errors are answered with JSON in the
+language of the request:
+
+```json
+{ "code": "not-found", "message": "There is no service at this path." }
+```
+
+The codes are `not-found`, `method-not-handled`, `unauthorized`, `forbidden`,
+`bad-request`, `body-too-large`, `internal-error` (details only in the log) and
+`unavailable` (time limit, with `Retry-After`). Every request writes an access log line
+with user, tenant, node, handler, method, status, duration and size.
+
+TRBASE ships two handlers and two nodes:
+
+- `/TRBASE/PING_HANDLER` on `/trbase/ping` (anonymous) answers `{"status":"ok"}`.
+- `/TRBASE/ASSET_HANDLER` serves the files of the asset repository that its parameters
+  `package` and `repository` name, at the rest path of the request, with `Content-Type`,
+  `Content-Length`, `ETag`, `Last-Modified` and `Cache-Control: no-cache`. It answers
+  `HEAD`, and 304 for `If-None-Match` and `If-Modified-Since`, and gives assets in the
+  language of the request. The package of the node may serve its own repositories and those
+  of the packages it requires. `/trbase/web` serves the repository `web` of TRBASE.
+
+### Serving
+
+```bash
+rt user create anna --tenant ACME < password.txt
+rt token create anna --label cli
+rt http activate /trbase
+rt http activate /trfin
+rt serve --addr :8080
+curl localhost:8080/trbase/ping
+curl -u anna localhost:8080/trfin/companies
+curl -H "Authorization: Bearer rt_..." -H "X-Tenant: ACME" localhost:8080/trfin/companies
+```
+
+`rt serve` serves until SIGINT or SIGTERM. Then it accepts no new connections and gives
+running requests `--shutdown-timeout` (default 30s) to finish; they end with the code they
+started with, also when an upgrade committed new code in the meantime. `--tls-cert` and
+`--tls-key` serve HTTPS; `--read-timeout` (30s) and `--write-timeout` (60s) limit reading a
+request and writing a response. In Go, `k.HTTPHandler()` is an `http.Handler` and
+[server](server) runs it with the same options.
+
 ## Library
 
 ```go
@@ -645,6 +754,15 @@ rt run TRFIN /TRFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"
 rt test TRORDER
 rt test examples/TRORDER
 rt natives list
+rt user create anna --tenant ACME
+rt user tenant add anna BETA
+rt user list
+rt token create anna --label cli --expires 2027-01-31
+rt token list anna
+rt http list TRFIN
+rt http show /trfin/companies
+rt http activate /trfin
+rt serve --addr :8443 --tls-cert cert.pem --tls-key key.pem
 rt effects list
 rt gen natives testdata/lang/native/TRTEST --go-package nativetest -o types_gen.go
 ```
@@ -656,7 +774,9 @@ classes of an installed package, or of a directory compiled against the installe
 packages; every test method runs in a tenant of its own and leaves no rows.
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
-`--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
+`--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`, `--label`,
+`--expires`, `--addr`, `--tls-cert`, `--tls-key`, `--read-timeout`, `--write-timeout`,
+`--shutdown-timeout`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
 failed and was rolled back, 1 other errors.
 
@@ -681,13 +801,13 @@ go test ./internal/planner ./setting ./kernel ./lang/syntax -update
 ## Not included yet
 
 Stylesheets that include, import or read other stylesheets and documents, native methods
-with network or file access, HTTP services, messages with texts per language, a
+with network or file access, outgoing HTTP connections, responses streamed from code,
+further ways of signing in, messages with texts per language, a
 language server and a debugger, permissions, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
 loader already works on `fs.FS`), joins and aggregates other than `count` in code,
 reading and writing data through settings, display properties of fields, translation packages
-for objects of other packages, export or protection of configuration by data class, serving
-assets over HTTP, assets uploaded at runtime or per tenant, extending asset repositories of
+for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression and image processing,
 the runtime meaning of `notNull` for nested and array components, includes in extensions.
 

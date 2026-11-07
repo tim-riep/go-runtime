@@ -1,0 +1,11 @@
+# Answers with the version of its code, after a log statement that tests
+# use to hold a request.
+public class /TRHTTP/VERSION implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL
+    log info "version"
+    response.WRITE_TEXT("v1")
+    return true
+  end
+
+end

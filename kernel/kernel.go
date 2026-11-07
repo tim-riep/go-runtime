@@ -47,6 +47,7 @@ import (
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/vm"
 )
 
 // Options control an operation.
@@ -81,6 +82,9 @@ type Kernel struct {
 	maxFailedLogins int
 	// httpStates caches the activation of the service nodes.
 	httpStates atomic.Pointer[httpState]
+	// httpLog receives the log statements of requests; nil writes them
+	// to slog.
+	httpLog vm.LogSink
 }
 
 // Open connects to a database. The connection string selects the dialect:

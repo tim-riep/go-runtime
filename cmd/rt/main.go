@@ -30,9 +30,11 @@ import (
 	"io"
 	"maps"
 	"os"
+	"os/signal"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 	"time"
 
@@ -40,6 +42,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/server"
 	"github.com/tim-riep/go-runtime/setting"
 	"github.com/tim-riep/go-runtime/structure"
 )
@@ -99,6 +102,9 @@ Commands:
   http show <path>         show a service node with its resolved settings and handlers
   http activate <path>     activate a service node and the never activated nodes below it
   http deactivate <path>   deactivate a service node; its subtree is not reachable
+  serve [--addr :8080]     serve the reachable http services until SIGINT or SIGTERM
+                           (--tls-cert/--tls-key, --read-timeout, --write-timeout,
+                           --shutdown-timeout)
   effects list             list effects of native methods that failed after their commit
   effects retry <id>       run a failed effect again
   run <package> <class> <method> [json] --tenant <id> [--lang code]
@@ -138,6 +144,7 @@ type cli struct {
 	output         string
 	maxAssetSize   int64
 	check          bool
+	serve          server.Config
 }
 
 func main() {
@@ -161,6 +168,12 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.expires, "expires", "", "token create: the day the token expires, YYYY-MM-DD")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
+	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")
+	c.fs.StringVar(&c.serve.TLSCert, "tls-cert", "", "serve: PEM file of the TLS certificate")
+	c.fs.StringVar(&c.serve.TLSKey, "tls-key", "", "serve: PEM file of the TLS key")
+	c.fs.DurationVar(&c.serve.ReadTimeout, "read-timeout", server.DefaultReadTimeout, "serve: time to read a request with its body")
+	c.fs.DurationVar(&c.serve.WriteTimeout, "write-timeout", server.DefaultWriteTimeout, "serve: time to write a response")
+	c.fs.DurationVar(&c.serve.ShutdownTimeout, "shutdown-timeout", server.DefaultShutdownTimeout, "serve: time running requests get on shutdown")
 	maxSize := int64(model.DefaultMaxAssetSize)
 	if env := os.Getenv("RT_MAX_ASSET_SIZE"); env != "" {
 		n, err := strconv.ParseInt(env, 10, 64)
@@ -319,6 +332,16 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.natives(ctx, k)
 	case "http":
 		return c.http(ctx, k, args)
+	case "serve":
+		if !c.need(args, 0, "serve [--addr :8080] [--tls-cert file --tls-key file]") {
+			return exitUsage
+		}
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := server.Run(ctx, c.serve, k.HTTPHandler()); err != nil {
+			return c.fail(err)
+		}
+		return exitOK
 	case "user":
 		return c.user(ctx, k, args)
 	case "token":

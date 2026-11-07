@@ -157,7 +157,7 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, Package: node.Package, MaxBody: set.MaxBodySize}
 	resp := natives.NewHTTPResponse(set.MaxResponseSize)
 	handled := false
-	opts := ExecOptions{Tenant: tenant.Or(""), Language: lang, User: userName, Timeout: set.Timeout, VM: vm.Options{Budget: set.Budget},
+	opts := ExecOptions{Tenant: tenant.Or(""), Language: lang, User: userName, Timeout: set.Timeout, VM: vm.Options{Budget: set.Budget, Log: k.requestLog(node.Path)},
 		Rollback: func() bool { return !handled || resp.Status >= 400 }}
 	err = k.executeWith(ctx, g, opts, func(ctx context.Context, m *vm.Machine) error {
 		reqV, err := m.NewNative("/TRBASE/HTTP_REQUEST", req)
@@ -219,4 +219,28 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodHead {
 		entry.size, _ = w.Write(resp.Body.Bytes())
 	}
+}
+
+// requestLog returns the sink for the log statements of a request.
+func (k *Kernel) requestLog(node string) vm.LogSink {
+	if k.httpLog != nil {
+		return k.httpLog
+	}
+	return slogSink{node}
+}
+
+// slogSink writes log statements to slog with the service node.
+type slogSink struct{ node string }
+
+func (s slogSink) Log(level, text string) {
+	l := slog.LevelInfo
+	switch level {
+	case "debug":
+		l = slog.LevelDebug
+	case "warning":
+		l = slog.LevelWarn
+	case "error":
+		l = slog.LevelError
+	}
+	slog.Log(context.Background(), l, text, "node", s.node)
 }
