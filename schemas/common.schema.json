@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/timriep/go-runtime/schemas/common.schema.json",
+  "title": "Shared definitions",
+  "description": "Definitions shared by the package file schemas.",
+  "$defs": {
+    "packageId": {
+      "description": "Package ID: upper-case letters and digits, starting with a letter.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*$",
+      "maxLength": 16
+    },
+    "localName": {
+      "description": "Name of a table, domain, field or foreign key as written in a package.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "reference": {
+      "description": "Reference to a table or domain. Kernel objects carry the kernel namespace, e.g. /RT/TENANTS.",
+      "type": "string",
+      "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "description": {
+      "description": "Human-readable description.",
+      "type": "string"
+    },
+    "field": {
+      "description": "A field of a table or an extension.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "domain"],
+      "properties": {
+        "name": { "$ref": "#/$defs/localName" },
+        "description": { "$ref": "#/$defs/description" },
+        "domain": { "$ref": "#/$defs/reference" },
+        "notNull": {
+          "description": "Whether the field rejects NULL. Primary key fields are always NOT NULL.",
+          "type": "boolean",
+          "default": false
+        },
+        "default": {
+          "description": "Default value. Strings for CHAR, STRING, DATE, TIMESTAMP, UUID and DEC; integers for INT4 and INT8; booleans for BOOL.",
+          "type": ["string", "integer", "boolean"]
+        }
+      }
+    },
+    "foreignKey": {
+      "description": "A foreign key referencing the complete primary key of a target table.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "table", "fields"],
+      "properties": {
+        "name": { "$ref": "#/$defs/localName" },
+        "table": { "$ref": "#/$defs/reference" },
+        "fields": {
+          "description": "Mapping of local fields to key fields of the target table. The tenant field is added automatically.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "references"],
+            "properties": {
+              "field": { "$ref": "#/$defs/localName" },
+              "references": { "$ref": "#/$defs/localName" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

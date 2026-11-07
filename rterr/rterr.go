@@ -1,0 +1,373 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package rterr defines the typed errors returned by the kernel.
+//
+// Every error the kernel reports for a domain condition is one of the types
+// in this package, so callers can inspect it with errors.As instead of
+// parsing messages. Several problems found in one pass are returned as a
+// List, which unwraps to its members.
+package rterr
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// Code classifies a validation problem.
+type Code string
+
+// Validation codes.
+const (
+	CodeSchema          Code = "schema"           // document does not match its JSON Schema
+	CodeSyntax          Code = "syntax"           // file is not valid JSON
+	CodeFile            Code = "file"             // unexpected, missing or misnamed file
+	CodeName            Code = "name"             // invalid or reserved name
+	CodeNameTooLong     Code = "name-too-long"    // identifier exceeds the byte limit
+	CodeDuplicate       Code = "duplicate"        // name declared twice
+	CodeUnknownDomain   Code = "unknown-domain"   // domain does not exist
+	CodeUnknownTable    Code = "unknown-table"    // table does not exist
+	CodeUnknownField    Code = "unknown-field"    // field does not exist
+	CodeNotVisible      Code = "not-visible"      // object belongs to a package that is not required
+	CodeTypeParams      Code = "type-params"      // invalid length or decimals for a base type
+	CodeFixedValue      Code = "fixed-value"      // invalid fixed value
+	CodeDefault         Code = "default"          // invalid default value
+	CodePrimaryKey      Code = "primary-key"      // invalid primary key
+	CodeForeignKey      Code = "foreign-key"      // invalid foreign key
+	CodeTypeMismatch    Code = "type-mismatch"    // foreign key field types are incompatible
+	CodeTenant          Code = "tenant"           // violates a tenant rule
+	CodeExtension       Code = "extension"        // violates an extension rule
+	CodeReservedObject  Code = "reserved-object"  // kernel object may not be used this way
+	CodeManifestMissing Code = "manifest-missing" // package has no manifest
+)
+
+// Location points at the place in a package that caused an error.
+type Location struct {
+	Package string `json:"package,omitempty"`
+	File    string `json:"file,omitempty"`
+	Pointer string `json:"pointer,omitempty"` // JSON Pointer inside File
+}
+
+// IsZero reports whether no location information is present.
+func (l Location) IsZero() bool { return l == Location{} }
+
+func (l Location) String() string {
+	var parts []string
+	if l.Package != "" {
+		parts = append(parts, "package "+l.Package)
+	}
+	if l.File != "" {
+		parts = append(parts, "file "+l.File)
+	}
+	if l.Pointer != "" {
+		parts = append(parts, "at "+l.Pointer)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// At returns a copy of l with pointer appended to its JSON Pointer.
+func (l Location) At(pointer string) Location {
+	l.Pointer += pointer
+	return l
+}
+
+// ValidationError reports a problem in a package or in the resulting schema.
+type ValidationError struct {
+	Code     Code
+	Location Location
+	Object   string // affected object, e.g. "table COMPANIES"
+	Message  string
+}
+
+func (e *ValidationError) Error() string {
+	var sb strings.Builder
+	if !e.Location.IsZero() {
+		sb.WriteString(e.Location.String())
+		sb.WriteString(": ")
+	}
+	if e.Object != "" {
+		sb.WriteString(e.Object)
+		sb.WriteString(": ")
+	}
+	sb.WriteString(e.Message)
+	return sb.String()
+}
+
+// List collects several errors. It unwraps to its members, so errors.As
+// finds the first member of the requested type.
+type List []error
+
+func (l List) Error() string {
+	msgs := make([]string, len(l))
+	for i, err := range l {
+		msgs[i] = err.Error()
+	}
+	return strings.Join(msgs, "\n")
+}
+
+// Unwrap returns the members of the list.
+func (l List) Unwrap() []error { return l }
+
+// Err returns nil for an empty list, the only member for a list of one, and
+// the list itself otherwise.
+func (l List) Err() error {
+	switch len(l) {
+	case 0:
+		return nil
+	case 1:
+		return l[0]
+	}
+	return l
+}
+
+// All returns every error of type T contained in err, including members of
+// nested lists.
+func All[T error](err error) []T {
+	var out []T
+	var walk func(error)
+	walk = func(e error) {
+		if e == nil {
+			return
+		}
+		if t, ok := e.(T); ok {
+			out = append(out, t)
+			return
+		}
+		switch u := e.(type) {
+		case interface{ Unwrap() []error }:
+			for _, m := range u.Unwrap() {
+				walk(m)
+			}
+		case interface{ Unwrap() error }:
+			walk(u.Unwrap())
+		}
+	}
+	walk(err)
+	return out
+}
+
+// DependencyKind classifies a DependencyError.
+type DependencyKind string
+
+// Dependency error kinds.
+const (
+	DependencyMissing  DependencyKind = "missing"
+	DependencyVersion  DependencyKind = "version"
+	DependencyCycle    DependencyKind = "cycle"
+	DependencyConflict DependencyKind = "conflict" // same package given twice
+)
+
+// DependencyError reports an unresolvable package dependency.
+type DependencyError struct {
+	Kind       DependencyKind
+	Package    string   // package whose requirement fails
+	Required   string   // required package
+	Constraint string   // version constraint of the requirement
+	Found      string   // version that was found, if any
+	Cycle      []string // packages forming a cycle
+}
+
+func (e *DependencyError) Error() string {
+	switch e.Kind {
+	case DependencyMissing:
+		return fmt.Sprintf("package %s requires %s, which is neither installed nor part of this operation", e.Package, e.Required)
+	case DependencyVersion:
+		return fmt.Sprintf("package %s requires %s %s, but version %s is available", e.Package, e.Required, e.Constraint, e.Found)
+	case DependencyCycle:
+		return "dependency cycle: " + strings.Join(e.Cycle, " -> ")
+	case DependencyConflict:
+		return fmt.Sprintf("package %s is given more than once", e.Package)
+	}
+	return "dependency error"
+}
+
+// NameConflict reports that an object name is already taken by another owner.
+type NameConflict struct {
+	Kind     string // "table" or "domain"
+	Name     string
+	Owner    string // current owner, empty for the kernel
+	Package  string // package that tried to declare the name
+	Location Location
+}
+
+func (e *NameConflict) Error() string {
+	owner := e.Owner
+	if owner == "" {
+		owner = "the kernel"
+	}
+	msg := fmt.Sprintf("%s %s of package %s is already owned by %s", e.Kind, e.Name, e.Package, owner)
+	if !e.Location.IsZero() {
+		msg = e.Location.String() + ": " + msg
+	}
+	return msg
+}
+
+// Change describes one planned change in a DestructiveChange error.
+type Change struct {
+	Object      string
+	Description string
+}
+
+// DestructiveChange reports that a plan contains destructive or restricting
+// changes and the caller did not allow them.
+type DestructiveChange struct {
+	Package string
+	Changes []Change
+}
+
+func (e *DestructiveChange) Error() string {
+	lines := []string{fmt.Sprintf("operation on %s contains %d destructive change(s); allow them explicitly to proceed:", e.Package, len(e.Changes))}
+	for _, c := range e.Changes {
+		lines = append(lines, "  "+c.Object+": "+c.Description)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// InUse reports that a package cannot be removed because others require it.
+type InUse struct {
+	Package    string
+	RequiredBy []string
+}
+
+func (e *InUse) Error() string {
+	return fmt.Sprintf("package %s is required by %s", e.Package, strings.Join(e.RequiredBy, ", "))
+}
+
+// NotInstalled reports that a package is not installed.
+type NotInstalled struct{ Package string }
+
+func (e *NotInstalled) Error() string { return "package " + e.Package + " is not installed" }
+
+// AlreadyInstalled reports that a package is already installed.
+type AlreadyInstalled struct {
+	Package string
+	Version string
+}
+
+func (e *AlreadyInstalled) Error() string {
+	return fmt.Sprintf("package %s is already installed in version %s", e.Package, e.Version)
+}
+
+// ConfirmationRequired reports that an operation loses data and needs
+// explicit confirmation.
+type ConfirmationRequired struct {
+	Operation string
+	Object    string
+}
+
+func (e *ConfirmationRequired) Error() string {
+	return fmt.Sprintf("%s of %s deletes data and must be confirmed explicitly", e.Operation, e.Object)
+}
+
+// NotFound reports that a requested object does not exist.
+type NotFound struct {
+	Kind string
+	Name string
+}
+
+func (e *NotFound) Error() string { return e.Kind + " " + e.Name + " not found" }
+
+// Ambiguous reports that a name matches several kinds of objects.
+type Ambiguous struct {
+	Name  string
+	Kinds []string
+}
+
+func (e *Ambiguous) Error() string {
+	return fmt.Sprintf("%s is ambiguous, it names a %s; qualify it as kind:name", e.Name, strings.Join(e.Kinds, " and a "))
+}
+
+// InvalidArgument reports an invalid argument passed to the API.
+type InvalidArgument struct {
+	Argument string
+	Message  string
+}
+
+func (e *InvalidArgument) Error() string { return "invalid " + e.Argument + ": " + e.Message }
+
+// ExecError reports a failed statement while executing a plan. The whole
+// plan has been rolled back when this error is returned.
+type ExecError struct {
+	Step      string
+	Statement string
+	Err       error
+}
+
+func (e *ExecError) Error() string {
+	return fmt.Sprintf("executing %q failed (rolled back): %v\nstatement: %s", e.Step, e.Err, e.Statement)
+}
+
+func (e *ExecError) Unwrap() error { return e.Err }
+
+// ViolationKind classifies a ConstraintViolation.
+type ViolationKind string
+
+// Constraint violation kinds.
+const (
+	ViolationForeignKey ViolationKind = "foreign-key"
+	ViolationCheck      ViolationKind = "check"
+	ViolationNotNull    ViolationKind = "not-null"
+	ViolationUnique     ViolationKind = "unique"
+)
+
+// ConstraintViolation reports a database constraint violation.
+type ConstraintViolation struct {
+	Kind       ViolationKind
+	Table      string
+	Constraint string
+	Err        error
+}
+
+func (e *ConstraintViolation) Error() string {
+	msg := string(e.Kind) + " constraint violated"
+	if e.Table != "" {
+		msg += " on " + e.Table
+	}
+	if e.Constraint != "" {
+		msg += " (" + e.Constraint + ")"
+	}
+	if e.Err != nil {
+		msg += ": " + e.Err.Error()
+	}
+	return msg
+}
+
+func (e *ConstraintViolation) Unwrap() error { return e.Err }
+
+// TenantReferenced reports that a tenant cannot be deleted because tables
+// that are not tenant-specific still reference it.
+type TenantReferenced struct {
+	Tenant string
+	Tables []string
+}
+
+func (e *TenantReferenced) Error() string {
+	return fmt.Sprintf("tenant %s is still referenced by %s", e.Tenant, strings.Join(e.Tables, ", "))
+}
+
+// UnsupportedDatabase reports an unknown connection string.
+type UnsupportedDatabase struct{ DSN string }
+
+func (e *UnsupportedDatabase) Error() string {
+	return "unsupported database connection string; use sqlite:<path> or postgres://..."
+}
+
+// ErrNotInitialized is returned when the kernel tables are missing or older
+// than this kernel version. Run Init first.
+var ErrNotInitialized = errors.New("database is not initialized for this kernel version; run init")
+
+// ErrNewerSchema is returned when the database was initialized by a newer
+// kernel version.
+var ErrNewerSchema = errors.New("database was initialized by a newer kernel version")

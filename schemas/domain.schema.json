@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/timriep/go-runtime/schemas/domain.schema.json",
+  "title": "Domain",
+  "description": "A technical type: base type, length, decimals and optional fixed values (schema/domains/<NAME>.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "type"],
+  "properties": {
+    "name": { "$ref": "common.schema.json#/$defs/localName" },
+    "description": { "$ref": "common.schema.json#/$defs/description" },
+    "type": {
+      "description": "Base type.",
+      "enum": ["CHAR", "STRING", "INT4", "INT8", "DEC", "DATE", "TIMESTAMP", "BOOL", "UUID", "BLOB"]
+    },
+    "length": {
+      "description": "CHAR: maximum number of characters. DEC: total number of digits (precision).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "decimals": {
+      "description": "DEC: number of digits after the decimal point (scale).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "values": {
+      "description": "Fixed values. Only CHAR, INT4 and INT8 domains may have them.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value"],
+        "properties": {
+          "value": { "type": ["string", "integer"] },
+          "description": { "$ref": "common.schema.json#/$defs/description" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "enum": ["CHAR", "DEC"] } } },
+      "then": { "required": ["length"] },
+      "else": { "not": { "anyOf": [ { "required": ["length"] }, { "required": ["decimals"] } ] } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "CHAR" } } },
+      "then": { "not": { "required": ["decimals"] } }
+    }
+  ]
+}
