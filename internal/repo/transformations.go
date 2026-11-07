@@ -34,20 +34,24 @@ const (
 )
 
 func (r *Repo) loadTransformations(ctx context.Context, q dialect.Querier, s *model.Schema) error {
-	rows, err := r.selectRows(ctx, q, TTransformations, []string{"TRANSFORMATION_NAME", "PACKAGE_ID", "FILE_PATH", "TEXT", "OUTPUT"}, "TRANSFORMATION_NAME")
+	rows, err := r.selectRows(ctx, q, TTransformations, []string{"TRANSFORMATION_NAME", "PACKAGE_ID", "FILE_PATH", "TEXT", "OUTPUT", "NATIVE"}, "TRANSFORMATION_NAME")
 	if err != nil {
 		return err
 	}
 	for _, t := range rows {
 		name := str(t["TRANSFORMATION_NAME"])
 		text := str(t["TEXT"])
-		// The parameters are read from the stylesheet itself.
-		params, err := xslt.Inspect(text)
-		if err != nil {
-			return fmt.Errorf("transformation %s: %w", name, err)
+		native := opt(t["NATIVE"])
+		params := []model.TransformParam{}
+		if !native.Valid() {
+			// The parameters are read from the stylesheet itself.
+			var err error
+			if params, err = xslt.Inspect(text); err != nil {
+				return fmt.Errorf("transformation %s: %w", name, err)
+			}
 		}
 		s.Transformations[name] = &model.Transformation{Name: name, Owner: owner(t["PACKAGE_ID"]), File: str(t["FILE_PATH"]), Text: text,
-			Params: params, Texts: map[string]model.Label{}, Output: opt(t["OUTPUT"])}
+			Params: params, Texts: map[string]model.Label{}, Output: opt(t["OUTPUT"]), Native: native}
 	}
 	texts, err := r.selectRows(ctx, q, TTransformationTexts, []string{"TRANSFORMATION_NAME", "LANGUAGE", "LABEL", "DESCRIPTION"})
 	if err != nil {
@@ -66,7 +70,7 @@ func (r *Repo) writeTransformations(ctx context.Context, q dialect.Querier, s *m
 		t := s.Transformations[name]
 		sum := sha256.Sum256([]byte(t.Text))
 		if err := r.insert(ctx, q, TTransformations, row{"TRANSFORMATION_NAME": name, "PACKAGE_ID": string(t.Owner), "FILE_PATH": t.File,
-			"TEXT": t.Text, "SHA256": hex.EncodeToString(sum[:]), "OUTPUT": val(t.Output)}); err != nil {
+			"TEXT": t.Text, "SHA256": hex.EncodeToString(sum[:]), "OUTPUT": val(t.Output), "NATIVE": val(t.Native)}); err != nil {
 			return err
 		}
 		for _, lang := range slices.Sorted(maps.Keys(t.Texts)) {

@@ -16,6 +16,7 @@ package vm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"unicode/utf8"
@@ -48,6 +49,9 @@ const (
 // transform runs XFORM: it serializes the source, runs the transformation
 // and reads the result.
 func (m *Machine) transform(p *Program, tr *Transform, src Value, params []Value) (Value, *thrown, error) {
+	if tr.Format == "json" {
+		return m.transformJSON(p, tr, src)
+	}
 	if m.opts.Transformer == nil {
 		return Value{}, nil, errors.New("vm: the execution has no transformations")
 	}
@@ -115,4 +119,45 @@ func (m *Machine) raiseNamed(class string, args ...any) (Value, *thrown, error) 
 		return Value{}, th, err
 	}
 	return Value{}, &thrown{obj: obj, pc: -1}, nil
+}
+
+// transformJSON runs the native transformation /TRBASE/JSON: a value to
+// JSON in the format of rt run, or JSON text into a value.
+func (m *Machine) transformJSON(p *Program, tr *Transform, src Value) (Value, *thrown, error) {
+	var data []byte
+	switch {
+	case !tr.SourceXML:
+		b, err := m.ToJSON(p, tr.Source, src)
+		if err != nil {
+			return m.raiseNamed(xsltFailed, err.Error(), model.None[int32]())
+		}
+		data = b
+	case p.Types[tr.Source].Kind == TBytes:
+		data, _ = src.R.([]byte)
+	default:
+		data = []byte(src.str())
+	}
+	if int64(len(data)) > m.opts.MaxNativeInput {
+		return Value{}, m.fail("/RT/INPUT_TOO_LARGE", "the source of transform %s has %d bytes, more than the limit of %d", tr.Name, len(data), m.opts.MaxNativeInput), nil
+	}
+	invalid := func(format string, args ...any) (Value, *thrown, error) {
+		return m.raiseNamed(resultInvalid, fmt.Sprintf("the result of %s: %s", tr.Name, fmt.Sprintf(format, args...)))
+	}
+	switch p.Types[tr.Into].Kind {
+	case TString:
+		if !utf8.Valid(data) {
+			return invalid("it is no UTF-8 text")
+		}
+		return Str(string(data)), nil, nil
+	case TBytes:
+		return Value{R: data}, nil, nil
+	}
+	if !json.Valid(data) {
+		return invalid("it is no JSON")
+	}
+	v, err := m.FromJSON(p, tr.Into, data)
+	if err != nil {
+		return invalid("%v", err)
+	}
+	return v, nil, nil
 }

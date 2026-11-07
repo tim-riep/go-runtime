@@ -1,0 +1,8 @@
+{
+  "name": "/TRBASE/JSON",
+  "native": "json",
+  "texts": {
+    "en": { "label": "JSON", "description": "Turns values into JSON and JSON into values, in the format of rt run" },
+    "de": { "label": "JSON", "description": "Wandelt Werte in JSON und JSON in Werte, im Format von rt run" }
+  }
+}

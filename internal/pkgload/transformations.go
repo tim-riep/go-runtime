@@ -48,6 +48,7 @@ type transformationDoc struct {
 	Name   string                 `json:"name"`
 	Texts  map[string]model.Label `json:"texts"`
 	Output model.Optional[string] `json:"output"`
+	Native model.Optional[string] `json:"native"`
 }
 
 func init() {
@@ -97,9 +98,18 @@ func init() {
 			d := doc.(*transformationDoc)
 			for i := range pkg.Transformations {
 				if t := &pkg.Transformations[i]; t.Name == d.Name {
+					if d.Native.Valid() {
+						l.fail(rterr.CodeFile, l.loc(file).At("/native"), "a native transformation has no stylesheet; remove %s", t.File)
+						return
+					}
 					t.Texts, t.Output = d.Texts, d.Output
 					return
 				}
+			}
+			if d.Native.Valid() {
+				pkg.Transformations = append(pkg.Transformations, model.Transformation{Name: d.Name, File: file, Texts: d.Texts, Output: d.Output,
+					Native: d.Native, Params: []model.TransformParam{}, Src: l.loc(file)})
+				return
 			}
 			l.fail(rterr.CodeFile, l.loc(file), "%s describes the transformation %s, but there is no %s", file, d.Name,
 				path.Join(TransformationsDir, strings.TrimSuffix(path.Base(file), ".json")+".xsl"))

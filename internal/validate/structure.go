@@ -323,6 +323,9 @@ func (v *validator) tableIncludes(r *model.Resolver, t *model.Table, onCycle boo
 func (v *validator) transformations() {
 	for _, name := range slices.Sorted(maps.Keys(v.s.Transformations)) {
 		t := v.s.Transformations[name]
+		if info := v.s.Packages[t.Owner]; t.Native.Valid() && info != nil && !info.Manifest.KernelPackage {
+			v.fail(rterr.CodeName, t.Src.At("/native"), "transformation "+name, "only kernel packages have native transformations")
+		}
 		if len(t.Texts) == 0 {
 			continue
 		}

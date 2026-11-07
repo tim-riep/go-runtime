@@ -1,0 +1,28 @@
+# Invoices in JSON with the native transformation /TRBASE/JSON.
+public class /TRFIN/INVOICE_JSON
+
+  public static method TO_JSON(invoice: /TRFIN/INVOICE) returns STRING raises /TRBASE/XSLT_FAILED
+    return transform invoice using /TRBASE/JSON
+  end
+
+  public static method FROM_JSON(text: STRING) returns /TRFIN/INVOICE raises /TRBASE/XSLT_FAILED
+    return transform text using /TRBASE/JSON into /TRFIN/INVOICE
+  end
+
+  public static method ROUNDTRIP(invoices: array of /TRFIN/INVOICE) returns array of /TRFIN/INVOICE raises /TRBASE/XSLT_FAILED
+    var json = transform invoices using /TRBASE/JSON into BYTES
+    return transform json using /TRBASE/JSON into array of /TRFIN/INVOICE
+  end
+
+  public static method INVALID(text: STRING) returns STRING
+    try
+      var invoice = transform text using /TRBASE/JSON into /TRFIN/INVOICE
+      return invoice.INVOICE_ID
+    catch e: /TRBASE/TRANSFORM_RESULT_INVALID
+      return "invalid: {e.TEXT}"
+    catch e: /TRBASE/XSLT_FAILED
+      return "failed"
+    end
+  end
+
+end

@@ -116,7 +116,7 @@ func compileTransformations(cur, want *model.Schema) ([]plan.Change, error) {
 	var changes []plan.Change
 	for _, name := range slices.Sorted(maps.Keys(want.Transformations)) {
 		t := want.Transformations[name]
-		if old, ok := cur.Transformations[name]; ok && old.Text == t.Text {
+		if old, ok := cur.Transformations[name]; ok && old.Text == t.Text || t.Native.Valid() {
 			continue
 		}
 		if _, err := xslt.Compile(t.Text); err != nil {

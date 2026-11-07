@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 4
+const FormatVersion = 5
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -302,6 +302,9 @@ type Transform struct {
 	Params     []string
 	ParamTypes []int
 	Source     int  // TypeDesc
-	SourceXML  bool // the source is XML text, STRING or BYTES
+	SourceXML  bool // the source is text, STRING or BYTES, in the format
 	Into       int  // TypeDesc
+	// Format is xml for stylesheets or the format of a native
+	// transformation, such as json.
+	Format string
 }

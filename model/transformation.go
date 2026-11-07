@@ -33,8 +33,15 @@ type Transformation struct {
 	// file transformations/NAME.json.
 	Texts  map[string]Label `json:"texts"`
 	Output Optional[string] `json:"output"` // xml, html or text, informative
+	// Native names a format that the kernel implements itself instead of
+	// a stylesheet, e.g. json for /TRBASE/JSON; only kernel packages have
+	// native transformations.
+	Native Optional[string] `json:"native"`
 	Src    rterr.Location   `json:"-"`
 }
+
+// Native formats of transformations.
+const TransformJSON = "json"
 
 // TransformParam is a top-level xsl:param of a transformation.
 type TransformParam struct {

@@ -245,6 +245,7 @@ func Encode(p *Program) []byte {
 		w.int(t.Source)
 		w.bool(t.SourceXML)
 		w.int(t.Into)
+		w.str(t.Format)
 	}
 	return w.b.Bytes()
 }
@@ -452,7 +453,7 @@ func Decode(b []byte) (*Program, error) {
 	}
 	p.Transforms = make([]Transform, r.count())
 	for i := range p.Transforms {
-		p.Transforms[i] = Transform{Name: r.str(), Params: r.strs(), ParamTypes: r.ints(), Source: r.int(), SourceXML: r.bool(), Into: r.int()}
+		p.Transforms[i] = Transform{Name: r.str(), Params: r.strs(), ParamTypes: r.ints(), Source: r.int(), SourceXML: r.bool(), Into: r.int(), Format: r.str()}
 	}
 	if r.err != nil {
 		return nil, r.err

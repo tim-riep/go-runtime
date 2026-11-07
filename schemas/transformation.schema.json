@@ -16,6 +16,10 @@
     "texts": {
       "$ref": "common.schema.json#/$defs/labels"
     },
+    "native": {
+      "description": "A format the kernel implements itself instead of a stylesheet; only kernel packages have native transformations, and they have no .xsl file.",
+      "enum": ["json"]
+    },
     "output": {
       "description": "What the stylesheet produces; informative.",
       "enum": ["xml", "html", "text"]

@@ -141,3 +141,44 @@ func TestTransformChecks(t *testing.T) {
 		}
 	})
 }
+
+// TestJSON writes structures and arrays with null, "" and DEC as JSON with
+// /TRBASE/JSON and reads them back.
+func TestJSON(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		const J = "/TRFIN/INVOICE_JSON"
+		js := text(t, mustCall(t, k, "ACME", J, "TO_JSON", invoice))
+		for _, part := range []string{`"NOTE":""`, `"REFERENCE":null`, `"TOTAL":"150.50"`, `"AMOUNT":"50.50"`, `"POSITION":1`} {
+			if !strings.Contains(js, part) {
+				t.Errorf("TO_JSON lacks %s: %s", part, js)
+			}
+		}
+		back := mustCall(t, k, "ACME", J, "FROM_JSON", strconvQuote(js))
+		if !strings.Contains(back, `"NOTE":""`) || !strings.Contains(back, `"REFERENCE":null`) || !strings.Contains(back, `"TOTAL":"150.50"`) {
+			t.Errorf("FROM_JSON = %s", back)
+		}
+		all := mustCall(t, k, "ACME", J, "ROUNDTRIP", "["+invoice+","+strings.Replace(invoice, `"NOTE":""`, `"NOTE":null`, 1)+"]")
+		if strings.Count(all, `"INVOICE_ID":"R-1"`) != 2 || !strings.Contains(all, `"NOTE":""`) || !strings.Contains(all, `"NOTE":null`) {
+			t.Errorf("ROUNDTRIP = %s", all)
+		}
+		if got := text(t, mustCall(t, k, "ACME", J, "INVALID", `"{\"INVOICE_ID\":1}"`)); !strings.HasPrefix(got, "invalid:") {
+			t.Errorf("INVALID = %s", got)
+		}
+		if got := text(t, mustCall(t, k, "ACME", J, "INVALID", `"not json"`)); !strings.Contains(got, "no JSON") {
+			t.Errorf("INVALID of text = %s", got)
+		}
+	})
+}
+
+func strconvQuote(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}

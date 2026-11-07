@@ -248,7 +248,7 @@ func (f *fn) cursorLoop(s *syntax.ForStmt) {
 func (f *fn) transform(x *syntax.TransformExpr) {
 	t := f.c.info.Transforms[x]
 	f.expr(x.Source)
-	bt := bytecode.Transform{Name: t.Name, Params: t.Params, Source: f.c.typeDesc(t.Source), SourceXML: t.SourceXML, Into: f.c.typeDesc(t.Into)}
+	bt := bytecode.Transform{Name: t.Name, Params: t.Params, Source: f.c.typeDesc(t.Source), SourceXML: t.SourceXML, Into: f.c.typeDesc(t.Into), Format: t.Format}
 	for _, pv := range x.Params {
 		f.expr(pv.Value)
 		bt.ParamTypes = append(bt.ParamTypes, f.c.typeDesc(f.operandType(pv.Value)))

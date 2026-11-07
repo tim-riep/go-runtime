@@ -38,11 +38,14 @@ type Transform struct {
 	Source    Type
 	SourceXML bool
 	Into      Type // STRING without into
+	// Format is xml for stylesheets, or the format of a native
+	// transformation such as json.
+	Format string
 }
 
 // transform checks transform SOURCE using /PKG/T parameters ... into T.
 func (c *checker) transform(f *fnCtx, sc *scope, x *syntax.TransformExpr, e env) Type {
-	info := &Transform{Name: x.Using.Name, Into: TypString}
+	info := &Transform{Name: x.Using.Name, Into: TypString, Format: "xml"}
 	src := c.expr(f, sc, x.Source, e, nil)
 	c.notNull(x.Source, src)
 	info.Source = NonOpt(src)
@@ -67,6 +70,7 @@ func (c *checker) transform(f *fnCtx, sc *scope, x *syntax.TransformExpr, e env)
 		c.visibleNamespace(x.Using)
 	default:
 		c.use(x.Using.Pos, "transformation", x.Using.Name, "")
+		info.Format = t.Native.Or("xml")
 	}
 	seen := map[string]bool{}
 	for _, pv := range x.Params {

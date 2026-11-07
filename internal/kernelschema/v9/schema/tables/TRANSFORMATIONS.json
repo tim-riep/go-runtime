@@ -31,6 +31,11 @@
     {
       "name": "OUTPUT",
       "domain": "/RT/TRANSFORMATION_OUTPUT"
+    },
+    {
+      "name": "NATIVE",
+      "domain": "/RT/TRANSFORMATION_FORMAT",
+      "description": "Format of a native transformation, which has no stylesheet"
     }
   ],
   "primaryKey": [
