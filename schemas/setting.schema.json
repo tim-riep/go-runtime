@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/setting.schema.json",
+  "title": "Setting",
+  "description": "Tables that together form one configuration, as a tree below a root table connected through foreign keys (schema/settings/<ID>.json). A setting always covers all fields of its tables.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "texts",
+    "root"
+  ],
+  "properties": {
+    "id": {
+      "description": "Setting ID: upper-case letters, digits and underscores, starting with a letter; unique in the database.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "texts": {
+      "description": "Label by language code. English (en) is mandatory.",
+      "type": "object",
+      "required": [
+        "en"
+      ],
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/language"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "root": {
+      "description": "The table the setting starts with.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "table",
+        "operations"
+      ],
+      "properties": {
+        "table": {
+          "$ref": "common.schema.json#/$defs/reference"
+        },
+        "operations": {
+          "$ref": "common.schema.json#/$defs/operations"
+        }
+      }
+    },
+    "tables": {
+      "description": "Dependent tables.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/settingTable"
+      }
+    }
+  }
+}

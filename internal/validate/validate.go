@@ -51,6 +51,7 @@ func Schema(s *model.Schema, opts Options) error {
 	for _, e := range s.SortedExtensions() {
 		v.extension(e)
 	}
+	v.settings()
 	v.reportMissingLanguages()
 	return v.errs.Err()
 }

@@ -98,7 +98,8 @@ func TestUpgradeDestructive(t *testing.T) {
 		// Version 1.2.0 shortens OTTO_ID and drops the shop table.
 		next := testutil.Example(t, "upgrade/TROTTO")
 		next.Manifest.Version = "1.2.0"
-		next.Tables = nil
+		next.Tables = next.Tables[:1] // OTTO_CONNECTIONS
+		next.SettingExtensions[0].Tables = next.SettingExtensions[0].Tables[:1]
 		next.Extensions[0].ForeignKeys = nil
 		next.Extensions[0].Fields = next.Extensions[0].Fields[:2]
 		for i := range next.Domains {

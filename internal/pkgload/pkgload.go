@@ -144,6 +144,25 @@ type dataElementDoc struct {
 	Texts  map[string]model.DataElementText `json:"texts"`
 }
 
+type settingTableDoc struct {
+	Table      string           `json:"table"`
+	Parent     string           `json:"parent"`
+	ForeignKey string           `json:"foreignKey"`
+	Operations model.Operations `json:"operations"`
+}
+
+type settingDoc struct {
+	ID     string                       `json:"id"`
+	Texts  map[string]model.SettingText `json:"texts"`
+	Root   settingTableDoc              `json:"root"`
+	Tables []settingTableDoc            `json:"tables"`
+}
+
+type settingExtensionDoc struct {
+	Setting string            `json:"setting"`
+	Tables  []settingTableDoc `json:"tables"`
+}
+
 type tableDoc struct {
 	Name           string     `json:"name"`
 	Description    string     `json:"description"`
@@ -205,7 +224,39 @@ func (l *loader) load() *model.Package {
 			pkg.Extensions = append(pkg.Extensions, l.extension(file, &e))
 		}
 	}
+	for _, file := range l.files(SettingsDir) {
+		var d settingDoc
+		if l.readDoc(file, schemas.Setting, &d) {
+			loc := l.loc(file)
+			if want := d.ID + ".json"; path.Base(file) != want {
+				l.fail(rterr.CodeFile, loc.At("/id"), "file must be named %s", want)
+			}
+			st := model.Setting{ID: d.ID, Owner: l.owner(), Texts: d.Texts, Root: l.settingTable(d.Root, loc.At("/root")), Src: loc}
+			for i, t := range d.Tables {
+				st.Tables = append(st.Tables, l.settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
+			}
+			pkg.Settings = append(pkg.Settings, st)
+		}
+	}
+	for _, file := range l.files(SettingExtensionsDir) {
+		var d settingExtensionDoc
+		if l.readDoc(file, schemas.SettingExtension, &d) {
+			loc := l.loc(file)
+			if want := d.Setting + ".json"; path.Base(file) != want {
+				l.fail(rterr.CodeFile, loc.At("/setting"), "file must be named %s", want)
+			}
+			e := model.SettingExtension{Package: l.owner(), Setting: d.Setting, Src: loc}
+			for i, t := range d.Tables {
+				e.Tables = append(e.Tables, l.settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
+			}
+			pkg.SettingExtensions = append(pkg.SettingExtensions, e)
+		}
+	}
 	return pkg
+}
+
+func (l *loader) settingTable(d settingTableDoc, loc rterr.Location) model.SettingTable {
+	return model.SettingTable{Table: l.ref(d.Table), Parent: l.ref(d.Parent), ForeignKey: d.ForeignKey, Operations: d.Operations, Src: loc}
 }
 
 // checkLayout rejects unexpected entries below schema/, which are usually
@@ -340,7 +391,7 @@ func compiled(name string) (*jsonschema.Schema, error) {
 			}
 		}
 		compiledMap = map[string]*jsonschema.Schema{}
-		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension} {
+		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension, schemas.Setting, schemas.SettingExtension} {
 			s, err := c.Compile(schemas.BaseURL + n)
 			if err != nil {
 				compileErr = err
@@ -365,7 +416,7 @@ func (l *loader) name(n string) string {
 
 // ref qualifies a reference to a table or domain in kernel mode.
 func (l *loader) ref(n string) string {
-	if l.opts.Kernel && !strings.HasPrefix(n, "/") {
+	if l.opts.Kernel && n != "" && !strings.HasPrefix(n, "/") {
 		return model.Qualify(model.KernelPackageID, n)
 	}
 	return n

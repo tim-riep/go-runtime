@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/setting-extension.schema.json",
+  "title": "Setting extension",
+  "description": "Additional dependent tables for a setting of a required package (schema/setting-extensions/<ID>.json). An extension only adds tables; it cannot remove tables or change operations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "setting",
+    "tables"
+  ],
+  "properties": {
+    "setting": {
+      "description": "ID of the extended setting.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "common.schema.json#/$defs/settingTable"
+      }
+    }
+  }
+}

@@ -440,7 +440,106 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 			}
 		}
 	}
+	if err := r.loadSettings(ctx, q, s); err != nil {
+		return nil, err
+	}
 	return s, nil
+}
+
+func (r *Repo) loadSettings(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	sets, err := r.selectRows(ctx, q, TSettings, []string{"SETTING_ID", "PACKAGE_ID", "ROOT_TABLE"})
+	if err != nil {
+		return err
+	}
+	for _, st := range sets {
+		id := str(st["SETTING_ID"])
+		s.Settings[id] = &model.Setting{ID: id, Owner: model.PackageID(str(st["PACKAGE_ID"])), Texts: map[string]model.SettingText{},
+			Root: model.SettingTable{Table: str(st["ROOT_TABLE"])}}
+	}
+	texts, err := r.selectRows(ctx, q, TSettingTexts, []string{"SETTING_ID", "LANGUAGE", "LABEL", "DESCRIPTION"})
+	if err != nil {
+		return err
+	}
+	for _, t := range texts {
+		if st := s.Settings[str(t["SETTING_ID"])]; st != nil {
+			st.Texts[str(t["LANGUAGE"])] = model.SettingText{Label: str(t["LABEL"]), Description: str(t["DESCRIPTION"])}
+		}
+	}
+	exts, err := r.selectRows(ctx, q, TSettingExtensions, []string{"PACKAGE_ID", "SETTING_ID"})
+	if err != nil {
+		return err
+	}
+	for _, e := range exts {
+		ext := &model.SettingExtension{Package: model.PackageID(str(e["PACKAGE_ID"])), Setting: str(e["SETTING_ID"])}
+		s.SettingExtensions[ext.Key()] = ext
+	}
+	nodes, err := r.selectRows(ctx, q, TSettingTables, []string{"TABLE_NAME", "SETTING_ID", "PACKAGE_ID", "PARENT_TABLE", "FK_NAME",
+		"ALLOW_CREATE", "ALLOW_UPDATE", "ALLOW_DELETE"}, "SETTING_ID", "POSITION")
+	if err != nil {
+		return err
+	}
+	for _, n := range nodes {
+		st := s.Settings[str(n["SETTING_ID"])]
+		if st == nil {
+			return fmt.Errorf("repository: table %s of unknown setting %s", str(n["TABLE_NAME"]), str(n["SETTING_ID"]))
+		}
+		t := model.SettingTable{Table: str(n["TABLE_NAME"]), Parent: str(n["PARENT_TABLE"]), ForeignKey: str(n["FK_NAME"]),
+			Operations: model.Operations{Create: flag(n["ALLOW_CREATE"]), Update: flag(n["ALLOW_UPDATE"]), Delete: flag(n["ALLOW_DELETE"])}}
+		origin := model.PackageID(str(n["PACKAGE_ID"]))
+		switch {
+		case t.Table == st.Root.Table:
+			st.Root = t
+		case origin == st.Owner:
+			st.Tables = append(st.Tables, t)
+		default:
+			e := s.SettingExtensions[model.SettingExtensionKey{Package: origin, Setting: st.ID}]
+			if e == nil {
+				return fmt.Errorf("repository: table %s added to setting %s by %s without extension", t.Table, st.ID, origin)
+			}
+			e.Tables = append(e.Tables, t)
+		}
+	}
+	return nil
+}
+
+// writeSettings stores settings and their extensions. Tables are written
+// parents first because of the parent reference.
+func (r *Repo) writeSettings(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	for _, id := range s.SettingIDs() {
+		st := s.Settings[id]
+		if err := r.insert(ctx, q, TSettings, row{"SETTING_ID": id, "PACKAGE_ID": string(st.Owner), "ROOT_TABLE": st.Root.Table}); err != nil {
+			return err
+		}
+		for _, lang := range st.Languages() {
+			t := st.Texts[lang]
+			if err := r.insert(ctx, q, TSettingTexts, row{"SETTING_ID": id, "LANGUAGE": lang, "LABEL": t.Label, "DESCRIPTION": nullable(t.Description)}); err != nil {
+				return err
+			}
+		}
+	}
+	for _, e := range s.SortedSettingExtensions() {
+		if err := r.insert(ctx, q, TSettingExtensions, row{"PACKAGE_ID": string(e.Package), "SETTING_ID": e.Setting}); err != nil {
+			return err
+		}
+	}
+	for _, id := range s.SettingIDs() {
+		nodes := s.SettingNodes(id)
+		written := map[string]bool{}
+		for pass := 0; pass <= len(nodes); pass++ {
+			for i, n := range nodes {
+				if written[n.Table] || (!n.Root && !written[n.Parent]) {
+					continue
+				}
+				written[n.Table] = true
+				if err := r.insert(ctx, q, TSettingTables, row{"TABLE_NAME": n.Table, "SETTING_ID": id, "PACKAGE_ID": string(n.Origin),
+					"POSITION": int64(i + 1), "PARENT_TABLE": nullable(n.Parent), "FK_NAME": nullable(n.ForeignKey),
+					"ALLOW_CREATE": n.Operations.Create, "ALLOW_UPDATE": n.Operations.Update, "ALLOW_DELETE": n.Operations.Delete}); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ProvisionalClass is the data class of tables in repositories written
@@ -558,7 +657,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			}
 		}
 	}
-	return nil
+	return r.writeSettings(ctx, q, s)
 }
 
 // LogPackage is a package affected by a logged operation.

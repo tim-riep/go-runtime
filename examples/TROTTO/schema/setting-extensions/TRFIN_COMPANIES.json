@@ -1,0 +1,15 @@
+{
+  "setting": "TRFIN_COMPANIES",
+  "tables": [
+    {
+      "table": "OTTO_CONNECTIONS",
+      "parent": "COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": {
+        "create": true,
+        "update": true,
+        "delete": true
+      }
+    }
+  ]
+}

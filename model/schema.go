@@ -27,21 +27,25 @@ import (
 // declared by their owner; extensions are kept separately so that each
 // object has exactly one owner. Physical combines them.
 type Schema struct {
-	Packages     map[PackageID]*PackageInfo
-	Domains      map[string]*Domain
-	DataElements map[string]*DataElement
-	Tables       map[string]*Table
-	Extensions   map[ExtensionKey]*Extension
+	Packages          map[PackageID]*PackageInfo
+	Domains           map[string]*Domain
+	DataElements      map[string]*DataElement
+	Tables            map[string]*Table
+	Extensions        map[ExtensionKey]*Extension
+	Settings          map[string]*Setting
+	SettingExtensions map[SettingExtensionKey]*SettingExtension
 }
 
 // NewSchema returns an empty schema.
 func NewSchema() *Schema {
 	return &Schema{
-		Packages:     map[PackageID]*PackageInfo{},
-		Domains:      map[string]*Domain{},
-		DataElements: map[string]*DataElement{},
-		Tables:       map[string]*Table{},
-		Extensions:   map[ExtensionKey]*Extension{},
+		Packages:          map[PackageID]*PackageInfo{},
+		Domains:           map[string]*Domain{},
+		DataElements:      map[string]*DataElement{},
+		Tables:            map[string]*Table{},
+		Extensions:        map[ExtensionKey]*Extension{},
+		Settings:          map[string]*Setting{},
+		SettingExtensions: map[SettingExtensionKey]*SettingExtension{},
 	}
 }
 
@@ -67,6 +71,12 @@ func (s *Schema) Clone() *Schema {
 		e.Fields = cloneFields(v.Fields)
 		e.ForeignKeys = cloneFKs(v.ForeignKeys)
 		c.Extensions[k] = &e
+	}
+	for k, v := range s.Settings {
+		c.Settings[k] = cloneSetting(v)
+	}
+	for k, v := range s.SettingExtensions {
+		c.SettingExtensions[k] = cloneSettingExtension(v)
 	}
 	return c
 }
@@ -157,6 +167,24 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Extensions[e.Key()] = &e
 	}
+	for i := range p.Settings {
+		st := cloneSetting(&p.Settings[i])
+		st.Owner = id
+		if old, ok := s.Settings[st.ID]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "setting", Name: st.ID, Owner: string(old.Owner), Package: string(id), Location: st.Src})
+			continue
+		}
+		s.Settings[st.ID] = st
+	}
+	for i := range p.SettingExtensions {
+		e := cloneSettingExtension(&p.SettingExtensions[i])
+		e.Package = id
+		if _, ok := s.SettingExtensions[e.Key()]; ok {
+			errs = append(errs, &rterr.ValidationError{Code: rterr.CodeDuplicate, Location: e.Src, Object: "extension of setting " + e.Setting, Message: "package extends this setting more than once"})
+			continue
+		}
+		s.SettingExtensions[e.Key()] = e
+	}
 	if id != Kernel {
 		s.Packages[id] = &PackageInfo{Manifest: p.Manifest, InstalledAt: installedAt, UpdatedAt: updatedAt}
 	}
@@ -170,6 +198,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 	for _, d := range s.DataElements {
 		if _, ok := d.Texts[code]; ok {
 			delete(d.Texts, code)
+			n++
+		}
+	}
+	for _, st := range s.Settings {
+		if _, ok := st.Texts[code]; ok {
+			delete(st.Texts, code)
 			n++
 		}
 	}
@@ -196,6 +230,16 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for k := range s.Extensions {
 		if k.Package == id {
 			delete(s.Extensions, k)
+		}
+	}
+	for sid, st := range s.Settings {
+		if st.Owner == id {
+			delete(s.Settings, sid)
+		}
+	}
+	for k := range s.SettingExtensions {
+		if k.Package == id {
+			delete(s.SettingExtensions, k)
 		}
 	}
 	delete(s.Packages, id)

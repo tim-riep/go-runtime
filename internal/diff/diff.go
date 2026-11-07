@@ -29,6 +29,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // Diff returns the changes that turn cur into want.
@@ -36,6 +37,7 @@ func Diff(cur, want *model.Schema) []plan.Change {
 	var out []plan.Change
 	out = append(out, domains(cur, want)...)
 	out = append(out, dataElements(cur, want)...)
+	out = append(out, settings(cur, want)...)
 	out = append(out, tables(cur.Physical(), want.Physical())...)
 	return out
 }
@@ -84,6 +86,62 @@ func dataElements(cur, want *model.Schema) []plan.Change {
 	for _, name := range cur.DataElementNames() {
 		if _, ok := want.DataElements[name]; !ok {
 			out = append(out, plan.Change{Kind: plan.DropDataElement, Name: name})
+		}
+	}
+	return out
+}
+
+// stripTables removes source locations so definitions loaded from a
+// package compare equal to those read from the repository.
+func stripTables(ts []model.SettingTable) []model.SettingTable {
+	out := slices.Clone(ts)
+	for i := range out {
+		out[i].Src = rterr.Location{}
+	}
+	return out
+}
+
+// settings lists setting changes. They never touch the database layout and
+// are never destructive.
+func settings(cur, want *model.Schema) []plan.Change {
+	var out []plan.Change
+	for _, id := range want.SettingIDs() {
+		w := want.Settings[id]
+		c, ok := cur.Settings[id]
+		if !ok {
+			out = append(out, plan.Change{Kind: plan.CreateSetting, Name: id, Detail: "root " + w.Root.Table})
+			continue
+		}
+		var parts []string
+		if !reflect.DeepEqual(c.Texts, w.Texts) {
+			parts = append(parts, "texts")
+		}
+		if !reflect.DeepEqual(stripTables([]model.SettingTable{c.Root}), stripTables([]model.SettingTable{w.Root})) ||
+			!reflect.DeepEqual(stripTables(c.Tables), stripTables(w.Tables)) {
+			parts = append(parts, "tables")
+		}
+		if len(parts) > 0 {
+			out = append(out, plan.Change{Kind: plan.AlterSetting, Name: id, Detail: strings.Join(parts, ", ")})
+		}
+	}
+	for _, id := range cur.SettingIDs() {
+		if _, ok := want.Settings[id]; !ok {
+			out = append(out, plan.Change{Kind: plan.DropSetting, Name: id})
+		}
+	}
+	for _, w := range want.SortedSettingExtensions() {
+		c, ok := cur.SettingExtensions[w.Key()]
+		name := w.Setting + " by " + string(w.Package)
+		switch {
+		case !ok:
+			out = append(out, plan.Change{Kind: plan.AddSettingExtension, Name: name})
+		case !reflect.DeepEqual(stripTables(c.Tables), stripTables(w.Tables)):
+			out = append(out, plan.Change{Kind: plan.AlterSettingExtension, Name: name})
+		}
+	}
+	for _, c := range cur.SortedSettingExtensions() {
+		if _, ok := want.SettingExtensions[c.Key()]; !ok {
+			out = append(out, plan.Change{Kind: plan.DropSettingExtension, Name: c.Setting + " by " + string(c.Package)})
 		}
 	}
 	return out

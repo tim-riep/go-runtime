@@ -1,0 +1,33 @@
+{
+  "id": "TRFIN_COMPANIES",
+  "texts": {
+    "en": {
+      "label": "Companies",
+      "description": "Companies of a tenant with their bank accounts"
+    },
+    "de": {
+      "label": "Firmen",
+      "description": "Firmen eines Mandanten mit ihren Bankkonten"
+    }
+  },
+  "root": {
+    "table": "COMPANIES",
+    "operations": {
+      "create": true,
+      "update": true,
+      "delete": true
+    }
+  },
+  "tables": [
+    {
+      "table": "BANK_ACCOUNTS",
+      "parent": "COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": {
+        "create": true,
+        "update": true,
+        "delete": false
+      }
+    }
+  ]
+}

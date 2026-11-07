@@ -293,12 +293,14 @@ type Manifest struct {
 
 // Package is a loaded package.
 type Package struct {
-	Manifest     Manifest
-	Domains      []Domain
-	DataElements []DataElement
-	Tables       []Table
-	Extensions   []Extension
-	Origin       string // where the package was loaded from
+	Manifest          Manifest
+	Domains           []Domain
+	DataElements      []DataElement
+	Tables            []Table
+	Extensions        []Extension
+	Settings          []Setting
+	SettingExtensions []SettingExtension
+	Origin            string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.
