@@ -33,6 +33,9 @@ type Options struct {
 	// Languages are the languages set up in the database. Texts in other
 	// languages are reported as rterr.MissingLanguages. Nil skips the check.
 	Languages map[string]bool
+	// MaxAssetSize is the maximum size of one asset in bytes; 0 means no
+	// limit.
+	MaxAssetSize int64
 }
 
 // Schema checks s and converts field defaults written in packages into
@@ -52,6 +55,7 @@ func Schema(s *model.Schema, opts Options) error {
 		v.extension(e)
 	}
 	v.settings()
+	v.assetRepositories()
 	v.reportMissingLanguages()
 	return v.errs.Err()
 }
@@ -69,6 +73,11 @@ func (v *validator) languages(object string, loc rterr.Location, langs []string)
 	if !slices.Contains(langs, model.DefaultLanguage) {
 		v.fail(rterr.CodeText, loc.At("/texts"), object, "texts in English (%s) are mandatory", model.DefaultLanguage)
 	}
+	v.knownLanguages(object, langs)
+}
+
+// knownLanguages records languages of an object that are not set up.
+func (v *validator) knownLanguages(object string, langs []string) {
 	if v.opts.Languages == nil {
 		return
 	}

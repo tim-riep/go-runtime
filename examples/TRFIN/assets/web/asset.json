@@ -1,0 +1,14 @@
+{
+  "description": {
+    "en": "Finance web assets",
+    "de": "Web-Ressourcen Finanzen"
+  },
+  "files": {
+    "images/logo.png": {
+      "description": {
+        "en": "Finance logo",
+        "de": "Logo Finanzen"
+      }
+    }
+  }
+}

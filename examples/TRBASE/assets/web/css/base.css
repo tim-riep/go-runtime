@@ -1,0 +1,11 @@
+:root {
+  --color-text: #1d1d1f;
+  --color-accent: #0a5fb4;
+  --font-body: "Placeholder", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}

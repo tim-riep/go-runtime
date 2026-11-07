@@ -1,0 +1,40 @@
+{
+  "description": {
+    "en": "Finance print templates",
+    "de": "Druckvorlagen Finanzen"
+  },
+  "folders": {
+    "invoice": {
+      "description": {
+        "en": "Invoices",
+        "de": "Rechnungen"
+      }
+    },
+    "letter": {
+      "description": {
+        "en": "Letters",
+        "de": "Briefe"
+      }
+    }
+  },
+  "files": {
+    "invoice/invoice.xsl": {
+      "description": {
+        "en": "Invoice layout",
+        "de": "Rechnungslayout"
+      },
+      "languages": {
+        "en": "invoice/invoice_en.xsl",
+        "de": "invoice/invoice_de.xsl"
+      }
+    },
+    "letter/letter.xsl": {
+      "description": {
+        "en": "Letter layout; German has its own version"
+      },
+      "languages": {
+        "de": "letter/letter_de.xsl"
+      }
+    }
+  }
+}

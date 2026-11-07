@@ -1,0 +1,13 @@
+{
+  "description": {
+    "en": "Base styles and fonts",
+    "de": "Basis-Stile und Schriften"
+  },
+  "files": {
+    "fonts/placeholder.woff2": {
+      "description": {
+        "en": "Placeholder with fixed bytes, not a real font; replace with a licensed font"
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/asset.schema.json",
+  "title": "Asset repository",
+  "description": "Describes an asset repository: a folder below assets/ whose files are installed with the package (assets/<ID>/asset.json). The file itself is not an asset.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "description"
+  ],
+  "$defs": {
+    "texts": {
+      "description": "Text by language code.",
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/language"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "properties": {
+    "description": {
+      "$ref": "#/$defs/texts",
+      "description": "Label of the repository by language. English (en) is mandatory.",
+      "required": [
+        "en"
+      ]
+    },
+    "folders": {
+      "description": "Folders with descriptions, or folders that do not exist on disk such as empty ones.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "$ref": "#/$defs/texts"
+          }
+        }
+      }
+    },
+    "files": {
+      "description": "Information on single files by path. A path with languages is language-dependent: each language maps to a file of the folder, which is then reachable only as variant of this path. A file at the path itself is the language-independent version.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mimeType": {
+            "description": "Media type, overriding the one derived from the extension.",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$"
+          },
+          "description": {
+            "$ref": "#/$defs/texts"
+          },
+          "languages": {
+            "description": "File per language code.",
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "$ref": "common.schema.json#/$defs/language"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

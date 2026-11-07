@@ -198,6 +198,7 @@ func (l *loader) load() *model.Package {
 		pkg.Manifest.Requires = append(pkg.Manifest.Requires, model.Dependency{ID: model.PackageID(r.ID), Constraint: r.Version})
 	}
 	l.checkLayout()
+	l.checkSymlinks()
 
 	for _, file := range l.files(DomainsDir) {
 		var d domainDoc
@@ -251,6 +252,9 @@ func (l *loader) load() *model.Package {
 			}
 			pkg.SettingExtensions = append(pkg.SettingExtensions, e)
 		}
+	}
+	if !l.opts.Kernel {
+		l.assets(pkg)
 	}
 	return pkg
 }
@@ -391,7 +395,7 @@ func compiled(name string) (*jsonschema.Schema, error) {
 			}
 		}
 		compiledMap = map[string]*jsonschema.Schema{}
-		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension, schemas.Setting, schemas.SettingExtension} {
+		for _, n := range []string{schemas.Manifest, schemas.Domain, schemas.DataElement, schemas.Table, schemas.Extension, schemas.Setting, schemas.SettingExtension, schemas.Asset} {
 			s, err := c.Compile(schemas.BaseURL + n)
 			if err != nil {
 				compileErr = err

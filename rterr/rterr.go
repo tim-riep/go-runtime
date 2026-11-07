@@ -55,6 +55,7 @@ const (
 	CodeText            Code = "text"             // missing or invalid translatable text
 	CodeDataElement     Code = "data-element"     // invalid data element or field reference
 	CodeSetting         Code = "setting"          // invalid setting or setting extension
+	CodeAsset           Code = "asset"            // invalid asset repository, folder or asset
 )
 
 // Location points at the place in a package that caused an error.

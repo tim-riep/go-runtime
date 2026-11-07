@@ -35,4 +35,5 @@ const (
 	DataElement      = "data-element.schema.json"
 	Setting          = "setting.schema.json"
 	SettingExtension = "setting-extension.schema.json"
+	Asset            = "asset.schema.json"
 )

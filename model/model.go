@@ -300,6 +300,7 @@ type Package struct {
 	Extensions        []Extension
 	Settings          []Setting
 	SettingExtensions []SettingExtension
+	AssetRepositories []AssetRepository
 	Origin            string // where the package was loaded from
 }
 

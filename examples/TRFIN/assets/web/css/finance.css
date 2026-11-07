@@ -1,0 +1,8 @@
+.amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.amount.negative {
+  color: #b42318;
+}

@@ -34,6 +34,7 @@ type Schema struct {
 	Extensions        map[ExtensionKey]*Extension
 	Settings          map[string]*Setting
 	SettingExtensions map[SettingExtensionKey]*SettingExtension
+	AssetRepositories map[AssetRepositoryKey]*AssetRepository
 }
 
 // NewSchema returns an empty schema.
@@ -46,6 +47,7 @@ func NewSchema() *Schema {
 		Extensions:        map[ExtensionKey]*Extension{},
 		Settings:          map[string]*Setting{},
 		SettingExtensions: map[SettingExtensionKey]*SettingExtension{},
+		AssetRepositories: map[AssetRepositoryKey]*AssetRepository{},
 	}
 }
 
@@ -77,6 +79,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.SettingExtensions {
 		c.SettingExtensions[k] = cloneSettingExtension(v)
+	}
+	for k, v := range s.AssetRepositories {
+		c.AssetRepositories[k] = cloneAssetRepository(v)
 	}
 	return c
 }
@@ -185,6 +190,11 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.SettingExtensions[e.Key()] = e
 	}
+	for i := range p.AssetRepositories {
+		r := cloneAssetRepository(&p.AssetRepositories[i])
+		r.Package = id
+		s.AssetRepositories[r.Key()] = r
+	}
 	if id != Kernel {
 		s.Packages[id] = &PackageInfo{Manifest: p.Manifest, InstalledAt: installedAt, UpdatedAt: updatedAt}
 	}
@@ -205,6 +215,26 @@ func (s *Schema) RemoveLanguage(code string) int {
 		if _, ok := st.Texts[code]; ok {
 			delete(st.Texts, code)
 			n++
+		}
+	}
+	for _, r := range s.AssetRepositories {
+		if _, ok := r.Description[code]; ok {
+			delete(r.Description, code)
+			n++
+		}
+		for _, e := range r.Entries {
+			if _, ok := e.Description[code]; ok {
+				delete(e.Description, code)
+				n++
+			}
+			if _, ok := e.Variants[code]; ok {
+				delete(e.Variants, code)
+				n++
+				// An asset that existed only in this language is gone.
+				if !e.Folder && e.Content == nil && len(e.Variants) == 0 {
+					delete(r.Entries, e.Path)
+				}
+			}
 		}
 	}
 	return n
@@ -240,6 +270,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for k := range s.SettingExtensions {
 		if k.Package == id {
 			delete(s.SettingExtensions, k)
+		}
+	}
+	for k := range s.AssetRepositories {
+		if k.Package == id {
+			delete(s.AssetRepositories, k)
 		}
 	}
 	delete(s.Packages, id)
