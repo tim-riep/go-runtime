@@ -2,6 +2,7 @@
   "name": "EXTENSIONS",
   "description": "Extensions of tables by other packages",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",

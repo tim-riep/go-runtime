@@ -1,0 +1,30 @@
+{
+  "name": "EXCHANGE_RATES",
+  "description": "Exchange rates, maintained during operation",
+  "tenantSpecific": false,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "FROM_CURRENCY",
+      "domain": "CURRENCY"
+    },
+    {
+      "name": "TO_CURRENCY",
+      "domain": "CURRENCY"
+    },
+    {
+      "name": "VALID_FROM",
+      "domain": "DATE"
+    },
+    {
+      "name": "RATE",
+      "domain": "EXCHANGE_RATE",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "FROM_CURRENCY",
+    "TO_CURRENCY",
+    "VALID_FROM"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "VERSION",
+  "description": "Semantic version",
+  "type": "CHAR",
+  "length": 64
+}

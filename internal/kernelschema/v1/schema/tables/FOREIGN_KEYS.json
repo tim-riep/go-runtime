@@ -2,6 +2,7 @@
   "name": "FOREIGN_KEYS",
   "description": "Foreign keys of all tables",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",

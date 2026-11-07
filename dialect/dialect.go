@@ -215,11 +215,11 @@ func CreationOrder(p *model.Physical, names []string) ([]string, map[string]bool
 	return order, late
 }
 
-// ChangesByTable groups table-level changes by table name.
+// ChangesByTable groups the physical table-level changes by table name.
 func ChangesByTable(changes []plan.Change) map[string][]plan.Change {
 	out := map[string][]plan.Change{}
 	for _, c := range changes {
-		if c.Table != "" {
+		if c.Table != "" && c.Kind.Physical() {
 			out[c.Table] = append(out[c.Table], c)
 		}
 	}

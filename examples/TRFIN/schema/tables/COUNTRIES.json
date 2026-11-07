@@ -2,6 +2,7 @@
   "name": "COUNTRIES",
   "description": "Countries, shared by all tenants",
   "tenantSpecific": false,
+  "dataClass": "configuration",
   "fields": [
     {
       "name": "COUNTRY_CODE",

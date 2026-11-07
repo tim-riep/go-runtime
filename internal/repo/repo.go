@@ -38,53 +38,78 @@ import (
 
 // Kernel table names.
 const (
-	TPackages      = model.KernelNamespace + "PACKAGES"
-	TPackageDeps   = model.KernelNamespace + "PACKAGE_DEPS"
-	TDomains       = model.KernelNamespace + "DOMAINS"
-	TDomainValues  = model.KernelNamespace + "DOMAIN_VALUES"
-	TTables        = model.KernelNamespace + "TABLES"
-	TExtensions    = model.KernelNamespace + "EXTENSIONS"
-	TFields        = model.KernelNamespace + "FIELDS"
-	TForeignKeys   = model.KernelNamespace + "FOREIGN_KEYS"
-	TFKFields      = model.KernelNamespace + "FK_FIELDS"
-	TMigrations    = model.KernelNamespace + "MIGRATIONS"
-	TLog           = model.KernelNamespace + "LOG"
-	TLogPackages   = model.KernelNamespace + "LOG_PACKAGES"
-	TLogStatements = model.KernelNamespace + "LOG_STATEMENTS"
+	TPackages          = model.KernelNamespace + "PACKAGES"
+	TPackageDeps       = model.KernelNamespace + "PACKAGE_DEPS"
+	TDomains           = model.KernelNamespace + "DOMAINS"
+	TDomainValues      = model.KernelNamespace + "DOMAIN_VALUES"
+	TTables            = model.KernelNamespace + "TABLES"
+	TExtensions        = model.KernelNamespace + "EXTENSIONS"
+	TFields            = model.KernelNamespace + "FIELDS"
+	TForeignKeys       = model.KernelNamespace + "FOREIGN_KEYS"
+	TFKFields          = model.KernelNamespace + "FK_FIELDS"
+	TMigrations        = model.KernelNamespace + "MIGRATIONS"
+	TLog               = model.KernelNamespace + "LOG"
+	TLogPackages       = model.KernelNamespace + "LOG_PACKAGES"
+	TLogStatements     = model.KernelNamespace + "LOG_STATEMENTS"
+	TLanguages         = model.KernelNamespace + "LANGUAGES"
+	TDataElements      = model.KernelNamespace + "DATA_ELEMENTS"
+	TDataElementTexts  = model.KernelNamespace + "DATA_ELEMENT_TEXTS"
+	TSettings          = model.KernelNamespace + "SETTINGS"
+	TSettingTexts      = model.KernelNamespace + "SETTING_TEXTS"
+	TSettingExtensions = model.KernelNamespace + "SETTING_EXTENSIONS"
+	TSettingTables     = model.KernelNamespace + "SETTING_TABLES"
 )
 
-// Repo accesses the kernel tables with a dialect.
+// Repo accesses the kernel tables of one kernel schema version with a
+// dialect. Tables and columns that the version does not have are skipped
+// when reading and writing, so older repositories can be read during a
+// migration.
 type Repo struct {
-	d dialect.Dialect
+	d       dialect.Dialect
+	version int
 }
 
-// New returns a Repo for the dialect.
-func New(d dialect.Dialect) *Repo { return &Repo{d: d} }
+// New returns a Repo for the newest kernel version.
+func New(d dialect.Dialect) *Repo { return &Repo{d: d, version: kernelschema.Latest()} }
+
+// At returns a Repo for the given kernel version.
+func (r *Repo) At(version int) *Repo { return &Repo{d: r.d, version: version} }
 
 var (
-	layoutOnce sync.Once
-	layout     *model.Physical
-	layoutErr  error
+	layoutMu sync.Mutex
+	layouts  = map[int]*model.Physical{}
 )
 
-// kernelLayout returns the physical layout of the newest kernel tables,
+// layout returns the physical layout of the kernel tables of r's version,
 // used to encode and decode their values.
-func kernelLayout() (*model.Physical, error) {
-	layoutOnce.Do(func() {
-		s, err := kernelschema.Schema(kernelschema.Latest())
-		if err != nil {
-			layoutErr = err
-			return
-		}
-		layout = s.Physical()
-	})
-	return layout, layoutErr
+func (r *Repo) layout() (*model.Physical, error) {
+	layoutMu.Lock()
+	defer layoutMu.Unlock()
+	if l, ok := layouts[r.version]; ok {
+		return l, nil
+	}
+	s, err := kernelschema.Schema(r.version)
+	if err != nil {
+		return nil, err
+	}
+	layouts[r.version] = s.Physical()
+	return layouts[r.version], nil
+}
+
+// has reports whether the version has the table and, if given, the column.
+func (r *Repo) has(table, column string) bool {
+	l, err := r.layout()
+	if err != nil {
+		return false
+	}
+	t, ok := l.Tables[table]
+	return ok && (column == "" || t.Field(column) != nil)
 }
 
 type row map[string]any
 
 func (r *Repo) domain(table, column string) (*model.Domain, error) {
-	l, err := kernelLayout()
+	l, err := r.layout()
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +124,17 @@ func (r *Repo) domain(table, column string) (*model.Domain, error) {
 	return l.Domain(f), nil
 }
 
-// Insert writes one row into a kernel table.
+// insert writes one row into a kernel table. Rows of tables and values of
+// columns that the version does not have are dropped.
 func (r *Repo) insert(ctx context.Context, q dialect.Querier, table string, values row) error {
+	if !r.has(table, "") {
+		return nil
+	}
 	cols := make([]string, 0, len(values))
 	for c := range values {
-		cols = append(cols, c)
+		if r.has(table, c) {
+			cols = append(cols, c)
+		}
 	}
 	slices.Sort(cols)
 	args := make([]any, len(cols))
@@ -126,14 +157,24 @@ func (r *Repo) insert(ctx context.Context, q dialect.Querier, table string, valu
 }
 
 // selectRows reads the given columns of a kernel table, decoded into Go
-// values, in the given order.
+// values, in the given order. Columns the version does not have are
+// returned as nil; a table it does not have yields no rows.
 func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, cols []string, orderBy ...string) ([]row, error) {
-	stmt := "SELECT " + dialect.QuoteList(cols) + " FROM " + r.d.QuoteIdent(table)
+	if !r.has(table, "") {
+		return nil, nil
+	}
+	var present []string
+	for _, c := range cols {
+		if r.has(table, c) {
+			present = append(present, c)
+		}
+	}
+	stmt := "SELECT " + dialect.QuoteList(present) + " FROM " + r.d.QuoteIdent(table)
 	if len(orderBy) > 0 {
 		stmt += " ORDER BY " + dialect.QuoteList(orderBy)
 	}
-	doms := make([]*model.Domain, len(cols))
-	for i, c := range cols {
+	doms := make([]*model.Domain, len(present))
+	for i, c := range present {
 		d, err := r.domain(table, c)
 		if err != nil {
 			return nil, err
@@ -147,8 +188,8 @@ func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, 
 	defer rows.Close()
 	var out []row
 	for rows.Next() {
-		raw := make([]any, len(cols))
-		ptrs := make([]any, len(cols))
+		raw := make([]any, len(present))
+		ptrs := make([]any, len(present))
 		for i := range raw {
 			ptrs[i] = &raw[i]
 		}
@@ -156,7 +197,7 @@ func (r *Repo) selectRows(ctx context.Context, q dialect.Querier, table string, 
 			return nil, err
 		}
 		rec := row{}
-		for i, c := range cols {
+		for i, c := range present {
 			v, err := r.d.Decode(doms[i], raw[i])
 			if err != nil {
 				return nil, fmt.Errorf("%s.%s: %w", table, c, err)
@@ -272,13 +313,18 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		}
 	}
 
-	tabs, err := r.selectRows(ctx, q, TTables, []string{"TABLE_NAME", "PACKAGE_ID", "DESCRIPTION", "TENANT_SPECIFIC"})
+	tabs, err := r.selectRows(ctx, q, TTables, []string{"TABLE_NAME", "PACKAGE_ID", "DESCRIPTION", "TENANT_SPECIFIC", "DATA_CLASS"})
 	if err != nil {
 		return nil, err
 	}
+	provisional := !r.has(TTables, "DATA_CLASS")
 	for _, t := range tabs {
 		name := str(t["TABLE_NAME"])
-		s.Tables[name] = &model.Table{Name: name, Owner: model.PackageID(str(t["PACKAGE_ID"])), Description: str(t["DESCRIPTION"]), TenantSpecific: flag(t["TENANT_SPECIFIC"])}
+		if provisional {
+			t["DATA_CLASS"] = string(ProvisionalClass(model.PackageID(str(t["PACKAGE_ID"]))))
+		}
+		s.Tables[name] = &model.Table{Name: name, Owner: model.PackageID(str(t["PACKAGE_ID"])), Description: str(t["DESCRIPTION"]),
+			TenantSpecific: flag(t["TENANT_SPECIFIC"]), DataClass: model.DataClass(str(t["DATA_CLASS"]))}
 	}
 	exts, err := r.selectRows(ctx, q, TExtensions, []string{"PACKAGE_ID", "TABLE_NAME", "DESCRIPTION"})
 	if err != nil {
@@ -372,15 +418,41 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	return s, nil
 }
 
-// deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TFKFields, TForeignKeys, TFields, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
+// ProvisionalClass is the data class of tables in repositories written
+// before data classes existed: system for kernel tables and application
+// for package tables until their package is applied again.
+func ProvisionalClass(owner model.PackageID) model.DataClass {
+	if owner == model.Kernel {
+		return model.System
+	}
+	return model.Application
+}
 
-// Write replaces the content of the repository with s.
-func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+// HasDataClasses reports whether the version stores data classes.
+func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
+
+// deleteOrder lists the repository tables children first.
+var deleteOrder = []string{TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
+	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
+
+// Clear deletes all rows that describe the schema. Log, migrations,
+// languages and tenants are kept.
+func (r *Repo) Clear(ctx context.Context, q dialect.Querier) error {
 	for _, t := range deleteOrder {
+		if !r.has(t, "") {
+			continue
+		}
 		if _, err := q.ExecContext(ctx, "DELETE FROM "+r.d.QuoteIdent(t)); err != nil {
 			return fmt.Errorf("clearing %s: %w", t, err)
 		}
+	}
+	return nil
+}
+
+// Write replaces the content of the repository with s.
+func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	if err := r.Clear(ctx, q); err != nil {
+		return err
 	}
 	for _, id := range s.PackageIDs() {
 		p := s.Packages[id]
@@ -410,7 +482,8 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	}
 	for _, name := range s.TableNames() {
 		t := s.Tables[name]
-		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": nullable(string(t.Owner)), "DESCRIPTION": nullable(t.Description), "TENANT_SPECIFIC": t.TenantSpecific}); err != nil {
+		if err := r.insert(ctx, q, TTables, row{"TABLE_NAME": name, "PACKAGE_ID": nullable(string(t.Owner)), "DESCRIPTION": nullable(t.Description),
+			"TENANT_SPECIFIC": t.TenantSpecific, "DATA_CLASS": string(t.DataClass)}); err != nil {
 			return err
 		}
 	}

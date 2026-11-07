@@ -75,6 +75,40 @@ func (t BaseType) HasLength() bool { return t == Char || t == Dec }
 // values to a fixed list.
 func (t BaseType) AllowsFixedValues() bool { return t == Char || t == Int4 || t == Int8 }
 
+// DataClass tells what kind of data a table holds.
+type DataClass string
+
+// Data classes.
+const (
+	// Configuration defines the behavior of the application. It is set up
+	// once and rarely changes during operation.
+	Configuration DataClass = "configuration"
+	// Application holds master and transactional data of the running
+	// business.
+	Application DataClass = "application"
+	// RuntimeConfiguration is configuration maintained directly during
+	// operation, e.g. exchange rates or number range states.
+	RuntimeConfiguration DataClass = "runtimeConfiguration"
+	// System is reserved for the native tables of the kernel.
+	System DataClass = "system"
+)
+
+// DataClasses lists all data classes.
+var DataClasses = []DataClass{Configuration, Application, RuntimeConfiguration, System}
+
+// Valid reports whether c is a known data class.
+func (c DataClass) Valid() bool {
+	for _, d := range DataClasses {
+		if c == d {
+			return true
+		}
+	}
+	return false
+}
+
+// IsConfiguration reports whether tables of the class may form settings.
+func (c DataClass) IsConfiguration() bool { return c == Configuration || c == RuntimeConfiguration }
+
 // FixedValue is one allowed value of a domain.
 type FixedValue struct {
 	Value       string `json:"value"` // canonical text form
@@ -152,6 +186,7 @@ type Table struct {
 	Owner          PackageID      `json:"owner"`
 	Description    string         `json:"description,omitempty"`
 	TenantSpecific bool           `json:"tenantSpecific"`
+	DataClass      DataClass      `json:"dataClass"`
 	Fields         []Field        `json:"fields"`
 	PrimaryKey     []string       `json:"primaryKey"`
 	ForeignKeys    []ForeignKey   `json:"foreignKeys,omitempty"`

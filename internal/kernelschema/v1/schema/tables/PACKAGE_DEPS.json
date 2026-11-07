@@ -2,6 +2,7 @@
   "name": "PACKAGE_DEPS",
   "description": "Requirements of installed packages",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",

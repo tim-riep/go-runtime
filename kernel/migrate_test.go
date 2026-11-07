@@ -1,0 +1,89 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kernel_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/tim-riep/go-runtime/internal/kernelschema"
+	"github.com/tim-riep/go-runtime/internal/testutil"
+	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
+)
+
+// TestMigrateFromVersion1 creates a database with the first kernel
+// version, installs packages and adds data, then migrates it.
+func TestMigrateFromVersion1(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		k.SetTargetVersion(1)
+		withData(t, k)
+		consistent(t, k)
+
+		k.SetTargetVersion(kernelschema.Latest())
+		if _, err := k.Schema(ctx); !errors.Is(err, rterr.ErrNotInitialized) {
+			t.Fatalf("expected ErrNotInitialized before the migration, got %v", err)
+		}
+		p, err := k.Init(ctx, kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		notices := map[string]string{}
+		for _, c := range p.Notices() {
+			if c.Kind == plan.AlterDataClass {
+				notices[c.Table] = c.Detail
+			}
+		}
+		if notices["COMPANIES"] != "none -> application, provisional until package TRFIN is applied again" || notices[model.TenantTable] != "" {
+			t.Fatalf("migration notices: %v", notices)
+		}
+		consistent(t, k)
+
+		s, err := k.Schema(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if c := s.Tables["COMPANIES"].DataClass; c != model.Application {
+			t.Errorf("provisional class of COMPANIES = %q", c)
+		}
+		if c := s.Tables[model.TenantTable].DataClass; c != model.System {
+			t.Errorf("class of the tenant table = %q", c)
+		}
+		if len(s.Packages) != 3 || s.Packages["TRFIN"].InstalledAt.IsZero() {
+			t.Fatalf("packages after migration: %v", s.PackageIDs())
+		}
+		if v := scalar(t, k, "COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+			t.Errorf("data lost: %v", v)
+		}
+
+		// Applying the package again sets its real classes.
+		up, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(up.Destructive()) != 0 || len(up.Notices()) == 0 {
+			t.Fatalf("class changes must be notices: %+v", up.Changes)
+		}
+		s, _ = k.Schema(ctx)
+		if c := s.Tables["COMPANIES"].DataClass; c != model.Configuration {
+			t.Errorf("class after upgrade = %q", c)
+		}
+		consistent(t, k)
+	})
+}

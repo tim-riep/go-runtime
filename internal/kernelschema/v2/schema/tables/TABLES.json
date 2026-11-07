@@ -1,0 +1,46 @@
+{
+  "name": "TABLES",
+  "description": "Tables",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TABLE_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID",
+      "description": "Owner package, empty for the kernel"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "DESCRIPTION"
+    },
+    {
+      "name": "TENANT_SPECIFIC",
+      "domain": "FLAG",
+      "notNull": true
+    },
+    {
+      "name": "DATA_CLASS",
+      "domain": "DATA_CLASS",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TABLE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

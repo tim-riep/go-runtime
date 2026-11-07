@@ -2,6 +2,7 @@
   "name": "LOG",
   "description": "Log of installations, upgrades, removals, migrations and tenant deletions",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "LOG_ID",

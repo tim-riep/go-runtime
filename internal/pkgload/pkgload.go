@@ -138,6 +138,7 @@ type tableDoc struct {
 	Name           string     `json:"name"`
 	Description    string     `json:"description"`
 	TenantSpecific bool       `json:"tenantSpecific"`
+	DataClass      string     `json:"dataClass"`
 	Fields         []fieldDoc `json:"fields"`
 	PrimaryKey     []string   `json:"primaryKey"`
 	ForeignKeys    []fkDoc    `json:"foreignKeys"`
@@ -418,7 +419,7 @@ func (l *loader) table(file string, doc *tableDoc) model.Table {
 	loc := l.loc(file)
 	t := model.Table{
 		Name: l.name(doc.Name), Owner: l.owner(), Description: doc.Description,
-		TenantSpecific: doc.TenantSpecific, PrimaryKey: doc.PrimaryKey, Src: loc,
+		TenantSpecific: doc.TenantSpecific, DataClass: model.DataClass(doc.DataClass), PrimaryKey: doc.PrimaryKey, Src: loc,
 	}
 	l.checkFileName(file, doc.Name, loc)
 	for i, f := range doc.Fields {

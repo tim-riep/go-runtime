@@ -2,6 +2,7 @@
   "name": "COMPANIES",
   "description": "Companies of a tenant",
   "tenantSpecific": true,
+  "dataClass": "configuration",
   "fields": [
     {
       "name": "COMPANY_ID",

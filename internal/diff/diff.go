@@ -126,6 +126,10 @@ func tables(cur, want *model.Physical) []plan.Change {
 			out = append(out, plan.Change{Kind: plan.RecreateTable, Table: name, Destructive: true,
 				Detail: fmt.Sprintf("tenantSpecific %v -> %v, all rows are lost", c.TenantSpecific, w.TenantSpecific)})
 		default:
+			if c.DataClass != w.DataClass {
+				out = append(out, plan.Change{Kind: plan.AlterDataClass, Table: name, Notice: true,
+					Detail: describeClass(c.DataClass) + " -> " + describeClass(w.DataClass)})
+			}
 			out = append(out, columns(cur, want, c, w)...)
 		}
 	}
@@ -220,6 +224,13 @@ func foreignKeys(c, w *model.Table) []plan.Change {
 		}
 	}
 	return out
+}
+
+func describeClass(c model.DataClass) string {
+	if c == "" {
+		return "none"
+	}
+	return string(c)
 }
 
 func sameKey(a, b *model.ForeignKey) bool {

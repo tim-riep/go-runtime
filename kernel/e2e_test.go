@@ -62,6 +62,7 @@ func TestEndToEnd(t *testing.T) {
 			t.Fatal(err)
 		}
 		consistent(t, k)
+		mustInsert(t, k, "OTTO_CONNECTIONS", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "ENDPOINT": "https://partner.example"})
 		mustInsert(t, k, "OTTO_SHOPS", values{model.TenantField: "ACME", "SHOP_ID": "S1", "COMPANY_ID": "A1", "NAME": "Acme Shop"})
 		if _, err := k.DB().ExecContext(ctx, `UPDATE "COMPANIES" SET "/TROTTO/MAIN_SHOP" = 'S1' WHERE "COMPANY_ID" = 'A1'`); err != nil {
 			t.Fatal(err)

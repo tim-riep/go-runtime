@@ -1,3 +1,6 @@
+-- drop-table OTTO_CONNECTIONS (all rows are lost) [DESTRUCTIVE]
+DROP TABLE "OTTO_CONNECTIONS";
+
 -- drop-table OTTO_SHOPS (all rows are lost) [DESTRUCTIVE]
 DROP TABLE "OTTO_SHOPS";
 

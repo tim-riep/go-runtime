@@ -53,8 +53,12 @@ func TestTenants(t *testing.T) {
 		if err != nil || dry.Executed {
 			t.Fatalf("dry run: %v", err)
 		}
-		if got := dry.Changes[0]; got.Table != "BANK_ACCOUNTS" || got.Detail != "1 rows" {
-			t.Fatalf("dependent table must be emptied first: %+v", dry.Changes)
+		var order []string
+		for _, c := range dry.Changes {
+			order = append(order, c.Table+" "+c.Detail)
+		}
+		if got := strings.Join(order, ", "); got != "PAYMENTS 0 rows, OTTO_CONNECTIONS 0 rows, BANK_ACCOUNTS 1 rows, COMPANIES 1 rows, /RT/TENANTS tenant ACME" {
+			t.Fatalf("dependent tables must be emptied first: %s", got)
 		}
 		if !strings.Contains(dry.SQL(), "DELETE FROM") {
 			t.Fatalf("plan:\n%s", dry.SQL())
@@ -90,7 +94,7 @@ func TestTenantReferencedBySharedTable(t *testing.T) {
 		notes := &model.Package{
 			Manifest: model.Manifest{ID: "TRNOTES", Version: "1.0.0"},
 			Tables: []model.Table{{
-				Name: "TENANT_NOTES", TenantSpecific: false,
+				Name: "TENANT_NOTES", TenantSpecific: false, DataClass: model.Application,
 				Fields: []model.Field{
 					{Name: "NOTE_ID", LocalName: "NOTE_ID", Domain: model.TenantDomain, Origin: model.OriginTable},
 					{Name: "OWNER", LocalName: "OWNER", Domain: model.TenantDomain, Origin: model.OriginTable},
@@ -124,7 +128,7 @@ func TestCheck(t *testing.T) {
 		for _, stmt := range []string{
 			`ALTER TABLE "COUNTRIES" ADD COLUMN "EXTRA" TEXT`,
 			`CREATE TABLE "STRAY" ("X" INTEGER)`,
-			`DROP TABLE "BANK_ACCOUNTS"`,
+			`DROP TABLE "PAYMENTS"`,
 		} {
 			if _, err := k.DB().ExecContext(ctx, stmt); err != nil {
 				t.Fatal(err)
@@ -135,8 +139,8 @@ func TestCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := []string{
-			"BANK_ACCOUNTS: table is missing in the database",
 			"COUNTRIES.EXTRA: column is not in the repository",
+			"PAYMENTS: table is missing in the database",
 			"STRAY: table is not in the repository",
 		}
 		if len(d) != len(want) {

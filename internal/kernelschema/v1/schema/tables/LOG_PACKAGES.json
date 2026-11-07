@@ -2,6 +2,7 @@
   "name": "LOG_PACKAGES",
   "description": "Packages affected by a logged operation",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "LOG_ID",

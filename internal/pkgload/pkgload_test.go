@@ -31,7 +31,7 @@ func validFS() fstest.MapFS {
 		"schema/domains/STATUS.json": file(`{"name":"STATUS","type":"CHAR","length":3,
 			"values":[{"value":"NEW"},{"value":"OLD","description":"Old"}]}`),
 		"schema/domains/QTY.json": file(`{"name":"QTY","type":"INT4","values":[{"value":1},{"value":2}]}`),
-		"schema/tables/ORDERS.json": file(`{"name":"ORDERS","tenantSpecific":true,
+		"schema/tables/ORDERS.json": file(`{"name":"ORDERS","tenantSpecific":true,"dataClass":"application",
 			"fields":[{"name":"ORDER_ID","domain":"ID","notNull":true},{"name":"STATUS","domain":"STATUS","default":"NEW"}],
 			"primaryKey":["ORDER_ID"],
 			"foreignKeys":[{"name":"STATUS","table":"OTHER","fields":[{"field":"STATUS","references":"CODE"}]}]}`),
@@ -88,9 +88,19 @@ func TestLoadErrors(t *testing.T) {
 		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","fields":[{"name":"A","domain":"ID"}],"primaryKey":["A"]}`)
 		expectError(t, fsys, rterr.CodeSchema, "schema/tables/ORDERS.json", "")
 	})
+	t.Run("missing data class", func(t *testing.T) {
+		fsys := validFS()
+		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","tenantSpecific":true,"fields":[{"name":"A","domain":"ID"}],"primaryKey":["A"]}`)
+		expectError(t, fsys, rterr.CodeSchema, "schema/tables/ORDERS.json", "")
+	})
+	t.Run("unknown data class", func(t *testing.T) {
+		fsys := validFS()
+		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","tenantSpecific":true,"dataClass":"master","fields":[{"name":"A","domain":"ID"}],"primaryKey":["A"]}`)
+		expectError(t, fsys, rterr.CodeSchema, "schema/tables/ORDERS.json", "/dataClass")
+	})
 	t.Run("invalid field name", func(t *testing.T) {
 		fsys := validFS()
-		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","tenantSpecific":false,"fields":[{"name":"a","domain":"ID"}],"primaryKey":["A"]}`)
+		fsys["schema/tables/ORDERS.json"] = file(`{"name":"ORDERS","tenantSpecific":false,"dataClass":"application","fields":[{"name":"a","domain":"ID"}],"primaryKey":["A"]}`)
 		expectError(t, fsys, rterr.CodeSchema, "schema/tables/ORDERS.json", "/fields/0/name")
 	})
 	t.Run("missing manifest", func(t *testing.T) {
@@ -148,7 +158,7 @@ func TestLoadKernel(t *testing.T) {
 	fsys := fstest.MapFS{
 		"manifest.json":             file(`{"id":"RT","version":"1.0.0"}`),
 		"schema/domains/NAME.json":  file(`{"name":"NAME","type":"CHAR","length":10}`),
-		"schema/tables/THINGS.json": file(`{"name":"THINGS","tenantSpecific":false,"fields":[{"name":"NAME","domain":"NAME"}],"primaryKey":["NAME"],"foreignKeys":[{"name":"SELF","table":"THINGS","fields":[{"field":"NAME","references":"NAME"}]}]}`),
+		"schema/tables/THINGS.json": file(`{"name":"THINGS","tenantSpecific":false,"dataClass":"system","fields":[{"name":"NAME","domain":"NAME"}],"primaryKey":["NAME"],"foreignKeys":[{"name":"SELF","table":"THINGS","fields":[{"field":"NAME","references":"NAME"}]}]}`),
 	}
 	pkg, err := LoadWith(fsys, "kernel", Options{Kernel: true})
 	if err != nil {

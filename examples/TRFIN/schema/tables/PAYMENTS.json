@@ -1,0 +1,56 @@
+{
+  "name": "PAYMENTS",
+  "description": "Payments booked on bank accounts",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "domain": "COMPANY_ID"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "ACCOUNT_NO"
+    },
+    {
+      "name": "PAYMENT_NO",
+      "domain": "COUNTER"
+    },
+    {
+      "name": "AMOUNT",
+      "domain": "AMOUNT",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "domain": "CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "BOOKED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID",
+    "ACCOUNT_NO",
+    "PAYMENT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ACCOUNT",
+      "table": "BANK_ACCOUNTS",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        },
+        {
+          "field": "ACCOUNT_NO",
+          "references": "ACCOUNT_NO"
+        }
+      ]
+    }
+  ]
+}

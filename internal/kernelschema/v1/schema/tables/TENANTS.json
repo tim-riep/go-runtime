@@ -2,6 +2,7 @@
   "name": "TENANTS",
   "description": "Tenants",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "TENANT",

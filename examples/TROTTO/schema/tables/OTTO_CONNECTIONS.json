@@ -1,0 +1,38 @@
+{
+  "name": "OTTO_CONNECTIONS",
+  "description": "Connection of a company to the OTTO marketplace",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "domain": "COMPANY_ID"
+    },
+    {
+      "name": "ENDPOINT",
+      "domain": "TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "FLAG",
+      "notNull": true,
+      "default": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

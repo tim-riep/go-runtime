@@ -2,6 +2,7 @@
   "name": "OTTO_SHOPS",
   "description": "Shops of a tenant on the OTTO marketplace",
   "tenantSpecific": true,
+  "dataClass": "configuration",
   "fields": [
     {
       "name": "SHOP_ID",
@@ -23,8 +24,8 @@
   ],
   "foreignKeys": [
     {
-      "name": "COMPANY",
-      "table": "COMPANIES",
+      "name": "CONNECTION",
+      "table": "OTTO_CONNECTIONS",
       "fields": [
         {
           "field": "COMPANY_ID",

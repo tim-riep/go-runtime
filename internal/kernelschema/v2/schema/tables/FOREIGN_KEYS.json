@@ -1,0 +1,67 @@
+{
+  "name": "FOREIGN_KEYS",
+  "description": "Foreign keys of all tables",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TABLE_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "FK_NAME",
+      "domain": "OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "PACKAGE_ID",
+      "description": "Owner package, empty for the kernel"
+    },
+    {
+      "name": "ORIGIN",
+      "domain": "ORIGIN",
+      "notNull": true
+    },
+    {
+      "name": "TARGET_TABLE",
+      "domain": "OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TABLE_NAME",
+    "FK_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "TABLE",
+      "table": "TABLES",
+      "fields": [
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "TARGET",
+      "table": "TABLES",
+      "fields": [
+        {
+          "field": "TARGET_TABLE",
+          "references": "TABLE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "PACKAGE",
+      "table": "PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

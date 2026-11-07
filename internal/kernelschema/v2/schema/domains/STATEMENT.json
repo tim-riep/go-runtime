@@ -1,0 +1,5 @@
+{
+  "name": "STATEMENT",
+  "description": "SQL statement",
+  "type": "STRING"
+}

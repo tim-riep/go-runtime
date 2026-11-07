@@ -1,0 +1,6 @@
+{
+  "name": "LANGUAGE",
+  "description": "ISO 639-1 language code in lower case",
+  "type": "CHAR",
+  "length": 2
+}

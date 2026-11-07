@@ -95,6 +95,23 @@ func TestPhysicalTenantLayout(t *testing.T) {
 	}
 }
 
+func TestSystemClassReserved(t *testing.T) {
+	e := load(t)
+	e.fin.Tables[2].DataClass = model.System
+	expect(t, e.schema(t), rterr.CodeDataClass, "reserved for the kernel")
+}
+
+func TestKernelTablesAreSystem(t *testing.T) {
+	s := testutil.KernelSchema(t)
+	for _, tb := range s.Tables {
+		if tb.DataClass != model.System {
+			t.Errorf("%s has class %q", tb.Name, tb.DataClass)
+		}
+	}
+	s.Tables[model.TenantTable].DataClass = model.Configuration
+	expect(t, s, rterr.CodeDataClass, "kernel tables")
+}
+
 func TestUnknownDomain(t *testing.T) {
 	e := load(t)
 	e.fin.Tables[0].Fields[0].Domain = "NOPE"

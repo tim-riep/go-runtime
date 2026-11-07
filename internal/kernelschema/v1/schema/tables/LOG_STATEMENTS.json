@@ -2,6 +2,7 @@
   "name": "LOG_STATEMENTS",
   "description": "Statements executed by a logged operation",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "LOG_ID",

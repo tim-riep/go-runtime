@@ -133,6 +133,14 @@ func (v *validator) table(t *model.Table) {
 	if model.IsKernelName(t.Name) != (t.Owner == model.Kernel) {
 		v.fail(rterr.CodeName, t.Src.At("/name"), obj, "only kernel tables may use the kernel namespace")
 	}
+	switch {
+	case !t.DataClass.Valid():
+		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "data class %q is not one of configuration, application, runtimeConfiguration", t.DataClass)
+	case t.Owner == model.Kernel && t.DataClass != model.System:
+		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "kernel tables have the data class system")
+	case t.Owner != model.Kernel && t.DataClass == model.System:
+		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "the data class system is reserved for the kernel")
+	}
 	if len(t.Fields) == 0 {
 		v.fail(rterr.CodeUnknownField, t.Src.At("/fields"), obj, "table has no fields")
 	}

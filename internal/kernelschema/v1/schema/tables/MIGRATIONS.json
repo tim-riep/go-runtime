@@ -2,6 +2,7 @@
   "name": "MIGRATIONS",
   "description": "Applied versions of the kernel tables",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "VERSION",

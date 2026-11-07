@@ -2,6 +2,7 @@
   "name": "DOMAINS",
   "description": "Domains",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "DOMAIN_NAME",

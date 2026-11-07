@@ -1,0 +1,44 @@
+{
+  "name": "LOG",
+  "description": "Log of installations, upgrades, removals, migrations and tenant deletions",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "LOG_ID",
+      "domain": "LOG_ID"
+    },
+    {
+      "name": "OPERATION",
+      "domain": "OPERATION",
+      "notNull": true
+    },
+    {
+      "name": "TARGET",
+      "domain": "OBJECT_NAME",
+      "description": "Affected object other than packages, e.g. the deleted tenant"
+    },
+    {
+      "name": "STARTED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "FINISHED_AT",
+      "domain": "TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "STATUS",
+      "domain": "LOG_STATUS",
+      "notNull": true
+    },
+    {
+      "name": "MESSAGE",
+      "domain": "DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "LOG_ID"
+  ]
+}

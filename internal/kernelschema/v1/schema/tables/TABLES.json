@@ -2,6 +2,7 @@
   "name": "TABLES",
   "description": "Tables",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",

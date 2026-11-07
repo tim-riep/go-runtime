@@ -1,0 +1,20 @@
+{
+  "name": "ORIGIN",
+  "description": "Origin of a field or foreign key",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "TABLE",
+      "description": "Declared by the table"
+    },
+    {
+      "value": "EXTENSION",
+      "description": "Added by an extension"
+    },
+    {
+      "value": "TENANT",
+      "description": "Added by the kernel for tenant-specific tables"
+    }
+  ]
+}

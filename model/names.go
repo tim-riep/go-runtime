@@ -44,6 +44,10 @@ const (
 	// TenantTable.
 	TenantForeignKey = KernelNamespace + "TENANT"
 
+	// DefaultLanguage is the language that always exists and in which every
+	// translatable object must have texts.
+	DefaultLanguage = "en"
+
 	// MaxIdentifierBytes is the maximum length of any generated SQL
 	// identifier. It matches the PostgreSQL limit and applies to all dialects
 	// so packages stay portable.

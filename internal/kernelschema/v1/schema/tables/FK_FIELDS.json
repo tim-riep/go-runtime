@@ -2,6 +2,7 @@
   "name": "FK_FIELDS",
   "description": "Field mapping of foreign keys",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",

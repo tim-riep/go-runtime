@@ -27,6 +27,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"strings"
@@ -61,6 +62,7 @@ type Kernel struct {
 	db     *sql.DB
 	d      dialect.Dialect
 	repo   *repo.Repo
+	target int // kernel schema version this kernel works with
 	ownsDB bool
 	now    func() time.Time
 }
@@ -100,7 +102,7 @@ func Open(ctx context.Context, dsn string) (*Kernel, error) {
 // must come from the dialect's Open so every connection enforces foreign
 // keys.
 func New(db *sql.DB, d dialect.Dialect) *Kernel {
-	return &Kernel{db: db, d: d, repo: repo.New(d), now: time.Now}
+	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now}
 }
 
 // Close closes the connection pool if Open created it.
@@ -141,13 +143,14 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		if err != nil {
 			return err
 		}
-		latest := kernelschema.Latest()
+		latest := k.target
 		if version > latest {
 			return rterr.ErrNewerSchema
 		}
+		old := k.repo.At(max(version, 1))
 		cur := model.NewSchema()
 		if version > 0 {
-			if cur, err = k.repo.Load(ctx, q); err != nil {
+			if cur, err = old.Load(ctx, q); err != nil {
 				return err
 			}
 		}
@@ -155,18 +158,33 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		if err != nil {
 			return err
 		}
-		if err := validate.Schema(want); err != nil {
+		if err := k.validate(ctx, q, want); err != nil {
 			return err
 		}
 		p, err := planner.Build(k.d, plan.Migrate, cur, want, nil)
 		if err != nil {
 			return err
 		}
+		if version > 0 && !old.HasDataClasses() {
+			for _, name := range cur.TableNames() {
+				if t := cur.Tables[name]; t.Owner != model.Kernel {
+					p.Changes = append(p.Changes, plan.Change{Kind: plan.AlterDataClass, Table: name, Notice: true,
+						Detail: "none -> " + string(t.DataClass) + ", provisional until package " + string(t.Owner) + " is applied again"})
+				}
+			}
+		}
 		result = p
 		if !execute || version == latest {
 			return nil
 		}
 		started := k.timestamp()
+		// The repository is rewritten from want after the statements ran.
+		// Emptying it first lets new NOT NULL columns be added to its tables.
+		if version > 0 {
+			if err := old.Clear(ctx, q); err != nil {
+				return err
+			}
+		}
 		if err := k.execute(ctx, q, p); err != nil {
 			return err
 		}
@@ -174,6 +192,11 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 			return err
 		}
 		for v := version + 1; v <= latest; v++ {
+			if hook := migrationHooks[v]; hook != nil {
+				if err := hook(ctx, k, q); err != nil {
+					return fmt.Errorf("migration to kernel version %d: %w", v, err)
+				}
+			}
 			if err := k.repo.AddMigration(ctx, q, v, started); err != nil {
 				return err
 			}
@@ -195,6 +218,23 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 	return result, nil
 }
 
+// migrationHooks run after the statements of a kernel migration, keyed by
+// the version they migrate to.
+var migrationHooks = map[int]func(ctx context.Context, k *Kernel, q dialect.Querier) error{
+	2: func(ctx context.Context, k *Kernel, q dialect.Querier) error {
+		langs, err := k.repo.LanguageCodes(ctx, q)
+		if err != nil || langs[model.DefaultLanguage] {
+			return err
+		}
+		return k.repo.InsertLanguage(ctx, q, repo.Language{Code: model.DefaultLanguage, Name: "English"})
+	},
+}
+
+// validate checks the target schema of an operation.
+func (k *Kernel) validate(ctx context.Context, q dialect.Querier, s *model.Schema) error {
+	return validate.Schema(s)
+}
+
 // requireInit fails unless the kernel tables have the version of this
 // kernel.
 func (k *Kernel) requireInit(ctx context.Context, q dialect.Querier) error {
@@ -202,9 +242,9 @@ func (k *Kernel) requireInit(ctx context.Context, q dialect.Querier) error {
 	switch {
 	case err != nil:
 		return err
-	case v > kernelschema.Latest():
+	case v > k.target:
 		return rterr.ErrNewerSchema
-	case v < kernelschema.Latest():
+	case v < k.target:
 		return rterr.ErrNotInitialized
 	}
 	return nil
@@ -247,7 +287,7 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err != nil {
 			return err
 		}
-		if err := validate.Schema(want); err != nil {
+		if err := k.validate(ctx, q, want); err != nil {
 			return err
 		}
 		p, err := planner.Build(k.d, o.op, cur, want, o.packages(cur))

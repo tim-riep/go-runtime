@@ -2,6 +2,7 @@
   "name": "FIELDS",
   "description": "Physical columns of all tables",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "TABLE_NAME",

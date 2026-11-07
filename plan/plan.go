@@ -55,7 +55,31 @@ const (
 	AddForeignKey   ChangeKind = "add-foreign-key"
 	DropForeignKey  ChangeKind = "drop-foreign-key"
 	DeleteRows      ChangeKind = "delete-rows"
+
+	// Changes of the repository only; they produce no statements.
+	AlterDataClass        ChangeKind = "alter-data-class"
+	CreateDataElement     ChangeKind = "create-data-element"
+	DropDataElement       ChangeKind = "drop-data-element"
+	AlterDataElement      ChangeKind = "alter-data-element"
+	AlterFieldReference   ChangeKind = "alter-field-reference" // field switches between domain and data element
+	CreateSetting         ChangeKind = "create-setting"
+	DropSetting           ChangeKind = "drop-setting"
+	AlterSetting          ChangeKind = "alter-setting"
+	AddSettingExtension   ChangeKind = "add-setting-extension"
+	DropSettingExtension  ChangeKind = "drop-setting-extension"
+	AlterSettingExtension ChangeKind = "alter-setting-extension"
 )
+
+// Physical reports whether the change alters the database layout. Other
+// changes only update the repository.
+func (k ChangeKind) Physical() bool {
+	switch k {
+	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
+		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension:
+		return false
+	}
+	return true
+}
 
 // Change is one logical change.
 type Change struct {
@@ -65,6 +89,9 @@ type Change struct {
 	Name        string     `json:"name,omitempty"` // domain or foreign key name
 	Detail      string     `json:"detail,omitempty"`
 	Destructive bool       `json:"destructive"`
+	// Notice marks changes that are not destructive but need attention,
+	// such as a changed data class.
+	Notice bool `json:"notice,omitempty"`
 }
 
 // Object names the affected object.
@@ -119,6 +146,17 @@ func (p *Plan) Destructive() []Change {
 	var out []Change
 	for _, c := range p.Changes {
 		if c.Destructive {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// Notices returns the changes marked as notice.
+func (p *Plan) Notices() []Change {
+	var out []Change
+	for _, c := range p.Changes {
+		if c.Notice {
 			out = append(out, c)
 		}
 	}
@@ -184,19 +222,34 @@ func (p *Plan) Text() string {
 	}
 	for _, c := range p.Changes {
 		mark := "  "
-		if c.Destructive {
+		switch {
+		case c.Destructive:
 			mark = "! "
+		case c.Notice:
+			mark = "~ "
 		}
 		sb.WriteString("  ")
 		sb.WriteString(mark)
 		sb.WriteString(c.String())
-		if c.Destructive {
+		switch {
+		case c.Destructive:
 			sb.WriteString("  [DESTRUCTIVE]")
+		case c.Kind == AlterDataClass:
+			sb.WriteString("  [DATA CLASS]")
 		}
 		sb.WriteByte('\n')
 	}
 	if n := len(p.Destructive()); n > 0 {
 		fmt.Fprintf(&sb, "\n%d destructive change(s).\n", n)
+	}
+	classes := 0
+	for _, c := range p.Changes {
+		if c.Kind == AlterDataClass {
+			classes++
+		}
+	}
+	if classes > 0 {
+		fmt.Fprintf(&sb, "\n%d data class change(s).\n", classes)
 	}
 	sb.WriteString("\nStatements:\n")
 	if len(p.Steps) == 0 {

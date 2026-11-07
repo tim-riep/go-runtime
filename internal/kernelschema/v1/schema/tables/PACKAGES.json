@@ -2,6 +2,7 @@
   "name": "PACKAGES",
   "description": "Installed packages",
   "tenantSpecific": false,
+  "dataClass": "system",
   "fields": [
     {
       "name": "PACKAGE_ID",

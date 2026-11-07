@@ -1,0 +1,20 @@
+{
+  "name": "LANGUAGES",
+  "description": "Languages of translatable texts",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "LANGUAGE",
+      "domain": "LANGUAGE"
+    },
+    {
+      "name": "NAME",
+      "domain": "LANGUAGE_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LANGUAGE"
+  ]
+}

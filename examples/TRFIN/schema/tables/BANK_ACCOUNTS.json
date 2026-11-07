@@ -2,6 +2,7 @@
   "name": "BANK_ACCOUNTS",
   "description": "Bank accounts of a company",
   "tenantSpecific": true,
+  "dataClass": "configuration",
   "fields": [
     {
       "name": "COMPANY_ID",

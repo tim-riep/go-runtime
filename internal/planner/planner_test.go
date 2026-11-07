@@ -132,6 +132,7 @@ func TestDestructiveClassification(t *testing.T) {
 		}
 	}
 	safe := map[string]func(s *model.Schema){
+		"data class":  func(s *model.Schema) { s.Tables["COUNTRIES"].DataClass = model.Application },
 		"longer char": func(s *model.Schema) { s.Domains["NAME"].Length = 100 },
 		"new fixed value": func(s *model.Schema) {
 			s.Domains["COMPANY_STATUS"].Values = append(s.Domains["COMPANY_STATUS"].Values, model.FixedValue{Value: "MERGED"})

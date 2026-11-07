@@ -51,6 +51,7 @@ const (
 	CodeExtension       Code = "extension"        // violates an extension rule
 	CodeReservedObject  Code = "reserved-object"  // kernel object may not be used this way
 	CodeManifestMissing Code = "manifest-missing" // package has no manifest
+	CodeDataClass       Code = "data-class"       // invalid or reserved data class
 )
 
 // Location points at the place in a package that caused an error.
