@@ -43,6 +43,8 @@ type Schema struct {
 	Sources map[PackageID][]Source
 	// Transformations are the XSLT stylesheets of the packages by name.
 	Transformations map[string]*Transformation
+	// HTTPServices are the service nodes of the packages by full path.
+	HTTPServices map[string]*HTTPService
 }
 
 // NewSchema returns an empty schema.
@@ -61,6 +63,7 @@ func NewSchema() *Schema {
 		StructureExtensions: map[StructureExtensionKey]*StructureExtension{},
 		Sources:             map[PackageID][]Source{},
 		Transformations:     map[string]*Transformation{},
+		HTTPServices:        map[string]*HTTPService{},
 	}
 }
 
@@ -69,6 +72,9 @@ func (s *Schema) Clone() *Schema {
 	c := NewSchema()
 	for k, v := range s.Transformations {
 		c.Transformations[k] = cloneTransformation(v)
+	}
+	for k, v := range s.HTTPServices {
+		c.HTTPServices[k] = cloneHTTPService(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -262,6 +268,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Transformations[t.Name] = t
 	}
+	for i := range p.HTTPServices {
+		h := cloneHTTPService(&p.HTTPServices[i])
+		h.Owner = id
+		if _, ok := s.HTTPServices[h.FullPath()]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "service node", Name: h.FullPath(), Owner: string(id), Package: string(id), Location: h.Src})
+			continue
+		}
+		s.HTTPServices[h.FullPath()] = h
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -326,6 +341,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, h := range s.HTTPServices {
+		if _, ok := h.Texts[code]; ok {
+			delete(h.Texts, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -355,6 +376,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, t := range s.Transformations {
 		if t.Owner == id {
 			delete(s.Transformations, name)
+		}
+	}
+	for path, h := range s.HTTPServices {
+		if h.Owner == id {
+			delete(s.HTTPServices, path)
 		}
 	}
 	for name, d := range s.Domains {

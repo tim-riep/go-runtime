@@ -535,6 +535,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadTransformations(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadHTTPServices(ctx, q, s); err != nil {
+		return nil, err
+	}
 	if err := r.loadSources(ctx, q, s); err != nil {
 		return nil, err
 	}
@@ -657,7 +660,7 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
+var deleteOrder = []string{THTTPHandlerParams, THTTPHandlers, THTTPServiceTexts, THTTPServices, TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageCaps, TPackageDeps, TPackages}
 
@@ -778,6 +781,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		return err
 	}
 	if err := r.writeTransformations(ctx, q, s); err != nil {
+		return err
+	}
+	if err := r.writeHTTPServices(ctx, q, s); err != nil {
 		return err
 	}
 	if err := r.writeSources(ctx, q, s); err != nil {

@@ -82,6 +82,10 @@ Commands:
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
   natives list             list the methods executed by kernel that this kernel implements
+  http list [package]      list the service nodes with their activation
+  http show <path>         show a service node with its resolved settings and handlers
+  http activate <path>     activate a service node and the never activated nodes below it
+  http deactivate <path>   deactivate a service node; its subtree is not reachable
   effects list             list effects of native methods that failed after their commit
   effects retry <id>       run a failed effect again
   run <package> <class> <method> [json] --tenant <id> [--lang code]
@@ -296,6 +300,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 			return exitUsage
 		}
 		return c.natives(ctx, k)
+	case "http":
+		return c.http(ctx, k, args)
 	case "effects":
 		switch {
 		case len(args) == 1 && args[0] == "list":
@@ -1186,4 +1192,89 @@ func (c *cli) effects(ctx context.Context, k *kernel.Kernel) int {
 	}
 	w.Flush()
 	return exitOK
+}
+
+// http manages the service nodes.
+func (c *cli) http(ctx context.Context, k *kernel.Kernel, args []string) int {
+	usage := func() int {
+		fmt.Fprintln(c.stderr, "usage: rt http list [package] | show <path> | activate <path> | deactivate <path>")
+		return exitUsage
+	}
+	if len(args) == 0 {
+		return usage()
+	}
+	switch {
+	case args[0] == "list" && len(args) <= 2:
+		pkg := model.PackageID("")
+		if len(args) == 2 {
+			pkg = model.PackageID(args[1])
+		}
+		list, err := k.HTTPServices(ctx, pkg)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "PATH\tSTATE\tREACHABLE\tHANDLERS")
+		for _, n := range list {
+			depth := strings.Count(n.Path, "/") - 1
+			var handlers []string
+			for _, h := range n.Handlers {
+				handlers = append(handlers, h.Class)
+			}
+			reach := "no"
+			if n.Reachable {
+				reach = "yes"
+			}
+			fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", strings.Repeat("  ", depth), n.Path, n.State, reach, strings.Join(handlers, ", "))
+		}
+		w.Flush()
+		return exitOK
+	case args[0] == "show" && len(args) == 2:
+		n, err := k.HTTPService(ctx, args[1])
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(n)
+			return exitOK
+		}
+		s := n.Settings
+		fmt.Fprintf(c.stdout, "Service node %s (package %s, %s)\n", n.Path, n.Package, n.File.Or("no file, a parent of other nodes"))
+		if l, ok := n.Texts["en"]; ok {
+			fmt.Fprintf(c.stdout, "  label: %s\n", l.Label)
+		}
+		reach := "not reachable"
+		if n.Reachable {
+			reach = "reachable"
+		}
+		fmt.Fprintf(c.stdout, "  state: %s, %s\n", n.State, reach)
+		fmt.Fprintf(c.stdout, "  authentication: %s, anonymous: %v, anonymous tenant: %s\n", strings.Join(s.Authentication, ", "), s.Anonymous, s.AnonymousTenant.Or("-"))
+		fmt.Fprintf(c.stdout, "  tenant from: %s, language from: %s\n", strings.Join(s.TenantSources, ", "), strings.Join(s.LanguageSources, ", "))
+		fmt.Fprintf(c.stdout, "  max body: %d bytes, max response: %d bytes, timeout: %s, budget: %d\n", s.MaxBodySize, s.MaxResponseSize, s.Timeout, s.Budget)
+		for i, h := range n.Handlers {
+			fmt.Fprintf(c.stdout, "  handler %d: %s", i+1, h.Class)
+			for _, p := range h.Parameters {
+				fmt.Fprintf(c.stdout, " %s=%q", p.Name, p.Value)
+			}
+			fmt.Fprintln(c.stdout)
+		}
+		return exitOK
+	case (args[0] == "activate" || args[0] == "deactivate") && len(args) == 2:
+		var err error
+		if args[0] == "activate" {
+			err = k.ActivateHTTPService(ctx, args[1])
+		} else {
+			err = k.DeactivateHTTPService(ctx, args[1])
+		}
+		if err != nil {
+			return c.fail(err)
+		}
+		fmt.Fprintf(c.stdout, "Service node %s %sd.\n", args[1], args[0])
+		return exitOK
+	}
+	return usage()
 }

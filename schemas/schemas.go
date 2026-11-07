@@ -40,4 +40,5 @@ const (
 	ArrayType          = "array-type.schema.json"
 	StructureExtension = "structure-extension.schema.json"
 	Transformation     = "transformation.schema.json"
+	HTTPService        = "http-service.schema.json"
 )

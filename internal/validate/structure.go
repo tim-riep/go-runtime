@@ -16,6 +16,7 @@ package validate
 
 import (
 	"fmt"
+	"github.com/tim-riep/go-runtime/internal/httpsvc"
 	"maps"
 	"slices"
 	"strings"
@@ -326,5 +327,18 @@ func (v *validator) transformations() {
 			continue
 		}
 		v.labels("transformation "+name, t.Src, t.Texts, slices.Sorted(maps.Keys(t.Texts)))
+	}
+}
+
+// httpServices checks the texts of service nodes and that an anonymous
+// tenant belongs to a node with anonymous access.
+func (v *validator) httpServices() {
+	tree := httpsvc.Build(v.s)
+	for _, path := range slices.Sorted(maps.Keys(v.s.HTTPServices)) {
+		h := v.s.HTTPServices[path]
+		v.labels("service node "+path, h.Src, h.Texts, slices.Sorted(maps.Keys(h.Texts)))
+		if n := tree.Node(path); n != nil && h.Settings.AnonymousTenant.Valid() && !n.Settings.Anonymous {
+			v.fail(rterr.CodeName, h.Src.At("/settings/anonymousTenant"), "service node "+path, "anonymousTenant needs anonymous access at the node")
+		}
 	}
 }

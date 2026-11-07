@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/http-service.schema.json",
+  "title": "HTTP service node",
+  "description": "A service node of a package (schema/http-services/*.json): a path below the package, reachable under /<package ID in lower case>/<path>, with handler classes and settings that its subtree inherits.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "path",
+    "texts"
+  ],
+  "properties": {
+    "path": {
+      "description": "Path below the package: segments of letters, digits, '.', '_', '~' and '-', starting with a letter or digit, separated by '/'. The empty path is the root node of the package.",
+      "type": "string",
+      "maxLength": 255
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "handlers": {
+      "description": "Handler classes in the order they run; a node without handlers only groups.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class"
+        ],
+        "properties": {
+          "class": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "A public class implementing /TRBASE/HTTP_HANDLER with a constructor without parameters."
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "value"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "description": "Settings of the node; each one that is left out is inherited from the parent node.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authentication": {
+          "description": "Allowed authentication methods.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["basic", "token"]
+          }
+        },
+        "anonymous": {
+          "description": "Allows requests without authentication.",
+          "type": "boolean"
+        },
+        "anonymousTenant": {
+          "description": "The tenant of anonymous requests; without it they have no tenant.",
+          "type": ["string", "null"]
+        },
+        "tenantSources": {
+          "description": "Where the tenant of a request comes from, in this order: the header X-Tenant, the query parameter tenant, the default tenant of the user.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["header", "query", "user"]
+          }
+        },
+        "languageSources": {
+          "description": "Where the language of a request comes from, in this order: the query parameter lang, the header Accept-Language, the default language of the user; English otherwise.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["query", "header", "user"]
+          }
+        },
+        "maxBodySize": {
+          "description": "Largest request body in bytes.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxResponseSize": {
+          "description": "Largest response body that code writes, in bytes.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeoutSeconds": {
+          "description": "Time limit of a request.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "budget": {
+          "description": "Instruction budget of a request.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

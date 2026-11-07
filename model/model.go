@@ -398,6 +398,7 @@ type Package struct {
 	StructureExtensions []StructureExtension
 	Sources             []Source
 	Transformations     []Transformation
+	HTTPServices        []HTTPService
 	Origin              string // where the package was loaded from
 }
 

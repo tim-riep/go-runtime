@@ -408,6 +408,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.saveCode(ctx, q, code, started); err != nil {
 			return err
 		}
+		if err := k.syncHTTPStates(ctx, q, want); err != nil {
+			return err
+		}
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {

@@ -141,6 +141,7 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"interface":                  {"src/X.interface", "public interface /TRZ/X\nend\n"},
 		"include":                    {"src/X.include", "statements include /TRX/X\n  log info \"{/TRZ/Y.A}\"\nend\n"},
 		"transformation description": {"transformations/X.json", `{"name":"/TRZ/X"}`},
+		"http service":               {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
 		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
 			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}

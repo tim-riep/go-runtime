@@ -52,6 +52,7 @@ func Schema(s *model.Schema, opts Options) error {
 	}
 	v.structures()
 	v.transformations()
+	v.httpServices()
 	for _, name := range s.TableNames() {
 		v.table(s.Tables[name])
 	}
@@ -363,8 +364,10 @@ func (v *validator) table(t *model.Table) {
 	switch {
 	case !t.DataClass.Valid():
 		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "data class %q is not one of configuration, application, runtimeConfiguration", t.DataClass)
-	case t.Owner == model.Kernel && t.DataClass != model.System:
-		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "kernel tables have the data class system")
+	case t.Owner == model.Kernel && t.DataClass != model.System && t.DataClass != model.RuntimeConfiguration:
+		// Kernel tables hold system data or, like the activation of
+		// service nodes, configuration maintained during operation.
+		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "kernel tables have the data class system or runtimeConfiguration")
 	case t.Owner != model.Kernel && t.DataClass == model.System:
 		v.fail(rterr.CodeDataClass, t.Src.At("/dataClass"), obj, "the data class system is reserved for the kernel")
 	}

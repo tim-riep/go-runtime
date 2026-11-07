@@ -1,0 +1,51 @@
+{
+  "name": "/RT/TRANSFORMATION_TEXTS",
+  "description": "Labels of transformations per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TRANSFORMATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "TRANSFORMATION_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "TRANSFORMATION",
+      "table": "/RT/TRANSFORMATIONS",
+      "fields": [
+        {
+          "field": "TRANSFORMATION_NAME",
+          "references": "TRANSFORMATION_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}
