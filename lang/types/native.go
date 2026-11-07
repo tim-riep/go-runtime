@@ -105,3 +105,70 @@ func signatureText(static bool, f *Func) string {
 	}
 	return b.String()
 }
+
+// nativeClass checks the rules of native classes and that instance
+// methods executed by kernel belong to one.
+func (c *checker) nativeClass(k *Class) {
+	if !k.Native {
+		for _, m := range k.Methods {
+			if m.Native && !m.Static && c.cfg.KernelPackage {
+				c.at(m.Site, func() {
+					c.errorf(m.Site.Pos, CodeNative, "%s is an instance method executed by kernel; only native classes have them", m)
+				})
+			}
+		}
+		return
+	}
+	pos := k.Class.Pos
+	switch {
+	case !c.cfg.KernelPackage:
+		c.errorf(pos, CodeNative, "native classes are only allowed in kernel packages")
+		return
+	case c.cfg.Natives == nil || !c.cfg.Natives.NativeClass(c.cfg.Package, k.Name):
+		c.errorf(pos, CodeNative, "no native class %s is registered in the kernel", k.Name)
+	}
+	if k.Open {
+		c.errorf(pos, CodeNative, "the native class %s cannot be open", k.Name)
+	}
+	if k.Class.Extends != nil || len(k.Class.Implements) > 0 {
+		c.errorf(pos, CodeNative, "the native class %s cannot extend a class or implement interfaces", k.Name)
+	}
+	for _, a := range k.Attributes {
+		c.at(a.Site, func() {
+			c.errorf(a.Site.Pos, CodeNative, "the native class %s has no attributes; its state is the value of the kernel", k.Name)
+		})
+	}
+	for _, ct := range k.Constants {
+		c.at(ct.Site, func() { c.errorf(ct.Site.Pos, CodeNative, "the native class %s has no constants", k.Name) })
+	}
+	if k.Ctor != nil {
+		c.at(k.Ctor.Site, func() {
+			c.errorf(k.Ctor.Site.Pos, CodeNative, "the native class %s has no constructor; its objects come from its static methods executed by kernel", k.Name)
+		})
+	}
+}
+
+// noNativeObject rejects objects of native classes where they would
+// outlive an execution.
+func (c *checker) noNativeObject(t Type, pos syntax.Pos, what string) {
+	if k := nativeObject(t); k != nil {
+		c.errorf(pos, CodeNative, "%s cannot hold objects of the native class %s; they live only during one execution", what, k.Name)
+	}
+}
+
+func nativeObject(t Type) *Class {
+	switch x := NonOpt(t).(type) {
+	case *Class:
+		if x.Native {
+			return x
+		}
+	case *Array:
+		return nativeObject(x.Elem)
+	case *Map:
+		if k := nativeObject(x.Key); k != nil {
+			return k
+		}
+		return nativeObject(x.Elem)
+	}
+	return nil
+}

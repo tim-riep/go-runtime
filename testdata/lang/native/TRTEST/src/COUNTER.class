@@ -1,0 +1,34 @@
+# A native class: its objects hold a counter of the kernel.
+public class /TRTEST/COUNTER executed by kernel
+
+  public static method START(first: INT8) returns /TRTEST/COUNTER executed by kernel
+
+  public method NEXT() returns INT8 executed by kernel
+
+  public method CLOSE() executed by kernel
+
+  # A method with a body that uses the native methods.
+  public static method SUM(first: INT8, steps: INT4) returns INT8
+    var counter = START(first)
+    var total: INT8 = 0
+    for i from 1 to steps
+      total = total + counter.NEXT()
+    end
+    return total
+  end
+
+  public static method AFTER_CLOSE() returns INT8
+    var counter = START(1)
+    counter.CLOSE()
+    return counter.NEXT()
+  end
+
+  public static method LEAVE_OPEN(n: INT4) returns INT4
+    var counters = new array of /TRTEST/COUNTER
+    for i from 1 to n
+      counters.APPEND(START(i))
+    end
+    return n
+  end
+
+end

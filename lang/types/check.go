@@ -64,6 +64,8 @@ type Natives interface {
 	// NativeMethod returns whether a native method is registered, whether
 	// it is static and its signature after the method name.
 	NativeMethod(pkg model.PackageID, class, method string) (static bool, signature string, ok bool)
+	// NativeClass reports whether a native class is registered.
+	NativeClass(pkg model.PackageID, class string) bool
 }
 
 // Program is a checked program.
@@ -323,7 +325,7 @@ func (c *checker) declareClasses() {
 		switch {
 		case f.Class != nil:
 			d := f.Class
-			k = &Class{Name: d.Name.Name, Kind: KindClass, Visibility: d.Visibility, Open: d.Open, Test: d.Test, File: u.File, Class: d}
+			k = &Class{Name: d.Name.Name, Kind: KindClass, Visibility: d.Visibility, Open: d.Open, Test: d.Test, Native: d.Native, File: u.File, Class: d}
 			c.checkGlobalName(d.Name)
 			if d.Visibility == syntax.Private {
 				c.errorf(d.Pos, CodeVisibility, "a class is public or package, not private")
@@ -640,12 +642,16 @@ func (c *checker) classMembers(k *Class, ms []syntax.Member, stack []string) {
 			c.checkMemberName(m.Name, "constant")
 			ct := &Constant{Name: m.Name.Name, Type: c.resolveType(m.Type), Visibility: m.Visibility, Owner: k, Value: m.Value, Site: c.site(m.Pos)}
 			c.noSession(ct.Type, m.Type.Pos, "a constant")
+			c.noNativeObject(ct.Type, m.Type.Pos, "a constant")
 			c.addMember(k, ct.Name, ct, m.Name.Pos)
 			k.Constants = append(k.Constants, ct)
 		case *syntax.AttributeDecl:
 			c.checkMemberName(m.Name, "attribute")
 			a := &Attribute{Name: m.Name.Name, Type: c.resolveType(m.Type), Static: m.Static, Visibility: m.Visibility, Owner: k, Init: m.Value, Site: c.site(m.Pos)}
 			c.noSession(a.Type, m.Type.Pos, "an attribute")
+			if m.Static {
+				c.noNativeObject(a.Type, m.Type.Pos, "a static attribute")
+			}
 			c.addMember(k, a.Name, a, m.Name.Pos)
 			k.Attributes = append(k.Attributes, a)
 		case *syntax.MethodDecl:
@@ -755,6 +761,7 @@ func (c *checker) classRules(k *Class) {
 	if k.IsInterface() {
 		return
 	}
+	c.nativeClass(k)
 	for name, m := range k.members {
 		if k.Base == nil {
 			continue

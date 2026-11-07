@@ -20,6 +20,7 @@ package nativetest
 import (
 	"errors"
 	"strings"
+	"sync/atomic"
 
 	"github.com/tim-riep/go-runtime/lang/dec"
 	"github.com/tim-riep/go-runtime/model"
@@ -37,7 +38,31 @@ func register(method, sig string, fn any) {
 	Registry.Register(native.Method{Package: "TRTEST", Class: class, Method: method, Static: true, Signature: sig, Func: fn})
 }
 
+// Counter is the Go value of /TRTEST/COUNTER.
+type Counter struct{ n int64 }
+
+// Close records that a counter was freed.
+func (c *Counter) Close() error {
+	Closed.Add(1)
+	return nil
+}
+
+// Closed counts the counters that were freed.
+var Closed atomic.Int64
+
 func init() {
+	Registry.RegisterClass("TRTEST", "/TRTEST/COUNTER", (*Counter)(nil))
+	const counter = "/TRTEST/COUNTER"
+	Registry.Register(native.Method{Package: "TRTEST", Class: counter, Method: "START", Static: true, Signature: "(first: INT8) returns /TRTEST/COUNTER",
+		Func: func(c *native.Context, first int64) (*Counter, error) { return &Counter{n: first}, nil }})
+	Registry.Register(native.Method{Package: "TRTEST", Class: counter, Method: "NEXT", Signature: "() returns INT8",
+		Func: func(c *native.Context, self *Counter) (int64, error) {
+			self.n++
+			return self.n - 1, nil
+		}})
+	Registry.Register(native.Method{Package: "TRTEST", Class: counter, Method: "CLOSE", Signature: "()", Releases: true,
+		Func: func(c *native.Context, self *Counter) error { return nil }})
+
 	register("ECHO", "(item: /TRTEST/ITEM) returns /TRTEST/ITEM", func(c *native.Context, item Item) (Item, error) {
 		item.Name = strings.ToUpper(item.Name)
 		if note, ok := item.Note.Get(); ok {

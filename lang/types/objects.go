@@ -73,6 +73,7 @@ type Class struct {
 	Open       bool
 	Test       bool
 	Kernel     bool // defined by the kernel
+	Native     bool // objects carry a value of the kernel; executed by kernel
 	Package    model.PackageID
 	External   bool // a class of another package, known by its declaration
 	Base       *Class

@@ -169,6 +169,9 @@ func (p *printer) class(c *ClassDecl) {
 		p.w(" implements ")
 		p.names(c.Implements)
 	}
+	if c.Native {
+		p.w(" executed by kernel")
+	}
 	p.endLine(c.Doc.Trailing)
 	p.members(c.Members, 2)
 	p.declEnd(c.End, len(c.Members) > 0)

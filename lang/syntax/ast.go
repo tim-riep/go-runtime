@@ -110,8 +110,11 @@ type ClassDecl struct {
 	Name       Name
 	Extends    *Name
 	Implements []Name
-	Members    []Member
-	End        EndLine
+	// Native classes, marked with executed by kernel, have objects that
+	// carry a value of the kernel.
+	Native  bool
+	Members []Member
+	End     EndLine
 }
 
 // EndLine is the closing "end" of a block with the comments before it and

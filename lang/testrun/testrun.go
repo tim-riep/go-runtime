@@ -81,7 +81,8 @@ func RunEach(ctx context.Context, image *vm.Image, pkg string, opts vm.Options, 
 				if err != nil {
 					return err
 				}
-				return mach.CallMethod(ctx, c.Name, m.Name)
+				err = mach.CallMethod(ctx, c.Name, m.Name)
+				return errors.Join(err, mach.ReleaseHandles())
 			})
 			r.Duration = time.Since(start)
 			r.Log = rec.Entries

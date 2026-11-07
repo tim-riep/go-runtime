@@ -118,6 +118,7 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(m *vm.Ma
 	if err != nil {
 		return err
 	}
+	defer func() { err = errors.Join(err, m.ReleaseHandles()) }()
 	return fn(m)
 }
 

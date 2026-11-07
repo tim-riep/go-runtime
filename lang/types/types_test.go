@@ -15,6 +15,7 @@
 package types_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -352,8 +353,6 @@ func TestNativeMethods(t *testing.T) {
 
 public static method NOW() returns TIMESTAMP executed by kernel
 
-public method RATE(order: /TRT/ORDER_INFO) returns /TRT/RATING executed by kernel
-
 public static method TWICE() returns array of TIMESTAMP
   return [NOW(), NOW()]
 end`)
@@ -365,6 +364,69 @@ end`)
 	expectNative("public static method HASH(data: BYTES, salt: STRING?) returns BYTES executed by kernel", "declared static (BYTES, STRING?) returns BYTES;")
 	expectNative("public method NOW() returns TIMESTAMP executed by kernel", "declared () returns TIMESTAMP; registered static")
 	expectNative("public open method RATE(o: /TRT/ORDER_INFO) returns /TRT/RATING executed by kernel", "cannot be open")
+	expectNative("public method RATE(o: /TRT/ORDER_INFO) returns /TRT/RATING executed by kernel", "only native classes have them")
+}
+
+func TestNativeClasses(t *testing.T) {
+	reg := native.NewRegistry()
+	reg.RegisterClass("TRT", "/TRT/H", (*struct{})(nil))
+	reg.Register(native.Method{Package: "TRT", Class: "/TRT/H", Method: "MAKE", Static: true, Signature: "() returns /TRT/H",
+		Func: func(*native.Context) (*struct{}, error) { return nil, nil }})
+	reg.Register(native.Method{Package: "TRT", Class: "/TRT/H", Method: "SIZE", Signature: "() returns INT8",
+		Func: func(*native.Context, *struct{}) (int64, error) { return 0, nil }})
+	handle := func(members string) string {
+		return "public class /TRT/H executed by kernel\n\npublic static method MAKE() returns /TRT/H executed by kernel\n\npublic method SIZE() returns INT8 executed by kernel\n" + members + "\nend\n"
+	}
+	run := func(h, user string, contains string) {
+		t.Helper()
+		src := map[string]string{"src/H.class": h}
+		if user != "" {
+			src["src/C.class"] = "public class /TRT/C\n" + user + "\nend\n"
+		}
+		r := compileWith(t, src, reg)
+		if contains == "" {
+			if !r.OK() {
+				t.Errorf("%s: %v", user, r.Diagnostics)
+			}
+			return
+		}
+		for _, d := range r.Errors() {
+			if strings.Contains(d.String(), contains) {
+				return
+			}
+		}
+		t.Errorf("expected an error containing %q, got %v", contains, r.Diagnostics)
+	}
+	run(handle(""), `public static method USE() returns INT8
+var h = /TRT/H.MAKE()
+var all = [h, /TRT/H.MAKE()]
+return h.SIZE() + all[2].SIZE()
+end
+
+private attribute KEPT: /TRT/H?`, "")
+	run(handle("public attribute N: INT4"), "", "has no attributes")
+	run(handle("public constructor()\nend"), "", "has no constructor")
+	run(strings.Replace(handle(""), "public class", "public open class", 1), "", "cannot be open")
+	run(strings.Replace(handle(""), "/TRT/H executed", "/TRT/H extends /TRT/FAILED executed", 1), "", "cannot extend")
+	unregistered := native.NewRegistry()
+	if r := compileWith(t, map[string]string{"src/H.class": "public class /TRT/H executed by kernel\nend\n"}, unregistered); r.OK() ||
+		!strings.Contains(fmt.Sprint(r.Diagnostics), "no native class /TRT/H is registered") {
+		t.Errorf("unregistered native class: %v", r.Diagnostics)
+	}
+	run(handle(""), "private static attribute CACHE: /TRT/H?", "a static attribute cannot hold objects of the native class /TRT/H")
+	run(handle(""), "private static attribute ALL: array of /TRT/H", "cannot hold objects of the native class")
+	run(handle(""), "public static method M()\nvar h = new /TRT/H()\nend", "its objects come only from its static methods")
+	if r := compileWith(t, map[string]string{"src/H.class": handle("")}, nil); r.OK() {
+		t.Error("a native class outside kernel packages compiled")
+	}
+	r := compile(t, map[string]string{"src/H.class": handle("")})
+	found := false
+	for _, d := range r.Errors() {
+		found = found || strings.Contains(d.String(), "native classes are only allowed in kernel packages")
+	}
+	if !found {
+		t.Errorf("native class in a normal package: %v", r.Diagnostics)
+	}
 }
 
 func TestDatabase(t *testing.T) {

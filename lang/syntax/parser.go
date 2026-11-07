@@ -280,10 +280,29 @@ func (p *parser) classDecl(pos Pos, vis Visibility, test, open bool) *ClassDecl 
 		p.next()
 		c.Implements = p.globals()
 	}
+	if p.isWord("executed") {
+		p.executedByKernel()
+		c.Native = true
+	}
 	c.Doc.Trailing = p.lineEnd()
 	c.Members = p.members()
 	c.End = p.endLine()
 	return c
+}
+
+// executedByKernel reads "executed by kernel".
+func (p *parser) executedByKernel() {
+	p.next()
+	if !p.isWord("by") {
+		p.errorf(p.tok.Pos, `expected "by kernel"`)
+		return
+	}
+	p.next()
+	if !p.isWord("kernel") {
+		p.errorf(p.tok.Pos, `expected "kernel"`)
+		return
+	}
+	p.next()
 }
 
 func (p *parser) interfaceDecl(pos Pos, vis Visibility) *InterfaceDecl {
@@ -431,17 +450,7 @@ func (p *parser) member() Member {
 			m.Sig = p.methodSig()
 		}
 		if p.isWord("executed") {
-			p.next()
-			if !p.isWord("by") {
-				p.errorf(p.tok.Pos, `expected "by kernel"`)
-			} else {
-				p.next()
-				if !p.isWord("kernel") {
-					p.errorf(p.tok.Pos, `expected "kernel"`)
-				} else {
-					p.next()
-				}
-			}
+			p.executedByKernel()
 			m.Native = true
 			m.Doc.Trailing = p.lineEnd()
 			return m

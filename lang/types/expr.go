@@ -933,6 +933,8 @@ func (c *checker) newExpr(f *fnCtx, sc *scope, x *syntax.NewExpr, e env) Type {
 			c.errorf(n.Pos, CodeTest, "test classes are only used by test classes")
 		case t.IsRuntimeError() && !f.class.Kernel:
 			c.errorf(n.Pos, CodeException, "only the kernel creates runtime errors")
+		case t.Native:
+			c.errorf(n.Pos, CodeNative, "%s is a native class; its objects come only from its static methods executed by kernel", t.Name)
 		}
 		sig := &Func{Result: TypVoid}
 		if t.Ctor != nil {

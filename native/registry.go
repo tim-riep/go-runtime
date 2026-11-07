@@ -47,6 +47,10 @@ type Method struct {
 	// Timeout limits one call in addition to the time limit of the
 	// execution; 0 means none.
 	Timeout time.Duration
+	// Releases marks an instance method that frees the object: after it
+	// returns, the VM closes the Go value if it is an io.Closer, and the
+	// object cannot be used any more.
+	Releases bool
 	// Func is the implementation:
 	//
 	//	func(c *Context, p1 T1, ...) (R, error)        static method
@@ -209,4 +213,10 @@ func (r *Registry) NativeMethod(pkg model.PackageID, class, method string) (bool
 		return false, "", false
 	}
 	return m.Static, m.Signature, true
+}
+
+// NativeClass implements the lookup of the compiler.
+func (r *Registry) NativeClass(pkg model.PackageID, class string) bool {
+	c, ok := r.LookupClass(class)
+	return ok && c.Package == pkg
 }

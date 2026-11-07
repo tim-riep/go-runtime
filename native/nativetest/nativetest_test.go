@@ -55,11 +55,16 @@ func load(t *testing.T, reg *native.Registry) (*build.Result, *vm.Machine) {
 
 func call(t *testing.T, m *vm.Machine, method string, args ...string) (string, error) {
 	t.Helper()
+	return callClass(t, m, "/TRTEST/NATIVES", method, args...)
+}
+
+func callClass(t *testing.T, m *vm.Machine, class, method string, args ...string) (string, error) {
+	t.Helper()
 	raw := make([]json.RawMessage, len(args))
 	for i, a := range args {
 		raw[i] = json.RawMessage(a)
 	}
-	out, err := m.CallJSON(context.Background(), "/TRTEST/NATIVES", method, raw)
+	out, err := m.CallJSON(context.Background(), class, method, raw)
 	return string(out), err
 }
 
@@ -123,6 +128,7 @@ func TestErrors(t *testing.T) {
 // fit the declaration.
 func TestLinkChecksGoTypes(t *testing.T) {
 	reg := native.NewRegistry()
+	reg.RegisterClass("TRTEST", "/TRTEST/COUNTER", (*Counter)(nil))
 	for _, m := range Registry.Methods() {
 		mm := *m
 		if mm.Method == "DOUBLE" {
@@ -154,5 +160,36 @@ func TestGeneratedTypes(t *testing.T) {
 	}
 	if string(have) != string(src) {
 		t.Error("types_gen.go is outdated; run go generate ./native/nativetest")
+	}
+}
+
+// TestNativeClass uses objects of a native class: code holds them and
+// calls their methods; closing them frees them, and the objects left
+// open are freed at the end.
+func TestNativeClass(t *testing.T) {
+	_, m := load(t, Registry)
+	if got, err := callClass(t, m, "/TRTEST/COUNTER", "SUM", "10", "3"); err != nil || got != "33" {
+		t.Errorf("SUM = %s, %v", got, err)
+	}
+	_, err := callClass(t, m, "/TRTEST/COUNTER", "AFTER_CLOSE")
+	var e *vm.Exception
+	if !errors.As(err, &e) || e.Class != "/RT/NATIVE_ERROR" || !strings.Contains(e.Text, "was released") {
+		t.Errorf("AFTER_CLOSE: %v", err)
+	}
+	before := Closed.Load()
+	if _, err := callClass(t, m, "/TRTEST/COUNTER", "LEAVE_OPEN", "3"); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.ReleaseHandles(); err != nil {
+		t.Fatal(err)
+	}
+	// SUM left one counter open and LEAVE_OPEN three; AFTER_CLOSE closed
+	// its own already.
+	if n := Closed.Load() - before; n != 4 {
+		t.Errorf("released %d counters", n)
+	}
+	// Objects of native classes cannot leave or enter through JSON.
+	if _, err := callClass(t, m, "/TRTEST/COUNTER", "START", "1"); err == nil {
+		t.Error("rt run returned an object of a native class")
 	}
 }

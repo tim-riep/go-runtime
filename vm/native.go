@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"reflect"
 	"runtime/debug"
@@ -438,11 +439,42 @@ func (m *Machine) callNative(fn *LinkedFunc, me Value, args []Value) (result Val
 	if m.ctx.Err() != nil {
 		return Value{}, nil, &LimitError{Limit: "time limit", Msg: "the execution exceeded its time limit in " + fn.Def.Name}
 	}
+	if nf.m.Releases && fn.Def.Instance {
+		if err := m.release(me.record()); err != nil {
+			return Value{}, m.nativeError(fn, "releasing the object: %v", err), nil
+		}
+	}
 	if nf.out == nil {
 		return Value{}, nil, nil
 	}
 	v, th := m.fromNative(p, fn.Def.Result, out[0])
 	return v, th, nil
+}
+
+// release frees the Go value of an object of a native class.
+func (m *Machine) release(r *Record) error {
+	if r.released {
+		return nil
+	}
+	r.released = true
+	if c, ok := r.Native.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
+
+// ReleaseHandles frees the objects of native classes that the machine
+// created and that are still open. The kernel calls it at the end of
+// every execution.
+func (m *Machine) ReleaseHandles() error {
+	var errs []error
+	for _, r := range m.handles {
+		if err := m.release(r); err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", r.Class.Name, err))
+		}
+	}
+	m.handles = nil
+	return errors.Join(errs...)
 }
 
 // nativeFailure turns the error of a native method into an exception.
