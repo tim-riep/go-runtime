@@ -25,6 +25,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/validate"
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -58,7 +59,7 @@ func initialized(t *testing.T, k *kernel.Kernel) {
 }
 
 func examples(t *testing.T) []*model.Package {
-	return []*model.Package{testutil.Example(t, "TROTTO"), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN")}
+	return []*model.Package{testutil.Example(t, "TROTTO"), testutil.Example(t, "TRFIN")}
 }
 
 // legacyExample loads an example package without structures, array types
@@ -91,6 +92,35 @@ func legacyExamples(t *testing.T) []*model.Package {
 }
 
 // sameSchema fails if the repository differs from want.
+// kernelPackages is the number of kernel packages, which the kernel
+// installs on initialization.
+const kernelPackages = 1
+
+// baseSchema is the kernel schema with the kernel packages as the kernel
+// installs them, with the texts of the languages set up in k.
+func baseSchema(t *testing.T, k *kernel.Kernel) *model.Schema {
+	t.Helper()
+	langs, err := k.Languages().List(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := map[string]bool{}
+	for _, l := range langs {
+		set[l.Code] = true
+	}
+	base := testutil.Example(t, "TRBASE").WithLanguages(func(l string) bool { return set[l] })
+	return testutil.AddPackages(t, testutil.KernelSchema(t), base)
+}
+
+// upgrade upgrades a package; TRBASE, a kernel package, goes through the
+// test hook for kernel packages.
+func upgrade(k *kernel.Kernel, ctx context.Context, pkg *model.Package, opts kernel.Options) (*plan.Plan, error) {
+	if pkg.Manifest.ID == "TRBASE" {
+		return k.UpgradeKernelPackage(ctx, pkg, opts)
+	}
+	return k.Upgrade(ctx, pkg, opts)
+}
+
 func sameSchema(t *testing.T, k *kernel.Kernel, want *model.Schema) {
 	t.Helper()
 	got, err := k.Schema(context.Background())
@@ -126,7 +156,7 @@ func TestInit(t *testing.T) {
 		if err != nil || again.Executed || len(again.Changes) != 0 {
 			t.Fatalf("second init must be a no-op: %v %+v", err, again)
 		}
-		sameSchema(t, k, testutil.KernelSchema(t))
+		sameSchema(t, k, baseSchema(t, k))
 	})
 }
 
@@ -138,23 +168,23 @@ func TestInstall(t *testing.T) {
 		if err != nil || dry.Executed {
 			t.Fatalf("dry run: %v", err)
 		}
-		if ids, _ := k.Schema(ctx); len(ids.Packages) != 0 {
+		if ids, _ := k.Schema(ctx); len(ids.Packages) != kernelPackages {
 			t.Fatal("dry run installed packages")
 		}
 		p, err := k.Install(ctx, examples(t), kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := p.Summary(); got != "install TRBASE 1.0.0, TRFIN 1.0.0, TROTTO 1.0.0 ("+k.Dialect().Name()+")" {
+		if got := p.Summary(); got != "install TRFIN 1.0.0, TROTTO 1.0.0 ("+k.Dialect().Name()+")" {
 			t.Errorf("summary: %s", got)
 		}
 		if p.LogID == "" {
 			t.Error("no log entry")
 		}
-		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")))
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")))
 
 		var already *rterr.AlreadyInstalled
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRBASE")}, kernel.Options{}); !errors.As(err, &already) {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); !errors.As(err, &already) {
 			t.Fatalf("expected AlreadyInstalled, got %v", err)
 		}
 	})
@@ -163,9 +193,9 @@ func TestInstall(t *testing.T) {
 func TestInstallMissingDependency(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		initialized(t, k)
-		_, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{})
+		_, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TROTTO")}, kernel.Options{})
 		var dep *rterr.DependencyError
-		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyMissing || dep.Required != "TRBASE" {
+		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyMissing || dep.Required != "TRFIN" {
 			t.Fatalf("got %v", err)
 		}
 	})
@@ -189,7 +219,7 @@ func TestFailedInstallRollsBack(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(s.Packages) != 0 {
+		if len(s.Packages) != kernelPackages {
 			t.Fatal("packages recorded after failed install")
 		}
 		for _, name := range []string{"/TRFIN/BANK_ACCOUNTS", "/TRFIN/COMPANIES"} {

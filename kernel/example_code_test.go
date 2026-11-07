@@ -34,7 +34,7 @@ func TestExampleCode(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {

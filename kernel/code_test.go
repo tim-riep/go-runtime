@@ -51,6 +51,8 @@ func TestCompileOnInstall(t *testing.T) {
 		ctx := context.Background()
 		initialized(t, k)
 		pkg := testutil.LoadDir(t, orderPackage(t, nil))
+		// The kernel packages are installed already.
+		code0, gen0, sources0 := count(t, k, "/RT/BYTECODE"), generation(t, k), count(t, k, "/RT/SOURCES")
 
 		// A dry run compiles and changes nothing.
 		dry, err := k.Install(ctx, nil, kernel.Options{DryRun: true})
@@ -58,14 +60,14 @@ func TestCompileOnInstall(t *testing.T) {
 			t.Fatal("no packages accepted")
 		}
 		dry, err = k.Plan(ctx, pkg)
-		if err != nil || change(dry, plan.CompilePackage, "TRORDER") == nil || count(t, k, "/RT/BYTECODE") != 0 {
+		if err != nil || change(dry, plan.CompilePackage, "TRORDER") == nil || count(t, k, "/RT/BYTECODE") != code0 {
 			t.Fatalf("dry run: %v %v", err, dry)
 		}
 
 		if _, err := k.Install(ctx, []*model.Package{pkg}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if count(t, k, "/RT/BYTECODE") != 1 || count(t, k, "/RT/SOURCES") != len(pkg.Sources) || generation(t, k) != 1 {
+		if count(t, k, "/RT/BYTECODE") != code0+1 || count(t, k, "/RT/SOURCES")-sources0 != len(pkg.Sources) || generation(t, k) != gen0+1 {
 			t.Fatalf("stored: %d bytecode, %d sources, generation %d", count(t, k, "/RT/BYTECODE"), count(t, k, "/RT/SOURCES"), generation(t, k))
 		}
 		s, _ := k.Schema(ctx)
@@ -75,7 +77,7 @@ func TestCompileOnInstall(t *testing.T) {
 		consistent(t, k)
 
 		// Applying the package again compiles it again.
-		if _, err := k.Upgrade(ctx, pkg, kernel.Options{}); err != nil || generation(t, k) != 2 {
+		if _, err := k.Upgrade(ctx, pkg, kernel.Options{}); err != nil || generation(t, k) != gen0+2 {
 			t.Fatalf("upgrade: %v, generation %d", err, generation(t, k))
 		}
 
@@ -91,7 +93,7 @@ func TestCompileOnInstall(t *testing.T) {
 			t.Fatalf("dry run with error: %v", err)
 		}
 		s, _ = k.Schema(ctx)
-		if s.Packages["TRORDER"].Manifest.Version != "1.0.0" || generation(t, k) != 2 {
+		if s.Packages["TRORDER"].Manifest.Version != "1.0.0" || generation(t, k) != gen0+2 {
 			t.Fatal("the failed upgrade changed the repository")
 		}
 
@@ -105,7 +107,7 @@ func TestCompileOnInstall(t *testing.T) {
 		if _, err := k.Uninstall(ctx, "TRORDER", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		if count(t, k, "/RT/BYTECODE") != 0 || count(t, k, "/RT/SOURCES") != 0 {
+		if count(t, k, "/RT/BYTECODE") != code0 || count(t, k, "/RT/SOURCES") != sources0 {
 			t.Fatal("code left after uninstall")
 		}
 		consistent(t, k)
@@ -126,6 +128,7 @@ func TestRecompileOnFormatChange(t *testing.T) {
 			if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, orderPackage(t, nil))}, kernel.Options{}); err != nil {
 				t.Fatal(err)
 			}
+			gen0 := generation(t, k)
 			if _, err := k.DB().Exec(`UPDATE "/RT/BYTECODE" SET "FORMAT_VERSION" = 1, "CODE" = `+k.Dialect().Placeholder(1), []byte("old")); err != nil {
 				t.Fatal(err)
 			}
@@ -136,7 +139,7 @@ func TestRecompileOnFormatChange(t *testing.T) {
 			}
 			defer k.Close()
 			var v int
-			if err := k.DB().QueryRow(`SELECT "FORMAT_VERSION" FROM "/RT/BYTECODE"`).Scan(&v); err != nil || v != bytecode.FormatVersion || generation(t, k) != 2 {
+			if err := k.DB().QueryRow(`SELECT "FORMAT_VERSION" FROM "/RT/BYTECODE"`).Scan(&v); err != nil || v != bytecode.FormatVersion || generation(t, k) != gen0+1 {
 				t.Fatalf("format %d, generation %d, %v", v, generation(t, k), err)
 			}
 			if _, err := k.Image(ctx); err != nil {

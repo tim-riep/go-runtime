@@ -37,7 +37,11 @@ import (
 
 func exampleFile(t *testing.T, pkg, rel string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(testutil.ModuleRoot(t), "examples", pkg, "assets", filepath.FromSlash(rel)))
+	dir := filepath.Join(testutil.ModuleRoot(t), "examples", pkg)
+	if _, err := os.Stat(dir); err != nil {
+		dir = filepath.Join(testutil.ModuleRoot(t), "kernelpkg", pkg)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "assets", filepath.FromSlash(rel)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,10 +147,11 @@ func TestAssetStreamingAndFS(t *testing.T) {
 		testutil.WriteFile(t, dir, "assets/data/page.html", []byte(`{{define "page"}}neutral {{.}}{{end}}`))
 		testutil.WriteFile(t, dir, "assets/data/page_de.html", []byte(`{{define "page"}}deutsch {{.}}{{end}}`))
 		testutil.WriteFile(t, dir, "assets/data/sub/inner.txt", []byte("inner"))
+		chunks := count(t, k, "/RT/ASSET_CHUNKS")
 		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if n := count(t, k, "/RT/ASSET_CHUNKS"); n != 3+3 {
+		if n := count(t, k, "/RT/ASSET_CHUNKS") - chunks; n != 3+3 {
 			t.Fatalf("chunks: %d", n)
 		}
 

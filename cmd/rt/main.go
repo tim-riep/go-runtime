@@ -81,6 +81,7 @@ Commands:
   language add <code>      set up a language (ISO 639-1, --name)
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
+  natives list             list the methods executed by kernel that this kernel implements
   run <package> <class> <method> [json] --tenant <id> [--lang code]
                            call a public static method of an installed package for a
                            tenant; arguments and result are JSON
@@ -288,6 +289,11 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.printPlan(p)
 	case "list":
 		return c.list(ctx, k)
+	case "natives":
+		if !c.need(args, 1, "natives list") || args[0] != "list" {
+			return exitUsage
+		}
+		return c.natives(ctx, k)
 	case "show":
 		if !c.need(args, 1, "show <object>") {
 			return exitUsage
@@ -1087,6 +1093,7 @@ func (c *cli) fail(err error) int {
 		anf  *rterr.AssetNotFound
 		nsv  *rterr.NamespaceViolation
 		ce   *rterr.CompileError
+		kp   *rterr.KernelPackage
 	)
 	switch {
 	case errors.As(err, &dc):
@@ -1100,7 +1107,7 @@ func (c *cli) fail(err error) int {
 	case errors.As(err, &ml):
 		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
 		return exitInvalid
-	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv), errors.As(err, &ce):
+	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv), errors.As(err, &ce), errors.As(err, &kp):
 		return exitInvalid
 	case errors.As(err, &ee):
 		return exitExec
@@ -1108,4 +1115,37 @@ func (c *cli) fail(err error) int {
 		fmt.Fprintln(c.stderr, "hint: run rt init")
 	}
 	return exitError
+}
+
+// natives lists the native methods of the kernel.
+func (c *cli) natives(ctx context.Context, k *kernel.Kernel) int {
+	list, err := k.Natives(ctx)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(list)
+		return exitOK
+	}
+	yes := func(b bool) string {
+		if b {
+			return "yes"
+		}
+		return "no"
+	}
+	w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "METHOD\tDECLARATION\tCAPABILITIES\tTIMEOUT\tDECLARED\tUSED")
+	for _, n := range list {
+		timeout := "-"
+		if n.Timeout > 0 {
+			timeout = n.Timeout.String()
+		}
+		caps := strings.Join(n.Capabilities, ", ")
+		if caps == "" {
+			caps = "-"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", n.Key, n.Declaration, caps, timeout, yes(n.Declared), yes(n.Used))
+	}
+	w.Flush()
+	return exitOK
 }

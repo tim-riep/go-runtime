@@ -42,6 +42,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/planner"
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/kernelpkg"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/plan"
@@ -74,12 +75,21 @@ type Kernel struct {
 	code atomic.Pointer[generation]
 	// natives are the native methods of the kernel binary.
 	natives *native.Registry
+	// kernelPkgs are the kernel packages in installation order.
+	kernelPkgs []*model.Package
 }
 
 // Open connects to a database. The connection string selects the dialect:
 // "sqlite:<path>" for SQLite and "postgres://..." or "postgresql://..." for
 // PostgreSQL. Call Init before other operations on a new database.
 func Open(ctx context.Context, dsn string) (*Kernel, error) {
+	return OpenConfig(ctx, dsn, Config{})
+}
+
+// OpenConfig is Open with a configuration. When the database is
+// initialized, it installs or upgrades the kernel packages; when that
+// fails, the kernel does not open.
+func OpenConfig(ctx context.Context, dsn string, cfg Config) (*Kernel, error) {
 	var d dialect.Dialect
 	target := dsn
 	switch {
@@ -102,21 +112,63 @@ func Open(ctx context.Context, dsn string) (*Kernel, error) {
 		db.Close()
 		return nil, err
 	}
-	k := New(db, d)
-	k.ownsDB = true
-	if err := k.recompileOutdated(ctx); err != nil {
+	k, err := NewConfig(db, d, cfg)
+	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("compiling the code of an older bytecode format: %w", err)
+		return nil, err
+	}
+	k.ownsDB = true
+	if err := k.Start(ctx); err != nil {
+		db.Close()
+		return nil, err
 	}
 	return k, nil
+}
+
+// Start brings an initialized database to this kernel: it compiles code
+// of an older bytecode format again and installs or upgrades the kernel
+// packages. Open calls it; kernels created with New call it themselves.
+func (k *Kernel) Start(ctx context.Context) error {
+	if err := k.recompileOutdated(ctx); err != nil {
+		return fmt.Errorf("compiling the code of an older bytecode format: %w", err)
+	}
+	v, err := k.repo.KernelVersion(ctx, k.db)
+	if err != nil || v != k.target {
+		return err
+	}
+	if _, err := k.syncKernelPackages(ctx, false); err != nil {
+		return err
+	}
+	k.warnUndeclaredNatives(ctx)
+	return nil
 }
 
 // New creates a kernel on an existing connection pool. For SQLite the pool
 // must come from the dialect's Open so every connection enforces foreign
 // keys.
 func New(db *sql.DB, d dialect.Dialect) *Kernel {
-	return &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
-		natives: native.Default}
+	k, err := NewConfig(db, d, Config{})
+	if err != nil {
+		panic(err) // the embedded kernel packages are checked by the tests
+	}
+	return k
+}
+
+// NewConfig is New with a configuration.
+func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
+	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
+		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages}
+	if k.natives == nil {
+		k.natives = native.Default
+	}
+	if k.kernelPkgs == nil {
+		pkgs, err := kernelpkg.Packages()
+		if err != nil {
+			return nil, err
+		}
+		k.kernelPkgs = pkgs
+	}
+	return k, nil
 }
 
 // Close closes the connection pool if Open created it.
@@ -234,6 +286,15 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		return nil, err
 	}
 	result.Executed = executed
+	// The kernel packages follow in their own operation.
+	pkgs, err := k.syncKernelPackages(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	if pkgs != nil {
+		merge(result, pkgs)
+		result.Executed = true
+	}
 	return result, nil
 }
 

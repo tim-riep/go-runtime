@@ -38,10 +38,12 @@ func TestAssetLifecycle(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
+		// The kernel package TRBASE brings assets of its own.
+		blobs0, chunks0 := count(t, k, tBlobs), count(t, k, tChunks)
 		fin := testutil.CopyExample(t, "TRFIN")
 		big := bytes.Repeat([]byte("0123456789abcdef"), 40000) // 640000 bytes, three chunks
 		testutil.WriteFile(t, fin, "assets/web/data/report.bin", big)
-		pkgs := []*model.Package{testutil.Example(t, "TRBASE"), testutil.LoadDir(t, fin), testutil.Example(t, "TROTTO")}
+		pkgs := []*model.Package{testutil.LoadDir(t, fin), testutil.Example(t, "TROTTO")}
 		if _, err := k.Install(ctx, pkgs, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
@@ -136,15 +138,15 @@ func TestAssetLifecycle(t *testing.T) {
 		consistent(t, k)
 
 		// Uninstalling removes every repository and content.
-		for _, id := range []model.PackageID{"TROTTO", "TRFIN", "TRBASE"} {
+		for _, id := range []model.PackageID{"TROTTO", "TRFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if repos, _ := k.AssetRepositories(ctx, ""); len(repos) != 0 {
+		if repos, _ := k.AssetRepositories(ctx, ""); len(repos) != 1 || repos[0].Package != "TRBASE" {
 			t.Fatalf("repositories left: %+v", repos)
 		}
-		if b, c := count(t, k, tBlobs), count(t, k, tChunks); b != 0 || c != 0 {
+		if b, c := count(t, k, tBlobs), count(t, k, tChunks); b != blobs0 || c != chunks0 {
 			t.Fatalf("contents left: %d blobs, %d chunks", b, c)
 		}
 		consistent(t, k)

@@ -130,13 +130,13 @@ func TestEndToEnd(t *testing.T) {
 		consistent(t, k)
 
 		// Remove all packages again, dependents first.
-		for _, id := range []model.PackageID{"TROTTO", "TRFIN", "TRBASE"} {
+		for _, id := range []model.PackageID{"TROTTO", "TRFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatalf("uninstall %s: %v", id, err)
 			}
 			consistent(t, k)
 		}
-		sameSchema(t, k, testutil.KernelSchema(t))
+		sameSchema(t, k, baseSchema(t, k))
 		for _, table := range []string{"/TRFIN/COUNTRIES", "/TRFIN/COMPANIES", "/TRFIN/BANK_ACCOUNTS", "/TROTTO/OTTO_SHOPS"} {
 			if ok, _ := k.Dialect().TableExists(ctx, k.DB(), table); ok {
 				t.Errorf("table %s still exists", table)
@@ -151,7 +151,7 @@ func TestEndToEnd(t *testing.T) {
 		for i := len(log) - 1; i >= 0; i-- {
 			ops = append(ops, log[i].Operation)
 		}
-		if got := strings.Join(ops, " "); got != "MIGRATE INSTALL UPGRADE TENANT_DELETE UNINSTALL UNINSTALL UNINSTALL" {
+		if got := strings.Join(ops, " "); got != "MIGRATE INSTALL UPGRADE INSTALL UPGRADE TENANT_DELETE UNINSTALL UNINSTALL" {
 			t.Errorf("log: %s", got)
 		}
 	})

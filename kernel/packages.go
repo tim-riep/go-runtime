@@ -52,6 +52,37 @@ func rejectDestructive(subject string, opts Options) func(p *plan.Plan) error {
 // Install installs packages that are not installed yet. Packages given
 // together are installed in dependency order in one transaction.
 func (k *Kernel) Install(ctx context.Context, pkgs []*model.Package, opts Options) (*plan.Plan, error) {
+	for _, p := range pkgs {
+		if err := k.rejectKernelPackage(p, "install"); err != nil {
+			return nil, err
+		}
+	}
+	return k.install(ctx, pkgs, opts)
+}
+
+// rejectKernelPackage refuses a kernel package, or a package that claims
+// to be one, from outside the kernel binary. Kernels before the version
+// with kernel packages, which tests simulate, accept them.
+func (k *Kernel) rejectKernelPackage(p *model.Package, operation string) error {
+	if k.target < kernelPackagesVersion {
+		return nil
+	}
+	if p.Manifest.KernelPackage || k.isKernelPackage(p.Manifest.ID) {
+		return &rterr.KernelPackage{Package: string(p.Manifest.ID), Operation: operation}
+	}
+	return nil
+}
+
+func (k *Kernel) isKernelPackage(id model.PackageID) bool {
+	for _, p := range k.kernelPkgs {
+		if p.Manifest.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func (k *Kernel) install(ctx context.Context, pkgs []*model.Package, opts Options) (*plan.Plan, error) {
 	if len(pkgs) == 0 {
 		return nil, &rterr.InvalidArgument{Argument: "packages", Message: "no package given"}
 	}
@@ -103,6 +134,13 @@ func (k *Kernel) Install(ctx context.Context, pkgs []*model.Package, opts Option
 // installed package are always rejected. Lower versions are rejected; the
 // same version may be applied again.
 func (k *Kernel) Upgrade(ctx context.Context, pkg *model.Package, opts Options) (*plan.Plan, error) {
+	if err := k.rejectKernelPackage(pkg, "upgrade"); err != nil {
+		return nil, err
+	}
+	return k.upgrade(ctx, pkg, opts)
+}
+
+func (k *Kernel) upgrade(ctx context.Context, pkg *model.Package, opts Options) (*plan.Plan, error) {
 	id := pkg.Manifest.ID
 	var from string
 	return k.apply(ctx, operation{
@@ -136,6 +174,9 @@ func (k *Kernel) Upgrade(ctx context.Context, pkg *model.Package, opts Options) 
 // fields. All data in them is lost, so it needs Options.Confirm unless it is
 // a dry run. Packages that others require cannot be removed.
 func (k *Kernel) Uninstall(ctx context.Context, id model.PackageID, opts Options) (*plan.Plan, error) {
+	if k.target >= kernelPackagesVersion && k.isKernelPackage(id) {
+		return nil, &rterr.KernelPackage{Package: string(id), Operation: "uninstall"}
+	}
 	var from string
 	return k.apply(ctx, operation{
 		op: plan.Uninstall,

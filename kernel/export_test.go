@@ -14,6 +14,13 @@
 
 package kernel
 
+import (
+	"context"
+
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
+)
+
 // TargetVersion returns the kernel schema version the kernel works with.
 func (k *Kernel) TargetVersion() int { return k.target }
 
@@ -22,4 +29,10 @@ func (k *Kernel) TargetVersion() int { return k.target }
 func (k *Kernel) SetTargetVersion(v int) {
 	k.target = v
 	k.repo = k.repo.At(v)
+}
+
+// UpgradeKernelPackage upgrades a kernel package with any package, for
+// tests that use TRBASE as an ordinary package.
+func (k *Kernel) UpgradeKernelPackage(ctx context.Context, pkg *model.Package, opts Options) (*plan.Plan, error) {
+	return k.upgrade(ctx, pkg, opts)
 }

@@ -103,7 +103,7 @@ func TestStructureExamples(t *testing.T) {
 			st.Elements = append(st.Elements, model.Element{Component: &model.Component{Name: "REGION",
 				Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/NAME"}}})
 		})
-		p, err := k.Upgrade(ctx, region, kernel.Options{})
+		p, err := upgrade(k, ctx, region, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -124,12 +124,12 @@ func TestStructureExamples(t *testing.T) {
 				Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/NAME"}}})
 			st.Elements = append(st.Elements[:1], st.Elements[2:]...) // without POSTAL_CODE
 		})
-		_, err = k.Upgrade(ctx, noPostal, kernel.Options{})
+		_, err = upgrade(k, ctx, noPostal, kernel.Options{})
 		var dc *rterr.DestructiveChange
 		if !errors.As(err, &dc) || len(dc.Changes) != 2 {
 			t.Fatalf("expected two destructive changes, got %v", err)
 		}
-		p, err = k.Upgrade(ctx, noPostal, kernel.Options{AllowDestructive: true})
+		p, err = upgrade(k, ctx, noPostal, kernel.Options{AllowDestructive: true})
 		if err != nil {
 			t.Fatal(err)
 		}

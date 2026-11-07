@@ -32,6 +32,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/kernelsrc"
 	"github.com/tim-riep/go-runtime/internal/pkgload"
 	"github.com/tim-riep/go-runtime/internal/validate"
+	"github.com/tim-riep/go-runtime/kernelpkg"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/compile"
 	"github.com/tim-riep/go-runtime/lang/syntax"
@@ -115,10 +116,17 @@ func dependencies(parent string, pkg *model.Package, seen map[model.PackageID]bo
 		}
 		seen[r.ID] = true
 		dir := filepath.Join(parent, string(r.ID))
-		if _, err := os.Stat(filepath.Join(dir, pkgload.ManifestFile)); err != nil {
+		var dep *model.Package
+		var err error
+		switch _, statErr := os.Stat(filepath.Join(dir, pkgload.ManifestFile)); {
+		case statErr == nil:
+			dep, err = pkgload.Load(os.DirFS(dir), dir)
+		case kernelpkg.Is(r.ID):
+			// Kernel packages come from the kernel binary.
+			dep, err = kernelpkg.Load(r.ID)
+		default:
 			return nil, fmt.Errorf("package %s requires %s, which is expected in %s", pkg.Manifest.ID, r.ID, dir)
 		}
-		dep, err := pkgload.Load(os.DirFS(dir), dir)
 		if err != nil {
 			return nil, err
 		}

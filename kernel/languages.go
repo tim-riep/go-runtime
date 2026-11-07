@@ -72,6 +72,10 @@ func (l *Languages) Add(ctx context.Context, code, name string) (*Language, erro
 	if err := k.repo.InsertLanguage(ctx, k.db, lang); err != nil {
 		return nil, err
 	}
+	// Kernel packages bring their texts in the new language.
+	if _, err := k.syncKernelPackages(ctx, true); err != nil {
+		return nil, err
+	}
 	return &lang, nil
 }
 

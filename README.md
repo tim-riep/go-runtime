@@ -13,6 +13,15 @@ transaction together with its own bookkeeping.
 
 - **Package**: a directory with a manifest and schema files. Its ID consists of upper-case
   letters and digits and starts with a letter, e.g. `TRBASE`, `TRFIN`, `TROTTO`.
+- **Kernel package**: a package embedded in the kernel binary (`kernelpkg/`), marked with
+  `"kernelPackage": true` in its manifest and with the version of the kernel packages of the
+  kernel. `rt init` installs it, a newer kernel upgrades it when it opens a database and
+  compiles the packages that require it again; if that fails, the kernel does not start. It
+  is never installed, upgraded or removed from outside, and only kernel packages have
+  methods executed by kernel. Kernel packages are installed with the texts of the languages
+  that are set up and get the texts of every language added later. `TRBASE` is the kernel
+  package: base domains, data elements, the address structure, `/TRBASE/AUDIT_LOG` and the
+  classes executed by kernel.
 - **Ownership and namespace**: every object belongs to exactly one package, and its name
   starts with the namespace of that package: `/TRFIN/COMPANIES` belongs to `TRFIN`, even if
   `TROTTO` extends it. The full name is used everywhere, in package files for definitions and
@@ -552,9 +561,8 @@ defer k.Close()
 
 if _, err := k.Init(ctx, kernel.Options{}); err != nil { ... }
 
-base, _ := kernel.LoadDir("examples/TRBASE")
-fin, _ := kernel.LoadDir("examples/TRFIN")
-p, err := k.Install(ctx, []*model.Package{base, fin}, kernel.Options{})
+fin, _ := kernel.LoadDir("examples/TRFIN") // TRBASE is a kernel package, installed by Init
+p, err := k.Install(ctx, []*model.Package{fin}, kernel.Options{})
 fmt.Print(p.Text())
 
 _, err = k.Upgrade(ctx, newVersion, kernel.Options{DryRun: true})
@@ -580,7 +588,7 @@ go install github.com/tim-riep/go-runtime/cmd/rt@latest
 export RT_DATABASE=sqlite:app.db
 rt init
 rt language add de
-rt install examples/TRBASE examples/TRFIN examples/TROTTO
+rt install examples/TRFIN examples/TROTTO
 rt plan examples/upgrade/TROTTO
 rt upgrade examples/upgrade/TROTTO
 rt list

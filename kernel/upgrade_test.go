@@ -52,7 +52,7 @@ func TestUpgradeKeepsData(t *testing.T) {
 		ctx := context.Background()
 		withData(t, k)
 		up := testutil.Example(t, "upgrade/TROTTO")
-		p, err := k.Upgrade(ctx, up, kernel.Options{})
+		p, err := upgrade(k, ctx, up, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,7 +86,7 @@ func TestUpgradeKeepsData(t *testing.T) {
 		if !s.Packages["TROTTO"].UpdatedAt.After(s.Packages["TROTTO"].InstalledAt) && !s.Packages["TROTTO"].UpdatedAt.Equal(s.Packages["TROTTO"].InstalledAt) {
 			t.Error("timestamps")
 		}
-		want := testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN"), up)
+		want := testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN"), up)
 		sameSchema(t, k, want)
 		consistent(t, k)
 	})
@@ -96,7 +96,7 @@ func TestUpgradeDestructive(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
+		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		// Version 1.2.0 shortens OTTO_ID and drops the shop table.
@@ -119,16 +119,16 @@ func TestUpgradeDestructive(t *testing.T) {
 		}
 		next.Domains = doms
 
-		_, err := k.Upgrade(ctx, next, kernel.Options{})
+		_, err := upgrade(k, ctx, next, kernel.Options{})
 		var dc *rterr.DestructiveChange
 		if !errors.As(err, &dc) || len(dc.Changes) < 3 {
 			t.Fatalf("expected DestructiveChange, got %v", err)
 		}
-		dry, err := k.Upgrade(ctx, next, kernel.Options{DryRun: true, AllowDestructive: true})
+		dry, err := upgrade(k, ctx, next, kernel.Options{DryRun: true, AllowDestructive: true})
 		if err != nil || dry.Executed || !strings.Contains(dry.Text(), "[DESTRUCTIVE]") {
 			t.Fatalf("dry run: %v\n%s", err, dry.Text())
 		}
-		if _, err := k.Upgrade(ctx, next, kernel.Options{AllowDestructive: true}); err != nil {
+		if _, err := upgrade(k, ctx, next, kernel.Options{AllowDestructive: true}); err != nil {
 			t.Fatal(err)
 		}
 		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/OTTO_ID", where(k, "COMPANY_ID"), "C1"); v != "OTTO-1" {
@@ -147,7 +147,7 @@ func TestShorteningFailsOnExistingData(t *testing.T) {
 		next := testutil.Example(t, "TROTTO")
 		next.Manifest.Version = "1.0.1"
 		next.Domains[0].Length = 3 // "OTTO-1" does not fit
-		_, err := k.Upgrade(ctx, next, kernel.Options{AllowDestructive: true})
+		_, err := upgrade(k, ctx, next, kernel.Options{AllowDestructive: true})
 		var ee *rterr.ExecError
 		if !errors.As(err, &ee) {
 			t.Fatalf("expected ExecError, got %v", err)
@@ -175,7 +175,7 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 		}
 		fin.Tables = tables
 		fin.Structures, fin.ArrayTypes = nil, nil
-		_, err := k.Upgrade(context.Background(), fin, kernel.Options{AllowDestructive: true})
+		_, err := upgrade(k, context.Background(), fin, kernel.Options{AllowDestructive: true})
 		var v *rterr.ValidationError
 		if !errors.As(err, &v) || v.Code != rterr.CodeUnknownTable {
 			t.Fatalf("expected the extension of TROTTO to block the upgrade, got %v", err)
@@ -184,12 +184,12 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 		major := testutil.Example(t, "TRBASE")
 		major.Manifest.Version = "2.0.0"
 		var dep *rterr.DependencyError
-		if _, err := k.Upgrade(context.Background(), major, kernel.Options{}); err != nil {
+		if _, err := upgrade(k, context.Background(), major, kernel.Options{}); err != nil {
 			t.Fatalf(">=1.0.0 accepts 2.0.0: %v", err)
 		}
 		fin = testutil.Example(t, "TRFIN")
 		fin.Manifest.Requires[0].Constraint = model.Some("^1.0.0")
-		_, err = k.Upgrade(context.Background(), fin, kernel.Options{})
+		_, err = upgrade(k, context.Background(), fin, kernel.Options{})
 		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyVersion {
 			t.Fatalf("expected version conflict, got %v", err)
 		}
@@ -203,13 +203,13 @@ func TestUpgradeChecks(t *testing.T) {
 		var ni *rterr.NotInstalled
 		other := testutil.Example(t, "TROTTO")
 		other.Manifest.ID = "TRNEW"
-		if _, err := k.Upgrade(ctx, other, kernel.Options{}); !errors.As(err, &ni) {
+		if _, err := upgrade(k, ctx, other, kernel.Options{}); !errors.As(err, &ni) {
 			t.Fatalf("expected NotInstalled, got %v", err)
 		}
 		old := testutil.Example(t, "TROTTO")
 		old.Manifest.Version = "0.9.0"
 		var ia *rterr.InvalidArgument
-		if _, err := k.Upgrade(ctx, old, kernel.Options{}); !errors.As(err, &ia) {
+		if _, err := upgrade(k, ctx, old, kernel.Options{}); !errors.As(err, &ia) {
 			t.Fatalf("expected downgrade to be rejected, got %v", err)
 		}
 		p, err := k.Plan(ctx, testutil.Example(t, "upgrade/TROTTO"))
@@ -223,7 +223,7 @@ func TestUninstall(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
+		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		var inUse *rterr.InUse
@@ -246,7 +246,7 @@ func TestUninstall(t *testing.T) {
 		if exists, _ := k.Dialect().TableExists(ctx, k.DB(), "/TROTTO/OTTO_SHOPS"); exists {
 			t.Error("/TROTTO/OTTO_SHOPS still exists")
 		}
-		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN")))
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN")))
 		consistent(t, k)
 		var ni *rterr.NotInstalled
 		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); !errors.As(err, &ni) {

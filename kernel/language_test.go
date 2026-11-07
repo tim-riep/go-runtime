@@ -76,7 +76,7 @@ func TestLanguageMissingForPackage(t *testing.T) {
 		if !errors.As(err, &ml) || len(ml.Languages) != 1 || ml.Languages[0] != "de" {
 			t.Fatalf("expected the missing language de, got %v", err)
 		}
-		if s, _ := k.Schema(ctx); len(s.Packages) != 0 {
+		if s, _ := k.Schema(ctx); len(s.Packages) != kernelPackages {
 			t.Fatal("packages installed")
 		}
 	})
@@ -110,7 +110,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 		consistent(t, k)
 		// Packages with German texts need the language again.
 		var ml *rterr.MissingLanguages
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRBASE"), kernel.Options{}); !errors.As(err, &ml) {
+		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{}); !errors.As(err, &ml) {
 			t.Fatalf("expected MissingLanguages, got %v", err)
 		}
 	})

@@ -1,0 +1,6 @@
+{
+  "id": "TRBASE",
+  "version": "1.0.0",
+  "description": "Kernel package: base domains, structures and the classes executed by the kernel",
+  "kernelPackage": true
+}

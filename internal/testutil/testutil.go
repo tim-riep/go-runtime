@@ -51,6 +51,10 @@ func ModuleRoot(t testing.TB) string {
 func Example(t testing.TB, name string) *model.Package {
 	t.Helper()
 	dir := filepath.Join(ModuleRoot(t), "examples", name)
+	if _, err := os.Stat(dir); err != nil {
+		// Kernel packages such as TRBASE live in kernelpkg.
+		dir = filepath.Join(ModuleRoot(t), "kernelpkg", name)
+	}
 	pkg, err := pkgload.Load(os.DirFS(dir), dir)
 	if err != nil {
 		t.Fatalf("loading %s: %v", name, err)
@@ -112,7 +116,11 @@ func Golden(t testing.TB, name, got string) {
 func CopyExample(t testing.TB, name string) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), filepath.Base(name))
-	if err := os.CopyFS(dir, os.DirFS(filepath.Join(ModuleRoot(t), "examples", name))); err != nil {
+	src := filepath.Join(ModuleRoot(t), "examples", name)
+	if _, err := os.Stat(src); err != nil {
+		src = filepath.Join(ModuleRoot(t), "kernelpkg", name)
+	}
+	if err := os.CopyFS(dir, os.DirFS(src)); err != nil {
 		t.Fatal(err)
 	}
 	return dir

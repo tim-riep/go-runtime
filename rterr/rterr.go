@@ -472,6 +472,32 @@ func (d CompileDiagnostic) String() string {
 	return s
 }
 
+// KernelPackage reports an attempt to install, upgrade or remove a kernel
+// package, or to install a package marked as one. Kernel packages come
+// only from the kernel binary.
+type KernelPackage struct {
+	Package   string
+	Operation string // install, upgrade or uninstall
+}
+
+func (e *KernelPackage) Error() string {
+	return fmt.Sprintf("%s is a kernel package; the kernel installs and upgrades it from its binary, so it cannot be given to %s", e.Package, e.Operation)
+}
+
+// KernelPackageUpgrade reports that the kernel could not install or
+// upgrade its kernel packages when opening a database; the kernel does
+// not start.
+type KernelPackageUpgrade struct {
+	Packages []string
+	Err      error
+}
+
+func (e *KernelPackageUpgrade) Error() string {
+	return fmt.Sprintf("the kernel packages %s cannot be brought to the version of this kernel: %v", strings.Join(e.Packages, ", "), e.Err)
+}
+
+func (e *KernelPackageUpgrade) Unwrap() error { return e.Err }
+
 // CompileError reports that the code of a package does not compile. The
 // whole operation is rejected.
 type CompileError struct {

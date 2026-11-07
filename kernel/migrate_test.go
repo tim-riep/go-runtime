@@ -77,9 +77,6 @@ func TestMigrateFromVersion1(t *testing.T) {
 		if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRBASE"), kernel.Options{}); err != nil {
-			t.Fatal(err)
-		}
 		up, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{})
 		if err != nil {
 			t.Fatal(err)

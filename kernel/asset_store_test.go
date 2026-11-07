@@ -56,6 +56,8 @@ func TestAssetStorage(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
+		// The kernel package TRBASE brings assets of its own.
+		blobs0, chunks0 := count(t, k, tBlobs), count(t, k, tChunks)
 		p, err := k.Install(ctx, examples(t), kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -94,12 +96,12 @@ func TestAssetStorage(t *testing.T) {
 		k.SetMaxAssetSize(model.DefaultMaxAssetSize)
 
 		// Removing all packages removes all contents.
-		for _, id := range []model.PackageID{"TRDUP", "TROTTO", "TRFIN", "TRBASE"} {
+		for _, id := range []model.PackageID{"TRDUP", "TROTTO", "TRFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if b, c := count(t, k, tBlobs), count(t, k, tChunks); b != 0 || c != 0 {
+		if b, c := count(t, k, tBlobs), count(t, k, tChunks); b != blobs0 || c != chunks0 {
 			t.Fatalf("contents left: %d blobs, %d chunks", b, c)
 		}
 		consistent(t, k)

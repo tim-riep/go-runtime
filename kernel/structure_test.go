@@ -97,8 +97,8 @@ func TestStructureLifecycle(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{trs("1.0.0"), trx()}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		examples := []*model.Package{testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")}
-		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), append(examples, trs("1.0.0"), trx())...))
+		examples := []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")}
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), append(examples, trs("1.0.0"), trx())...))
 		consistent(t, k)
 
 		w := where(k, "TABLE_NAME", "FIELD_NAME")
@@ -215,7 +215,7 @@ func TestFixedValueNames(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{pkg("1.0.0", "HIGH")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		sameSchema(t, k, testutil.AddPackages(t, testutil.KernelSchema(t), pkg("1.0.0", "HIGH")))
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), pkg("1.0.0", "HIGH")))
 		p, err := k.Upgrade(ctx, pkg("1.1.0", "TOP"), kernel.Options{})
 		if err != nil || len(p.Destructive()) != 0 || change(p, plan.AlterDomain, "/TRN/LEVEL") == nil {
 			t.Fatalf("rename: %v %+v", err, p)

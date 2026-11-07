@@ -33,6 +33,7 @@ func TestNamespaceViolationNeverReachesTheDatabase(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
+		before, _ := k.Log(ctx)
 		dir := filepath.Join(t.TempDir(), "TRBAD")
 		testutil.WriteFile(t, dir, "manifest.json", []byte(`{"id":"TRBAD","version":"1.0.0","requires":[{"id":"TRBASE"}]}`))
 		testutil.WriteFile(t, dir, "schema/tables/THINGS.json", []byte(`{"name":"/TRBAD/THINGS","tenantSpecific":false,"dataClass":"application",
@@ -49,7 +50,7 @@ func TestNamespaceViolationNeverReachesTheDatabase(t *testing.T) {
 			t.Errorf("message: %v", err)
 		}
 		log, _ := k.Log(ctx)
-		if len(log) != 1 {
+		if len(log) != len(before) {
 			t.Fatalf("the database was touched: %+v", log)
 		}
 	})
@@ -70,7 +71,7 @@ func TestLongGeneratedNames(t *testing.T) {
 			"fields":[{"name":"LINE_IDENTIFIER_WITH_A_VERY_LONG_NAME","domain":"/TRBASE/COUNTER"},{"name":"COUNTRY_OF_THE_STATEMENT_LINE","dataElement":"/TRBASE/COUNTRY"}],
 			"primaryKey":["LINE_IDENTIFIER_WITH_A_VERY_LONG_NAME"]}`))
 		pkg := testutil.LoadDir(t, dir)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRBASE"), pkg}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{pkg}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		pk := model.PrimaryKeyName(table)
