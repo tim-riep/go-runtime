@@ -1,0 +1,16 @@
+# An asset is larger than the kernel loads into the memory of an
+# execution.
+public class /TRBASE/ASSET_TOO_LARGE extends /TRBASE/ASSET_ERROR
+
+  public attribute PATH: STRING
+  public attribute SIZE: INT8
+  public attribute MAX_SIZE: INT8
+
+  public constructor(pkg: STRING, repository: STRING, path: STRING, size: INT8, max: INT8)
+    super("asset {path} has {size} bytes, more than the limit of {max}", pkg, repository)
+    PATH = path
+    SIZE = size
+    MAX_SIZE = max
+  end
+
+end

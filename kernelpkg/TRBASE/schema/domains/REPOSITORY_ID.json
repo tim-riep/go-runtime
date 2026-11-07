@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/REPOSITORY_ID",
+  "description": "ID of an asset repository",
+  "type": "CHAR",
+  "length": 32
+}

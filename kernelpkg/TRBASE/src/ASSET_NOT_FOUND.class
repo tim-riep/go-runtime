@@ -1,14 +1,11 @@
-# An asset does not exist, or the calling package may not read it.
-public class /TRBASE/ASSET_NOT_FOUND extends /RT/EXCEPTION
+# An asset repository has no asset or folder at a path, or the path names
+# a folder where an asset is needed, or the other way round.
+public class /TRBASE/ASSET_NOT_FOUND extends /TRBASE/ASSET_ERROR
 
-  public attribute PACKAGE_ID: STRING
-  public attribute REPOSITORY: STRING
   public attribute PATH: STRING
 
   public constructor(pkg: STRING, repository: STRING, path: STRING)
-    super("asset {path} not found in repository {repository} of package {pkg}")
-    PACKAGE_ID = pkg
-    REPOSITORY = repository
+    super("asset {path} not found in repository {repository} of package {pkg}", pkg, repository)
     PATH = path
   end
 

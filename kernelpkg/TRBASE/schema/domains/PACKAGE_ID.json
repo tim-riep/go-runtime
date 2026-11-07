@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/PACKAGE_ID",
+  "description": "Package ID",
+  "type": "CHAR",
+  "length": 16
+}

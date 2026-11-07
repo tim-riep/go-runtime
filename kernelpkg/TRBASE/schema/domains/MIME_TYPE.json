@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/MIME_TYPE",
+  "description": "Media type",
+  "type": "CHAR",
+  "length": 127
+}

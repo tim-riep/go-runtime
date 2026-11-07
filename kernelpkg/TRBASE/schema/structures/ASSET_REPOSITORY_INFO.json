@@ -1,0 +1,30 @@
+{
+  "name": "/TRBASE/ASSET_REPOSITORY_INFO",
+  "texts": {
+    "en": {
+      "label": "Asset repository",
+      "description": "An asset repository of a package with its label"
+    },
+    "de": {
+      "label": "Asset-Repository",
+      "description": "Ein Asset-Repository eines Pakets mit seiner Bezeichnung"
+    }
+  },
+  "components": [
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "dataElement": "/TRBASE/REPOSITORY_ID",
+      "notNull": true
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/REPOSITORY_LABEL",
+      "notNull": true
+    }
+  ]
+}

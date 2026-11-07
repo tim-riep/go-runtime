@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/REPOSITORY_LABEL",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Label",
+      "medium": "Repository label",
+      "long": "Label of the asset repository",
+      "heading": "Label"
+    },
+    "de": {
+      "short": "Bezeichng.",
+      "medium": "Repository-Name",
+      "long": "Bezeichnung des Asset-Repositorys",
+      "heading": "Bezeichnung"
+    }
+  }
+}

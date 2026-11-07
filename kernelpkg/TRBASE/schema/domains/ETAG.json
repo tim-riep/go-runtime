@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/ETAG",
+  "description": "Entity tag of HTTP",
+  "type": "CHAR",
+  "length": 66
+}

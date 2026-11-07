@@ -1,0 +1,14 @@
+# The base of the errors of asset repositories, for code that handles
+# them all at once.
+public open class /TRBASE/ASSET_ERROR extends /RT/EXCEPTION
+
+  public attribute PACKAGE_ID: STRING
+  public attribute REPOSITORY: STRING
+
+  public constructor(text: STRING, pkg: STRING, repository: STRING)
+    super(text)
+    PACKAGE_ID = pkg
+    REPOSITORY = repository
+  end
+
+end

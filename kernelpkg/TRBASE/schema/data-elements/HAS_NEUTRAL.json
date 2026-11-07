@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/HAS_NEUTRAL",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Neutral",
+      "medium": "Neutral version",
+      "long": "Language-independent version exists",
+      "heading": "Neutral"
+    },
+    "de": {
+      "short": "Neutral",
+      "medium": "Neutrale Fassung",
+      "long": "Sprachunabhängige Fassung vorhanden",
+      "heading": "Neutral"
+    }
+  }
+}

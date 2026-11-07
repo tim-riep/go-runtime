@@ -1,0 +1,8 @@
+# A package has no asset repository with this ID.
+public class /TRBASE/ASSET_REPOSITORY_NOT_FOUND extends /TRBASE/ASSET_ERROR
+
+  public constructor(pkg: STRING, repository: STRING)
+    super("package {pkg} has no asset repository {repository}", pkg, repository)
+  end
+
+end

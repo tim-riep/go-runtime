@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ASSET_REPOSITORY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Asset repositories"
+    },
+    "de": {
+      "label": "Asset-Repositories"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ASSET_REPOSITORY_INFO"
+  }
+}

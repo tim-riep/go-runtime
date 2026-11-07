@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/REPOSITORY_ID",
+  "domain": "/TRBASE/REPOSITORY_ID",
+  "texts": {
+    "en": {
+      "short": "Repository",
+      "medium": "Repository",
+      "long": "Asset repository",
+      "heading": "Repository"
+    },
+    "de": {
+      "short": "Repository",
+      "medium": "Repository",
+      "long": "Asset-Repository",
+      "heading": "Repository"
+    }
+  }
+}

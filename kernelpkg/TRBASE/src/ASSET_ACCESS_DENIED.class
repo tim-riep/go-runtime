@@ -1,0 +1,12 @@
+# The calling package may not read the asset repositories of a package:
+# code reads those of its own package and of the packages it requires.
+public class /TRBASE/ASSET_ACCESS_DENIED extends /TRBASE/ASSET_ERROR
+
+  public attribute CALLER: STRING
+
+  public constructor(caller: STRING, pkg: STRING, repository: STRING)
+    super("package {caller} may not read the asset repositories of package {pkg}", pkg, repository)
+    CALLER = caller
+  end
+
+end

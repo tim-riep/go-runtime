@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/MIME_TYPE",
+  "domain": "/TRBASE/MIME_TYPE",
+  "texts": {
+    "en": {
+      "short": "Media type",
+      "medium": "Media type",
+      "long": "Media type",
+      "heading": "Media type"
+    },
+    "de": {
+      "short": "Medientyp",
+      "medium": "Medientyp",
+      "long": "Medientyp",
+      "heading": "Medientyp"
+    }
+  }
+}

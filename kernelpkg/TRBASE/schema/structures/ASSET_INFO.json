@@ -1,0 +1,63 @@
+{
+  "name": "/TRBASE/ASSET_INFO",
+  "texts": {
+    "en": {
+      "label": "Asset information",
+      "description": "A folder or an asset of an asset repository with its metadata"
+    },
+    "de": {
+      "label": "Asset-Information",
+      "description": "Ein Ordner oder Asset eines Asset-Repositorys mit seinen Metadaten"
+    }
+  },
+  "components": [
+    {
+      "name": "PATH",
+      "dataElement": "/TRBASE/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "IS_FOLDER",
+      "dataElement": "/TRBASE/IS_FOLDER",
+      "notNull": true
+    },
+    {
+      "name": "MIME_TYPE",
+      "dataElement": "/TRBASE/MIME_TYPE"
+    },
+    {
+      "name": "SIZE",
+      "dataElement": "/TRBASE/BYTE_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "dataElement": "/TRBASE/SHA256"
+    },
+    {
+      "name": "ETAG",
+      "dataElement": "/TRBASE/ETAG"
+    },
+    {
+      "name": "MODIFIED_AT",
+      "dataElement": "/TRBASE/MODIFIED_AT"
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/ASSET_DESCRIPTION"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LANGUAGES",
+      "arrayType": "/TRBASE/LANGUAGE_ARRAY"
+    },
+    {
+      "name": "HAS_NEUTRAL",
+      "dataElement": "/TRBASE/HAS_NEUTRAL",
+      "notNull": true
+    }
+  ]
+}

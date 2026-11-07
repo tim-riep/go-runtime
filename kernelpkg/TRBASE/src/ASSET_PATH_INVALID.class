@@ -1,0 +1,11 @@
+# A path does not follow the rules of asset repositories; TEXT says why.
+public class /TRBASE/ASSET_PATH_INVALID extends /TRBASE/ASSET_ERROR
+
+  public attribute PATH: STRING
+
+  public constructor(pkg: STRING, repository: STRING, path: STRING, reason: STRING)
+    super("invalid asset path \"{path}\": {reason}", pkg, repository)
+    PATH = path
+  end
+
+end

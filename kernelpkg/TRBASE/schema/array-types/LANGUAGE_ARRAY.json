@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/LANGUAGE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Languages"
+    },
+    "de": {
+      "label": "Sprachen"
+    }
+  },
+  "rowType": {
+    "dataElement": "/TRBASE/LANGUAGE"
+  }
+}

@@ -1,0 +1,11 @@
+# The content of an asset read as text is not valid UTF-8.
+public class /TRBASE/ASSET_ENCODING_INVALID extends /TRBASE/ASSET_ERROR
+
+  public attribute PATH: STRING
+
+  public constructor(pkg: STRING, repository: STRING, path: STRING)
+    super("asset {path} is not valid UTF-8", pkg, repository)
+    PATH = path
+  end
+
+end

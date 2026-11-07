@@ -34,7 +34,7 @@ import (
 // Version is the version of the kernel packages of this kernel. Every
 // kernel package has it as its version; a kernel that changes a kernel
 // package increases it.
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 //go:embed all:TRBASE
 var files embed.FS

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/BYTE_SIZE",
+  "domain": "/TRBASE/BYTE_SIZE",
+  "texts": {
+    "en": {
+      "short": "Size",
+      "medium": "Size in bytes",
+      "long": "Size in bytes",
+      "heading": "Size"
+    },
+    "de": {
+      "short": "Größe",
+      "medium": "Größe in Bytes",
+      "long": "Größe in Bytes",
+      "heading": "Größe"
+    }
+  }
+}

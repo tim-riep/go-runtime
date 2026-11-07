@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ASSET_DESCRIPTION",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Descr.",
+      "medium": "Description",
+      "long": "Description of the entry",
+      "heading": "Description"
+    },
+    "de": {
+      "short": "Beschr.",
+      "medium": "Beschreibung",
+      "long": "Beschreibung des Eintrags",
+      "heading": "Beschreibung"
+    }
+  }
+}

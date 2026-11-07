@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/LANGUAGE",
+  "description": "Language code (ISO 639-1)",
+  "type": "CHAR",
+  "length": 2
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ASSET_PATH",
+  "domain": "/TRBASE/ASSET_PATH",
+  "texts": {
+    "en": {
+      "short": "Path",
+      "medium": "Asset path",
+      "long": "Path of the asset",
+      "heading": "Path"
+    },
+    "de": {
+      "short": "Pfad",
+      "medium": "Asset-Pfad",
+      "long": "Pfad des Assets",
+      "heading": "Pfad"
+    }
+  }
+}
