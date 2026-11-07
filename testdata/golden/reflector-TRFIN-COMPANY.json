@@ -1,0 +1,239 @@
+{
+  "formatVersion": 1,
+  "name": "/TRFIN/COMPANY",
+  "package": "TRFIN",
+  "texts": {
+    "de": {
+      "label": "Stammdaten Firma",
+      "description": "Firmen nach Firma und Land lesen und ändern"
+    },
+    "en": {
+      "label": "Company master data",
+      "description": "Reading and changing companies by company and country"
+    }
+  },
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "activity": false,
+      "dataElement": "/TRFIN/COMPANY",
+      "labels": {
+        "de": {
+          "short": "Firma",
+          "medium": "Firma",
+          "long": "Firmennummer",
+          "heading": "Firma",
+          "description": null
+        },
+        "en": {
+          "short": "Company",
+          "medium": "Company",
+          "long": "Company ID",
+          "heading": "Company",
+          "description": null
+        }
+      },
+      "domain": "/TRFIN/COMPANY_ID",
+      "type": "CHAR",
+      "length": 10,
+      "values": []
+    },
+    {
+      "name": "COUNTRY",
+      "activity": false,
+      "dataElement": "/TRBASE/COUNTRY",
+      "labels": {
+        "de": {
+          "short": "Land",
+          "medium": "Land",
+          "long": "Länderschlüssel",
+          "heading": "Land",
+          "description": "Code nach ISO 3166-1 alpha-2"
+        },
+        "en": {
+          "short": "Country",
+          "medium": "Country",
+          "long": "Country key",
+          "heading": "Country",
+          "description": "ISO 3166-1 alpha-2 code"
+        }
+      },
+      "domain": "/TRBASE/COUNTRY_CODE",
+      "type": "CHAR",
+      "length": 2,
+      "values": []
+    },
+    {
+      "name": "ACTIVITY",
+      "activity": true,
+      "dataElement": "/RT/ACTIVITY",
+      "labels": {
+        "de": {
+          "short": "Aktivität",
+          "medium": "Aktivität",
+          "long": "Aktivität",
+          "heading": "Aktivität",
+          "description": "Was ein Benutzer mit den Daten tun darf, die ein Berechtigungsobjekt schützt"
+        },
+        "en": {
+          "short": "Activity",
+          "medium": "Activity",
+          "long": "Activity",
+          "heading": "Activity",
+          "description": "What a user may do with the data an authorization object protects"
+        }
+      },
+      "domain": "/RT/ACTIVITY",
+      "type": "CHAR",
+      "length": 16,
+      "values": [
+        {
+          "value": "READ",
+          "name": "READ",
+          "description": "Read",
+          "texts": {
+            "de": {
+              "label": "Lesen",
+              "description": "Daten anzeigen und lesen"
+            },
+            "en": {
+              "label": "Read",
+              "description": "Display and read data"
+            }
+          }
+        },
+        {
+          "value": "CREATE",
+          "name": "CREATE",
+          "description": "Create",
+          "texts": {
+            "de": {
+              "label": "Anlegen",
+              "description": "Neue Daten anlegen"
+            },
+            "en": {
+              "label": "Create",
+              "description": "Create new data"
+            }
+          }
+        },
+        {
+          "value": "UPDATE",
+          "name": "UPDATE",
+          "description": "Update",
+          "texts": {
+            "de": {
+              "label": "Ändern",
+              "description": "Bestehende Daten ändern"
+            },
+            "en": {
+              "label": "Update",
+              "description": "Change existing data"
+            }
+          }
+        },
+        {
+          "value": "DELETE",
+          "name": "DELETE",
+          "description": "Delete",
+          "texts": {
+            "de": {
+              "label": "Löschen",
+              "description": "Daten löschen"
+            },
+            "en": {
+              "label": "Delete",
+              "description": "Delete data"
+            }
+          }
+        },
+        {
+          "value": "EXPORT",
+          "name": "EXPORT",
+          "description": "Export",
+          "texts": {
+            "de": {
+              "label": "Exportieren",
+              "description": "Daten herunterladen oder als Datei ausgeben"
+            },
+            "en": {
+              "label": "Export",
+              "description": "Download data or output it as a file"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "activities": [
+    {
+      "code": "READ",
+      "texts": {
+        "de": {
+          "label": "Lesen",
+          "description": "Daten anzeigen und lesen"
+        },
+        "en": {
+          "label": "Read",
+          "description": "Display and read data"
+        }
+      }
+    },
+    {
+      "code": "CREATE",
+      "texts": {
+        "de": {
+          "label": "Anlegen",
+          "description": "Neue Daten anlegen"
+        },
+        "en": {
+          "label": "Create",
+          "description": "Create new data"
+        }
+      }
+    },
+    {
+      "code": "UPDATE",
+      "texts": {
+        "de": {
+          "label": "Ändern",
+          "description": "Bestehende Daten ändern"
+        },
+        "en": {
+          "label": "Update",
+          "description": "Change existing data"
+        }
+      }
+    },
+    {
+      "code": "DELETE",
+      "texts": {
+        "de": {
+          "label": "Löschen",
+          "description": "Daten löschen"
+        },
+        "en": {
+          "label": "Delete",
+          "description": "Delete data"
+        }
+      }
+    },
+    {
+      "code": "EXPORT",
+      "texts": {
+        "de": {
+          "label": "Exportieren",
+          "description": "Daten herunterladen oder als Datei ausgeben"
+        },
+        "en": {
+          "label": "Export",
+          "description": "Download data or output it as a file"
+        }
+      }
+    }
+  ],
+  "languages": [
+    "de",
+    "en"
+  ]
+}

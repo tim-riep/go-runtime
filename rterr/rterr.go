@@ -301,7 +301,18 @@ type Ambiguous struct {
 }
 
 func (e *Ambiguous) Error() string {
-	return fmt.Sprintf("%s is ambiguous, it names a %s; qualify it as %s", e.Name, strings.Join(e.Kinds, " and a "), strings.Join(e.Kinds, ":"+e.Name+" or ")+":"+e.Name)
+	kinds := make([]string, len(e.Kinds))
+	for i, k := range e.Kinds {
+		kinds[i] = article(k) + " " + k
+	}
+	return fmt.Sprintf("%s is ambiguous, it names %s; qualify it as %s", e.Name, strings.Join(kinds, " and "), strings.Join(e.Kinds, ":"+e.Name+" or ")+":"+e.Name)
+}
+
+func article(word string) string {
+	if word != "" && strings.ContainsRune("aeiou", rune(word[0])) {
+		return "an"
+	}
+	return "a"
 }
 
 // InvalidArgument reports an invalid argument passed to the API.

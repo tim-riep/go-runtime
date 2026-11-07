@@ -59,7 +59,7 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 			!o.Fields[2].IsActivity() || strings.Join(o.Activities, ",") != "READ,CREATE,UPDATE,DELETE,EXPORT" || o.Texts["de"].Label != "Stammdaten Firma" {
 			t.Fatalf("read back: %+v", o)
 		}
-		if s.AuthorizationObjects["/TROTTO/SYNC"] == nil || s.AuthorizationObjects["/TRFIN/COMPANY_STATUS"].HasActivity() {
+		if s.AuthorizationObjects["/TROTTO/SYNC"] == nil || s.AuthorizationObjects["/TRFIN/STATUS_SCOPE"].HasActivity() {
 			t.Fatal("objects of the examples")
 		}
 		de, err := k.DataElement(ctx, "/TRBASE/COUNTRY")

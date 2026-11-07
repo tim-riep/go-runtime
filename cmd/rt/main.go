@@ -41,6 +41,7 @@ import (
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/server"
 	"github.com/tim-riep/go-runtime/setting"
@@ -67,8 +68,8 @@ Commands:
   upgrade <package>        upgrade an installed package
   uninstall <id>           remove a package and its data (needs --yes)
   list                     list installed packages
-  show <object>            show a package, table, domain, data element, structure or array type
-                           (kind:name to disambiguate)
+  show <object>            show a package, table, domain, data element, structure, array type
+                           or authorization object (kind:name to disambiguate)
   check                    compare the repository with the database schema
   log                      show the operation log
   tenant create <id>       create a tenant (--description)
@@ -98,6 +99,9 @@ Commands:
                            create an API token; it is shown only once
   token list [user]        list API tokens without their secrets
   token revoke <id>        delete an API token
+  authorization-objects list [package]
+                           list the authorization objects of a package or of all packages
+  activities list          list the activities of the kernel (--lang for the texts)
   http list [package]      list the service nodes with their activation
   http show <path>         show a service node with its resolved settings and handlers
   http activate <path>     activate a service node and the never activated nodes below it
@@ -350,6 +354,10 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.natives(ctx, k)
 	case "http":
 		return c.http(ctx, k, args)
+	case "authorization-objects":
+		return c.authorizationObjects(ctx, k, args)
+	case "activities":
+		return c.activities(ctx, k, args)
 	case "serve":
 		if !c.need(args, 0, "serve [--addr :8080] [--tls-cert file --tls-key file]") {
 			return exitUsage
@@ -543,6 +551,8 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		for _, u := range d.UsedBy {
 			fmt.Fprintf(c.stdout, "  used by %s %s (%s)\n", u.Kind, u.Name, u.Via)
 		}
+	case kernel.KindAuthorizationObject:
+		return c.showAuthorizationObject(ctx, k, name)
 	case kernel.KindClass:
 		d, err := k.Class(ctx, name)
 		if err != nil {
@@ -1482,4 +1492,123 @@ func (c *cli) token(ctx context.Context, k *kernel.Kernel, args []string) int {
 	}
 	fmt.Fprintln(c.stderr, "usage: rt token create <user> --label X [--expires YYYY-MM-DD] | list [user] | revoke <id>")
 	return exitUsage
+}
+
+// showAuthorizationObject prints the resolved definition of an
+// authorization object and where code uses it.
+func (c *cli) showAuthorizationObject(ctx context.Context, k *kernel.Kernel, name string) int {
+	o, err := k.AuthorizationObject(ctx, name)
+	if err != nil {
+		return c.fail(err)
+	}
+	uses, err := k.CodeUses(ctx, name)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(struct {
+			Definition any              `json:"definition"`
+			CodeUses   []kernel.CodeUse `json:"codeUses"`
+		}{o, uses})
+		return exitOK
+	}
+	fmt.Fprintf(c.stdout, "Authorization object %s (package %s)\n", o.Name, o.Package)
+	for _, l := range o.Languages {
+		if t, ok := o.Texts[l]; ok {
+			fmt.Fprintf(c.stdout, "  %s: %s", l, t.Label)
+			if d, ok := t.Description.Get(); ok {
+				fmt.Fprintf(c.stdout, " - %s", d)
+			}
+			fmt.Fprintln(c.stdout)
+		}
+	}
+	fmt.Fprintln(c.stdout)
+	w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "  FIELD\tDATA ELEMENT\tDOMAIN\tTYPE\tLABEL\tVALUES")
+	for _, f := range o.Fields {
+		typ := string(f.Type)
+		if n, ok := f.Length.Get(); ok {
+			typ = fmt.Sprintf("%s(%d)", f.Type, n)
+		}
+		label := ""
+		if t, ok := f.Labels[model.DefaultLanguage]; ok {
+			label = t.Medium
+		}
+		var values []string
+		for _, v := range f.Values {
+			values = append(values, v.Value)
+		}
+		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\t%s\n", f.Name, f.DataElement.Or("-"), f.Domain, typ, label, strings.Join(values, " "))
+	}
+	w.Flush()
+	if len(o.Activities) > 0 {
+		fmt.Fprintln(c.stdout)
+		for _, a := range o.Activities {
+			fmt.Fprintf(c.stdout, "  activity %s: %s\n", a.Code, a.Texts[model.DefaultLanguage].Label)
+		}
+	}
+	for _, u := range uses {
+		fmt.Fprintf(c.stdout, "  used by %s %s:%d\n", u.Package, u.File, u.Line)
+	}
+	return exitOK
+}
+
+// authorizationObjects lists the authorization objects of a package or of
+// all packages.
+func (c *cli) authorizationObjects(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) == 0 || args[0] != "list" || len(args) > 2 {
+		fmt.Fprintln(c.stderr, "usage: rt authorization-objects list [package]")
+		return exitUsage
+	}
+	pkg := model.PackageID("")
+	if len(args) == 2 {
+		pkg = model.PackageID(args[1])
+	}
+	list, err := k.AuthorizationObjects(ctx, pkg)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(list)
+		return exitOK
+	}
+	w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "NAME\tPACKAGE\tLABEL\tFIELDS")
+	for _, o := range list {
+		var fields []string
+		for _, f := range o.Fields {
+			fields = append(fields, f.Name)
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", o.Name, o.Package, o.Texts[model.DefaultLanguage].Label, strings.Join(fields, ", "))
+	}
+	w.Flush()
+	return exitOK
+}
+
+// activities lists the activities of the kernel in the language of --lang.
+func (c *cli) activities(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) != 1 || args[0] != "list" {
+		fmt.Fprintln(c.stderr, "usage: rt activities list [--lang code]")
+		return exitUsage
+	}
+	list, err := k.Activities(ctx)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(list)
+		return exitOK
+	}
+	lang := c.lang
+	if lang == "" {
+		lang = model.DefaultLanguage
+	}
+	w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "CODE\tLABEL\tEXPLANATION")
+	for _, a := range list {
+		t := reflector.In(a.Texts, lang).Or(model.ActivityText{})
+		fmt.Fprintf(w, "%s\t%s\t%s\n", a.Code, t.Label, t.Description)
+	}
+	w.Flush()
+	return exitOK
 }

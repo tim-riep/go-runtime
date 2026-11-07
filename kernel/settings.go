@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
+	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/setting"
 )
 
@@ -79,4 +81,52 @@ func (k *Kernel) Settings(ctx context.Context) ([]SettingSummary, error) {
 		out = append(out, sum)
 	}
 	return out, nil
+}
+
+// Reflector returns a reflector of the installed schema with the texts of
+// the languages set up.
+func (k *Kernel) Reflector(ctx context.Context) (*reflector.Reflector, error) {
+	s, err := k.Schema(ctx)
+	if err != nil {
+		return nil, err
+	}
+	langs, err := k.languageCodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return reflector.New(s, langs), nil
+}
+
+// AuthorizationObject returns the resolved definition of an authorization
+// object, or rterr.NotFound.
+func (k *Kernel) AuthorizationObject(ctx context.Context, name string) (*reflector.AuthorizationObject, error) {
+	r, err := k.Reflector(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.AuthorizationObject(name)
+}
+
+// AuthorizationObjects returns the authorization objects of a package, or
+// of all packages for "", ordered by name.
+func (k *Kernel) AuthorizationObjects(ctx context.Context, pkg model.PackageID) ([]*reflector.AuthorizationObject, error) {
+	r, err := k.Reflector(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if pkg != "" {
+		if s, _ := k.Schema(ctx); s != nil && s.Packages[pkg] == nil {
+			return nil, &rterr.NotInstalled{Package: string(pkg)}
+		}
+	}
+	return r.AuthorizationObjects(pkg), nil
+}
+
+// Activities returns the activities of the kernel with their texts.
+func (k *Kernel) Activities(ctx context.Context) ([]reflector.Activity, error) {
+	r, err := k.Reflector(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Activities(), nil
 }
