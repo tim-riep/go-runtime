@@ -1,0 +1,36 @@
+# Calls the methods of /TRBASE/REFLECTOR for the tests.
+public class /TRREFL/READER
+
+  public static method OBJECT(name: STRING) returns /TRBASE/AUTHORIZATION_OBJECT raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
+    return /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT(name)
+  end
+
+  public static method EXISTS(name: STRING) returns BOOL
+    return /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT_EXISTS(name)
+  end
+
+  public static method NAMES(pkg: STRING?) returns array of STRING
+    var out = new array of STRING
+    for obj in /TRBASE/REFLECTOR.AUTHORIZATION_OBJECTS(pkg)
+      out.APPEND(obj.NAME)
+    end
+    return out
+  end
+
+  public static method ACTIVITIES() returns /TRBASE/ACTIVITY_ARRAY
+    return /TRBASE/REFLECTOR.ACTIVITIES()
+  end
+
+  # The codes of an object contain an activity, and the enum names it.
+  public static method CODES(name: STRING) returns STRING raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
+    var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT(name)
+    return "{obj.ACTIVITY_CODES.CONTAINS(/RT/ACTIVITY.EXPORT)} {/TRBASE/REFLECTOR.ALLOWS(obj, /RT/ACTIVITY.APPROVE)} {obj.ACTIVITY_CODES.LENGTH()}"
+  end
+
+  # An object of a package that TRREFL does not require, named with a
+  # literal: it is looked up when the code runs.
+  public static method OTTO() returns STRING raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
+    return /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TROTTO/SYNC").PACKAGE_ID
+  end
+
+end

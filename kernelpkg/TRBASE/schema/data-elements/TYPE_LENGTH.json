@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/TYPE_LENGTH",
+  "domain": "/TRBASE/LENGTH",
+  "texts": {
+    "en": {
+      "short": "Length",
+      "medium": "Length",
+      "long": "Length of the type",
+      "heading": "Length"
+    },
+    "de": {
+      "short": "Länge",
+      "medium": "Länge",
+      "long": "Länge des Typs",
+      "heading": "Länge"
+    }
+  }
+}

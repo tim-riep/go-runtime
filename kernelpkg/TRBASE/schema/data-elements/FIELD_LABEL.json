@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/FIELD_LABEL",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Label",
+      "medium": "Field label",
+      "long": "Medium field label",
+      "heading": "Field label"
+    },
+    "de": {
+      "short": "Bezeichng.",
+      "medium": "Feldbezeichnung",
+      "long": "Mittlere Feldbezeichnung",
+      "heading": "Feldbezeichnung"
+    }
+  }
+}

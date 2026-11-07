@@ -1,0 +1,48 @@
+{
+  "name": "/TRBASE/AUTHORIZATION_OBJECT",
+  "texts": {
+    "en": {
+      "label": "Authorization object",
+      "description": "The definition of an authorization object with its fields and activities"
+    },
+    "de": {
+      "label": "Berechtigungsobjekt",
+      "description": "Die Definition eines Berechtigungsobjekts mit Feldern und Aktivitäten"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/AUTHORIZATION_OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/OBJECT_LABEL"
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    },
+    {
+      "name": "FIELDS",
+      "arrayType": "/TRBASE/AUTHORIZATION_FIELD_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVITIES",
+      "arrayType": "/TRBASE/ACTIVITY_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVITY_CODES",
+      "arrayType": "/TRBASE/ACTIVITY_CODE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

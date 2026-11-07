@@ -1,0 +1,8 @@
+{
+  "name": "/TRREFL/BOX",
+  "texts": { "en": { "label": "Box of activities" } },
+  "components": [
+    { "name": "LABEL", "domain": "/TRBASE/TEXT" },
+    { "name": "CODES", "arrayType": "/TRBASE/ACTIVITY_CODE_ARRAY", "notNull": true }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/AUTHORIZATION_OBJECT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Authorization objects"
+    },
+    "de": {
+      "label": "Berechtigungsobjekte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/AUTHORIZATION_OBJECT"
+  }
+}

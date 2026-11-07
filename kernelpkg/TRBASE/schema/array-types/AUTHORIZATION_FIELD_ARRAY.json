@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/AUTHORIZATION_FIELD_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Fields of an authorization object"
+    },
+    "de": {
+      "label": "Felder eines Berechtigungsobjekts"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/AUTHORIZATION_FIELD"
+  }
+}

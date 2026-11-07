@@ -21,6 +21,33 @@ import (
 	"time"
 )
 
+// Activity is the enum /RT/ACTIVITY.
+type Activity string
+
+// Fixed values of /RT/ACTIVITY.
+const (
+	ActivityRead       Activity = "READ"
+	ActivityCreate     Activity = "CREATE"
+	ActivityUpdate     Activity = "UPDATE"
+	ActivityDelete     Activity = "DELETE"
+	ActivityExecute    Activity = "EXECUTE"
+	ActivityApprove    Activity = "APPROVE"
+	ActivityReject     Activity = "REJECT"
+	ActivityCancel     Activity = "CANCEL"
+	ActivityImport     Activity = "IMPORT"
+	ActivityExport     Activity = "EXPORT"
+	ActivityPrint      Activity = "PRINT"
+	ActivitySend       Activity = "SEND"
+	ActivityAdminister Activity = "ADMINISTER"
+)
+
+// ActivityInfo is the structure /TRBASE/ACTIVITY_INFO.
+type ActivityInfo struct {
+	Code        Activity               `rt:"CODE"`
+	Label       model.Optional[string] `rt:"LABEL"`
+	Description model.Optional[string] `rt:"DESCRIPTION"`
+}
+
 // AssetInfo is the structure /TRBASE/ASSET_INFO.
 type AssetInfo struct {
 	Path        string                    `rt:"PATH"`
@@ -32,7 +59,7 @@ type AssetInfo struct {
 	ModifiedAt  model.Optional[time.Time] `rt:"MODIFIED_AT"`
 	Description model.Optional[string]    `rt:"DESCRIPTION"`
 	Language    model.Optional[string]    `rt:"LANGUAGE"`
-	Languages   model.Optional[[]string]  `rt:"LANGUAGES"`
+	Languages   []string                  `rt:"LANGUAGES"`
 	HasNeutral  bool                      `rt:"HAS_NEUTRAL"`
 }
 
@@ -41,4 +68,37 @@ type AssetRepositoryInfo struct {
 	PackageID    string `rt:"PACKAGE_ID"`
 	RepositoryID string `rt:"REPOSITORY_ID"`
 	Label        string `rt:"LABEL"`
+}
+
+// AuthorizationField is the structure /TRBASE/AUTHORIZATION_FIELD.
+type AuthorizationField struct {
+	Name        string                 `rt:"NAME"`
+	IsActivity  bool                   `rt:"IS_ACTIVITY"`
+	DataElement model.Optional[string] `rt:"DATA_ELEMENT"`
+	Domain      string                 `rt:"DOMAIN"`
+	Type        string                 `rt:"TYPE"`
+	Length      model.Optional[int32]  `rt:"LENGTH"`
+	ShortLabel  model.Optional[string] `rt:"SHORT_LABEL"`
+	Label       model.Optional[string] `rt:"LABEL"`
+	LongLabel   model.Optional[string] `rt:"LONG_LABEL"`
+	Heading     model.Optional[string] `rt:"HEADING"`
+	Values      []FixedValue           `rt:"VALUES"`
+}
+
+// AuthorizationObject is the structure /TRBASE/AUTHORIZATION_OBJECT.
+type AuthorizationObject struct {
+	Name          string                 `rt:"NAME"`
+	PackageID     string                 `rt:"PACKAGE_ID"`
+	Label         model.Optional[string] `rt:"LABEL"`
+	Description   model.Optional[string] `rt:"DESCRIPTION"`
+	Fields        []AuthorizationField   `rt:"FIELDS"`
+	Activities    []ActivityInfo         `rt:"ACTIVITIES"`
+	ActivityCodes []Activity             `rt:"ACTIVITY_CODES"`
+}
+
+// FixedValue is the structure /TRBASE/FIXED_VALUE.
+type FixedValue struct {
+	Value       string                 `rt:"VALUE"`
+	Name        model.Optional[string] `rt:"NAME"`
+	Description model.Optional[string] `rt:"DESCRIPTION"`
 }

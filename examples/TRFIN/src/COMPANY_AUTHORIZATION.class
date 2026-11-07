@@ -1,0 +1,21 @@
+# Reads the authorization object of companies with the reflector.
+public class /TRFIN/COMPANY_AUTHORIZATION
+
+  # The fields of /TRFIN/COMPANY with their labels in the language of the
+  # execution.
+  public static method FIELDS() returns array of STRING raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
+    var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRFIN/COMPANY")
+    var out = new array of STRING
+    for field in obj.FIELDS
+      out.APPEND("{field.NAME}: {field.LABEL default field.NAME}")
+    end
+    return out
+  end
+
+  # Whether an activity can be granted for companies.
+  public static method ALLOWS(activity: /RT/ACTIVITY) returns BOOL raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
+    var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRFIN/COMPANY")
+    return /TRBASE/REFLECTOR.ALLOWS(obj, activity)
+  end
+
+end

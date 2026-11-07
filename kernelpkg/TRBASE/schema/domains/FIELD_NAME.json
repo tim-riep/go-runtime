@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/FIELD_NAME",
+  "description": "Name of a field",
+  "type": "CHAR",
+  "length": 30
+}

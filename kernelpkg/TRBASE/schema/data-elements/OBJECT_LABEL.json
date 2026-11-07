@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/OBJECT_LABEL",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Label",
+      "medium": "Label",
+      "long": "Label in the language",
+      "heading": "Label"
+    },
+    "de": {
+      "short": "Bezeichng.",
+      "medium": "Bezeichnung",
+      "long": "Bezeichnung in der Sprache",
+      "heading": "Bezeichnung"
+    }
+  }
+}

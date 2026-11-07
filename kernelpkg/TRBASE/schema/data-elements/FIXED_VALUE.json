@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/FIXED_VALUE",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Value",
+      "medium": "Fixed value",
+      "long": "Fixed value of the domain",
+      "heading": "Value"
+    },
+    "de": {
+      "short": "Wert",
+      "medium": "Festwert",
+      "long": "Festwert der Domäne",
+      "heading": "Wert"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ACTIVITY_CODE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Activity codes"
+    },
+    "de": {
+      "label": "Aktivitätscodes"
+    }
+  },
+  "rowType": {
+    "dataElement": "/RT/ACTIVITY"
+  }
+}

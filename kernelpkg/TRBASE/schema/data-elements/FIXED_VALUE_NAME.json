@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/FIXED_VALUE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Name",
+      "medium": "Name in code",
+      "long": "Name of the value in code",
+      "heading": "Name"
+    },
+    "de": {
+      "short": "Name",
+      "medium": "Name im Code",
+      "long": "Name des Werts im Code",
+      "heading": "Name"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# Describes objects of the schema at runtime; in this version
+# authorization objects and the activities of the kernel. Every package
+# may read every definition. Texts are in the language of the execution,
+# else in English, and null when there is none.
+public class /TRBASE/REFLECTOR
+
+  public static method AUTHORIZATION_OBJECT(name: STRING) returns /TRBASE/AUTHORIZATION_OBJECT raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND executed by kernel
+
+  public static method AUTHORIZATION_OBJECT_EXISTS(name: STRING) returns BOOL executed by kernel
+
+  # The authorization objects of a package, or of all packages for null,
+  # ordered by name.
+  public static method AUTHORIZATION_OBJECTS(pkg: STRING?) returns /TRBASE/AUTHORIZATION_OBJECT_ARRAY executed by kernel
+
+  # The activities of the kernel in their order.
+  public static method ACTIVITIES() returns /TRBASE/ACTIVITY_ARRAY executed by kernel
+
+  # Whether the activity can be granted for the object.
+  public static method ALLOWS(object: /TRBASE/AUTHORIZATION_OBJECT, activity: /RT/ACTIVITY) returns BOOL executed by kernel
+
+end

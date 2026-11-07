@@ -1,0 +1,11 @@
+# There is no authorization object with this name.
+public class /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND extends /RT/EXCEPTION
+
+  public attribute NAME: STRING
+
+  public constructor(name: STRING)
+    super("authorization object {name} does not exist")
+    NAME = name
+  end
+
+end

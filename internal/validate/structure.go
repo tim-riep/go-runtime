@@ -138,9 +138,8 @@ func (v *validator) component(parent string, c *model.Component, owner model.Pac
 	}
 	v.typeRef(c.Type, owner, c.Src, obj)
 	if !c.Type.Elementary() {
-		if c.NotNull {
-			v.fail(rterr.CodeStructure, c.Src.At("/notNull"), obj, "notNull applies only to components with a data element or domain")
-		}
+		// notNull on a structure or array component makes it never null:
+		// its start value is an empty structure or array.
 		if len(c.DefaultJSON) > 0 || c.Default.Kind != model.DefaultNone {
 			v.fail(rterr.CodeDefault, c.Src.At("/default"), obj, "defaults apply only to components with a data element or domain")
 		}

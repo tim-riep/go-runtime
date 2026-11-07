@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/FIXED_VALUE",
+  "texts": {
+    "en": {
+      "label": "Fixed value",
+      "description": "A fixed value of a domain"
+    },
+    "de": {
+      "label": "Festwert",
+      "description": "Ein Festwert einer Domäne"
+    }
+  },
+  "components": [
+    {
+      "name": "VALUE",
+      "dataElement": "/TRBASE/FIXED_VALUE",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/FIXED_VALUE_NAME"
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    }
+  ]
+}

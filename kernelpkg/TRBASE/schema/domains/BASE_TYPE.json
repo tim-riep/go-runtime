@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/BASE_TYPE",
+  "description": "Base type of a domain, e.g. CHAR or INT4",
+  "type": "CHAR",
+  "length": 9
+}

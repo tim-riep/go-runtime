@@ -1,0 +1,64 @@
+{
+  "name": "/TRBASE/AUTHORIZATION_FIELD",
+  "texts": {
+    "en": {
+      "label": "Field of an authorization object",
+      "description": "A field with its type, labels and fixed values"
+    },
+    "de": {
+      "label": "Feld eines Berechtigungsobjekts",
+      "description": "Ein Feld mit Typ, Bezeichnungen und Festwerten"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "IS_ACTIVITY",
+      "dataElement": "/TRBASE/IS_ACTIVITY",
+      "notNull": true
+    },
+    {
+      "name": "DATA_ELEMENT",
+      "dataElement": "/TRBASE/DATA_ELEMENT_NAME"
+    },
+    {
+      "name": "DOMAIN",
+      "dataElement": "/TRBASE/DOMAIN_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TYPE",
+      "dataElement": "/TRBASE/BASE_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "LENGTH",
+      "dataElement": "/TRBASE/TYPE_LENGTH"
+    },
+    {
+      "name": "SHORT_LABEL",
+      "dataElement": "/TRBASE/SHORT_LABEL"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/FIELD_LABEL"
+    },
+    {
+      "name": "LONG_LABEL",
+      "dataElement": "/TRBASE/LONG_LABEL"
+    },
+    {
+      "name": "HEADING",
+      "dataElement": "/TRBASE/HEADING"
+    },
+    {
+      "name": "VALUES",
+      "arrayType": "/TRBASE/FIXED_VALUE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

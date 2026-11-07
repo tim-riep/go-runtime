@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/DOMAIN_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Domain",
+      "medium": "Domain",
+      "long": "Domain of the field",
+      "heading": "Domain"
+    },
+    "de": {
+      "short": "Domäne",
+      "medium": "Domäne",
+      "long": "Domäne des Felds",
+      "heading": "Domäne"
+    }
+  }
+}

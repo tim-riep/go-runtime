@@ -26,6 +26,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -190,3 +191,14 @@ func (x *execution) AssetRepositories(reader, pkg model.PackageID) ([]*model.Ass
 // SetClock replaces the clock of the kernel, for tests of code with the
 // capability clock.
 func (k *Kernel) SetClock(now func() time.Time) { k.now = now }
+
+func (x *execution) Reflector() (*reflector.Reflector, error) {
+	if x.reflector == nil {
+		langs, err := x.k.languageCodes(x.ctx)
+		if err != nil {
+			return nil, err
+		}
+		x.reflector = reflector.New(x.schema, langs)
+	}
+	return x.reflector, nil
+}

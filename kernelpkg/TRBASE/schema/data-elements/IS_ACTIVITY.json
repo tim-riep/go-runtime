@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/IS_ACTIVITY",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Activity",
+      "medium": "Is ACTIVITY",
+      "long": "The field is the field ACTIVITY",
+      "heading": "ACTIVITY"
+    },
+    "de": {
+      "short": "Aktivität",
+      "medium": "Ist ACTIVITY",
+      "long": "Das Feld ist das Feld ACTIVITY",
+      "heading": "ACTIVITY"
+    }
+  }
+}

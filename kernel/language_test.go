@@ -96,7 +96,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 			t.Fatalf("expected ConfirmationRequired, got %v", err)
 		}
 		dry, err := k.Languages().Remove(ctx, "de", kernel.Options{DryRun: true})
-		if err != nil || dry.Changes[0].Detail != "25 texts" {
+		if err != nil || dry.Changes[0].Detail != "40 texts" {
 			t.Fatalf("dry run: %v %+v", err, dry)
 		}
 		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {
@@ -121,8 +121,23 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 // TestKernelTexts writes the German labels of the data element ACTIVITY of
 // the kernel only when German is set up, also on a migration.
 func TestKernelTexts(t *testing.T) {
-	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
-		ctx := context.Background()
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			kernelTexts(t, db.DSN)
+		})
+	}
+}
+
+// kernelTexts runs TestKernelTexts on a database. The kernel has no
+// kernel packages, since those of this kernel need the latest version.
+func kernelTexts(t *testing.T, dsn string) {
+	ctx := context.Background()
+	k, err := kernel.OpenConfig(ctx, dsn, kernel.Config{KernelPackages: []*model.Package{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer k.Close()
+	{
 		labels := func() map[string]model.DataElementText {
 			s, err := k.Schema(ctx)
 			if err != nil {
@@ -156,5 +171,5 @@ func TestKernelTexts(t *testing.T) {
 		if l := labels(); len(l) != 1 {
 			t.Fatalf("labels after removing German: %v", l)
 		}
-	})
+	}
 }

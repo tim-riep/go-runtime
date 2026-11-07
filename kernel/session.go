@@ -24,6 +24,7 @@ import (
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -47,6 +48,8 @@ type execution struct {
 	// contents are the asset contents that code of the execution loaded,
 	// by hash.
 	contents map[string][]byte
+	// reflector describes the schema of the execution, made on first use.
+	reflector *reflector.Reflector
 }
 
 // session is a database session: its own connection and a transaction

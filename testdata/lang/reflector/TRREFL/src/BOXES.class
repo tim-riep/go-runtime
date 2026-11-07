@@ -1,0 +1,18 @@
+# A structure with an array component that is never null.
+public class /TRREFL/BOXES
+
+  public static method EMPTY() returns INT8
+    var box: /TRREFL/BOX
+    return box.CODES.LENGTH()
+  end
+
+  public static method READ(json: STRING) returns STRING raises /TRBASE/XSLT_FAILED
+    try
+      var box = transform json using /TRBASE/JSON into /TRREFL/BOX
+      return "{box.CODES.LENGTH()}"
+    catch e: /TRBASE/TRANSFORM_RESULT_INVALID
+      return "invalid"
+    end
+  end
+
+end

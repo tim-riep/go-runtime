@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
 )
 
 // Caller is the method whose code called a native method.
@@ -53,6 +54,9 @@ type Host interface {
 	// AssetRepositories returns the asset repositories of a package, by
 	// ID, under the same rule.
 	AssetRepositories(reader, pkg model.PackageID) ([]*model.AssetRepository, error)
+	// Reflector describes the schema of the execution with the texts of
+	// the languages set up.
+	Reflector() (*reflector.Reflector, error)
 }
 
 // AssetSource is an asset repository opened for reading. Its metadata

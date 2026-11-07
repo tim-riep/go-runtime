@@ -67,3 +67,33 @@ func literal(e syntax.Expr) (string, bool) {
 	}
 	return text, true
 }
+
+// ReflectorClass is the class of the kernel package TRBASE that describes
+// objects of the schema.
+const ReflectorClass = "/TRBASE/REFLECTOR"
+
+// authorizationObject checks AUTHORIZATION_OBJECT(name) with a string
+// literal that names an object of the own package, of a required one or of
+// the kernel: the object exists, and it is recorded as used, so an upgrade
+// that removes it compiles the package again and fails. Objects of other
+// packages are not in the schema the package compiles against; they are
+// looked up when the code runs.
+func (c *checker) authorizationObject(x *syntax.CallExpr) {
+	if len(x.Args) != 1 {
+		return
+	}
+	name, ok := literal(x.Args[0].Value)
+	if !ok {
+		return
+	}
+	pos := x.Args[0].Value.Start()
+	pkg, _, ok := model.SplitName(name)
+	if !ok || pkg != c.cfg.Package && pkg != model.Kernel && !slices.Contains(c.cfg.Visible, pkg) {
+		return
+	}
+	if c.cfg.Schema.AuthorizationObjects[name] == nil {
+		c.errorf(pos, CodeAuthorization, "authorization object %s does not exist", name)
+		return
+	}
+	c.use(pos, "authorization-object", name, "")
+}

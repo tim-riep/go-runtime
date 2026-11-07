@@ -210,7 +210,10 @@ func TestComponentRules(t *testing.T) {
 	nested := comp("SEAT", model.TypeStructure, "/TRS/ADDRESS")
 	nested.Component.NotNull = true
 	s := withTRS(t, trs(model.Package{Structures: []model.Structure{address, structure("/TRS/S", nested)}}))
-	expectStructure(t, s, rterr.CodeStructure, "notNull applies only to components with a data element or domain")
+	// notNull on a structure or array component is allowed.
+	if err := Schema(s, Options{}); err != nil {
+		t.Fatalf("notNull on a structure component: %v", err)
+	}
 
 	nullDefault := comp("CITY", model.TypeDataElement, "/TRBASE/NAME")
 	nullDefault.Component.NotNull, nullDefault.Component.DefaultJSON = true, []byte("null")

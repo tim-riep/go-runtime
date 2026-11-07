@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/AUTHORIZATION_OBJECT_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Auth. obj.",
+      "medium": "Authorization object",
+      "long": "Name of the authorization object",
+      "heading": "Authorization object"
+    },
+    "de": {
+      "short": "Ber.objekt",
+      "medium": "Berechtigungsobjekt",
+      "long": "Name des Berechtigungsobjekts",
+      "heading": "Berechtigungsobjekt"
+    }
+  }
+}

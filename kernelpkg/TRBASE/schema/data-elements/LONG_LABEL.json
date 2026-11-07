@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/LONG_LABEL",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Long",
+      "medium": "Long label",
+      "long": "Long field label",
+      "heading": "Long label"
+    },
+    "de": {
+      "short": "Lang",
+      "medium": "Langbezeichnung",
+      "long": "Lange Feldbezeichnung",
+      "heading": "Langbezeichnung"
+    }
+  }
+}

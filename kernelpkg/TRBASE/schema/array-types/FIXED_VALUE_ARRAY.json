@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/FIXED_VALUE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Fixed values"
+    },
+    "de": {
+      "label": "Festwerte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/FIXED_VALUE"
+  }
+}

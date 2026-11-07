@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/OBJECT_NAME",
+  "description": "Name of an object of the schema with its namespace",
+  "type": "CHAR",
+  "length": 63
+}

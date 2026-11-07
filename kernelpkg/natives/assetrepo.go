@@ -190,7 +190,7 @@ func (a *assetRepository) get(c *native.Context, p, lang string) ([]byte, error)
 }
 
 func folderInfo(p string) AssetInfo {
-	return AssetInfo{Path: p, IsFolder: true, Languages: model.Some([]string{})}
+	return AssetInfo{Path: p, IsFolder: true, Languages: []string{}}
 }
 
 // entryInfo describes a folder, or an asset in the version GET returns
@@ -204,7 +204,7 @@ func entryInfo(e *model.AssetEntry, lang string) AssetInfo {
 		return info
 	}
 	info.MimeType = e.MimeType
-	info.Languages = model.Some(e.Languages())
+	info.Languages = e.Languages()
 	info.HasNeutral = e.Content != nil
 	if c, l := model.ChooseAssetContent(e, model.Some(lang)); c != nil {
 		info.Size = c.Size

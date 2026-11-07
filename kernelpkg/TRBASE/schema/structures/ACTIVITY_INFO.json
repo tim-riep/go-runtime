@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/ACTIVITY_INFO",
+  "texts": {
+    "en": {
+      "label": "Activity",
+      "description": "An activity with its label and explanation"
+    },
+    "de": {
+      "label": "Aktivität",
+      "description": "Eine Aktivität mit Bezeichnung und Erklärung"
+    }
+  },
+  "components": [
+    {
+      "name": "CODE",
+      "dataElement": "/RT/ACTIVITY",
+      "notNull": true
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/OBJECT_LABEL"
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    }
+  ]
+}

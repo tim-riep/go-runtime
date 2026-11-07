@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ACTIVITY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Activities"
+    },
+    "de": {
+      "label": "Aktivitäten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ACTIVITY_INFO"
+  }
+}
