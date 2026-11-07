@@ -1,0 +1,29 @@
+# Gives the companies of a country a partner ID on OTTO and writes a line
+# to the audit log in a session of its own, which stays even if the sync
+# is rolled back.
+public class /TROTTO/COMPANY_SYNC
+
+  public static method SYNC(country: /TRFIN/COUNTRY_CODE) returns INT4
+    var audit = open session
+    var count = 0
+
+    for company in select from /TRFIN/COMPANIES where COUNTRY = country and /TROTTO/OTTO_ID is null
+      company./TROTTO/OTTO_ID = /TROTTO/ID_RULES.BUILD(company.COMPANY_ID)
+      update company
+      count = count + 1
+    end
+
+    var entry: /TRBASE/AUDIT_LOG
+    entry.LOG_ID = UUID.RANDOM()
+    entry.TEXT = "Synced {count} companies for {country}"
+    insert entry using audit
+    commit audit
+
+    if count > 1000
+      rollback
+      return 0
+    end
+    return count
+  end
+
+end

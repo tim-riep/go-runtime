@@ -1064,6 +1064,18 @@ func (c *checker) call(f *fnCtx, sc *scope, x *syntax.CallExpr, e env, want Type
 		}
 	case *syntax.SelectExpr:
 		name := fun.Name.Name
+		if id, ok := fun.X.(*syntax.Ident); ok && id.Name == "UUID" && sc.lookup(id.Name) == nil && f.class.Member(id.Name) == nil {
+			// UUID.RANDOM() returns a random UUID (version 4).
+			if name != "RANDOM" {
+				c.errorf(fun.Name.Pos, CodeUnknown, "UUID has no method %s", name)
+				c.args(f, sc, x, &Func{}, e, nil)
+				return TypInvalid
+			}
+			c.args(f, sc, x, &Func{}, e, nil)
+			c.info.Calls[x] = &Call{Kind: CallBuiltin, Builtin: &Builtin{ID: UUIDRandom, Name: name}, Args: argValues(x)}
+			c.info.Selects[fun] = &Selection{Kind: SelectBuiltin}
+			return TypUUID
+		}
 		if g, ok := fun.X.(*syntax.GlobalExpr); ok {
 			c.checkGlobalName(g.Name)
 			switch t := c.global(g).(type) {

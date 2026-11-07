@@ -1,0 +1,20 @@
+{
+  "name": "/TRBASE/AUDIT_LOG",
+  "description": "Protocol of what code did, written in a session of its own",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "LOG_ID",
+      "domain": "/TRBASE/GUID"
+    },
+    {
+      "name": "TEXT",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LOG_ID"
+  ]
+}

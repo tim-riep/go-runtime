@@ -15,6 +15,8 @@
 package vm
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"sort"
 	"strings"
 	"time"
@@ -25,7 +27,10 @@ import (
 	"github.com/tim-riep/go-runtime/lang/types"
 )
 
-func hasReceiver(id int) bool { return types.BuiltinID(id) != types.EnumParse }
+func hasReceiver(id int) bool {
+	b := types.BuiltinID(id)
+	return b != types.EnumParse && b != types.UUIDRandom
+}
 
 // callFn calls a function value.
 func (m *Machine) callFn(c *Closure, args ...Value) (Value, *thrown, error) {
@@ -446,6 +451,14 @@ func (m *Machine) builtin(p *Program, id, recvT, resT int, vals []Value) (Value,
 		}
 		return Int(days), nil, nil
 
+	case types.UUIDRandom:
+		var b [16]byte
+		if _, err := rand.Read(b[:]); err != nil {
+			return Value{}, nil, err
+		}
+		b[6] = b[6]&0x0f | 0x40 // version 4
+		b[8] = b[8]&0x3f | 0x80 // variant RFC 9562
+		return Value{X: binary.BigEndian.Uint64(b[:8]), N: binary.BigEndian.Uint64(b[8:])}, nil, nil
 	case types.EnumParse:
 		e := &p.Enums[p.Types[recvT].Enum]
 		text := m.format(p, e.Base, 0, args[0])

@@ -16,12 +16,15 @@ package kernel
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -100,15 +103,12 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(m *vm.Ma
 	if !slices.ContainsFunc(tenants, func(t Tenant) bool { return t.ID == opts.Tenant }) {
 		return &rterr.NotFound{Kind: "tenant", Name: opts.Tenant}
 	}
-	s, err := k.repo.Load(ctx, k.db)
+	g, err := k.generation(ctx)
 	if err != nil {
 		return err
 	}
-	image, err := k.loadImage(ctx, k.db)
-	if err != nil {
-		return err
-	}
-	x := &execution{k: k, d: k.d, phys: s.Physical(), tenant: opts.Tenant, opts: opts}
+	image := g.image
+	x := &execution{k: k, d: k.d, phys: g.phys, tenant: opts.Tenant, opts: opts}
 	x.sessions = []*session{{x: x, n: 1}}
 	defer func() { err = errors.Join(err, x.finish(err)) }()
 	vo := opts.VM
@@ -146,4 +146,56 @@ func (x *execution) finish(failure error) error {
 		s.close()
 	}
 	return errors.Join(errs...)
+}
+
+// generation is the code of all installed packages at one generation,
+// linked, with the schema it was compiled against.
+type generation struct {
+	n     int64
+	image *vm.Image
+	phys  *model.Physical
+}
+
+// generation returns the code of the current generation. An execution
+// reads the generation number; only when it is newer than the cached code
+// are the schema and the code loaded and linked again, in one
+// transaction. An execution keeps its generation to its end; older ones
+// are dropped once no execution holds them.
+func (k *Kernel) generation(ctx context.Context) (*generation, error) {
+	n, err := k.repo.Generation(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	if g := k.code.Load(); g != nil && g.n >= n {
+		return g, nil
+	}
+	var g *generation
+	err = k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+		n, err := k.repo.Generation(ctx, tx)
+		if err != nil {
+			return err
+		}
+		s, err := k.repo.Load(ctx, tx)
+		if err != nil {
+			return err
+		}
+		image, err := k.loadImage(ctx, tx)
+		if err != nil {
+			return err
+		}
+		g = &generation{n: n, image: image, phys: s.Physical()}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	for {
+		old := k.code.Load()
+		if old != nil && old.n >= g.n {
+			return old, nil
+		}
+		if k.code.CompareAndSwap(old, g) {
+			return g, nil
+		}
+	}
 }

@@ -47,7 +47,8 @@ end
 - The compiler rejects names in the wrong case; the formatter never renames.
 - `/` right after an operand divides; anywhere else it starts a global name. The
   canonical form has spaces around binary operators, so `a / /TRORDER/X.LIMIT` divides by
-  a constant.
+  a constant. After the words `set` and `by` of database statements a global name
+  follows, such as an extension field.
 - Comments start with `#` and run to the end of the line.
 - A statement ends with its line; there is no semicolon. A line continues after a binary
   operator, a comma, `=`, `default`, `and` or `or` at its end, and inside parentheses and
@@ -57,10 +58,11 @@ end
   the digits after the point are the scale of a decimal literal. `null`, `true` and
   `false` are literals.
 
-Reserved for database access in a later language part: `commit`, `rollback`, `session`,
-`using`, `select`, `insert`, `update`, `delete`, `from`, `where`. `commit` and `rollback`
-already parse as statements and are rejected by the compiler until then. `transform`,
-`parameters` and `into` are reserved for later language parts as well.
+Database access uses the keywords `commit`, `rollback`, `session`, `using`, `select`,
+`insert`, `update`, `delete`, `from` and `where`; `single`, `count`, `order`, `by`,
+`ascending`, `descending`, `limit` and `set` are keywords only at their place in a
+database statement. `transform`, `parameters` and `into` are reserved for later language
+parts.
 
 ## Types
 
@@ -77,13 +79,20 @@ already parse as statements and are rejected by the compiler until then. `transf
 | `map of K to V`            | maps that keep the order of insertion                          |
 | `function (T) returns R`   | functions, also with `raises`                                  |
 | classes and interfaces     | objects, passed by reference                                   |
+| `SESSION`                  | a database session                                             |
 
-The schema of the package provides the other types. In this language version only
-objects of the own package are available:
+The schema provides the other types: those of the own package and of the packages it
+requires, directly as listed in the manifest.
 
 - Structures and tables become structs with their resolved components. Components
   without `notNull` are optional; key fields of tables never are. Tables have no tenant
-  field, keys or foreign keys as structs.
+  field, keys or foreign keys as structs. Fields that other packages add with extensions
+  carry their full name, `company./TROTTO/OTTO_ID`; only the extending package and
+  packages that require it use them, but every row holds them.
+- New values of structs, as by `var row: /TRORDER/ORDERS` or `new`, have the defaults
+  of the schema; fields without default are `null` when optional and the zero value of
+  their type otherwise: `""`, `0`, `false`, `1970-01-01`, `1970-01-01T00:00:00Z` and the
+  nil UUID.
 - Array types become arrays of their row type. Arrays of array types with a unique key
   keep an index: `orders.LOOKUP(ID: "A1")` finds an element without searching.
 - Data elements and domains become named types over their base type: `CHAR(n)` and
@@ -99,8 +108,11 @@ Structs, arrays and maps are values: assignment, passing and returning copy them
 Objects and functions are references. `=` compares structs, arrays and maps by their
 content and objects by identity.
 
-`var x = value` derives the type; `var x: T = value` states it. Parameters, results,
-attributes and constants always state their type.
+`var x = value` derives the type; `var x: T = value` states it, and `var x: T` starts
+with the zero value of `T`, which needs `T` to be no class, function or `SESSION`.
+Parameters, results, attributes and constants always state their type.
+
+`UUID.RANDOM()` returns a random UUID.
 
 ### Conversions and decimals
 
@@ -362,13 +374,167 @@ public class /TRORDER/DOC_INCLUDING
 end
 ```
 
-In this language version, includes come from the own package.
+`include` uses includes of the own package and of required packages. `include ... if
+found` may name an include of any package, also one that is not required; it is the only
+reference that needs no required package. Inserted code is checked as code of the
+including package and uses only what that package may use. The kernel compiles the
+including package again whenever the package of the include is installed, upgraded or
+removed, so the code of the include is inserted or left out accordingly.
+
+## Classes of other packages
+
+Code uses the `public` classes and interfaces of required packages and their `public`
+members, extends their `open` classes and implements their interfaces. `package`
+members stay within their package.
+
+## Database access
+
+Code reads and writes the tables of the schema. The kernel adds the tenant of the
+execution to every statement on a table with tenant data, so code only sees the rows of
+its tenant. The examples use the table `/TRORDER/ORDERS`.
+
+```rt
+public class /TRORDER/DOC_ORDER_STORE
+
+  public static method ADD(no: INT8, id: STRING, amount: DEC(15,2)) returns /TRORDER/ORDERS
+    var order: /TRORDER/ORDERS
+    order.ORDER_NO = no
+    order.ID = id
+    order.AMOUNT = amount
+    insert order
+    return order
+  end
+
+  public static method FIND(no: INT8) returns /TRORDER/ORDERS?
+    return select single from /TRORDER/ORDERS where ORDER_NO = no
+  end
+
+  public static method OPEN_TOTAL() returns DEC(15,2)
+    var total = 0.00
+    for order in select from /TRORDER/ORDERS where PAID = false and NOTE is not null order by AMOUNT descending
+      total = total + order.AMOUNT
+    end
+    return total
+  end
+
+  public static method LARGEST(n: INT8) returns array of /TRORDER/ORDERS
+    return select from /TRORDER/ORDERS order by AMOUNT descending, ORDER_NO limit n
+  end
+
+  public static method PAY(no: INT8) raises /TRORDER/INVALID_ORDER
+    var order = FIND(no)
+    if order is null
+      raise /TRORDER/INVALID_ORDER with "{no}"
+    end
+    order.PAID = true
+    update order
+  end
+
+  public static method PAY_ALL(ids: array of STRING) returns INT8
+    return update /TRORDER/ORDERS set PAID = true, NOTE = null where ID in ids
+  end
+
+  public static method REMOVE_PAID() returns INT8
+    var count = select count from /TRORDER/ORDERS where PAID = true
+    delete from /TRORDER/ORDERS where PAID = true
+    return count
+  end
+
+end
+```
+
+- `select from T` returns `array of T`, `select single from T` the first row or `null`,
+  and `select count from T` an `INT8`. Without `order by` rows come in the order of the
+  primary key. `limit` restricts the number of rows. A select into an array reads at most
+  10 000 rows and raises `/RT/TOO_MANY_ROWS` beyond that.
+- `for row in select ...` reads the rows one by one through a cursor, without that limit.
+  The loop may change the rows it reads.
+- `insert row`, `update row` and `delete row` write one row given as value of the table
+  type; `update` and `delete` find it by its primary key and raise `/RT/ROW_NOT_FOUND` when
+  there is none. `update` writes all fields that are not part of the key.
+- `update T set A = x, B = y where ...` and `delete from T where ...` change all matching
+  rows and return their number; they may stand as statements.
+- In `where`, upper-case names and global names are fields of the table; values come from
+  local names, `me.X` or `/PKG/C.X`. A comparison relates a field to a value or to another
+  field with `=`, `<>`, `<`, `<=`, `>` or `>=`; further there are `FIELD in array`,
+  `is [not] null` and `is [not] empty`, joined by `and`, `or` and `not`. As everywhere,
+  a value that may be `null` cannot be compared; `NOTE is null` and `NOTE is empty` are
+  different conditions. A field that is `null` satisfies no comparison.
+- Errors of the database are runtime errors under `/RT/DATABASE_ERROR`, which code catches
+  by naming them: `/RT/DUPLICATE_ROW`, `/RT/FOREIGN_KEY_VIOLATION`, `/RT/CHECK_VIOLATION`,
+  `/RT/NOT_NULL_VIOLATION`, `/RT/ROW_NOT_FOUND`, `/RT/TOO_MANY_ROWS`, `/RT/LOCK_TIMEOUT`
+  and `/RT/SESSION_ERROR`. `TABLE_NAME` and `CONSTRAINT_NAME` tell where an error happened
+  when the database reports it. After a caught error the session goes on.
+
+## Sessions and transactions
+
+Every execution has a default session. `open session` opens another one with a
+connection and a transaction of its own; `using s` runs a statement in it. A transaction
+begins with the first statement of a session; `commit` and `rollback` end it, the next
+statement begins a new one. Without a session they apply to the default session.
+
+```rt
+public class /TRORDER/DOC_ORDER_IMPORT
+
+  public static method IMPORT(orders: array of /TRORDER/ORDER_INFO) returns INT4
+    var protocol = open session
+    var count = 0
+    for info in orders
+      var order: /TRORDER/ORDERS
+      order.ORDER_NO = count + 1
+      order.ID = info.ID
+      order.AMOUNT = info.AMOUNT
+      order.PAID = info.PAID
+      insert order
+      count = count + 1
+    end
+    commit
+    PROTOCOL(protocol, count)
+    return count
+  end
+
+  private static method PROTOCOL(s: SESSION, count: INT4)
+    var order: /TRORDER/ORDERS
+    order.ORDER_NO = 0
+    order.ID = "IMPORT"
+    order.AMOUNT = 0.00
+    order.NOTE = "{count} orders imported"
+    insert order using s
+    commit s
+  end
+
+end
+```
+
+- At the end of an execution the kernel commits the default session, or rolls it back
+  when an exception ends the execution. The kernel may also be set to roll back whatever
+  code did not commit. Other sessions that are not committed are rolled back with a
+  warning in the log.
+- An execution has at most four sessions, the default session included.
+- `SESSION` is allowed for variables, parameters and results; attributes, constants and
+  collections cannot hold it, and `rt run` cannot pass it.
+- `commit` or `rollback` of a session inside a `for ... in select` of the same session
+  would end the cursor of the loop: the compiler rejects it when the loop is around the
+  statement, and it raises `/RT/SESSION_ERROR` when a called method does it.
+- A statement waits at most two seconds for a lock and then raises `/RT/LOCK_TIMEOUT`.
+  Most often another session of the same execution holds the lock.
+- PostgreSQL runs every statement in a savepoint, so a session goes on after a caught
+  error. SQLite allows one writing transaction at a time: when a session writes while
+  another session of the execution has uncommitted changes, the statement raises
+  `/RT/SESSION_ERROR` at once. Sessions of SQLite read in parallel; a reading transaction
+  keeps the state of its first statement until it ends.
 
 ## Test classes
 
 A test class is marked with `test`. `rt test` runs its test methods, each on a new
 object; `assert condition, "message"` fails a test. Test classes are checked with the
 package but are not part of the shipped program, and only test classes use them.
+
+Every test method runs in a tenant of its own, which exists only for the method. Inside
+a test, `commit` only marks the point that `rollback` returns to; at the end everything
+is rolled back and the tenant is deleted. So tests start with empty tables and leave no
+rows. Within a test, a session does not see what another session committed, and under
+SQLite only one session writes.
 
 ```rt
 public test class /TRORDER/DOC_TEST
@@ -425,7 +591,8 @@ type          = ( "STRING" | "INT4" | "INT8" | "DEC" "(" INT "," INT ")" | "DATE
               | "BOOL" | "UUID" | "BYTES" | GLOBAL ) [ "?" ]
               | "array" "of" type | "map" "of" type "to" type
               | "function" "(" [ type { "," type } ] ")" [ "returns" type ] [ raises ] ;
-stmt          = "var" LOCAL [ ":" type ] "=" expr | place "=" expr | call
+stmt          = "var" LOCAL [ ":" type ] "=" expr | "var" LOCAL ":" type | place "=" expr | call
+              | updateExpr | deleteExpr
               | "if" expr NL block { "elseif" expr NL block } [ "else" NL block ] "end"
               | "while" expr NL block "end"
               | "for" LOCAL [ "," LOCAL ] "in" expr NL block "end"
@@ -433,15 +600,25 @@ stmt          = "var" LOCAL [ ":" type ] "=" expr | place "=" expr | call
               | "break" | "continue" | "return" [ expr ] | "raise" GLOBAL [ "with" expr { "," expr } ]
               | "try" NL block { "catch" LOCAL ":" GLOBAL NL block } [ "finally" NL block ] "end"
               | "assert" expr [ "," expr ] | "log" LEVEL expr | "include" GLOBAL [ "if" "found" ]
-              | "commit" | "rollback" ;
+              | ( "insert" | "update" | "delete" ) expr [ "using" expr ]
+              | ( "commit" | "rollback" ) [ expr ] ;
 expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr ")"
               | expr "." MEMBER | expr "(" [ args ] ")" | expr "[" expr "]"
               | "new" GLOBAL "(" [ args ] ")" | "new" ( "array" | "map" ) "of" ...
               | "[" [ expr { "," expr } ] "]" | "[" expr ":" expr { "," expr ":" expr } "]" | "[" ":" "]"
               | "function" params [ "returns" type ] [ raises ] ( "=>" expr | NL block "end" )
               | ( "-" | "not" ) expr | expr OPERATOR expr | expr "is" [ "not" ] ( "null" | "empty" )
-              | expr "as" type ;
+              | expr "as" type | expr "." GLOBAL | expr "in" expr
+              | selectExpr | updateExpr | deleteExpr | "open" "session" ;
 args          = expr { "," expr } | MEMBER ":" expr { "," MEMBER ":" expr } ;
+selectExpr    = "select" [ "single" | "count" ] "from" GLOBAL [ "where" expr ]
+                [ "order" "by" field [ "ascending" | "descending" ]
+                  { "," field [ "ascending" | "descending" ] } ]
+                [ "limit" expr ] [ "using" expr ] ;
+updateExpr    = "update" GLOBAL "set" field "=" expr { "," field "=" expr } [ "where" expr ]
+                [ "using" expr ] ;
+deleteExpr    = "delete" "from" GLOBAL [ "where" expr ] [ "using" expr ] ;
+field         = MEMBER | GLOBAL ;
 ```
 
 ## Running programs
@@ -453,14 +630,19 @@ references in their own slots. Every execution has limits for the number of inst
 (default 10 million), nested calls (256), allocated memory (256 MiB), the length of
 collections and strings (10 million) and can be canceled.
 
+Installing a package compiles it; its sources and the compiled code are stored in the
+database, and the kernel compiles packages again when something they use changes.
+
 ```bash
 rt fmt examples/TRORDER
 rt build examples/TRORDER
-rt test examples/TRORDER
-rt run examples/TRORDER /TRORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]'
+rt install examples/TRORDER
+rt tenant create ACME
+rt test TRORDER
+rt run TRORDER /TRORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]' --tenant ACME
 ```
 
-`rt run` calls public static methods whose parameters and result are built-in types,
+`rt run` calls public static methods of installed packages for a tenant, whose parameters and result are built-in types,
 structs, enums or collections of them. JSON keeps `null` and `""` apart; `DEC` is
 written as string, `DATE` and `TIMESTAMP` in ISO 8601, `BYTES` in base64 and enum
 constants by name.

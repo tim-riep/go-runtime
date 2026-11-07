@@ -1,0 +1,11 @@
+# A company that does not exist.
+public class /TRFIN/UNKNOWN_COMPANY extends /RT/EXCEPTION
+
+  public attribute COMPANY_ID: STRING
+
+  public constructor(id: STRING)
+    super("unknown company {id}")
+    COMPANY_ID = id
+  end
+
+end

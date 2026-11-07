@@ -1108,10 +1108,11 @@ func (f *fn) call(x *syntax.CallExpr) {
 		if ci.Receiver != nil {
 			f.expr(ci.Receiver)
 			recvType = types.NonOpt(f.c.info.Types[ci.Receiver])
-		} else {
+		} else if g, ok := x.Fun.(*syntax.SelectExpr).X.(*syntax.GlobalExpr); ok {
 			// Methods of an enum type, such as PARSE.
-			g := x.Fun.(*syntax.SelectExpr).X.(*syntax.GlobalExpr)
 			recvType = f.c.info.Globals[g].(types.Type)
+		} else {
+			recvType = types.TypUUID // UUID.RANDOM()
 		}
 		f.args(ci.Args)
 		f.emit(CALL_BUILTIN, int(ci.Builtin.ID), len(ci.Args), f.c.typeDesc(recvType), f.c.typeDesc(f.c.info.Types[x]))

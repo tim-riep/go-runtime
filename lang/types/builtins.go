@@ -83,6 +83,7 @@ const (
 	EnumParse
 	EnumValueOf
 	EnumName
+	UUIDRandom
 )
 
 type builtinSig struct {

@@ -393,5 +393,238 @@
       "via": "include"
     }
   ],
-  "codeUses": []
+  "codeUses": [
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 15,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 26,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 30,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 16,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 17,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COMPANY_ID"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 18,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "NAME"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 19,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COUNTRY"
+    },
+    {
+      "package": "TRFIN",
+      "file": "TROTTO:src/COMPANY_HOOK.include",
+      "line": 5,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "STATUS"
+    },
+    {
+      "package": "TRFIN",
+      "file": "TROTTO:src/COMPANY_HOOK.include",
+      "line": 6,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COMPANY_ID"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 22,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 27,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 27,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COMPANY_ID"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 31,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 31,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COUNTRY"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 31,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "NAME"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 39,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "NAME"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 40,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 45,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 45,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "STATUS"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 45,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COUNTRY"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 45,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "STATUS"
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 49,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_SERVICE.class",
+      "line": 49,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "STATUS"
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 10,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 10,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COUNTRY"
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 10,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "/TROTTO/OTTO_ID"
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 11,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "/TROTTO/OTTO_ID"
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 11,
+      "kind": "field",
+      "object": "/TRFIN/COMPANIES",
+      "member": "COMPANY_ID"
+    },
+    {
+      "package": "TROTTO",
+      "file": "src/COMPANY_SYNC.class",
+      "line": 12,
+      "kind": "table",
+      "object": "/TRFIN/COMPANIES",
+      "member": null
+    }
+  ]
 }

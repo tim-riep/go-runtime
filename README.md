@@ -469,6 +469,13 @@ afterwards. With `DryRun` only the plan is returned.
 - PostgreSQL: DDL is transactional, operations are serialized with an advisory lock, foreign
   keys are `DEFERRABLE INITIALLY IMMEDIATE`. The kernel uses the first schema of the
   `search_path`.
+- Sessions of code: on PostgreSQL every session has its own connection with a lock timeout
+  (default 2 seconds), every statement runs in a savepoint and cursors are fetched in
+  portions. On SQLite sessions begin their transactions deferred and read in parallel,
+  but only one session of an execution writes at a time: a second writing session gets
+  `/RT/SESSION_ERROR` at once instead of waiting for itself. `/TROTTO/COMPANY_SYNC`, which
+  updates companies in the default session and writes the audit log in another one, thus
+  works on PostgreSQL and on SQLite only when no company needs an update.
 
 ## Source language
 
@@ -501,8 +508,40 @@ The pipeline needs no database: `lang/syntax` (lexer, parser, canonical printer)
 `lang/types` (checker with null checks along the control flow, checked exceptions and
 includes), `lang/compile` (layouts and typed stack instructions), `lang/bytecode` (the
 program and its binary encoding with format version), `vm` (the machine with limits) and
-`lang/build`, which reads a package directory and runs all of them. The kernel installs
-packages with source files, but does not store or compile the sources yet.
+`lang/build`, which reads a package directory and runs all of them.
+
+### Code in the kernel
+
+- Installing and upgrading a package compile its code after the schema check and before
+  the commit; dry runs and `rt plan` compile too. A compile error or a file that is not
+  in canonical form stops the operation, and the error names package, file, line, column
+  and code. Sources and bytecode are stored in the kernel tables `/RT/SOURCES` and
+  `/RT/BYTECODE`, which are the only source of later compilations.
+- Code uses types, classes, interfaces and includes of the packages it requires, and
+  `include ... if found` of any package. Compiled programs refer to classes and methods
+  of other packages by direct indexes and offsets, so the kernel compiles a package again
+  in the same transaction when a package it requires, a package with an include it names
+  or an object it uses changes. The plan shows these steps as `compile-package` with the
+  reason, such as `compile-package TRFIN (includes /TROTTO/COMPANY_HOOK if found)`.
+- `/RT/CODE_USES` records every reference of code with package, file and line;
+  `rt show /TRFIN/COMPANIES` lists them, and `rt show class:/TRFIN/COMPANY_SERVICE` shows a
+  class. `/RT/CODE_INCLUDES` keeps the includes, also those not found.
+- Every change of code starts a new generation in `/RT/CODE_GENERATION`. An execution
+  uses the generation that was current when it started until its end; the next one
+  loads the new code. A kernel with another bytecode format compiles all packages again
+  when it opens the database.
+- Code reads and writes tables with `select`, `insert`, `update` and `delete`, always
+  restricted to the tenant of the execution, and controls transactions over several
+  sessions; see the [language reference](docs/language.md#database-access). The example
+  packages show it: `TRFIN` reads and writes companies in `/TRFIN/COMPANY_SERVICE`, and
+  `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
+  of its own and inserts `/TROTTO/COMPANY_HOOK` into `TRFIN`.
+
+```go
+out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC",
+	[]json.RawMessage{json.RawMessage(`"DE"`)})
+results, err := k.Test(ctx, "TRFIN", nil, kernel.ExecOptions{})
+```
 
 ## Library
 
@@ -568,16 +607,21 @@ rt log
 rt fmt examples/TRORDER
 rt fmt --check .
 rt build examples/TRORDER
+rt install examples/TRORDER
+rt tenant create ACME
+rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME
+rt test TRORDER
 rt test examples/TRORDER
-rt run examples/TRORDER /TRORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]'
 ```
 
-`fmt`, `build`, `test` and `run` work on package directories and need no database.
-Packages a package requires are looked up next to it, in a directory named after their
-ID.
+`fmt` and `build` work on package directories and need no database; `build` looks up
+the packages a package requires next to it, in a directory named after their ID. `run`
+calls a public static method of an installed package for a tenant. `test` runs the test
+classes of an installed package, or of a directory compiled against the installed
+packages; every test method runs in a tenant of its own and leaves no rows.
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
-`--description`, `--name`, `--lang`, `-o`, `--max-asset-size`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
+`--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
 failed and was rolled back, 1 other errors.
 
@@ -601,11 +645,10 @@ go test ./internal/planner ./setting ./kernel ./lang/syntax -update
 
 ## Not included yet
 
-Database access from code, storing and compiling sources on installation, types and
-includes of other packages in code, native methods, messages with texts per language, a
+Native methods, a time of the execution such as "now" for code, messages with texts per language, a
 language server and a debugger, permissions, user interface, views, indexes beyond keys,
 data migrations with custom logic, remote package sources, installing from ZIP files (the
-loader already works on `fs.FS`), a data access layer that restricts queries to a tenant,
+loader already works on `fs.FS`), joins and aggregates other than `count` in code,
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, serving
 assets over HTTP, assets uploaded at runtime or per tenant, extending asset repositories of

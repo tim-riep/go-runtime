@@ -1,0 +1,8 @@
+# Rules for partner IDs on OTTO.
+public class /TROTTO/ID_RULES
+
+  public static method BUILD(id: /TRFIN/COMPANY) returns /TROTTO/OTTO_PARTNER
+    return "OTTO-" + id
+  end
+
+end

@@ -1,0 +1,52 @@
+# Reads and writes the companies of the tenant of the execution.
+public class /TRFIN/COMPANY_SERVICE
+
+  # Countries are shared by all tenants.
+  public static method ADD_COUNTRY(code: /TRFIN/COUNTRY_CODE, name: STRING)
+    var existing = select count from /TRFIN/COUNTRIES where COUNTRY_CODE = code
+    if existing = 0
+      var country: /TRFIN/COUNTRIES
+      country.COUNTRY_CODE = code
+      country.NAME = name
+      insert country
+    end
+  end
+
+  public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES
+    var company: /TRFIN/COMPANIES
+    company.COMPANY_ID = id
+    company.NAME = name
+    company.COUNTRY = country
+    # The connection to OTTO adds its own steps when it is installed.
+    include /TROTTO/COMPANY_HOOK if found
+    insert company
+    return company
+  end
+
+  public static method FIND(id: /TRFIN/COMPANY) returns /TRFIN/COMPANIES?
+    return select single from /TRFIN/COMPANIES where COMPANY_ID = id
+  end
+
+  public static method IN_COUNTRY(country: /TRFIN/COUNTRY_CODE) returns array of /TRFIN/COMPANIES
+    return select from /TRFIN/COMPANIES where COUNTRY = country order by NAME
+  end
+
+  public static method RENAME(id: /TRFIN/COMPANY, name: STRING) raises /TRFIN/UNKNOWN_COMPANY
+    var company = FIND(id)
+    if company is null
+      raise /TRFIN/UNKNOWN_COMPANY with id
+    end
+    company.NAME = name
+    update company
+  end
+
+  # Blocks all active companies of a country and returns their number.
+  public static method BLOCK_COUNTRY(country: /TRFIN/COUNTRY_CODE) returns INT8
+    return update /TRFIN/COMPANIES set STATUS = /TRFIN/COMPANY_STATUS.BLOCKED where COUNTRY = country and STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+  end
+
+  public static method REMOVE_CLOSED() returns INT8
+    return delete from /TRFIN/COMPANIES where STATUS = /TRFIN/COMPANY_STATUS.CLOSED
+  end
+
+end

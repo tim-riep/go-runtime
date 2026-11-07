@@ -441,3 +441,8 @@ func TestIncludes(t *testing.T) {
 		t.Fatalf("notes: %v", n)
 	}
 }
+
+func TestUUIDRandom(t *testing.T) {
+	expectOK(t, class("public static method M() returns UUID\nreturn UUID.RANDOM()\nend"))
+	expectError(t, class("public static method M() returns UUID\nreturn UUID.OTHER()\nend"), "unknown", "UUID has no method OTHER")
+}

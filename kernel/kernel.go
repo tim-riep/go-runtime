@@ -31,6 +31,7 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/tim-riep/go-runtime/dialect"
@@ -67,6 +68,9 @@ type Kernel struct {
 	// maxAssetSize limits the size of one asset in bytes.
 	maxAssetSize int64
 	now          func() time.Time
+	// code is the linked code of the newest generation that an execution
+	// loaded.
+	code atomic.Pointer[generation]
 }
 
 // Open connects to a database. The connection string selects the dialect:

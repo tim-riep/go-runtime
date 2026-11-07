@@ -1,0 +1,8 @@
+public class /TRGEN/VERSION
+
+  public static method RUN() returns STRING
+    log info "running"
+    return "v2"
+  end
+
+end
