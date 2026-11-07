@@ -94,3 +94,32 @@ func TestMigrateFromVersion1(t *testing.T) {
 		consistent(t, k)
 	})
 }
+
+// TestMigrateFromVersion4 migrates a database of the kernel version before
+// structures and installs packages with structures and includes afterwards.
+func TestMigrateFromVersion4(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		k.SetTargetVersion(4)
+		withData(t, k)
+		consistent(t, k)
+
+		k.SetTargetVersion(kernelschema.Latest())
+		p, err := k.Init(ctx, kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(p.Destructive()) != 0 || change(p, plan.CreateTable, "/RT/STRUCTURES") == nil ||
+			change(p, plan.AddColumn, "/RT/FIELDS.INCLUDE_NAME") == nil || change(p, plan.AlterValues, "/RT/FIELDS.ORIGIN") == nil {
+			t.Fatalf("migration plan:\n%s", p.Text())
+		}
+		consistent(t, k)
+		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+			t.Errorf("data lost: %v", v)
+		}
+		if _, err := k.Install(ctx, []*model.Package{trs("1.0.0"), trx()}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		consistent(t, k)
+	})
+}

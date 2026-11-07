@@ -65,6 +65,13 @@ func (k *Kernel) Check(ctx context.Context) ([]Discrepancy, error) {
 	for _, n := range names {
 		out = append(out, Discrepancy{Object: n.Object, Problem: "stored generated name " + n.Stored + " differs from " + n.Computed})
 	}
+	cols, err := k.repo.CheckColumns(ctx, k.db, s.Physical())
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range cols {
+		out = append(out, Discrepancy{Object: c.Object, Problem: c.Problem})
+	}
 	problems, err := k.repo.VerifyContents(ctx, k.db)
 	if err != nil {
 		return nil, err

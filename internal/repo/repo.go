@@ -449,12 +449,16 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 			fld.Domain = ""
 		}
 		switch fld.Origin {
-		case model.OriginTable:
+		case model.OriginTable, model.OriginInclude:
 			t := s.Tables[table]
 			if t == nil {
 				return nil, fmt.Errorf("repository: field %s of unknown table %s", fld.Name, table)
 			}
-			t.Fields = append(t.Fields, fld)
+			// Included columns come from the includes of the table; only
+			// their key position is part of the declaration.
+			if fld.Origin == model.OriginTable {
+				t.Fields = append(t.Fields, fld)
+			}
 			if pos := num(f["KEY_POSITION"]); pos > 0 {
 				keys[table] = append(keys[table], struct {
 					pos  int
@@ -513,6 +517,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 				e.ForeignKeys = append(e.ForeignKeys, fk)
 			}
 		}
+	}
+	if err := r.loadStructures(ctx, q, s); err != nil {
+		return nil, err
 	}
 	if err := r.loadSettings(ctx, q, s); err != nil {
 		return nil, err
@@ -633,7 +640,8 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
+var deleteOrder = []string{TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
+	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageDeps, TPackages}
 
 // Clear deletes all rows that describe the schema. Log, migrations,
@@ -707,6 +715,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			return err
 		}
 	}
+	if err := r.writeStructures(ctx, q, s); err != nil {
+		return err
+	}
 	phys := s.Physical()
 	for _, name := range phys.TableNames() {
 		t := phys.Tables[name]
@@ -716,7 +727,7 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 			if err := r.insert(ctx, q, TFields, row{"TABLE_NAME": name, "FIELD_NAME": f.Name, "POSITION": int64(i + 1), "LOCAL_NAME": f.LocalName,
 				"DESCRIPTION": val(f.Description), "PACKAGE_ID": ownerValue(f.Owner), "ORIGIN": string(f.Origin), "DOMAIN_NAME": f.Domain,
 				"NOT_NULL": f.NotNull, "DEFAULT_KIND": defKind, "DEFAULT_VALUE": defValue, "KEY_POSITION": nullableInt(key+1, key >= 0), "DATA_ELEMENT": val(f.DataElement),
-				"CHECK_NAME": model.CheckName(name, f.Name)}); err != nil {
+				"CHECK_NAME": model.CheckName(name, f.Name), "INCLUDE_NAME": val(f.Included), "SOURCE_NAME": val(f.Source)}); err != nil {
 				return err
 			}
 		}

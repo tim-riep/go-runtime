@@ -72,6 +72,16 @@ const (
 	DropSettingExtension  ChangeKind = "drop-setting-extension"
 	AlterSettingExtension ChangeKind = "alter-setting-extension"
 
+	CreateStructure         ChangeKind = "create-structure"
+	DropStructure           ChangeKind = "drop-structure"
+	AlterStructure          ChangeKind = "alter-structure"
+	AddStructureExtension   ChangeKind = "add-structure-extension"
+	DropStructureExtension  ChangeKind = "drop-structure-extension"
+	AlterStructureExtension ChangeKind = "alter-structure-extension"
+	CreateArrayType         ChangeKind = "create-array-type"
+	DropArrayType           ChangeKind = "drop-array-type"
+	AlterArrayType          ChangeKind = "alter-array-type"
+
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
 	AlterAssetRepository ChangeKind = "alter-asset-repository"
@@ -93,6 +103,8 @@ func (k ChangeKind) Physical() bool {
 	switch k {
 	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
 		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension,
+		CreateStructure, DropStructure, AlterStructure, AddStructureExtension, DropStructureExtension, AlterStructureExtension,
+		CreateArrayType, DropArrayType, AlterArrayType,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant:
 		return false
@@ -108,11 +120,14 @@ type Change struct {
 	Name   string     `json:"name,omitempty"` // domain or foreign key name
 	// Asset changes name the package, the repository and the path
 	// separately; Language is set for variants.
-	Package     string `json:"package,omitempty"`
-	Repository  string `json:"repository,omitempty"`
-	Path        string `json:"path,omitempty"`
-	Language    string `json:"language,omitempty"`
-	Detail      string `json:"detail,omitempty"`
+	Package    string `json:"package,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	Path       string `json:"path,omitempty"`
+	Language   string `json:"language,omitempty"`
+	Detail     string `json:"detail,omitempty"`
+	// Via names the structure or table that declares an included column,
+	// i.e. where a column change comes from.
+	Via         string `json:"via,omitempty"`
 	Destructive bool   `json:"destructive"`
 	// Notice marks changes that are not destructive but need attention,
 	// such as a changed data class.
@@ -146,6 +161,9 @@ func (c Change) String() string {
 	s := string(c.Kind) + " " + c.Object()
 	if c.Detail != "" {
 		s += " (" + c.Detail + ")"
+	}
+	if c.Via != "" {
+		s += " via " + c.Via
 	}
 	return s
 }

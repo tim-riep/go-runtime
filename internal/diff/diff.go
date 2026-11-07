@@ -39,6 +39,7 @@ func Diff(cur, want *model.Schema) []plan.Change {
 	var out []plan.Change
 	out = append(out, domains(cur, want)...)
 	out = append(out, dataElements(cur, want)...)
+	out = append(out, structures(cur, want)...)
 	out = append(out, settings(cur, want)...)
 	out = append(out, assets(cur, want)...)
 	out = append(out, tables(cur.Physical(), want.Physical())...)
@@ -419,6 +420,14 @@ func columns(cur, want *model.Physical, c, w *model.Table) []plan.Change {
 	if !slices.Equal(c.PrimaryKey, w.PrimaryKey) {
 		out = append(out, plan.Change{Kind: plan.AlterPrimaryKey, Table: t, Destructive: true,
 			Detail: strings.Join(c.PrimaryKey, ", ") + " -> " + strings.Join(w.PrimaryKey, ", ")})
+	}
+	// Changes of included columns name the structure they come from.
+	for i := range out {
+		if f := w.Field(out[i].Column); f != nil && f.Source.Valid() {
+			out[i].Via = f.Source.Or("")
+		} else if f := c.Field(out[i].Column); f != nil {
+			out[i].Via = f.Source.Or("")
+		}
 	}
 	return out
 }
