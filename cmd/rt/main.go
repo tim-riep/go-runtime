@@ -35,6 +35,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/setting"
 )
 
 // Exit codes.
@@ -63,6 +64,8 @@ Commands:
   tenant create <id>       create a tenant (--description)
   tenant list              list tenants
   tenant delete <id>       delete a tenant and all its data (needs --yes)
+  setting list             list settings
+  setting show <id>        show the resolved definition of a setting (--json for JSON)
   language add <code>      set up a language (ISO 639-1, --name)
   language list            list languages
   language remove <code>   remove a language; texts in it need --yes
@@ -245,6 +248,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.tenant(ctx, k, args)
 	case "language":
 		return c.language(ctx, k, args)
+	case "setting":
+		return c.setting(ctx, k, args)
 	}
 	fmt.Fprintf(c.stderr, "error: unknown command %q\n", cmd)
 	c.fs.Usage()
@@ -333,7 +338,13 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 			return exitOK
 		}
 		t := d.Table
-		fmt.Fprintf(c.stdout, "Table %s (owner %s, tenant-specific %v)\n  %s\n\n", t.Name, t.Owner, t.TenantSpecific, t.Description)
+		fmt.Fprintf(c.stdout, "Table %s (owner %s, tenant-specific %v)\n  %s\n  data class %s\n", t.Name, t.Owner, t.TenantSpecific, t.Description, t.DataClass)
+		if d.Setting != "" {
+			fmt.Fprintf(c.stdout, "  setting %s\n", d.Setting)
+		} else {
+			fmt.Fprintln(c.stdout, "  no setting")
+		}
+		fmt.Fprintln(c.stdout)
 		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(w, "  FIELD\tDATA ELEMENT\tDOMAIN\tKEY\tNOT NULL\tDEFAULT\tOWNER\tORIGIN")
 		for _, f := range t.Fields {
@@ -478,6 +489,129 @@ func (c *cli) tenant(ctx context.Context, k *kernel.Kernel, args []string) int {
 	}
 	fmt.Fprintf(c.stderr, "error: unknown tenant command %q\n", args[0])
 	return exitUsage
+}
+
+func (c *cli) setting(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(c.stderr, "usage: rt setting list|show")
+		return exitUsage
+	}
+	switch args[0] {
+	case "list":
+		list, err := k.Settings(ctx)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "SETTING\tOWNER\tROOT\tTABLES\tCLASS\tTENANT\tEXTENDED BY\tLABEL")
+		for _, s := range list {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%v\t%s\t%s\n", s.ID, s.Owner, s.Root, s.Tables, s.DataClass, s.TenantSpecific, joinIDs(s.Extensions), s.Label)
+		}
+		w.Flush()
+		return exitOK
+	case "show":
+		if !c.need(args[1:], 1, "setting show <id> [--json]") {
+			return exitUsage
+		}
+		d, err := k.Setting(ctx, args[1])
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			b, err := d.JSON()
+			if err != nil {
+				return c.fail(err)
+			}
+			c.stdout.Write(b)
+			return exitOK
+		}
+		printSetting(c.stdout, d)
+		return exitOK
+	}
+	fmt.Fprintf(c.stderr, "error: unknown setting command %q\n", args[0])
+	return exitUsage
+}
+
+func joinIDs(ids []model.PackageID) string {
+	s := make([]string, len(ids))
+	for i, id := range ids {
+		s[i] = string(id)
+	}
+	return strings.Join(s, ", ")
+}
+
+func ops(o setting.Operations) string {
+	var s []string
+	for _, x := range []struct {
+		on   bool
+		name string
+	}{{o.Create, "create"}, {o.Update, "update"}, {o.Delete, "delete"}} {
+		if x.on {
+			s = append(s, x.name)
+		}
+	}
+	if len(s) == 0 {
+		return "read only"
+	}
+	return strings.Join(s, ", ")
+}
+
+// printSetting renders a resolved setting as a tree with English labels.
+func printSetting(w io.Writer, d *setting.Definition) {
+	fmt.Fprintf(w, "Setting %s: %s\n", d.ID, d.Texts[model.DefaultLanguage].Label)
+	fmt.Fprintf(w, "  owner %s, data class %s, tenant-specific %v", d.Owner, d.DataClass, d.TenantSpecific)
+	if len(d.Extensions) > 0 {
+		fmt.Fprintf(w, ", extended by %s", joinIDs(d.Extensions))
+	}
+	fmt.Fprintf(w, "\n  languages %s\n", strings.Join(d.Languages, ", "))
+	d.Walk(func(t *setting.Table, depth int) {
+		indent := strings.Repeat("    ", depth)
+		fmt.Fprintf(w, "\n%s%s (owner %s, added by %s; %s)\n", indent, t.Name, t.Owner, t.Origin, ops(t.Operations))
+		if t.ParentKey != nil {
+			var cols []string
+			for _, p := range t.ParentKey.Fields {
+				cols = append(cols, p.Field+" -> "+p.References)
+			}
+			fmt.Fprintf(w, "%s  parent %s through %s (%s)\n", indent, t.ParentKey.Table, t.ParentKey.Name, strings.Join(cols, ", "))
+		}
+		tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
+		for _, f := range t.Fields {
+			label := ""
+			if f.DataElement != nil {
+				label = f.DataElement.Texts[model.DefaultLanguage].Medium
+			}
+			typ := string(f.Type)
+			switch f.Type {
+			case model.Char:
+				typ = fmt.Sprintf("CHAR(%d)", f.Length)
+			case model.Dec:
+				typ = fmt.Sprintf("DEC(%d,%d)", f.Length, f.Decimals)
+			}
+			var flags []string
+			if f.Key {
+				flags = append(flags, "key")
+			}
+			if f.NotNull {
+				flags = append(flags, "not null")
+			}
+			if f.FromParent {
+				flags = append(flags, "from parent")
+			}
+			var help []string
+			if len(f.FixedValues) > 0 {
+				help = append(help, fmt.Sprintf("%d fixed values", len(f.FixedValues)))
+			}
+			for _, h := range f.ValueHelps {
+				help = append(help, "values of "+h.Table)
+			}
+			fmt.Fprintf(tw, "%s  %s\t%s\t%s\t%s\t%s\n", indent, f.Name, label, typ, strings.Join(flags, ", "), strings.Join(help, "; "))
+		}
+		tw.Flush()
+	})
 }
 
 func (c *cli) language(ctx context.Context, k *kernel.Kernel, args []string) int {

@@ -1,0 +1,447 @@
+{
+  "formatVersion": 1,
+  "id": "TRFIN_COMPANIES",
+  "owner": "TRFIN",
+  "texts": {
+    "de": {
+      "label": "Firmen",
+      "description": "Firmen eines Mandanten mit ihren Bankkonten"
+    },
+    "en": {
+      "label": "Companies",
+      "description": "Companies of a tenant with their bank accounts"
+    }
+  },
+  "dataClass": "configuration",
+  "tenantSpecific": true,
+  "extensions": [
+    "TROTTO"
+  ],
+  "languages": [
+    "de",
+    "en"
+  ],
+  "root": {
+    "name": "COMPANIES",
+    "description": "Companies of a tenant",
+    "owner": "TRFIN",
+    "origin": "TRFIN",
+    "dataClass": "configuration",
+    "tenantSpecific": true,
+    "operations": {
+      "create": true,
+      "update": true,
+      "delete": true
+    },
+    "primaryKey": [
+      "COMPANY_ID"
+    ],
+    "fields": [
+      {
+        "name": "COMPANY_ID",
+        "localName": "COMPANY_ID",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "dataElement": {
+          "name": "COMPANY",
+          "owner": "TRFIN",
+          "texts": {
+            "de": {
+              "short": "Firma",
+              "medium": "Firma",
+              "long": "Firmennummer",
+              "heading": "Firma"
+            },
+            "en": {
+              "short": "Company",
+              "medium": "Company",
+              "long": "Company ID",
+              "heading": "Company"
+            }
+          }
+        },
+        "domain": "COMPANY_ID",
+        "type": "CHAR",
+        "length": 10,
+        "notNull": true,
+        "key": true
+      },
+      {
+        "name": "NAME",
+        "localName": "NAME",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "dataElement": {
+          "name": "NAME",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Name",
+              "medium": "Name",
+              "long": "Bezeichnung",
+              "heading": "Name"
+            },
+            "en": {
+              "short": "Name",
+              "medium": "Name",
+              "long": "Name",
+              "heading": "Name"
+            }
+          }
+        },
+        "domain": "NAME",
+        "type": "CHAR",
+        "length": 80,
+        "notNull": true,
+        "key": false
+      },
+      {
+        "name": "COUNTRY",
+        "localName": "COUNTRY",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "dataElement": {
+          "name": "COUNTRY",
+          "owner": "TRBASE",
+          "texts": {
+            "de": {
+              "short": "Land",
+              "medium": "Land",
+              "long": "Länderschlüssel",
+              "heading": "Land",
+              "description": "Code nach ISO 3166-1 alpha-2"
+            },
+            "en": {
+              "short": "Country",
+              "medium": "Country",
+              "long": "Country key",
+              "heading": "Country",
+              "description": "ISO 3166-1 alpha-2 code"
+            }
+          }
+        },
+        "domain": "COUNTRY_CODE",
+        "type": "CHAR",
+        "length": 2,
+        "notNull": true,
+        "key": false,
+        "valueHelps": [
+          {
+            "foreignKey": "COUNTRY",
+            "table": "COUNTRIES",
+            "fields": [
+              {
+                "field": "COUNTRY",
+                "references": "COUNTRY_CODE"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "STATUS",
+        "localName": "STATUS",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "domain": "COMPANY_STATUS",
+        "type": "CHAR",
+        "length": 10,
+        "fixedValues": [
+          {
+            "value": "ACTIVE",
+            "description": "Active"
+          },
+          {
+            "value": "BLOCKED",
+            "description": "Blocked for postings"
+          },
+          {
+            "value": "CLOSED",
+            "description": "Closed"
+          }
+        ],
+        "notNull": true,
+        "key": false,
+        "default": "ACTIVE"
+      },
+      {
+        "name": "CAPITAL",
+        "localName": "CAPITAL",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "domain": "AMOUNT",
+        "type": "DEC",
+        "length": 15,
+        "decimals": 2,
+        "notNull": false,
+        "key": false
+      },
+      {
+        "name": "FOUNDED_ON",
+        "localName": "FOUNDED_ON",
+        "owner": "TRFIN",
+        "origin": "TABLE",
+        "domain": "DATE",
+        "type": "DATE",
+        "notNull": false,
+        "key": false
+      },
+      {
+        "name": "/TROTTO/OTTO_ID",
+        "localName": "OTTO_ID",
+        "description": "Partner ID of the company",
+        "owner": "TROTTO",
+        "origin": "EXTENSION",
+        "dataElement": {
+          "name": "OTTO_PARTNER",
+          "owner": "TROTTO",
+          "texts": {
+            "de": {
+              "short": "Partner",
+              "medium": "OTTO-Partner",
+              "long": "Partner-ID bei OTTO",
+              "heading": "OTTO-Partner"
+            },
+            "en": {
+              "short": "Partner",
+              "medium": "OTTO partner",
+              "long": "Partner ID on OTTO",
+              "heading": "OTTO partner"
+            }
+          }
+        },
+        "domain": "OTTO_ID",
+        "type": "CHAR",
+        "length": 20,
+        "notNull": false,
+        "key": false
+      }
+    ],
+    "children": [
+      {
+        "name": "BANK_ACCOUNTS",
+        "description": "Bank accounts of a company",
+        "owner": "TRFIN",
+        "origin": "TRFIN",
+        "dataClass": "configuration",
+        "tenantSpecific": true,
+        "parentKey": {
+          "name": "COMPANY",
+          "table": "COMPANIES",
+          "fields": [
+            {
+              "field": "COMPANY_ID",
+              "references": "COMPANY_ID"
+            }
+          ]
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": false
+        },
+        "primaryKey": [
+          "COMPANY_ID",
+          "ACCOUNT_NO"
+        ],
+        "fields": [
+          {
+            "name": "COMPANY_ID",
+            "localName": "COMPANY_ID",
+            "owner": "TRFIN",
+            "origin": "TABLE",
+            "dataElement": {
+              "name": "COMPANY",
+              "owner": "TRFIN",
+              "texts": {
+                "de": {
+                  "short": "Firma",
+                  "medium": "Firma",
+                  "long": "Firmennummer",
+                  "heading": "Firma"
+                },
+                "en": {
+                  "short": "Company",
+                  "medium": "Company",
+                  "long": "Company ID",
+                  "heading": "Company"
+                }
+              }
+            },
+            "domain": "COMPANY_ID",
+            "type": "CHAR",
+            "length": 10,
+            "notNull": true,
+            "key": true,
+            "fromParent": true,
+            "valueHelps": [
+              {
+                "foreignKey": "COMPANY",
+                "table": "COMPANIES",
+                "fields": [
+                  {
+                    "field": "COMPANY_ID",
+                    "references": "COMPANY_ID"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ACCOUNT_NO",
+            "localName": "ACCOUNT_NO",
+            "owner": "TRFIN",
+            "origin": "TABLE",
+            "domain": "ACCOUNT_NO",
+            "type": "INT4",
+            "notNull": true,
+            "key": true
+          },
+          {
+            "name": "IBAN",
+            "localName": "IBAN",
+            "owner": "TRFIN",
+            "origin": "TABLE",
+            "domain": "IBAN",
+            "type": "CHAR",
+            "length": 34,
+            "notNull": true,
+            "key": false
+          },
+          {
+            "name": "BALANCE",
+            "localName": "BALANCE",
+            "owner": "TRFIN",
+            "origin": "TABLE",
+            "dataElement": {
+              "name": "AMOUNT",
+              "owner": "TRBASE",
+              "texts": {
+                "de": {
+                  "short": "Betrag",
+                  "medium": "Betrag",
+                  "long": "Betrag",
+                  "heading": "Betrag"
+                },
+                "en": {
+                  "short": "Amount",
+                  "medium": "Amount",
+                  "long": "Amount",
+                  "heading": "Amount"
+                }
+              }
+            },
+            "domain": "AMOUNT",
+            "type": "DEC",
+            "length": 15,
+            "decimals": 2,
+            "notNull": true,
+            "key": false,
+            "default": "0.00"
+          },
+          {
+            "name": "OPENED_AT",
+            "localName": "OPENED_AT",
+            "owner": "TRFIN",
+            "origin": "TABLE",
+            "domain": "TIMESTAMP",
+            "type": "TIMESTAMP",
+            "notNull": false,
+            "key": false
+          }
+        ]
+      },
+      {
+        "name": "OTTO_CONNECTIONS",
+        "description": "Connection of a company to the OTTO marketplace",
+        "owner": "TROTTO",
+        "origin": "TROTTO",
+        "dataClass": "configuration",
+        "tenantSpecific": true,
+        "parentKey": {
+          "name": "COMPANY",
+          "table": "COMPANIES",
+          "fields": [
+            {
+              "field": "COMPANY_ID",
+              "references": "COMPANY_ID"
+            }
+          ]
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": true
+        },
+        "primaryKey": [
+          "COMPANY_ID"
+        ],
+        "fields": [
+          {
+            "name": "COMPANY_ID",
+            "localName": "COMPANY_ID",
+            "owner": "TROTTO",
+            "origin": "TABLE",
+            "dataElement": {
+              "name": "COMPANY",
+              "owner": "TRFIN",
+              "texts": {
+                "de": {
+                  "short": "Firma",
+                  "medium": "Firma",
+                  "long": "Firmennummer",
+                  "heading": "Firma"
+                },
+                "en": {
+                  "short": "Company",
+                  "medium": "Company",
+                  "long": "Company ID",
+                  "heading": "Company"
+                }
+              }
+            },
+            "domain": "COMPANY_ID",
+            "type": "CHAR",
+            "length": 10,
+            "notNull": true,
+            "key": true,
+            "fromParent": true,
+            "valueHelps": [
+              {
+                "foreignKey": "COMPANY",
+                "table": "COMPANIES",
+                "fields": [
+                  {
+                    "field": "COMPANY_ID",
+                    "references": "COMPANY_ID"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ENDPOINT",
+            "localName": "ENDPOINT",
+            "owner": "TROTTO",
+            "origin": "TABLE",
+            "domain": "TEXT",
+            "type": "STRING",
+            "notNull": true,
+            "key": false
+          },
+          {
+            "name": "ACTIVE",
+            "localName": "ACTIVE",
+            "owner": "TROTTO",
+            "origin": "TABLE",
+            "domain": "FLAG",
+            "type": "BOOL",
+            "notNull": true,
+            "key": false,
+            "default": "true"
+          }
+        ]
+      }
+    ]
+  }
+}

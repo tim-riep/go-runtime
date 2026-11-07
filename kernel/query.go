@@ -90,6 +90,7 @@ type TableDetail struct {
 	Table        *model.Table       `json:"table"` // physical layout incl. tenant and extension fields
 	Extensions   []*model.Extension `json:"extensions,omitempty"`
 	ReferencedBy []string           `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
+	Setting      string             `json:"setting,omitempty"`      // setting the table belongs to
 }
 
 // Table returns the physical layout of a table.
@@ -103,7 +104,7 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 	if !ok {
 		return nil, &rterr.NotFound{Kind: "table", Name: name}
 	}
-	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name)}
+	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Setting: s.SettingOf(name)}
 	for _, other := range p.TableNames() {
 		for _, fk := range p.Tables[other].ForeignKeys {
 			if fk.Target == name {
