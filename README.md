@@ -48,8 +48,12 @@ transaction together with its own bookkeeping.
   subfolders, such as images, stylesheets, fonts or print templates. It is identified by the
   package ID and its folder name, installed and removed with the package and read-only at
   runtime.
-- **Setting**: tables that together form one configuration, as a tree below a root table
-  connected through foreign keys. Other packages can add dependent tables to a setting.
+- **Business object**: a root table and dependent tables of a package as one object with
+  operations, behavior and authorization; code changes its tables only with entity
+  statements. A business object of the data class `configuration` or `runtimeConfiguration`
+  maintains configuration.
+- **Business object extension**: properties of fields, determinations, validations, actions
+  and dependent tables that a package adds to a business object of a package it requires.
 - **Structure**: named components without database table. A component has a data element, a
   domain, a structure or an array type. A structure is flat when all its components are
   elementary (data element or domain), otherwise deep. Every table is a flat structure as
@@ -75,8 +79,6 @@ TRFIN/
     data-elements/*.json       one data element per file, named <NAME>.json
     tables/*.json              one table per file, named <NAME>.json
     extensions/*.json          one extension per extended table
-    settings/*.json            one setting per file, named <ID>.json
-    setting-extensions/*.json  one extension per extended setting, named <ID>.json
     structures/*.json          one structure per file, named <NAME>.json
     array-types/*.json         one array type per file, named <NAME>.json
     structure-extensions/*.json  one extension per extended structure
@@ -86,6 +88,7 @@ TRFIN/
     extension-points/*.json    one extension point per file, named <NAME>.json
     extension-implementations/*.json  one implementation per file, named <NAME>.json
     business-objects/*.json    one business object per file, named <NAME>.json
+    business-object-extensions/*.json  one extension per extended business object, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -166,33 +169,6 @@ language given; English is mandatory. Lengths in characters: `short` 10, `medium
 }
 ```
 
-Setting (`schema/settings/PARTNERS.json`) and an extension of it in another package
-(`schema/setting-extensions/PARTNERS.json`). `foreignKey` names the key of the table to
-its parent; labels have at most 60 characters. The test packages in
-[testdata/settings](testdata/settings) contain a complete example.
-
-```json
-{
-  "id": "/TRSET/PARTNERS",
-  "texts": { "en": { "label": "Partners" }, "de": { "label": "Partner" } },
-  "root": { "table": "/TRSET/PARTNERS", "operations": { "create": true, "update": true, "delete": true } },
-  "tables": [
-    { "table": "/TRSET/ACCOUNTS", "parent": "/TRSET/PARTNERS", "foreignKey": "PARTNER",
-      "operations": { "create": true, "update": true, "delete": false } }
-  ]
-}
-```
-
-```json
-{
-  "setting": "/TRSET/PARTNERS",
-  "tables": [
-    { "table": "/TRSETX/CONNECTIONS", "parent": "/TRSET/PARTNERS", "foreignKey": "PARTNER",
-      "operations": { "create": true, "update": true, "delete": true } }
-  ]
-}
-```
-
 ### Base types
 
 | Type | Meaning | PostgreSQL | SQLite (STRICT tables) |
@@ -266,7 +242,7 @@ place where the components go, in `components` as in `fields`.
 
 - Names of objects of a package are `/<PACKAGE-ID>/<NAME>`, where `<NAME>` consists of
   upper-case letters, digits and underscores and starts with a letter. Table, domain, data
-  element and setting names are unique in the database; tables, structures and array types
+  element and business object names are unique in the database; tables, structures and array types
   share one set of names, because a component of kind `structure` may name either. Names are always quoted in SQL.
 - The loader checks namespaces on import, right after the JSON Schema check and before any
   object is built: definitions must carry the namespace of the package, references that of
@@ -386,32 +362,10 @@ a provisional value until each package is applied again.
 
 ### Languages and texts
 
-Language codes are ISO 639-1 codes in lower case. Texts of data elements and settings are
+Language codes are ISO 639-1 codes in lower case. Texts of data elements and other objects are
 stored in text tables per language. Installing a package with texts in a language that is not
 set up fails with `rterr.MissingLanguages`, which names the missing languages. A language with
 texts can only be removed with confirmation, which removes its texts as well.
-
-### Settings
-
-- A setting contains only tables of the classes `configuration` or `runtimeConfiguration`, all
-  of the same class and the same tenant flag, which the setting takes over.
-- A table belongs to at most one setting. Tables without setting are allowed.
-- Tables of the setting belong to its owner or to a required package. A setting always covers
-  all fields of its tables, including extension fields of other packages.
-- An extending package must require the owner of the setting. It only adds dependent tables,
-  anywhere in the tree, also below tables added by packages it requires. It cannot remove
-  tables or change operations.
-- Value helps are not declared; they are derived from fixed values and foreign keys.
-- Settings carry no data, so their changes are never destructive. A change that would make
-  any installed setting invalid, also one of another package, is rejected and the error names
-  the setting. Uninstalling a package removes its setting extensions.
-
-`kernel.Setting` (and `rt setting show`) returns the resolved definition from package
-[setting](setting): the setting merged with all installed extensions as a tree of tables with
-parent key, operations, class, tenant flag and origin, and per field the data element with
-labels in all languages, domain, type, length, decimals, fixed values, nullability, key,
-origin, whether the parent key fills it and the value helps. The tenant field never appears.
-`Definition.JSON` serializes it; `FormatVersion` identifies the structure.
 
 ### Structures and array types
 
@@ -449,8 +403,8 @@ origin, whether the parent key fills it and the value helps. The tenant field ne
 `kernel.Structure` (and `rt show`) returns the resolved definition from package
 [structure](structure) with its uses: components in their final order with type, labels,
 effective default and origin (declaring object, include chain, extending package); nested
-structures and array types are resolved as well. Setting fields name the include and the
-source of included columns.
+structures and array types are resolved as well. Fields name the include and the source of
+included columns.
 
 ### Authorization objects
 
@@ -813,8 +767,8 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
 }
 ```
 
-- Every entity is a table of the own package in at most one business object and in no
-  setting, all with the same tenant flag and none of class `system`. Dependent entities name
+- Every entity is a table of the own package in at most one business object, all with the
+  same tenant flag and the data class of the business object. Dependent entities name
   their `parent` and a `foreignKey` of their table that covers the key of the parent; they
   may not have fields `LINK` or `PARENT_LINK`, which link new instances in a statement.
 - `numbering` is `external` (the caller gives the key, the default) or `uuid` (the kernel
@@ -822,25 +776,91 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
 - `fields` sets `readOnly`, `readOnlyOnUpdate` and `mandatory`; `administrative` names the
   fields the kernel fills when it saves (`createdAt`/`changedAt` TIMESTAMP, `createdBy`/
   `changedBy` text) and `etag` a TIMESTAMP, UUID or INT8 field for optimistic locking.
+- `dataClass` is `configuration` or `runtimeConfiguration`; without it the business object
+  holds application data. The behavior class is optional for a business object without
+  determinations, validations and actions, the usual case for configuration.
 - Determinations (`when`: `modify` or `save`) and validations name methods of the behavior
   class and trigger on operations, for `update` optionally only on some `fields`. Actions
   are `instance` (the default) or static, with an optional `parameter` structure, a `result`
   (`self` or a structure) and `modifies` (default `true`).
 - `authorization` maps every field of the authorization object except `ACTIVITY` to a field
-  of the entity and every operation, `read` and every action to an activity. A dependent
-  entity without one takes that of the root instance: `read` with its activity for read,
-  everything else with its activity for update.
+  of the entity and every operation, `read` and every action to an activity. The root of a
+  business object of application data needs one. A dependent entity without one takes that
+  of the nearest parent entity with one: `read` with its activity for read, everything else
+  with its activity for update.
+- A business object of configuration without an authorization is checked with
+  `/TRBASE/CONFIGURATION` of TRBASE: its field `BUSINESS_OBJECT` gets the name of the
+  business object, `DATA_CLASS` its data class, `ACTIVITY` is `READ`, `CREATE`, `UPDATE` or
+  `DELETE` for the operation, and `UPDATE` for actions.
+- `extensible` lists the kinds of extensions other packages may make (`fieldProperties`,
+  `determinations`, `validations`, `actions`, `entities`), for the business object and
+  narrower per entity. Without it everything is allowed; `[]` allows nothing.
 - In an upgrade new entities, actions, determinations and validations are allowed, and
   removed ones or stricter field properties as far as the code compiles again. A new root, a
   new parent, foreign key or numbering of an entity and removing the business object are
   destructive. A table that becomes an entity fails the upgrade with every place of code
   that still writes it.
 
+Configuration is maintained the same way: `TRFIN` keeps its countries in the business object
+`/TRFIN/COUNTRY` of the data class `configuration` without behavior class and authorization,
+and the test package [testdata/businessobjects/TRSET](testdata/businessobjects/TRSET) has
+partners with their accounts. Code writes no table of a business object directly.
+
+#### Extensions of business objects
+
+A package extends a business object of a package it requires in
+`schema/business-object-extensions/<NAME>.json`. `TROTTO` extends `/TRFIN/COMPANY`:
+
+```json
+{
+  "businessObject": "/TRFIN/COMPANY",
+  "behaviorClass": "/TROTTO/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "fields": { "/TROTTO/OTTO_ID": { "readOnly": true } },
+      "determinations": [{ "name": "/TROTTO/RESERVE_ID", "when": "save", "on": ["create"] }],
+      "validations": [{ "name": "/TROTTO/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }],
+      "actions": [{ "name": "/TROTTO/SYNC", "result": "self", "activity": "EXECUTE",
+        "authorization": { "object": "/TROTTO/MARKETPLACE", "fields": { "COUNTRY": "COUNTRY" } } }]
+    },
+    "/TROTTO/COMPANY_CHANNELS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"], "numbering": "uuid" }
+  }
+}
+```
+
+- An extension sets field properties only for fields of its own package, from extensions of
+  tables or of structures they include. It cannot change operations, numbering,
+  administrative fields, ETag or authorization of the business object, nor replace or switch
+  off behavior of other packages.
+- Determinations, validations and actions carry the namespace of the extending package; the
+  methods of its behavior class have their names without it (`RESERVE_ID`). Code runs an
+  action of an extension with its full name: `execute /TRFIN/COMPANIES./TROTTO/SYNC`.
+- An action on an entity of the business object takes an `activity` of its authorization or
+  of an `authorization` object of the extending package with fields of the entity.
+- Dependent entities of the extending package follow the rules of entities, have the data
+  class of the business object and take the authorization of their parent unless they have
+  one. Deleting an instance deletes them with it.
+- Code uses actions, entities and fields of an extension only when its package requires the
+  extending package. In local mode the behavior class of an extension reads the whole
+  business object but changes only fields of its own package and its own entities.
+- Determinations of the business object run first, then those of the extensions by the
+  level of the extending package (a package that requires another extending package comes
+  after it) and package ID. Their changes trigger the others; each runs at most once per
+  instance and save, in at most ten rounds. Validations run in the same order, all of them.
+  Failures and messages carry the package in `ORIGIN`.
+- The kernel finds the extensions in a registry per generation, so installing or removing
+  one compiles the package of the business object only when the layout of its rows changes.
+  A change of the business object that breaks an installed extension is rejected with a
+  message that names it. A field that becomes `mandatory` leaves existing rows as they are
+  and is checked when their instance is next saved.
+
 `kernel.BusinessObject` and `BusinessObjects` (from package [reflector](reflector), plus the
-code that works on it), `rt business-object list [package]` and `rt business-object show
-<name>` describe business objects: entities as a tree with key, parent key, operations,
-numbering, fields with type, texts and properties, behavior and authorization; `--json`
-gives the form of the reflector.
+code that works on it), `rt business-object list [package] [--data-class C]` and `rt
+business-object show <name> [--base]` describe business objects with their installed
+extensions: entities as a tree with key, parent key, operations, numbering, fields with
+type, texts and properties, behavior and authorization, each with the package it comes from;
+`--base` leaves the extensions out and `--json` gives the form of the reflector.
 
 ### Tenants
 
@@ -879,7 +899,7 @@ afterwards. With `DryRun` only the plan is returned.
 - **Uninstall**: only if no installed package requires the package; needs `Confirm`. Removes
   its tables, domains and its extension fields in tables of other packages.
 - **Check**: compares repository and database (tables, columns, types, nullability, defaults,
-  keys, foreign keys, constraint names) and validates the repository, including all settings.
+  keys, foreign keys, constraint names) and validates the repository, including all business objects and their extensions.
 
 ### Packages from GitHub
 
@@ -1257,10 +1277,9 @@ rt upgrade examples/upgrade/TROTTO
 rt list
 rt show /TRFIN/COMPANIES
 rt check
-rt install testdata/settings/TRSET testdata/settings/TRSETX
-rt setting list
-rt setting show /TRSET/PARTNERS
-rt setting show /TRSET/PARTNERS --json
+rt install testdata/businessobjects/TRSET testdata/businessobjects/TRSETX
+rt business-object list --data-class configuration
+rt business-object show /TRSET/PARTNER
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
 rt show /TRFIN/COMPANY_ARRAY --json
@@ -1354,7 +1373,7 @@ works in its own schema that is dropped afterwards. The generated DDL per dialec
 with golden files in `testdata/golden`; after an intended change, update them with:
 
 ```bash
-go test ./internal/planner ./setting ./kernel ./lang/syntax -update
+go test ./internal/planner ./kernel ./lang/syntax -update
 ```
 
 ## Not included yet
@@ -1364,8 +1383,9 @@ with network or file access, outgoing HTTP connections, responses streamed from 
 further ways of signing in, messages with texts per language, a
 language server and a debugger, user interface, views, indexes beyond keys,
 data migrations with custom logic, joins and aggregates other than `count` in code,
-reading and writing data through settings, display properties of fields, translation packages
-for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
+display properties of fields, translation packages
+for objects of other packages, export, delivery or protection of configuration by data class, field and operation control per
+instance, extensions of drafts and of services, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression of stored assets and image processing,
 includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
 external role sources, extension points of kernel packages for events of the kernel such as

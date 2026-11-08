@@ -664,7 +664,9 @@ commit business objects result saved
   them, `transform r.KEY using /TRBASE/JSON into key of T` types them.
 - `modify business object NAME` runs its steps in order: `create T [by parent] fields (...)
   from rows`, `update T fields (...) from rows`, `delete T keys rows` and
-  `execute T.ACTION [keys rows] [parameter p] [into x]`. `from` takes an array of any
+  `execute T.ACTION [keys rows] [parameter p] [into x]`. An action of an extension of the
+  business object has its full name: `execute /TRFIN/COMPANIES./TROTTO/SYNC keys keys`.
+  `from` takes an array of any
   structure with the named fields, `keys` one with the key fields. Only the named fields
   change; `create` without `by parent` is for the root, with it for dependent entities.
   `delete` deletes the dependent instances with it.
@@ -674,7 +676,9 @@ commit business objects result saved
 - `result x` declares `x: /TRBASE/ENTITY_RESULT` with `CREATED`, `FAILURES` (entity,
   operation, link, key and `REASON`: `NOT_AUTHORIZED`, `NOT_FOUND`, `ALREADY_EXISTS`,
   `PARENT_NOT_FOUND`, `VALIDATION`, `MANDATORY`, `ETAG`, `DATABASE`, `BEHAVIOR`) and
-  `MESSAGES`. An instance that fails leaves the others alone.
+  `MESSAGES`. `ORIGIN` of failures and messages names the package whose behavior gave them,
+  the owner of the business object or an extending package; it is `null` for failures of the
+  kernel. An instance that fails leaves the others alone.
 - The changes go to the transaction buffer of the execution, not to the database: `read`
   sees them, `select` does not. `commit business objects [result x]` runs the save
   sequence: determinations on save, validations, mandatory fields (key fields and
@@ -710,12 +714,20 @@ public method SET_INITIAL_STATUS(keys: array of key of /TRFIN/COMPANIES, respons
 end
 ```
 
-- `in local mode` is allowed only in the behavior class of the business object: it skips the
-  checks of authorizations and of read-only fields.
+- `in local mode` is allowed only in the behavior class of the business object and in those
+  of its extensions: it skips the checks of authorizations and of read-only fields. The
+  behavior class of an extension reads the whole business object in local mode but changes
+  only fields of its own package with `update` and its own dependent entities, and runs only
+  its own actions; it runs actions of others without local mode, with their authorization.
+- Code sees a business object with the extensions of its own package and of the packages it
+  requires: their actions, dependent entities and fields.
 - Determinations run on `modify` at the end of the statement for the instances whose
   operations and fields trigger them, or on `save` for every instance changed since the last
-  save. Their changes in local mode trigger other determinations, never the running one;
+  save. Those of the business object run first, then those of its extensions in the order of
+  their packages. Their changes trigger other determinations, never the running one;
   determinations that trigger each other more than ten times raise `/RT/VALUE_ERROR`.
+- The methods of an extension carry the names of its determinations, validations and actions
+  without namespace: `/TROTTO/RESERVE_ID` is the method `RESERVE_ID` of its behavior class.
 - Validations run once in the save sequence after the determinations. They must not change
   the buffer: the compiler rejects `modify` and actions that change instances in them.
 - The response addresses instances by their position in `keys`, starting at 1:
@@ -732,8 +744,12 @@ Without `in local mode` every instance is checked with the authorization of its 
 `create` with the new values, `update` with the values before and, when a field of the
 authorization changes, also after, `delete`, `read` and actions with the current values.
 `read` leaves out what the user may not read. Dependent entities without an authorization of
-their own are checked with the root instance, `read` with its activity for read and
-everything else with its activity for update. The checks appear in the authorization trace
+their own are checked with the instance of the nearest parent entity that has one, `read`
+with its activity for read and everything else with its activity for update. An action of an
+extension is checked with its activity, with the authorization of the entity or with the
+authorization object of the extension and the fields of the entity it names. A business
+object of configuration without authorization is checked with `/TRBASE/CONFIGURATION` for
+its name and data class. The checks appear in the authorization trace
 with mode `entity`, and a failed one is the last failed check of the user.
 
 ## Methods executed by kernel
@@ -1338,7 +1354,7 @@ modifyStmt    = "modify" "business" "object" GLOBAL [ localMode ] NL { modifySte
 modifyStep    = "create" GLOBAL [ "by" "parent" ] "fields" fieldList "from" expr
               | "update" GLOBAL "fields" fieldList "from" expr
               | "delete" GLOBAL "keys" expr
-              | "execute" GLOBAL "." MEMBER [ "keys" expr ] [ "parameter" expr ] [ "into" LOCAL ] ;
+              | "execute" GLOBAL "." ( MEMBER | GLOBAL ) [ "keys" expr ] [ "parameter" expr ] [ "into" LOCAL ] ;
 readExpr      = "read" "business" "object" GLOBAL [ localMode ] NL
                 GLOBAL [ "by" "parent" ] "fields" ( fieldList | "all" ) "keys" expr NL
                 [ "result" LOCAL NL ] "end" ;
