@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -99,6 +100,8 @@ func TestSyntaxErrors(t *testing.T) {
 		{"public class /X/A\n  public method M()\n    var s = \"{}\"\n  end\nend\n", "empty placeholder"},
 		{"public class /X/A\n  public method M()\n    log loud \"x\"\n  end\nend\n", "expected a log level"},
 		{"public class /X/A\n  public method M()\n    var x = /X\n  end\nend\n", "a global name has the form"},
+		{"public class /X/A\n  public method M()\n    var x = authorized /X/O COUNTRY = 1\n  end\nend\n", "expected the end of the line after the authorization object"},
+		{"public class /X/A\n  public method M()\n    check authorization /X/O\n      COUNTRY 1\n    end\n  end\nend\n", `expected "="`},
 	} {
 		_, errs := syntax.Parse("f", c.src)
 		found := false
@@ -175,7 +178,7 @@ func tree(x syntax.Expr) string {
 }
 
 func TestReservedWords(t *testing.T) {
-	for _, w := range append(append([]string{}, syntax.DatabaseKeywords...), syntax.TransformKeywords...) {
+	for _, w := range slices.Concat(syntax.DatabaseKeywords, syntax.TransformKeywords, syntax.AuthorizationKeywords) {
 		src := "public class /X/A\n\n  public static method M()\n    var " + w + " = 1\n  end\n\nend\n"
 		if _, errs := syntax.Parse("f", src); len(errs) == 0 {
 			t.Errorf("%s is accepted as a name", w)

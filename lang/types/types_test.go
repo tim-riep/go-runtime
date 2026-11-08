@@ -46,6 +46,8 @@ var schemaFiles = map[string]string{
 		{"name":"ID","domain":"/TRT/ID"},{"name":"AMOUNT","domain":"/TRT/AMOUNT","notNull":true},
 		{"name":"NOTE","domain":"/TRT/TEXT"},{"name":"PAID","domain":"/TRT/FLAG","notNull":true}],"primaryKey":["ID"]}`,
 	"src/FAILED.class": "public class /TRT/FAILED extends /RT/EXCEPTION\npublic constructor(text: STRING)\nsuper(text)\nend\nend\n",
+	"schema/authorization-objects/ORDER.json": `{"name":"/TRT/ORDER","texts":{"en":{"label":"Orders"}},"fields":[
+		{"name":"ID","domain":"/TRT/ID"},{"name":"CODE","domain":"/TRT/CODE"},{"name":"ACTIVITY"}],"activities":["READ","UPDATE"]}`,
 }
 
 // compile builds a package with the schema above and the given sources,
@@ -564,4 +566,58 @@ func TestIncludes(t *testing.T) {
 func TestUUIDRandom(t *testing.T) {
 	expectOK(t, class("public static method M() returns UUID\nreturn UUID.RANDOM()\nend"))
 	expectError(t, class("public static method M() returns UUID\nreturn UUID.OTHER()\nend"), "unknown", "UUID has no method OTHER")
+}
+
+// TestAuthorizationChecks checks check authorization and authorized: the
+// object, every field once, the types of the values and the activities.
+func TestAuthorizationChecks(t *testing.T) {
+	r := expectOK(t, class(`public static method M(id: STRING, code: /TRT/CODE, act: /RT/ACTIVITY, maybe: STRING?) returns BOOL
+  check authorization /TRT/ORDER
+    ID = id
+    CODE = code
+    ACTIVITY = UPDATE
+  end
+  if maybe is not null
+    check authorization /TRT/ORDER
+      ID = maybe
+      CODE = /TRT/CODE.A
+      ACTIVITY = /RT/ACTIVITY.READ
+    end
+  end
+  return authorized /TRT/ORDER
+    ID = "1234567890"
+    CODE = any
+    ACTIVITY = act
+  end and not authorized /TRT/ORDER
+    ID = any
+    CODE = any
+    ACTIVITY = any
+  end
+end`))
+	uses := map[string]bool{}
+	for _, ref := range r.Program.Info.References {
+		if ref.Kind == "authorization-object" {
+			uses[ref.Member] = true
+		}
+	}
+	for _, m := range []string{"", "ID", "CODE", "ACTIVITY", "ACTIVITY=UPDATE", "ACTIVITY=READ"} {
+		if !uses[m] {
+			t.Errorf("no use of %q in %v", m, uses)
+		}
+	}
+	check := func(fields string) map[string]string {
+		return class("public static method M(id: STRING, n: INT4, maybe: STRING?)\ncheck authorization /TRT/ORDER\n" + fields + "\nend\nend")
+	}
+	expectError(t, class("public static method M()\ncheck authorization /TRT/NONE\nID = any\nend\nend"), "authorization", "authorization object /TRT/NONE does not exist")
+	expectError(t, check("ID = id\nACTIVITY = READ"), "authorization", "needs the field CODE")
+	expectError(t, check("ID = id\nID = id\nCODE = any\nACTIVITY = READ"), "duplicate", "the field ID is given twice")
+	expectError(t, check("ID = id\nCODE = any\nACTIVITY = READ\nCOLOR = any"), "unknown", "/TRT/ORDER has no field COLOR; its fields are ID, CODE, ACTIVITY")
+	expectError(t, check("ID = n\nCODE = any\nACTIVITY = READ"), "type", "the value of ID is INT4")
+	expectError(t, check("ID = id\nCODE = id\nACTIVITY = READ"), "type", "the value of CODE is STRING")
+	expectError(t, check(`ID = "12345678901"`+"\nCODE = any\nACTIVITY = READ"), "type", "longer than the 10 characters of ID")
+	expectError(t, check("ID = id\nCODE = any\nACTIVITY = DELETE"), "authorization", "/TRT/ORDER does not allow the activity DELETE; it allows READ, UPDATE")
+	expectError(t, check("ID = id\nCODE = any\nACTIVITY = /RT/ACTIVITY.EXPORT"), "authorization", "does not allow the activity EXPORT")
+	expectError(t, check("ID = maybe\nCODE = any\nACTIVITY = READ"), "null-check", "maybe may be null")
+	expectError(t, check("ID = null\nCODE = any\nACTIVITY = READ"), "null-check", "null cannot be used here")
+	expectError(t, check("ID = id\nCODE = any\nACTIVITY = id"), "type", "the value of ACTIVITY is STRING")
 }

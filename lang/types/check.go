@@ -124,6 +124,8 @@ type Info struct {
 	Cursors   map[*syntax.ForStmt]bool
 	// Transforms describes the transform expressions.
 	Transforms map[*syntax.TransformExpr]*Transform
+	// AuthChecks describes check authorization and authorized.
+	AuthChecks map[*syntax.AuthCheck]*AuthCheck
 }
 
 // Reference is the use of an object of the schema or of a class by code.
@@ -131,9 +133,12 @@ type Reference struct {
 	File   string
 	Line   int
 	Column int
-	Kind   string // table, field, structure, component, array-type, data-element, domain, fixed-value, class, interface, method, attribute, constant, include
+	Kind   string // table, field, structure, component, array-type, data-element, domain, fixed-value, class, interface, method, attribute, constant, include, authorization-object
 	Object string
-	Member string // field, component, method, attribute, constant or fixed value; empty for the object itself
+	// Member is the field, component, method, attribute, constant or fixed
+	// value, for authorization objects the field or ACTIVITY=code of a
+	// check; empty for the object itself.
+	Member string
 }
 
 // IncludeRef is an include that code inserts, or skips because it does not
@@ -223,7 +228,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		TypeExprs: map[*syntax.Type]Type{}, Funcs: map[*syntax.FuncExpr]*FuncInfo{}, Vars: map[syntax.Stmt][]*Local{},
 		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
 		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{},
-		Transforms: map[*syntax.TransformExpr]*Transform{}}
+		Transforms: map[*syntax.TransformExpr]*Transform{}, AuthChecks: map[*syntax.AuthCheck]*AuthCheck{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)
 	c.declareClasses()
 	c.hierarchy()

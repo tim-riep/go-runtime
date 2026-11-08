@@ -247,6 +247,16 @@ func Encode(p *Program) []byte {
 		w.int(t.Into)
 		w.str(t.Format)
 	}
+	w.int(len(p.AuthChecks))
+	for _, a := range p.AuthChecks {
+		w.str(a.Object)
+		w.int(len(a.Fields))
+		for _, f := range a.Fields {
+			w.str(f.Name)
+			w.int(f.Type)
+		}
+		w.bool(a.Statement)
+	}
 	return w.b.Bytes()
 }
 
@@ -455,6 +465,15 @@ func Decode(b []byte) (*Program, error) {
 	for i := range p.Transforms {
 		p.Transforms[i] = Transform{Name: r.str(), Params: r.strs(), ParamTypes: r.ints(), Source: r.int(), SourceXML: r.bool(), Into: r.int(), Format: r.str()}
 	}
+	p.AuthChecks = make([]AuthCheck, r.count())
+	for i := range p.AuthChecks {
+		a := AuthCheck{Object: r.str(), Fields: make([]AuthField, r.count())}
+		for j := range a.Fields {
+			a.Fields[j] = AuthField{Name: r.str(), Type: r.int()}
+		}
+		a.Statement = r.bool()
+		p.AuthChecks[i] = a
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -520,6 +539,8 @@ func (p *Program) Verify() error {
 				ok = in(arg(0), len(f.Code)+1)
 			case XFORM:
 				ok = in(arg(0), len(p.Transforms))
+			case AUTH_CHECK:
+				ok = in(arg(0), len(p.AuthChecks))
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -544,6 +565,13 @@ func (p *Program) Verify() error {
 		}
 		if !ok {
 			return fmt.Errorf("bytecode: invalid transform with %s", t.Name)
+		}
+	}
+	for _, a := range p.AuthChecks {
+		for _, f := range a.Fields {
+			if f.Type != -1 && !in(f.Type, len(p.Types)) {
+				return fmt.Errorf("bytecode: invalid authorization check of %s", a.Object)
+			}
 		}
 	}
 	for _, q := range p.Queries {

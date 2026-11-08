@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 5
+const FormatVersion = 6
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -59,6 +59,8 @@ type Program struct {
 	Queries []Query // database statements
 	// Transforms are the transform expressions.
 	Transforms []Transform
+	// AuthChecks are the authorization checks.
+	AuthChecks []AuthCheck
 	Tests      bool // contains test classes
 }
 
@@ -292,6 +294,22 @@ func (p *Program) Method(class, method string) (MethodRef, bool) {
 		}
 	}
 	return MethodRef{}, false
+}
+
+// AuthCheck is check authorization (Statement) or authorized: the object
+// and its fields in the order of their values on the stack; fields with
+// any have no value.
+type AuthCheck struct {
+	Object    string
+	Fields    []AuthField
+	Statement bool
+}
+
+// AuthField is a field of an authorization check and the TypeDesc of its
+// value, -1 for any.
+type AuthField struct {
+	Name string
+	Type int
 }
 
 // Transform is a transform expression: the transformation, the names and

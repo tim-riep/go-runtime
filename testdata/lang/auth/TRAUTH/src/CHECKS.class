@@ -1,0 +1,37 @@
+# Checks authorizations on companies.
+public class /TRAUTH/CHECKS
+
+  # Fails with /RT/NOT_AUTHORIZED unless the user may change the company.
+  public static method UPDATE_COMPANY(id: STRING, country: STRING) returns STRING
+    check authorization /TRFIN/COMPANY
+      COMPANY_ID = id
+      COUNTRY = country
+      ACTIVITY = UPDATE
+    end
+    return "updated {id}"
+  end
+
+  # Whether the user may do an activity on companies of a country.
+  public static method CAN(country: STRING, activity: /RT/ACTIVITY) returns BOOL
+    return authorized /TRFIN/COMPANY
+      COMPANY_ID = any
+      COUNTRY = country
+      ACTIVITY = activity
+    end
+  end
+
+  # Catches a failed check.
+  public static method DELETE_COMPANY(id: STRING) returns STRING
+    try
+      check authorization /TRFIN/COMPANY
+        COMPANY_ID = id
+        COUNTRY = any
+        ACTIVITY = /RT/ACTIVITY.DELETE
+      end
+      return "deleted {id}"
+    catch e: /RT/NOT_AUTHORIZED
+      return "{e.OBJECT}: {e.TEXT}"
+    end
+  end
+
+end

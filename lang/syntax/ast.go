@@ -358,6 +358,14 @@ type (
 		Keyword string
 		Session Expr // nil for the default session
 	}
+	// AuthCheckStmt is check authorization: it raises /RT/NOT_AUTHORIZED
+	// when the user lacks the authorization. Doc.Trailing is the comment
+	// after the object, End the end line.
+	AuthCheckStmt struct {
+		StmtBase
+		AuthCheck
+		End EndLine
+	}
 	// RowStmt is insert, update or delete of one row, given as value of the
 	// row type of a table.
 	RowStmt struct {
@@ -522,7 +530,30 @@ type (
 		Params []ParamValue
 		Into   *Type // nil: the result is a STRING
 	}
+	// AuthorizedExpr tells whether the user has an authorization. Head is
+	// the comment after the object, End the comments before end.
+	AuthorizedExpr struct {
+		Pos Pos
+		AuthCheck
+		Head *Comment
+		End  EndLine
+	}
 )
+
+// AuthCheck is the object and the fields of an authorization check.
+type AuthCheck struct {
+	Object Name
+	Fields []*AuthField
+}
+
+// AuthField is FIELD = value or FIELD = any of an authorization check, on
+// a line of its own.
+type AuthField struct {
+	Doc   Comments
+	Name  Ident
+	Any   bool
+	Value Expr // nil for any
+}
 
 // ParamValue is NAME = value of transform ... parameters.
 type ParamValue struct {
@@ -548,6 +579,7 @@ func (e *UpdateExpr) Start() Pos      { return e.Pos }
 func (e *DeleteExpr) Start() Pos      { return e.Pos }
 func (e *OpenSessionExpr) Start() Pos { return e.Pos }
 func (e *TransformExpr) Start() Pos   { return e.Pos }
+func (e *AuthorizedExpr) Start() Pos  { return e.Pos }
 
 // Arg is an argument, possibly named (NAME: value).
 type Arg struct {

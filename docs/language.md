@@ -62,7 +62,8 @@ Database access uses the keywords `commit`, `rollback`, `session`, `using`, `sel
 `insert`, `update`, `delete`, `from` and `where`; `single`, `count`, `order`, `by`,
 `ascending`, `descending`, `limit` and `set` are keywords only at their place in a
 database statement. `transform`, `parameters` and `into` belong to the expression
-`transform`.
+`transform`. `authorization` and `authorized` belong to authorization checks; `check`
+and `any` are keywords only there and remain usable as names.
 
 ## Types
 
@@ -685,6 +686,50 @@ end
   compiles and recorded as used, so an upgrade that removes the object fails when the code
   is compiled again. Other names are looked up when the code runs.
 
+## Authorization checks
+
+`check authorization` checks an authorization of the user of the execution and raises
+`/RT/NOT_AUTHORIZED` when the user lacks it; `authorized` tells it as `BOOL`:
+
+```
+check authorization /TRFIN/COMPANY
+  COMPANY_ID = company.ID
+  COUNTRY = company.COUNTRY
+  ACTIVITY = UPDATE
+end
+if authorized /TRFIN/COMPANY
+  COMPANY_ID = any
+  COUNTRY = "DE"
+  ACTIVITY = READ
+end
+  ...
+end
+```
+
+- The object belongs to the own package, a required one or the kernel. Every field of the
+  object is given exactly once, on a line of its own, in any order.
+- A value has the type of the field, its data element or domain; a value that may be `null`
+  needs a null check first, and `null` is no value of a check. Literals are checked
+  against the length of the field when the code compiles, other values when the check runs.
+  `""` is a value like any other.
+- `any` does not check the field: the user needs an authorization on the object whose other
+  fields match.
+- `ACTIVITY` takes the name of an activity, such as `UPDATE`, a constant `/RT/ACTIVITY.READ`
+  or an expression of type `/RT/ACTIVITY`. Constants must be activities of the object.
+- Without a user, for a locked user and outside the period of the user's roles every check
+  fails. The role `/RT/ALL_AUTHORIZATIONS` passes every check.
+- `/RT/NOT_AUTHORIZED` is a runtime error: code may catch it but does not have to declare
+  it. Its attributes are `OBJECT` and `VALUES`, a map from field to value with `null` for
+  `any`, and its text is in the language of the execution. Unhandled, it rolls the default
+  session back, `rt run` ends with exit code 7 and http services answer 403.
+- An execution reads the authorizations of its user once; every check after that runs in
+  memory, in about 0.1 µs.
+- The checks are recorded as uses of the object, its fields and the activities. When an
+  upgrade adds or removes a field, changes the type of a field or removes an activity, the
+  code is compiled again and fails at the check. `rt show authorization-object:NAME` lists
+  the places.
+- Native methods check with `native.Context.Authorize`.
+
 ## Transformations
 
 A transformation is an XSLT stylesheet of a package: `transformations/INVOICE_HTML.xsl` is
@@ -902,7 +947,8 @@ stmt          = "var" LOCAL [ ":" type ] "=" expr | "var" LOCAL ":" type | place
               | "try" NL block { "catch" LOCAL ":" GLOBAL NL block } [ "finally" NL block ] "end"
               | "assert" expr [ "," expr ] | "log" LEVEL expr | "include" GLOBAL [ "if" "found" ]
               | ( "insert" | "update" | "delete" ) expr [ "using" expr ]
-              | ( "commit" | "rollback" ) [ expr ] ;
+              | ( "commit" | "rollback" ) [ expr ]
+              | "check" "authorization" GLOBAL NL authFields "end" ;
 expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr ")"
               | expr "." MEMBER | expr "(" [ args ] ")" | expr "[" expr "]"
               | "new" GLOBAL "(" [ args ] ")" | "new" ( "array" | "map" ) "of" ...
@@ -910,7 +956,9 @@ expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr "
               | "function" params [ "returns" type ] [ raises ] ( "=>" expr | NL block "end" )
               | ( "-" | "not" ) expr | expr OPERATOR expr | expr "is" [ "not" ] ( "null" | "empty" )
               | expr "as" type | expr "." GLOBAL | expr "in" expr
-              | selectExpr | updateExpr | deleteExpr | "open" "session" | transformExpr ;
+              | selectExpr | updateExpr | deleteExpr | "open" "session" | transformExpr
+              | "authorized" GLOBAL NL authFields "end" ;
+authFields    = { MEMBER "=" ( "any" | expr ) NL } ;
 transformExpr = "transform" expr "using" GLOBAL [ "parameters" MEMBER "=" expr { "," MEMBER "=" expr } ]
                 [ "into" type ] ;
 args          = expr { "," expr } | MEMBER ":" expr { "," MEMBER ":" expr } ;

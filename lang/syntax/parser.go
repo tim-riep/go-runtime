@@ -763,6 +763,16 @@ func (p *parser) stmt() Stmt {
 			return nil
 		}
 	}
+	if p.isWord("check") && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == KEYWORD && p.toks[p.i+1].Text == "authorization" {
+		p.next()
+		p.next()
+		s := &AuthCheckStmt{StmtBase: base}
+		s.Object = p.global()
+		s.Doc.Trailing = p.lineEnd()
+		s.Fields = p.authFields()
+		s.End = p.endLine()
+		return s
+	}
 	x := p.postfix(p.primary())
 	if p.isOp("=") {
 		p.next()
@@ -1010,6 +1020,8 @@ func (p *parser) primary() Expr {
 			return p.selectExpr()
 		case "transform":
 			return p.transformExpr()
+		case "authorized":
+			return p.authorizedExpr()
 		case "update":
 			return p.updateExpr()
 		case "delete":
@@ -1362,6 +1374,48 @@ func (p *parser) transformExpr() Expr {
 		e.Into = p.typ()
 	}
 	return e
+}
+
+// authorizedExpr reads authorized /PKG/OBJECT, the fields on lines of
+// their own and end.
+func (p *parser) authorizedExpr() Expr {
+	e := &AuthorizedExpr{Pos: p.tok.Pos}
+	p.next()
+	e.Object = p.global()
+	if p.tok.Kind != NEWLINE {
+		p.errorf(p.tok.Pos, "expected the end of the line after the authorization object, found %s", p.tok)
+		return e
+	}
+	saved := p.pending
+	p.pending = nil
+	e.Head = p.lineEnd()
+	e.Fields = p.authFields()
+	e.End = p.closeLeading()
+	p.expectKw("end")
+	p.pending = saved
+	return e
+}
+
+// authFields reads the lines FIELD = value or FIELD = any up to end.
+func (p *parser) authFields() []*AuthField {
+	var out []*AuthField
+	for p.tok.Kind != EOF && !p.isKw("end") {
+		start := p.i
+		f := &AuthField{Doc: p.doc(), Name: p.memberName()}
+		p.expectOp("=")
+		if p.isWord("any") && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == NEWLINE {
+			f.Any = true
+			p.next()
+		} else {
+			f.Value = p.expr(0)
+		}
+		f.Doc.Trailing = p.lineEnd()
+		out = append(out, f)
+		if p.i == start {
+			p.next()
+		}
+	}
+	return out
 }
 
 func (p *parser) selectExpr() Expr {

@@ -243,6 +243,29 @@ func (f *fn) cursorLoop(s *syntax.ForStmt) {
 	f.patch(exit)
 }
 
+// authCheck pushes the values of the fields of an authorization check in
+// source order and checks them.
+func (f *fn) authCheck(pos syntax.Pos, x *syntax.AuthCheck, statement bool) {
+	a := f.c.info.AuthChecks[x]
+	bc := bytecode.AuthCheck{Object: a.Object, Statement: statement}
+	for _, fd := range a.Fields {
+		switch {
+		case fd.Any:
+			bc.Fields = append(bc.Fields, bytecode.AuthField{Name: fd.Name, Type: -1})
+			continue
+		case fd.Activity != nil:
+			f.c.enum(fd.Activity)
+			f.emit(CONST_I, fd.ActivityIndex)
+		default:
+			f.expr(fd.Value)
+		}
+		bc.Fields = append(bc.Fields, bytecode.AuthField{Name: fd.Name, Type: f.c.typeDesc(fd.Type)})
+	}
+	f.c.out.AuthChecks = append(f.c.out.AuthChecks, bc)
+	f.line(pos)
+	f.emit(AUTH_CHECK, len(f.c.out.AuthChecks)-1)
+}
+
 // transform runs a transformation: the source, then the values of the
 // parameters.
 func (f *fn) transform(x *syntax.TransformExpr) {

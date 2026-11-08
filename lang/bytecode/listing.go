@@ -84,6 +84,10 @@ func Listing(p *Program, f *Func, imports func(slot int) *Program, source Source
 				t := p.Transforms[a[0]]
 				return t.Name + " (" + t.Format + ")"
 			}
+		case AUTH_CHECK:
+			if int(a[0]) < len(p.AuthChecks) {
+				return p.AuthChecks[a[0]].Object
+			}
 		case DB_QUERY, DB_CURSOR:
 			if int(a[0]) < len(p.Queries) {
 				q := p.Queries[a[0]]

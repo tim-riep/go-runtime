@@ -200,6 +200,9 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		return TypSession
 	case *syntax.TransformExpr:
 		return c.transform(f, sc, x, e)
+	case *syntax.AuthorizedExpr:
+		c.authCheck(f, sc, &x.AuthCheck, e)
+		return TypBool
 	}
 	return TypInvalid
 }

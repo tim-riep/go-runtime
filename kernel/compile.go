@@ -260,6 +260,26 @@ func changedObjects(cur, want *model.Schema) map[string]bool {
 			out[name] = true
 		}
 	}
+	// Code checks the fields, their types and the activities of the
+	// authorization objects it checks.
+	authSig := func(s *model.Schema, o *model.AuthorizationObject) string {
+		var b strings.Builder
+		for _, f := range o.Fields {
+			d := s.Domains[s.AuthorizationFieldDomain(f)]
+			typ := ""
+			if d != nil {
+				typ = d.TypeString()
+			}
+			fmt.Fprintf(&b, "%s %s %s %s|", f.Name, f.DataElement.Or(""), f.Domain.Or(""), typ)
+		}
+		fmt.Fprintf(&b, "%v", o.Activities)
+		return b.String()
+	}
+	for name, o := range cur.AuthorizationObjects {
+		if w, ok := want.AuthorizationObjects[name]; !ok || authSig(cur, o) != authSig(want, w) {
+			out[name] = true
+		}
+	}
 	// Domains and data elements change the types of components as well.
 	for name, d := range want.Domains {
 		if c, ok := cur.Domains[name]; !ok || c.TypeString() != d.TypeString() || !slices.Equal(c.Values, d.Values) {

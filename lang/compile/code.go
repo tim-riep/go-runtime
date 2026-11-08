@@ -327,6 +327,8 @@ func (f *fn) stmt(s syntax.Stmt) {
 		} else {
 			f.emit(ASSERT, 0)
 		}
+	case *syntax.AuthCheckStmt:
+		f.authCheck(s.Pos, &s.AuthCheck, true)
 	case *syntax.LogStmt:
 		f.expr(s.Value)
 		f.toText(info.Types[s.Value])
@@ -872,6 +874,8 @@ func (f *fn) expr0(x syntax.Expr) {
 		f.dbExpr(x)
 	case *syntax.TransformExpr:
 		f.transform(x)
+	case *syntax.AuthorizedExpr:
+		f.authCheck(x.Pos, &x.AuthCheck, false)
 	default:
 		f.c.failf("cannot compile %T", x)
 	}

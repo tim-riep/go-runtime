@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/build"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
@@ -286,6 +287,9 @@ func (c *cli) run(ctx context.Context, k *kernel.Kernel, args []string) int {
 		fmt.Fprintf(c.stderr, "error: %v\n", err)
 		var ex *vm.Exception
 		if errors.As(err, &ex) && ex.Class == model.NotAuthorizedClass {
+			if ch := ex.Check; ch != nil {
+				fmt.Fprintf(c.stderr, "check: %s\n", checkText(*ch))
+			}
 			return exitNotAuthorized
 		}
 		return exitError
@@ -383,4 +387,28 @@ func (c *cli) genNatives(dir string) int {
 		return c.fail(err)
 	}
 	return exitOK
+}
+
+// checkText shows the values of a check in the order of the field names,
+// with any for fields that are not checked.
+func checkText(ch authorization.Check) string {
+	var fields []string
+	for f := range ch.Values {
+		fields = append(fields, f)
+	}
+	for f := range ch.Any {
+		if _, ok := ch.Values[f]; !ok {
+			fields = append(fields, f)
+		}
+	}
+	slices.Sort(fields)
+	out := ch.Object
+	for _, f := range fields {
+		if v, ok := ch.Values[f]; ok && !ch.Any[f] {
+			out += fmt.Sprintf(" %s=%q", f, v)
+		} else {
+			out += " " + f + "=any"
+		}
+	}
+	return out
 }

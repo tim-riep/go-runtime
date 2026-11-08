@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	. "github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/dec"
 	"github.com/tim-riep/go-runtime/model"
@@ -80,6 +81,8 @@ type Exception struct {
 	Text   string
 	Object *Record
 	Trace  []TraceFrame
+	// Check is the failed authorization check of /RT/NOT_AUTHORIZED.
+	Check *authorization.Check
 }
 
 // TraceFrame is a function on the stack when an exception was raised.
@@ -220,7 +223,8 @@ func (m *Machine) CallMethod(ctx context.Context, class, method string) error {
 type thrown struct {
 	obj   *Record
 	trace []TraceFrame
-	pc    int // position in the current function when raised again by finally, -1 otherwise
+	pc    int                  // position in the current function when raised again by finally, -1 otherwise
+	check *authorization.Check // the failed check of /RT/NOT_AUTHORIZED
 }
 
 func (t *thrown) Error() string { return "exception" }
@@ -253,7 +257,7 @@ func (m *Machine) run(fi *LinkedFunc, me Value, args []Value, cl *Closure) (v Va
 }
 
 func (m *Machine) exception(t *thrown) *Exception {
-	e := &Exception{Class: t.obj.Class.Name, Object: t.obj, Trace: t.trace}
+	e := &Exception{Class: t.obj.Class.Name, Object: t.obj, Trace: t.trace, Check: t.check}
 	e.Text = m.getField(t.obj, m.image.textField).str()
 	return e
 }
@@ -937,6 +941,21 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 			var v Value
 			v, t, err = m.transform(p, tr, src, params)
 			if t == nil && err == nil {
+				push(v)
+			}
+		case AUTH_CHECK:
+			a := &p.AuthChecks[arg(0)]
+			n := 0
+			for _, f := range a.Fields {
+				if f.Type != -1 {
+					n++
+				}
+			}
+			values := stack[len(stack)-n:]
+			var v Value
+			v, t, err = m.authCheck(fn, start, a, values)
+			stack = stack[:len(stack)-n]
+			if t == nil && err == nil && !a.Statement {
 				push(v)
 			}
 		case DB_OPEN:

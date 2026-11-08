@@ -1616,8 +1616,17 @@ func (c *cli) showAuthorizationObject(ctx context.Context, k *kernel.Kernel, nam
 			fmt.Fprintf(c.stdout, "  activity %s: %s\n", a.Code, a.Texts[model.DefaultLanguage].Label)
 		}
 	}
+	// Every check and lookup in code once, without its fields.
+	first := true
 	for _, u := range uses {
-		fmt.Fprintf(c.stdout, "  used by %s %s:%d\n", u.Package, u.File, u.Line)
+		if u.Member.Valid() {
+			continue
+		}
+		if first {
+			fmt.Fprintln(c.stdout, "\nUsed in code:")
+			first = false
+		}
+		fmt.Fprintf(c.stdout, "  %s %s:%d\n", u.Package, u.File, u.Line)
 	}
 	return exitOK
 }

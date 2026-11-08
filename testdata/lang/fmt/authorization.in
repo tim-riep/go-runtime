@@ -1,0 +1,25 @@
+public class /X/A
+  public static method M(country: STRING, check: STRING, any: STRING) returns BOOL
+    # before the check
+    check authorization /TRFIN/COMPANY   # after the object
+      COMPANY_ID   =  any
+      # before a field
+      COUNTRY = country # after a field
+
+      ACTIVITY = UPDATE
+    # before end
+    end # after end
+    check = any
+    var ok = authorized /TRFIN/COMPANY
+      COMPANY_ID = any
+      COUNTRY = "D" +
+        country
+      ACTIVITY = /RT/ACTIVITY.READ
+      # before end
+    end
+    return ok and not authorized /TROTTO/SYNC
+        COUNTRY = any
+        ACTIVITY = EXECUTE
+      end
+  end
+end

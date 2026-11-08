@@ -16,6 +16,8 @@ package kernel_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -27,6 +29,8 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/native/nativetest"
+	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/vm"
 )
 
 // openCheckKernel opens a kernel with the test natives and the examples,
@@ -52,7 +56,8 @@ func openCheckKernel(tb testing.TB, dsn string) *kernel.Kernel {
 	if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
 		tb.Fatal(err)
 	}
-	if _, err := k.Install(ctx, []*model.Package{testutil.Example(tb, "TROTTO"), testutil.Example(tb, "TRFIN")}, kernel.Options{}); err != nil {
+	trauth := testutil.LoadDir(tb, filepath.Join(testutil.ModuleRoot(tb), "testdata", "lang", "auth", "TRAUTH"))
+	if _, err := k.Install(ctx, []*model.Package{testutil.Example(tb, "TROTTO"), testutil.Example(tb, "TRFIN"), trauth}, kernel.Options{}); err != nil {
 		tb.Fatal(err)
 	}
 	if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
@@ -96,6 +101,68 @@ func TestAuthorize(t *testing.T) {
 			if _, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, N, "AUTHORIZE", `"DE"`, "false"); exceptionClass(err) != model.NotAuthorizedClass ||
 				!strings.Contains(err.Error(), "--user") {
 				t.Errorf("without user: %v", err)
+			}
+		})
+	}
+}
+
+// TestCheckStatements runs check authorization and authorized of code:
+// success, /RT/NOT_AUTHORIZED unhandled and caught, and the result of
+// authorized with and without a user.
+func TestCheckStatements(t *testing.T) {
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			k := openCheckKernel(t, db.DSN)
+			const C = "/TRAUTH/CHECKS"
+			anna := kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}
+			if got, err := call(k, anna, C, "UPDATE_COMPANY", `"C1"`, `"PT"`); err != nil || got != `"updated C1"` {
+				t.Errorf("UPDATE_COMPANY PT: %s, %v", got, err)
+			}
+			_, err := call(k, anna, C, "UPDATE_COMPANY", `"C1"`, `"FR"`)
+			var e *vm.Exception
+			if !errors.As(err, &e) || e.Class != model.NotAuthorizedClass || len(e.Trace) == 0 || e.Trace[0].Line != 6 {
+				t.Errorf("UPDATE_COMPANY FR: %v", err)
+			}
+			if got, err := call(k, anna, C, "UPDATE_COMPANY", `"12345678901234567890123"`, `"DE"`); err == nil {
+				t.Errorf("too long: %s", got)
+			}
+			if got, err := call(k, anna, C, "DELETE_COMPANY", `"C1"`); err != nil || got != `"/TRFIN/COMPANY: no authorization for /TRFIN/COMPANY"` {
+				t.Errorf("DELETE_COMPANY: %s, %v", got, err)
+			}
+			for _, c := range []struct {
+				opts              kernel.ExecOptions
+				country, activity string
+				want              string
+			}{{anna, "AT", "READ", "true"}, {anna, "AT", "DELETE", "false"}, {anna, "FR", "READ", "false"},
+				{kernel.ExecOptions{Tenant: "ACME"}, "AT", "READ", "false"}} {
+				if got, err := call(k, c.opts, C, "CAN", `"`+c.country+`"`, `"`+c.activity+`"`); err != nil || got != c.want {
+					t.Errorf("CAN(%s, %s) = %s, %v", c.country, c.activity, got, err)
+				}
+			}
+
+			// A new field of the object breaks the checks of TRAUTH.
+			dir := testutil.CopyExample(t, "TRFIN")
+			testutil.WriteFile(t, dir, "schema/authorization-objects/COMPANY.json", []byte(`{"name":"/TRFIN/COMPANY",
+				"texts":{"en":{"label":"Company master data"},"de":{"label":"Stammdaten Firma"}},
+				"fields":[{"name":"COMPANY_ID","dataElement":"/TRFIN/COMPANY"},{"name":"COUNTRY","dataElement":"/TRBASE/COUNTRY"},
+				{"name":"REGION","dataElement":"/TRBASE/NAME"},{"name":"ACTIVITY"}],"activities":["READ","CREATE","UPDATE","DELETE","EXPORT"]}`))
+			up := testutil.LoadDir(t, dir)
+			up.Manifest.Version = "1.1.0"
+			_, err = k.Upgrade(context.Background(), up, kernel.Options{})
+			var ce *rterr.CompileError
+			if !errors.As(err, &ce) || ce.Package != "TRAUTH" || !strings.Contains(err.Error(), "src/CHECKS.class:6") ||
+				!strings.Contains(err.Error(), "needs the field REGION") {
+				t.Errorf("upgrade: %v", err)
+			}
+			uses, err := k.CodeUses(context.Background(), "/TRFIN/COMPANY")
+			found := map[string]bool{}
+			for _, u := range uses {
+				found[fmt.Sprintf("%s %d %s", u.Package, u.Line, u.Member.Or(""))] = true
+			}
+			for _, want := range []string{"TRAUTH 6 ", "TRAUTH 7 COMPANY_ID", "TRAUTH 9 ACTIVITY=UPDATE", "TRAUTH 29 ACTIVITY=DELETE", "TRAUTH 28 COUNTRY"} {
+				if !found[want] {
+					t.Errorf("missing use %q in %v (%v)", want, found, err)
+				}
 			}
 		})
 	}

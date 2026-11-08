@@ -80,6 +80,10 @@ func Inspect(x Expr, fn func(Expr)) {
 		for _, pv := range x.Params {
 			Inspect(pv.Value, fn)
 		}
+	case *AuthorizedExpr:
+		for _, f := range x.Fields {
+			Inspect(f.Value, fn)
+		}
 	}
 }
 
@@ -125,6 +129,10 @@ func Includes(f *File, fn func(name Name, ifFound bool)) {
 				exprs(s.Cond, s.Message)
 			case *LogStmt:
 				exprs(s.Value)
+			case *AuthCheckStmt:
+				for _, f := range s.Fields {
+					exprs(f.Value)
+				}
 			case *IfStmt:
 				for _, c := range s.Clauses {
 					exprs(c.Cond)

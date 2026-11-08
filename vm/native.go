@@ -584,6 +584,7 @@ func (m *Machine) goArg(p *Program, t int, a any) (Value, error) {
 // object and the checked values, null for fields checked with any.
 func (m *Machine) notAuthorized(c authorization.Check, text string) *thrown {
 	t := m.fail("/RT/NOT_AUTHORIZED", "%s", text)
+	t.check = &c
 	r := t.obj
 	l := r.Class.Layout
 	if i := l.Field("OBJECT"); i >= 0 {

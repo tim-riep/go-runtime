@@ -17,7 +17,10 @@
 // printer that produces the canonical form.
 package syntax
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // LanguageVersion is the newest language version. Grammar and canonical
 // form are defined per version.
@@ -99,6 +102,10 @@ var DatabaseKeywords = []string{"commit", "rollback", "session", "using", "selec
 // TransformKeywords belong to the expression transform.
 var TransformKeywords = []string{"transform", "parameters", "into"}
 
+// AuthorizationKeywords belong to authorization checks; "check" and "any"
+// only have a meaning there and remain usable as names.
+var AuthorizationKeywords = []string{"authorization", "authorized"}
+
 func init() {
 	for _, k := range []string{"class", "interface", "include", "public", "package", "private", "static", "open", "override",
 		"extends", "implements", "constant", "attribute", "constructor", "method", "returns", "raises", "var", "if", "elseif",
@@ -107,7 +114,7 @@ func init() {
 		"function", "as", "of", "array", "map", "mod"} {
 		Keywords[k] = true
 	}
-	for _, k := range append(DatabaseKeywords, TransformKeywords...) {
+	for _, k := range slices.Concat(DatabaseKeywords, TransformKeywords, AuthorizationKeywords) {
 		Keywords[k] = true
 	}
 }

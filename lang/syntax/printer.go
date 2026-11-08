@@ -550,8 +550,30 @@ func (p *printer) stmt(s Stmt, ind int) {
 		p.w(s.Op + " ")
 		p.expr(s.Row)
 		p.using(s.Using)
+	case *AuthCheckStmt:
+		p.w("check authorization " + s.Object.Name)
+		p.endLine(trailing)
+		p.authFields(s.Fields, ind+2)
+		p.blockEnd(s.End, ind, "end")
+		return
 	}
 	p.endLine(trailing)
+}
+
+// authFields prints the fields of an authorization check, one per line.
+func (p *printer) authFields(fs []*AuthField, ind int) {
+	for i, f := range fs {
+		p.doc(&f.Doc, ind, i > 0)
+		p.startLine(ind)
+		p.stmtInd = ind
+		p.w(f.Name.Name + " = ")
+		if f.Any {
+			p.w("any")
+		} else {
+			p.expr(f.Value)
+		}
+		p.endLine(f.Doc.Trailing)
+	}
 }
 
 func (p *printer) body(trailing *Comment, b *Block, ind int) {
@@ -788,6 +810,15 @@ func (p *printer) expr(x Expr) {
 		p.using(x.Using)
 	case *OpenSessionExpr:
 		p.w("open session")
+	case *AuthorizedExpr:
+		p.w("authorized " + x.Object.Name)
+		ind, saved := p.lineInd, p.stmtInd
+		p.endLine(x.Head)
+		p.authFields(x.Fields, ind+2)
+		p.leading(x.End.Leading, ind+2, true)
+		p.startLine(ind)
+		p.w("end")
+		p.stmtInd = saved
 	case *FuncExpr:
 		p.w("function ")
 		p.params(x.Params, x.List)
