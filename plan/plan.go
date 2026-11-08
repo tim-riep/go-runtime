@@ -60,17 +60,11 @@ const (
 	DeleteRows      ChangeKind = "delete-rows"
 
 	// Changes of the repository only; they produce no statements.
-	AlterDataClass        ChangeKind = "alter-data-class"
-	CreateDataElement     ChangeKind = "create-data-element"
-	DropDataElement       ChangeKind = "drop-data-element"
-	AlterDataElement      ChangeKind = "alter-data-element"
-	AlterFieldReference   ChangeKind = "alter-field-reference" // field switches between domain and data element
-	CreateSetting         ChangeKind = "create-setting"
-	DropSetting           ChangeKind = "drop-setting"
-	AlterSetting          ChangeKind = "alter-setting"
-	AddSettingExtension   ChangeKind = "add-setting-extension"
-	DropSettingExtension  ChangeKind = "drop-setting-extension"
-	AlterSettingExtension ChangeKind = "alter-setting-extension"
+	AlterDataClass      ChangeKind = "alter-data-class"
+	CreateDataElement   ChangeKind = "create-data-element"
+	DropDataElement     ChangeKind = "drop-data-element"
+	AlterDataElement    ChangeKind = "alter-data-element"
+	AlterFieldReference ChangeKind = "alter-field-reference" // field switches between domain and data element
 
 	CreateStructure         ChangeKind = "create-structure"
 	DropStructure           ChangeKind = "drop-structure"
@@ -131,7 +125,7 @@ const (
 func (k ChangeKind) Physical() bool {
 	switch k {
 	case CreateDomain, DropDomain, AlterDomain, AlterDataClass, CreateDataElement, DropDataElement, AlterDataElement,
-		AlterFieldReference, CreateSetting, DropSetting, AlterSetting, AddSettingExtension, DropSettingExtension, AlterSettingExtension,
+		AlterFieldReference,
 		CreateStructure, DropStructure, AlterStructure, AddStructureExtension, DropStructureExtension, AlterStructureExtension,
 		CreateArrayType, DropArrayType, AlterArrayType, CompilePackage, CompileTransformation,
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,

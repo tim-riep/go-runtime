@@ -1,7 +1,7 @@
 {
   "id": "TRSET",
   "version": "1.0.0",
-  "description": "Test package with a setting over partners and their accounts",
+  "description": "Test package with a business object of configuration over partners and their accounts",
   "requires": [
     {
       "id": "TRBASE",

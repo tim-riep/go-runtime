@@ -33,8 +33,6 @@ const (
 	Table                   = "table.schema.json"
 	Extension               = "extension.schema.json"
 	DataElement             = "data-element.schema.json"
-	Setting                 = "setting.schema.json"
-	SettingExtension        = "setting-extension.schema.json"
 	Asset                   = "asset.schema.json"
 	Structure               = "structure.schema.json"
 	ArrayType               = "array-type.schema.json"

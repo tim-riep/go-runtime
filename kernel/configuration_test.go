@@ -178,3 +178,17 @@ end
 		}
 	})
 }
+
+// TestNoSettingTables checks that a new database has no native tables of
+// settings, which business objects of configuration replace.
+func TestNoSettingTables(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		initialized(t, k)
+		for _, table := range []string{"/RT/SETTINGS", "/RT/SETTING_TEXTS", "/RT/SETTING_TABLES", "/RT/SETTING_EXTENSIONS"} {
+			var n int
+			if err := k.DB().QueryRowContext(context.Background(), `SELECT count(*) FROM "`+table+`"`).Scan(&n); err == nil {
+				t.Errorf("%s exists", table)
+			}
+		}
+	})
+}

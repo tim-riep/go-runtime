@@ -220,44 +220,6 @@ func init() {
 		},
 	})
 	register(ObjectType{
-		Kind: "setting", Document: jsonIn(SettingsDir), Schema: "setting.schema.json",
-		NewDoc:      func() any { return &settingDoc{} },
-		FileName:    func(doc any) (string, bool) { return fileNameOf(doc.(*settingDoc).ID) },
-		Definitions: func(doc any) []NameRef { return ref(doc.(*settingDoc).ID, "/id") },
-		References: func(doc any) []NameRef {
-			s := doc.(*settingDoc)
-			return append(ref(s.Root.Table, "/root/table"), nodeRefs(s.Tables)...)
-		},
-		Build: func(l *loader, file string, doc any, pkg *model.Package) {
-			d := doc.(*settingDoc)
-			loc := l.loc(file)
-			st := model.Setting{ID: d.ID, Owner: l.owner(), Texts: d.Texts, Root: settingTable(d.Root, loc.At("/root")), Src: loc}
-			for i, t := range d.Tables {
-				st.Tables = append(st.Tables, settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
-			}
-			pkg.Settings = append(pkg.Settings, st)
-		},
-	})
-	register(ObjectType{
-		Kind: "setting extension", Document: jsonIn(SettingExtensionsDir), Schema: "setting-extension.schema.json",
-		NewDoc:      func() any { return &settingExtensionDoc{} },
-		FileName:    func(any) (string, bool) { return "", false },
-		Definitions: func(any) []NameRef { return nil },
-		References: func(doc any) []NameRef {
-			s := doc.(*settingExtensionDoc)
-			return append(ref(s.Setting, "/setting"), nodeRefs(s.Tables)...)
-		},
-		Build: func(l *loader, file string, doc any, pkg *model.Package) {
-			d := doc.(*settingExtensionDoc)
-			loc := l.loc(file)
-			e := model.SettingExtension{Package: l.owner(), Setting: d.Setting, Src: loc}
-			for i, t := range d.Tables {
-				e.Tables = append(e.Tables, settingTable(t, loc.At(fmt.Sprintf("/tables/%d", i))))
-			}
-			pkg.SettingExtensions = append(pkg.SettingExtensions, e)
-		},
-	})
-	register(ObjectType{
 		Kind: "structure", Document: jsonIn(StructuresDir), Schema: "structure.schema.json",
 		NewDoc:      func() any { return &structureDoc{} },
 		FileName:    func(doc any) (string, bool) { return fileNameOf(doc.(*structureDoc).Name) },
@@ -373,21 +335,6 @@ func fkRefs(fks []fkDoc, ext bool) []NameRef {
 		}
 	}
 	return out
-}
-
-func nodeRefs(ts []settingTableDoc) []NameRef {
-	var out []NameRef
-	for i, t := range ts {
-		out = append(out, ref(t.Table, fmt.Sprintf("/tables/%d/table", i))...)
-		if parent, ok := t.Parent.Get(); ok {
-			out = append(out, ref(parent, fmt.Sprintf("/tables/%d/parent", i))...)
-		}
-	}
-	return out
-}
-
-func settingTable(d settingTableDoc, loc rterr.Location) model.SettingTable {
-	return model.SettingTable{Table: d.Table, Parent: d.Parent, ForeignKey: d.ForeignKey, Operations: d.Operations, Src: loc}
 }
 
 // typeDoc holds the type keys of a component or row type; exactly one is set.

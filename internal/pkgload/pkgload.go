@@ -21,8 +21,6 @@
 //	schema/data-elements/*.json
 //	schema/tables/*.json
 //	schema/extensions/*.json
-//	schema/settings/*.json
-//	schema/setting-extensions/*.json
 //	assets/<repository>/asset.json and its files
 //
 // Every file must belong to a registered object type (see ObjectType).
@@ -63,8 +61,6 @@ const (
 	TablesDir              = "schema/tables"
 	ExtensionsDir          = "schema/extensions"
 	DataElementsDir        = "schema/data-elements"
-	SettingsDir            = "schema/settings"
-	SettingExtensionsDir   = "schema/setting-extensions"
 	StructuresDir          = "schema/structures"
 	ArrayTypesDir          = "schema/array-types"
 	StructureExtensionsDir = "schema/structure-extensions"
@@ -162,25 +158,6 @@ type dataElementDoc struct {
 	Name   string                           `json:"name"`
 	Domain string                           `json:"domain"`
 	Texts  map[string]model.DataElementText `json:"texts"`
-}
-
-type settingTableDoc struct {
-	Table      string                 `json:"table"`
-	Parent     model.Optional[string] `json:"parent"`
-	ForeignKey model.Optional[string] `json:"foreignKey"`
-	Operations model.Operations       `json:"operations"`
-}
-
-type settingDoc struct {
-	ID     string                       `json:"id"`
-	Texts  map[string]model.SettingText `json:"texts"`
-	Root   settingTableDoc              `json:"root"`
-	Tables []settingTableDoc            `json:"tables"`
-}
-
-type settingExtensionDoc struct {
-	Setting string            `json:"setting"`
-	Tables  []settingTableDoc `json:"tables"`
 }
 
 type tableDoc struct {
@@ -303,11 +280,11 @@ func (l *loader) checkLayout() {
 	}
 	for _, e := range entries {
 		p := path.Join(SchemaDir, e.Name())
-		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir, SettingsDir, SettingExtensionsDir,
+		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir,
 			StructuresDir, ArrayTypesDir, StructureExtensionsDir, HTTPServicesDir, AuthorizationObjectsDir, RolesDir,
 			ExtensionPointsDir, ImplementationsDir, BusinessObjectsDir, BusinessObjectExtensionsDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, settings/, setting-extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/ and business-object-extensions/")
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/ and business-object-extensions/")
 		}
 	}
 }

@@ -21,8 +21,7 @@
 // extension fields, never the tenant field, keys or foreign keys.
 //
 // The types are stable: fields are only added, never renamed or removed,
-// within one FormatVersion. null and "" are different values throughout,
-// as in package setting.
+// within one FormatVersion. null and "" are different values throughout.
 package structure
 
 import (

@@ -125,11 +125,6 @@ func TestBusinessObjectRules(t *testing.T) {
 			other.Name, other.Entities = "/TRS/OTHER", b.Entities[:1]
 			p.BusinessObjects = append(p.BusinessObjects, other)
 		}, "table /TRS/ORDERS already belongs to business object"},
-		{"table in a setting", func(p *model.Package, _ *model.BusinessObject) {
-			p.Tables[2].DataClass = model.Configuration
-			p.Settings = []model.Setting{{ID: "/TRS/NOTES", Texts: map[string]model.SettingText{"en": {Label: "Notes"}},
-				Root: model.SettingTable{Table: "/TRS/NOTES", Operations: model.Operations{Create: true, Update: true, Delete: true}}}}
-		}, "table /TRS/NOTES belongs to setting /TRS/NOTES; a table belongs to a setting or a business object, not both"},
 		{"different tenant flags", func(p *model.Package, _ *model.BusinessObject) { p.Tables[1].TenantSpecific = false },
 			"table /TRS/ITEMS is tenant-specific: false, but the root /TRS/ORDERS: true"},
 		{"uuid with a key of two fields", func(_ *model.Package, b *model.BusinessObject) {

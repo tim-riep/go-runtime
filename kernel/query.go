@@ -89,13 +89,14 @@ func (k *Kernel) Package(ctx context.Context, id model.PackageID) (*PackageDetai
 
 // TableDetail describes a table with all its physical fields.
 type TableDetail struct {
-	Table        *model.Table           `json:"table"` // physical layout incl. tenant and extension fields
-	Extensions   []*model.Extension     `json:"extensions,omitempty"`
-	Includes     []model.TableInclude   `json:"includes,omitempty"`
-	UsedBy       []model.Use            `json:"usedBy,omitempty"`       // structures, tables and array types using the table
-	ReferencedBy []string               `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
-	Setting      model.Optional[string] `json:"setting"`                // setting the table belongs to
-	CodeUses     []CodeUse              `json:"codeUses"`
+	Table        *model.Table         `json:"table"` // physical layout incl. tenant and extension fields
+	Extensions   []*model.Extension   `json:"extensions,omitempty"`
+	Includes     []model.TableInclude `json:"includes,omitempty"`
+	UsedBy       []model.Use          `json:"usedBy,omitempty"`       // structures, tables and array types using the table
+	ReferencedBy []string             `json:"referencedBy,omitempty"` // "TABLE.FOREIGN_KEY"
+	// BusinessObject is the business object the table is an entity of.
+	BusinessObject model.Optional[string] `json:"businessObject"`
+	CodeUses       []CodeUse              `json:"codeUses"`
 }
 
 // Table returns the physical layout of a table.
@@ -109,7 +110,7 @@ func (k *Kernel) Table(ctx context.Context, name string) (*TableDetail, error) {
 	if !ok {
 		return nil, &rterr.NotFound{Kind: "table", Name: name}
 	}
-	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Includes: s.Tables[name].Includes, UsedBy: s.UsesOf(name), Setting: settingOf(s, name)}
+	d := &TableDetail{Table: t, Extensions: s.ExtensionsOf(name), Includes: s.Tables[name].Includes, UsedBy: s.UsesOf(name), BusinessObject: businessObjectOf(s, name)}
 	for _, other := range p.TableNames() {
 		for _, fk := range p.Tables[other].ForeignKeys {
 			if fk.Target == name {
@@ -344,9 +345,9 @@ func (k *Kernel) Structure(ctx context.Context, name string) (*StructureDetail, 
 	return &StructureDetail{Definition: d, UsedBy: uses, CodeUses: codeUses}, nil
 }
 
-func settingOf(s *model.Schema, table string) model.Optional[string] {
-	if id := s.SettingOf(table); id != "" {
-		return model.Some(id)
+func businessObjectOf(s *model.Schema, table string) model.Optional[string] {
+	if b, _ := s.BusinessObjectOf(table); b != nil {
+		return model.Some(b.Name)
 	}
 	return model.None[string]()
 }

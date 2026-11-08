@@ -36,7 +36,7 @@ func (d Discrepancy) String() string { return d.Object + ": " + d.Problem }
 
 // Check compares the layout described by the repository with the tables
 // that actually exist and reports every difference. It also validates the
-// repository itself, so settings and other definitions that became invalid
+// repository itself, so business objects and other definitions that became invalid
 // are reported. The repository is never changed by this.
 func (k *Kernel) Check(ctx context.Context) ([]Discrepancy, error) {
 	s, err := k.Schema(ctx)

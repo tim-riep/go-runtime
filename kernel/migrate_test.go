@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
@@ -106,7 +107,7 @@ func TestMigrateFromVersion4(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(p.Destructive()) != 0 || change(p, plan.CreateTable, "/RT/STRUCTURES") == nil ||
+		if len(otherDestructive(p)) != 0 || change(p, plan.CreateTable, "/RT/STRUCTURES") == nil ||
 			change(p, plan.AddColumn, "/RT/FIELDS.INCLUDE_NAME") == nil || change(p, plan.AlterValues, "/RT/FIELDS.ORIGIN") == nil {
 			t.Fatalf("migration plan:\n%s", p.Text())
 		}
@@ -198,4 +199,16 @@ func TestMigrateKeepsCode(t *testing.T) {
 		}
 		consistent(t, k)
 	})
+}
+
+// otherDestructive returns the destructive changes of a migration except
+// dropping the tables of settings, which kernel version 19 removes.
+func otherDestructive(p *plan.Plan) []plan.Change {
+	var out []plan.Change
+	for _, c := range p.Destructive() {
+		if c.Kind != plan.DropTable || !strings.HasPrefix(c.Table, "/RT/SETTING") {
+			out = append(out, c)
+		}
+	}
+	return out
 }

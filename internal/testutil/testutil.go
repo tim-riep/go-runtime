@@ -65,13 +65,6 @@ func Example(t testing.TB, name string) *model.Package {
 	return pkg
 }
 
-// SettingPackage loads a test package for settings from testdata/settings,
-// e.g. "TRSET" or "upgrade/TRSETX".
-func SettingPackage(t testing.TB, name string) *model.Package {
-	t.Helper()
-	return LoadDir(t, filepath.Join(ModuleRoot(t), "testdata", "settings", filepath.FromSlash(name)))
-}
-
 // KernelSchema returns the newest kernel schema.
 func KernelSchema(t testing.TB) *model.Schema {
 	t.Helper()

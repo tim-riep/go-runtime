@@ -110,7 +110,7 @@ func (c DataClass) Valid() bool {
 	return false
 }
 
-// IsConfiguration reports whether tables of the class may form settings.
+// IsConfiguration reports whether the class holds configuration.
 func (c DataClass) IsConfiguration() bool { return c == Configuration || c == RuntimeConfiguration }
 
 // FixedValue is one allowed value of a domain.
@@ -396,8 +396,6 @@ type Package struct {
 	DataElements         []DataElement
 	Tables               []Table
 	Extensions           []Extension
-	Settings             []Setting
-	SettingExtensions    []SettingExtension
 	AssetRepositories    []AssetRepository
 	Structures           []Structure
 	ArrayTypes           []ArrayType
@@ -422,3 +420,6 @@ type PackageInfo struct {
 	InstalledAt time.Time `json:"installedAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
+
+// MaxLabel is the maximum length of a label in characters.
+const MaxLabel = 60

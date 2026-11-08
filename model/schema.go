@@ -32,8 +32,6 @@ type Schema struct {
 	DataElements        map[string]*DataElement
 	Tables              map[string]*Table
 	Extensions          map[ExtensionKey]*Extension
-	Settings            map[string]*Setting
-	SettingExtensions   map[SettingExtensionKey]*SettingExtension
 	AssetRepositories   map[AssetRepositoryKey]*AssetRepository
 	Structures          map[string]*Structure
 	ArrayTypes          map[string]*ArrayType
@@ -68,8 +66,6 @@ func NewSchema() *Schema {
 		DataElements:             map[string]*DataElement{},
 		Tables:                   map[string]*Table{},
 		Extensions:               map[ExtensionKey]*Extension{},
-		Settings:                 map[string]*Setting{},
-		SettingExtensions:        map[SettingExtensionKey]*SettingExtension{},
 		AssetRepositories:        map[AssetRepositoryKey]*AssetRepository{},
 		Structures:               map[string]*Structure{},
 		ArrayTypes:               map[string]*ArrayType{},
@@ -136,12 +132,6 @@ func (s *Schema) Clone() *Schema {
 		e.Fields = cloneFields(v.Fields)
 		e.ForeignKeys = cloneFKs(v.ForeignKeys)
 		c.Extensions[k] = &e
-	}
-	for k, v := range s.Settings {
-		c.Settings[k] = cloneSetting(v)
-	}
-	for k, v := range s.SettingExtensions {
-		c.SettingExtensions[k] = cloneSettingExtension(v)
 	}
 	for k, v := range s.AssetRepositories {
 		c.AssetRepositories[k] = cloneAssetRepository(v)
@@ -247,24 +237,6 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 			continue
 		}
 		s.Extensions[e.Key()] = &e
-	}
-	for i := range p.Settings {
-		st := cloneSetting(&p.Settings[i])
-		st.Owner = id
-		if old, ok := s.Settings[st.ID]; ok {
-			errs = append(errs, &rterr.NameConflict{Kind: "setting", Name: st.ID, Owner: string(old.Owner), Package: string(id), Location: st.Src})
-			continue
-		}
-		s.Settings[st.ID] = st
-	}
-	for i := range p.SettingExtensions {
-		e := cloneSettingExtension(&p.SettingExtensions[i])
-		e.Package = id
-		if _, ok := s.SettingExtensions[e.Key()]; ok {
-			errs = append(errs, &rterr.ValidationError{Code: rterr.CodeDuplicate, Location: e.Src, Object: "extension of setting " + e.Setting, Message: "package extends this setting more than once"})
-			continue
-		}
-		s.SettingExtensions[e.Key()] = e
 	}
 	for i := range p.AssetRepositories {
 		r := cloneAssetRepository(&p.AssetRepositories[i])
@@ -420,12 +392,6 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
-	for _, st := range s.Settings {
-		if _, ok := st.Texts[code]; ok {
-			delete(st.Texts, code)
-			n++
-		}
-	}
 	for _, t := range s.Transformations {
 		if _, ok := t.Texts[code]; ok {
 			delete(t.Texts, code)
@@ -552,16 +518,6 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for k := range s.Extensions {
 		if k.Package == id {
 			delete(s.Extensions, k)
-		}
-	}
-	for sid, st := range s.Settings {
-		if st.Owner == id {
-			delete(s.Settings, sid)
-		}
-	}
-	for k := range s.SettingExtensions {
-		if k.Package == id {
-			delete(s.SettingExtensions, k)
 		}
 	}
 	for n, st := range s.Structures {

@@ -44,7 +44,7 @@ func nullPackage(t *testing.T) *model.Package {
 	w("schema/tables/VALUES.json", `{"name":"/TRNULL/VALUES","tenantSpecific":false,"dataClass":"configuration",
 		"fields":[
 			{"name":"ID","domain":"/TRNULL/ID"},
-			{"name":"OPT","domain":"/TRNULL/TEXT"},
+			{"name":"OPT","domain":"/TRNULL/TEXT","description":""},
 			{"name":"REQ","domain":"/TRNULL/TEXT","notNull":true,"default":""},
 			{"name":"CODE","domain":"/TRNULL/CODE"},
 			{"name":"TRAIL","domain":"/TRNULL/LABEL"},
@@ -54,8 +54,6 @@ func nullPackage(t *testing.T) *model.Package {
 			{"name":"D_DOMAIN","domain":"/TRNULL/WITH_DEFAULT"},
 			{"name":"D_OVERRIDE","domain":"/TRNULL/WITH_DEFAULT","default":null}],
 		"primaryKey":["ID"]}`)
-	w("schema/settings/VALUES.json", `{"id":"/TRNULL/VALUES","texts":{"en":{"label":"Values","description":""}},
-		"root":{"table":"/TRNULL/VALUES","operations":{"create":true,"update":true,"delete":true}}}`)
 	return testutil.LoadDir(t, dir)
 }
 
@@ -146,10 +144,11 @@ func TestNullAndEmptyString(t *testing.T) {
 		}
 
 		// The resolved definition distinguishes the three defaults.
-		def, err := k.Setting(ctx, tValues)
+		d, err := k.Structure(ctx, tValues)
 		if err != nil {
 			t.Fatal(err)
 		}
+		def := d.Definition
 		b, _ := def.JSON()
 		js := string(b)
 		for _, want := range []string{`"default": null`, `"default": ""`, `"default": "X"`, `"description": ""`} {
@@ -157,10 +156,10 @@ func TestNullAndEmptyString(t *testing.T) {
 				t.Errorf("definition lacks %s", want)
 			}
 		}
-		if f := def.Root.Field("D_NONE"); f.Default.Kind != model.DefaultNone || f.AllowEmpty != model.Some(true) {
+		if f := def.Component("D_NONE"); f.Default.Kind != model.DefaultNone || f.AllowEmpty != model.Some(true) {
 			t.Errorf("D_NONE: %+v", f)
 		}
-		if f := def.Root.Field("CODE"); f.AllowEmpty != model.Some(false) {
+		if f := def.Component("CODE"); f.AllowEmpty != model.Some(false) {
 			t.Errorf("CODE: %+v", f)
 		}
 	})

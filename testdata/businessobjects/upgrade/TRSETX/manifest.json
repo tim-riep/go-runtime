@@ -1,7 +1,7 @@
 {
   "id": "TRSETX",
-  "version": "1.0.0",
-  "description": "Test package that extends the setting /TRSET/PARTNERS",
+  "version": "1.1.0",
+  "description": "Test package that extends the business object /TRSET/PARTNER",
   "requires": [
     {
       "id": "TRBASE",

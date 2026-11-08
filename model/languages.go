@@ -53,12 +53,6 @@ func (p *Package) WithLanguages(keep func(lang string) bool) *Package {
 		maps.DeleteFunc(a.Texts, func(l string, _ Label) bool { return !ok(l) })
 		c.ArrayTypes[i] = a
 	}
-	c.Settings = make([]Setting, len(p.Settings))
-	for i, s := range p.Settings {
-		s.Texts = maps.Clone(s.Texts)
-		maps.DeleteFunc(s.Texts, func(l string, _ SettingText) bool { return !ok(l) })
-		c.Settings[i] = s
-	}
 	c.Transformations = make([]Transformation, len(p.Transformations))
 	for i, t := range p.Transformations {
 		t.Texts = maps.Clone(t.Texts)

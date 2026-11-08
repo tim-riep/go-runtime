@@ -81,8 +81,8 @@ func (v *validator) srcOf(name string) rterr.Location {
 // labels checks the labels of a structure or array type.
 func (v *validator) labels(obj string, loc rterr.Location, texts map[string]model.Label, langs []string) {
 	for _, lang := range langs {
-		if n := utf8.RuneCountInString(texts[lang].Label); n == 0 || n > model.MaxSettingLabel {
-			v.fail(rterr.CodeText, loc.At("/texts/"+lang+"/label"), obj, "label in %s must have 1 to %d characters", lang, model.MaxSettingLabel)
+		if n := utf8.RuneCountInString(texts[lang].Label); n == 0 || n > model.MaxLabel {
+			v.fail(rterr.CodeText, loc.At("/texts/"+lang+"/label"), obj, "label in %s must have 1 to %d characters", lang, model.MaxLabel)
 		}
 	}
 	v.languages(obj, loc, langs)

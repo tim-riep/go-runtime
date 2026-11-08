@@ -29,7 +29,7 @@ func TestCLI(t *testing.T) {
 	for _, db := range testutil.Databases(t) {
 		t.Run(db.Name, func(t *testing.T) {
 			ex := filepath.Join(testutil.ModuleRoot(t), "examples")
-			settings := filepath.Join(testutil.ModuleRoot(t), "testdata", "settings")
+			bos := filepath.Join(testutil.ModuleRoot(t), "testdata", "businessobjects")
 			steps := []struct {
 				args     []string
 				code     int
@@ -94,14 +94,14 @@ func TestCLI(t *testing.T) {
 				{[]string{"asset", "get", "TRFIN", "templates", "invoice/invoice.xsl", "--lang", "pl", "-o", "-"}, exitOK, "Invoice"},
 				{[]string{"asset", "get", "TRFIN", "web", "images/logo.png", "-o", filepath.Join(t.TempDir(), "logo.png")}, exitOK, "image/png"},
 				{[]string{"asset", "get", "TRFIN", "web", "nope.png", "-o", "-"}, exitError, "not found"},
-				{[]string{"install", filepath.Join(settings, "TRSET"), filepath.Join(settings, "TRSETX")}, exitOK, "Executed"},
-				{[]string{"upgrade", filepath.Join(settings, "upgrade", "TRSETX")}, exitOK, "Executed"},
-				{[]string{"show", "/TRSETX/SHOPS"}, exitOK, "setting /TRSET/PARTNERS"},
+				{[]string{"install", filepath.Join(bos, "TRSET"), filepath.Join(bos, "TRSETX")}, exitOK, "Executed"},
+				{[]string{"upgrade", filepath.Join(bos, "upgrade", "TRSETX")}, exitOK, "Executed"},
+				{[]string{"show", "/TRSETX/SHOPS"}, exitOK, "entity of business object /TRSET/PARTNER"},
 				{[]string{"show", "/TRFIN/PAYMENTS"}, exitOK, "data class application"},
-				{[]string{"setting", "list"}, exitOK, "/TRSET/PARTNERS  TRSET"},
-				{[]string{"setting", "show", "/TRSET/PARTNERS"}, exitOK, "parent /TRSETX/CONNECTIONS through CONNECTION"},
-				{[]string{"setting", "show", "/TRSET/PARTNERS", "--json"}, exitOK, `"formatVersion": 3`},
-				{[]string{"setting", "show", "NOPE"}, exitError, "not found"},
+				{[]string{"business-object", "list", "TRSET"}, exitOK, "/TRSET/PARTNER  TRSET    configuration"},
+				{[]string{"business-object", "show", "/TRSET/PARTNER"}, exitOK, "authorization for configuration: /TRBASE/CONFIGURATION"},
+				{[]string{"business-object", "show", "/TRSET/PARTNER"}, exitOK, "entity /TRSETX/SHOPS"},
+				{[]string{"setting", "list"}, exitUsage, `unknown command "setting"`},
 				{[]string{"show", "/TRBASE/ADDRESS"}, exitOK, "used by table /TRFIN/COMPANIES (include)"},
 				{[]string{"show", "/TRFIN/COMPANY_GROUP"}, exitOK, "SEAT"},
 				{[]string{"show", "/TRFIN/COMPANY_ARRAY", "--json"}, exitOK, `"kind": "array-type"`},

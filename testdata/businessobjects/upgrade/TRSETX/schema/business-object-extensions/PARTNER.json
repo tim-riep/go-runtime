@@ -1,0 +1,20 @@
+{
+  "businessObject": "/TRSET/PARTNER",
+  "entities": {
+    "/TRSET/PARTNERS": {
+      "fields": {
+        "/TRSETX/EXT_ID": { "readOnlyOnUpdate": true }
+      }
+    },
+    "/TRSETX/CONNECTIONS": {
+      "parent": "/TRSET/PARTNERS",
+      "foreignKey": "PARTNER",
+      "operations": ["create", "update", "delete"]
+    },
+    "/TRSETX/SHOPS": {
+      "parent": "/TRSETX/CONNECTIONS",
+      "foreignKey": "CONNECTION",
+      "operations": ["create", "update", "delete"]
+    }
+  }
+}

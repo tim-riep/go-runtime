@@ -1,0 +1,16 @@
+{
+  "name": "/TRSET/PARTNER",
+  "description": { "en": "Partner", "de": "Partner" },
+  "dataClass": "configuration",
+  "root": "/TRSET/PARTNERS",
+  "entities": {
+    "/TRSET/PARTNERS": {
+      "operations": ["create", "update", "delete"]
+    },
+    "/TRSET/ACCOUNTS": {
+      "parent": "/TRSET/PARTNERS",
+      "foreignKey": "PARTNER",
+      "operations": ["create", "update"]
+    }
+  }
+}

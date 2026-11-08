@@ -101,9 +101,6 @@ func (v *validator) businessObject(b *model.BusinessObject, owners map[string]st
 			fail(eloc, "table %s already belongs to business object %s; a table belongs to at most one business object", e.Table, other)
 		}
 		owners[e.Table] = b.Name
-		if st := v.s.SettingOf(e.Table); st != "" {
-			fail(eloc, "table %s belongs to setting %s; a table belongs to a setting or a business object, not both", e.Table, st)
-		}
 		parent, hasParent := e.Parent.Get()
 		switch {
 		case e.Table == b.Root && hasParent:

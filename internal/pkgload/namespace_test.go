@@ -112,11 +112,25 @@ func TestSeveralViolationsReportedTogether(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/domains/QTY.json"] = file(`{"name":"/TRBASE/QTY","type":"INT4"}`)
 	fsys["schema/domains/STATUS.json"] = file(`{"name":"STATUS","type":"CHAR","length":3}`)
-	fsys["schema/settings/SETUP.json"] = file(`{"id":"/TRX/SETUP","texts":{"en":{"label":"Setup"}},
-		"root":{"table":"/TRFIN/COMPANIES","operations":{"create":true,"update":true,"delete":true}}}`)
-	if n := len(violations(t, fsys)); n != 3 {
+	fsys["schema/business-objects/SETUP.json"] = file(`{"name":"/TRX/SETUP","description":{"en":"Setup"},"root":"/TRFIN/COMPANIES",
+		"entities":{"/TRFIN/COMPANIES":{}}}`)
+	if n := len(violations(t, fsys)); n != 4 {
 		_, err := Load(fsys, "mem")
-		t.Fatalf("expected 3 violations, got %d:\n%v", n, err)
+		t.Fatalf("expected 4 violations, got %d:\n%v", n, err)
+	}
+}
+
+// TestSettingsRejected rejects the directories of settings, which
+// business objects replace.
+func TestSettingsRejected(t *testing.T) {
+	for _, dir := range []string{"settings", "setting-extensions"} {
+		fsys := validFS()
+		p := "schema/" + dir + "/PARTNERS.json"
+		fsys[p] = file(`{"id":"/TRX/PARTNERS"}`)
+		_, err := Load(fsys, "mem")
+		if err == nil || !strings.Contains(err.Error(), "schema/"+dir+": unexpected entry") {
+			t.Errorf("%s: %v", dir, err)
+		}
 	}
 }
 
@@ -148,9 +162,7 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"data element": {"schema/data-elements/X.json", `{"name":"/TRZ/X","domain":"/TRX/QTY","texts":{"en":{"short":"X","medium":"X","long":"X","heading":"X"}}}`},
 		"table": {"schema/tables/X.json", `{"name":"/TRZ/X","tenantSpecific":false,"dataClass":"application",
 			"fields":[{"name":"A","domain":"/TRX/QTY"}],"primaryKey":["A"]}`},
-		"extension": {"schema/extensions/X.json", `{"table":"/TRZ/X","fields":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
-		"setting": {"schema/settings/X.json", `{"id":"/TRZ/X","texts":{"en":{"label":"X"}},
-			"root":{"table":"/TRX/ORDERS","operations":{"create":true,"update":true,"delete":true}}}`},
+		"extension":                  {"schema/extensions/X.json", `{"table":"/TRZ/X","fields":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
 		"structure":                  {"schema/structures/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"components":[{"name":"A","domain":"/TRX/QTY"}]}`},
 		"array type":                 {"schema/array-types/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"rowType":{"domain":"/TRX/QTY"}}`},
 		"structure extension":        {"schema/structure-extensions/X.json", `{"structure":"/TRZ/X","components":[{"name":"/TRX/A","domain":"/TRX/QTY"}]}`},
@@ -168,8 +180,6 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 			"behaviorClass":"/TRX/B","entities":{"/TRZ/T":{}}}`},
 		"business object extension": {"schema/business-object-extensions/X.json", `{"businessObject":"/TRZ/X","entities":{"/TRZ/T":{}}}`},
 		"http service":              {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
-		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
-			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}
 	for _, typ := range ObjectTypes() {
 		if typ.Definitions == nil || typ.References == nil {

@@ -154,8 +154,8 @@ func (v *validator) descriptions(obj string, loc rterr.Location, texts map[strin
 		v.fail(rterr.CodeText, loc.At("/description"), obj, "a description in English (%s) is mandatory", model.DefaultLanguage)
 	}
 	for _, lang := range langs {
-		if n := utf8.RuneCountInString(texts[lang]); n == 0 || n > model.MaxSettingLabel {
-			v.fail(rterr.CodeText, loc.At("/description/"+lang), obj, "the description in %s must have 1 to %d characters", lang, model.MaxSettingLabel)
+		if n := utf8.RuneCountInString(texts[lang]); n == 0 || n > model.MaxLabel {
+			v.fail(rterr.CodeText, loc.At("/description/"+lang), obj, "the description in %s must have 1 to %d characters", lang, model.MaxLabel)
 		}
 	}
 	v.knownLanguages(obj, langs)

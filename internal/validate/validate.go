@@ -63,7 +63,6 @@ func Schema(s *model.Schema, opts Options) error {
 		v.extension(e)
 	}
 	v.generatedNames()
-	v.settings()
 	v.businessObjects()
 	v.assetRepositories()
 	v.reportMissingLanguages()
