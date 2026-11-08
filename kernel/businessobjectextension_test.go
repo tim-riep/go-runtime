@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -463,5 +465,99 @@ func TestBusinessObjectExtensionRuntime(t *testing.T) {
 		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRBX/RATING is read-only") {
 			t.Errorf("read-only field of the extension: %v", err)
 		}
+	})
+}
+
+// compiledPackages returns the packages a plan compiles.
+func compiledPackages(p *plan.Plan) []string {
+	var out []string
+	if p == nil {
+		return out
+	}
+	for _, c := range p.Changes {
+		if c.Kind == plan.CompilePackage {
+			out = append(out, c.Name)
+		}
+	}
+	return out
+}
+
+// TestBusinessObjectExtensionLifecycle installs and removes extensions:
+// without compiling the business object when the layout of its rows
+// stays, with confirmation when the tables of its entities hold rows, and
+// with a field that becomes mandatory for the instances saved after.
+func TestBusinessObjectExtensionLifecycle(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", orderRoot)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		all := allAuthorized(t, k, "ACME", "anna")
+		mustCallAs(t, k, all, "/TRBO/API", "CREATE", `"A1"`, `"Alpha"`, "null")
+
+		// Without a field for the orders the layout stays: only TRBX is
+		// compiled, when it comes and when it goes.
+		withoutField := strings.Replace(extensionJSON, `"fields": { "/TRBX/RATING": { "readOnly": true } },`, "", 1)
+		files := extensionFiles(t, "1.0.0", withoutField, extensionBehavior, nil)
+		delete(files, "schema/extensions/ORDERS.json")
+		p, err := k.Install(ctx, []*model.Package{writePackage(t, files)}, kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := compiledPackages(p); len(got) != 1 || got[0] != "TRBX" {
+			t.Errorf("compiled on install: %v\n%s", got, planText(p))
+		}
+		p, err = k.Uninstall(ctx, "TRBX", kernel.Options{Confirm: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := compiledPackages(p); len(got) != 0 {
+			t.Errorf("compiled on uninstall: %v\n%s", got, planText(p))
+		}
+		// A field for the orders changes their layout: TRBO is compiled.
+		p, err = k.Install(ctx, []*model.Package{writePackage(t, extensionFiles(t, "1.0.0", extensionJSON, extensionBehavior, nil))}, kernel.Options{})
+		if err != nil || !slices.Contains(compiledPackages(p), "TRBO") {
+			t.Fatalf("install with a field: %v %v", err, compiledPackages(p))
+		}
+
+		// The rating becomes mandatory: the order without one stays until
+		// it is saved again.
+		mandatory := strings.Replace(extensionJSON, `"/TRBX/RATING": { "readOnly": true }`, `"/TRBX/RATING": { "mandatory": true }`, 1)
+		if _, err := k.Upgrade(ctx, writePackage(t, extensionFiles(t, "1.1.0", mandatory, extensionBehavior, nil)), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if n := count(t, k, "/TRBO/ORDERS"); n != 1 {
+			t.Fatalf("%d orders", n)
+		}
+		r := result(t, mustCallAs(t, k, all, "/TRBO/API", "RENAME", `"A1"`, `"Alpha 2"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "MANDATORY" || !strings.Contains(r["MESSAGES"][0]["TEXT"].(string), "/TRBX/RATING") {
+			t.Errorf("save without the mandatory field: %v", r)
+		}
+
+		// Uninstalling TRBX drops the labels, only when confirmed.
+		if err := insert(t, k, "/TRBX/LABELS", values{model.TenantField: "ACME", "LABEL_ID": "0190b2a4-1f6e-7000-8000-000000000001", "ORDER_ID": "A1", "TEXT": "x"}); err != nil {
+			t.Fatal(err)
+		}
+		var conf *rterr.ConfirmationRequired
+		var dc *rterr.DestructiveChange
+		if _, err := k.Uninstall(ctx, "TRBX", kernel.Options{}); !errors.As(err, &conf) && !errors.As(err, &dc) {
+			t.Fatalf("uninstall with labels: %v", err)
+		}
+		if _, err := k.Uninstall(ctx, "TRBX", kernel.Options{Confirm: true, AllowDestructive: true}); err != nil {
+			t.Fatal(err)
+		}
+		s, _ := k.Schema(ctx)
+		if s.Tables["/TRBX/LABELS"] != nil || len(s.BusinessObjectExtensions) != 0 {
+			t.Error("the extension is left")
+		}
+		r = result(t, mustCallAs(t, k, all, "/TRBO/API", "RENAME", `"A1"`, `"Alpha 3"`))
+		if len(r["FAILURES"]) != 0 {
+			t.Errorf("rename after the uninstallation: %v", r)
+		}
+		consistent(t, k)
 	})
 }
