@@ -96,6 +96,13 @@ const (
 	// longer fits its authorization object and grants nothing.
 	IncompleteAuthorization ChangeKind = "incomplete-authorization"
 
+	CreateExtensionPoint ChangeKind = "create-extension-point"
+	DropExtensionPoint   ChangeKind = "drop-extension-point"
+	AlterExtensionPoint  ChangeKind = "alter-extension-point"
+	CreateImplementation ChangeKind = "create-implementation"
+	DropImplementation   ChangeKind = "drop-implementation"
+	AlterImplementation  ChangeKind = "alter-implementation"
+
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
 	AlterAssetRepository ChangeKind = "alter-asset-repository"
@@ -122,7 +129,8 @@ func (k ChangeKind) Physical() bool {
 		AddAssetRepository, DropAssetRepository, AlterAssetRepository, AddAssetFolder, DropAssetFolder, AlterAssetFolder,
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant,
 		CreateAuthorizationObject, DropAuthorizationObject, AlterAuthorizationObject,
-		CreateRole, DropRole, AlterRole, IncompleteAuthorization:
+		CreateRole, DropRole, AlterRole, IncompleteAuthorization,
+		CreateExtensionPoint, DropExtensionPoint, AlterExtensionPoint, CreateImplementation, DropImplementation, AlterImplementation:
 		return false
 	}
 	return true

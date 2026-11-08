@@ -1,0 +1,41 @@
+{
+  "name": "/RT/SOURCE_TAGS",
+  "description": "Commits and archive hashes seen for tags of package sources; kept after uninstalling, to notice moved tags",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ADDRESS",
+      "domain": "/RT/SOURCE_ADDRESS"
+    },
+    {
+      "name": "TAG",
+      "domain": "/RT/SOURCE_SPEC"
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/ORIGIN_KIND"
+    },
+    {
+      "name": "COMMIT_SHA",
+      "domain": "/RT/COMMIT_SHA",
+      "notNull": true
+    },
+    {
+      "name": "ARCHIVE_SHA256",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    },
+    {
+      "name": "FIRST_SEEN_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ADDRESS",
+    "TAG",
+    "KIND"
+  ],
+  "foreignKeys": []
+}

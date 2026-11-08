@@ -49,6 +49,10 @@ type Schema struct {
 	AuthorizationObjects map[string]*AuthorizationObject
 	// Roles are the package roles and the local roles by name.
 	Roles map[string]*Role
+	// ExtensionPoints are the extension points by name.
+	ExtensionPoints map[string]*ExtensionPoint
+	// Implementations are the implementations of extension points by name.
+	Implementations map[string]*Implementation
 }
 
 // NewSchema returns an empty schema.
@@ -70,6 +74,8 @@ func NewSchema() *Schema {
 		HTTPServices:         map[string]*HTTPService{},
 		AuthorizationObjects: map[string]*AuthorizationObject{},
 		Roles:                map[string]*Role{},
+		ExtensionPoints:      map[string]*ExtensionPoint{},
+		Implementations:      map[string]*Implementation{},
 	}
 }
 
@@ -87,6 +93,12 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.Roles {
 		c.Roles[k] = cloneRole(v)
+	}
+	for k, v := range s.ExtensionPoints {
+		c.ExtensionPoints[k] = cloneExtensionPoint(v)
+	}
+	for k, v := range s.Implementations {
+		c.Implementations[k] = cloneImplementation(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -307,6 +319,24 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Roles[r.Name] = r
 	}
+	for i := range p.ExtensionPoints {
+		e := cloneExtensionPoint(&p.ExtensionPoints[i])
+		e.Owner = id
+		if old, ok := s.ExtensionPoints[e.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "extension point", Name: e.Name, Owner: string(old.Owner), Package: string(id), Location: e.Src})
+			continue
+		}
+		s.ExtensionPoints[e.Name] = e
+	}
+	for i := range p.Implementations {
+		impl := cloneImplementation(&p.Implementations[i])
+		impl.Owner = id
+		if old, ok := s.Implementations[impl.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "implementation", Name: impl.Name, Owner: string(old.Owner), Package: string(id), Location: impl.Src})
+			continue
+		}
+		s.Implementations[impl.Name] = impl
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -389,6 +419,18 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, e := range s.ExtensionPoints {
+		if _, ok := e.Description[code]; ok {
+			delete(e.Description, code)
+			n++
+		}
+	}
+	for _, i := range s.Implementations {
+		if _, ok := i.Description[code]; ok {
+			delete(i.Description, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -433,6 +475,16 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, r := range s.Roles {
 		if r.Owner == id {
 			delete(s.Roles, name)
+		}
+	}
+	for name, e := range s.ExtensionPoints {
+		if e.Owner == id {
+			delete(s.ExtensionPoints, name)
+		}
+	}
+	for name, i := range s.Implementations {
+		if i.Owner == id {
+			delete(s.Implementations, name)
 		}
 	}
 	for name, d := range s.Domains {

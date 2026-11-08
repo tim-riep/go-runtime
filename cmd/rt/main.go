@@ -1300,6 +1300,7 @@ func (c *cli) fail(err error) int {
 		kp   *rterr.KernelPackage
 		ua   *rterr.UnsafeArchive
 		ie   *rterr.IntegrityError
+		io   *rterr.ImplementationOverlap
 	)
 	switch {
 	case errors.As(err, &dc):
@@ -1317,7 +1318,7 @@ func (c *cli) fail(err error) int {
 		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
 		return exitInvalid
 	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv), errors.As(err, &ce), errors.As(err, &kp),
-		errors.As(err, &ua), errors.As(err, &ie):
+		errors.As(err, &ua), errors.As(err, &ie), errors.As(err, &io):
 		return exitInvalid
 	case errors.As(err, &ee):
 		return exitExec

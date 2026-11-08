@@ -552,6 +552,13 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err != nil {
 			return err
 		}
+		act, err := k.loadActivation(ctx, q)
+		if err != nil {
+			return err
+		}
+		if err := checkOverlaps(want, act); err != nil {
+			return err
+		}
 		p, err := planner.Build(k.d, o.op, cur, want, o.packages(cur))
 		if err != nil {
 			return err

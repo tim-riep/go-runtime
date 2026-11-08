@@ -205,6 +205,21 @@ func CheckAuthorization(s *Schema, a Authorization) []AuthorizationProblem {
 }
 
 func checkEntry(o *AuthorizationObject, f AuthorizationField, d *Domain, e ValueEntry) string {
+	if !f.IsActivity() {
+		o = nil
+	}
+	return valueEntry(o, d, e)
+}
+
+// CheckValueEntry checks an entry of values against the domain of a field
+// with the rules of role files: values of the type and length of the
+// field, fixed values only, ranges and prefixes only for CHAR and
+// integers. It returns "" for a valid entry and the reason otherwise.
+func CheckValueEntry(d *Domain, e ValueEntry) string { return valueEntry(nil, d, e) }
+
+// valueEntry checks an entry; o is the authorization object of the field
+// ACTIVITY, nil for every other field.
+func valueEntry(o *AuthorizationObject, d *Domain, e ValueEntry) string {
 	if d == nil {
 		return "the type of the field is unknown"
 	}
@@ -217,7 +232,7 @@ func checkEntry(o *AuthorizationObject, f AuthorizationField, d *Domain, e Value
 			return ""
 		case !strings.HasSuffix(p, "*") || strings.Count(p, "*") != 1:
 			return fmt.Sprintf("pattern %q is no pattern; patterns are * or a prefix followed by *", p)
-		case f.IsActivity():
+		case o != nil:
 			return "ACTIVITY takes single activities or *"
 		case !ordered:
 			return fmt.Sprintf("patterns other than * need CHAR, INT4 or INT8, not %s", d.TypeString())
@@ -234,7 +249,7 @@ func checkEntry(o *AuthorizationObject, f AuthorizationField, d *Domain, e Value
 		}
 		return ""
 	case ValueRange:
-		if f.IsActivity() {
+		if o != nil {
 			return "ACTIVITY takes single activities or *"
 		}
 		if !ordered {
@@ -257,7 +272,7 @@ func checkEntry(o *AuthorizationObject, f AuthorizationField, d *Domain, e Value
 	if msg != "" {
 		return msg
 	}
-	if f.IsActivity() && !slices.Contains(o.Activities, v) {
+	if o != nil && !slices.Contains(o.Activities, v) {
 		return fmt.Sprintf("%s is not allowed for %s; it allows %s", v, o.Name, strings.Join(o.Activities, ", "))
 	}
 	return ""

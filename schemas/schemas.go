@@ -43,4 +43,6 @@ const (
 	HTTPService         = "http-service.schema.json"
 	AuthorizationObject = "authorization-object.schema.json"
 	Role                = "role.schema.json"
+	ExtensionPoint      = "extension-point.schema.json"
+	Implementation      = "extension-implementation.schema.json"
 )

@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16
+//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -58,6 +58,7 @@ var Migrations = []Migration{
 	{Version: 14, Dir: "v14"}, // byte order for text columns, authorization checks
 	{Version: 15, Dir: "v15"}, // origins of packages and tags of sources
 	{Version: 16, Dir: "v16"}, // the native transformation format xlsx
+	{Version: 17, Dir: "v17"}, // extension points, implementations and their activation
 }
 
 // Latest returns the newest version.

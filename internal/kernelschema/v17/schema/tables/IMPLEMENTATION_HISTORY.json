@@ -1,0 +1,56 @@
+{
+  "name": "/RT/IMPLEMENTATION_HISTORY",
+  "description": "Changes of the activation of implementations; entries are never changed",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "CHANGE_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "CHANGE_KIND",
+      "domain": "/RT/IMPLEMENTATION_CHANGE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID",
+      "description": "Tenant of the setting; null for the global activation"
+    },
+    {
+      "name": "OLD_STATE",
+      "domain": "/RT/IMPLEMENTATION_STATE",
+      "description": "null: no own setting"
+    },
+    {
+      "name": "NEW_STATE",
+      "domain": "/RT/IMPLEMENTATION_STATE",
+      "description": "null: no own setting"
+    }
+  ],
+  "primaryKey": [
+    "CHANGE_ID"
+  ],
+  "foreignKeys": []
+}

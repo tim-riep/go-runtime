@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/extension-point.schema.json",
+  "title": "Extension point",
+  "description": "An extension point (schema/extension-points/<name without namespace>.json): a public interface of the package that implementations of other packages implement, how many of them run, filter fields that select them and an optional fallback class.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "interface",
+    "use"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/descriptions"
+    },
+    "interface": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "A public interface of the package. Implementations implement it."
+    },
+    "use": {
+      "description": "single: exactly one implementation runs; multiple: all matching active implementations run in order.",
+      "enum": [
+        "single",
+        "multiple"
+      ]
+    },
+    "filters": {
+      "description": "Fields whose values select the implementations, in their order. Each has exactly one of dataElement and domain.",
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "maxLength": 30
+          },
+          "dataElement": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "Data element of the field."
+          },
+          "domain": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "Domain of the field."
+          },
+          "default": {
+            "$ref": "common.schema.json#/$defs/valueEntries",
+            "description": "Values of implementations that do not name the field. Without default every implementation names it."
+          }
+        }
+      }
+    },
+    "fallback": {
+      "description": "A class of the package that implements the interface and runs when no implementation matches; null for none.",
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/objectName"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commitAllowed": {
+      "description": "Whether implementations may commit or roll back the default session. Default false.",
+      "type": "boolean"
+    }
+  }
+}

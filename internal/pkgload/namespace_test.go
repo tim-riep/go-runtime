@@ -143,7 +143,11 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"transformation description": {"transformations/X.json", `{"name":"/TRZ/X"}`},
 		"authorization object":       {"schema/authorization-objects/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"fields":[{"name":"A","domain":"/TRZ/Y"}]}`},
 		"role":                       {"schema/roles/X.json", `{"name":"/TRZ/X","texts":{"en":{"label":"X"}},"roles":["/TRZ/Y"]}`},
-		"http service":               {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
+		"extension point": {"schema/extension-points/X.json", `{"name":"/TRX/X","description":{"en":"X"},"interface":"/TRZ/I","use":"single",
+			"filters":[{"name":"A","domain":"/TRX/QTY"}]}`},
+		"implementation": {"schema/extension-implementations/X.json", `{"name":"/TRX/X","description":{"en":"X"},"extensionPoint":"/TRZ/P",
+			"class":"/TRX/C"}`},
+		"http service": {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
 		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
 			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}

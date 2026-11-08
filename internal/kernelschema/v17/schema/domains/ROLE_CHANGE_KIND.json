@@ -1,0 +1,44 @@
+{
+  "name": "/RT/ROLE_CHANGE_KIND",
+  "description": "Kind of a change of roles and role assignments",
+  "type": "CHAR",
+  "length": 32,
+  "values": [
+    {
+      "value": "create-role",
+      "description": "Local role created"
+    },
+    {
+      "value": "update-role",
+      "description": "Local role changed"
+    },
+    {
+      "value": "delete-role",
+      "description": "Local role deleted"
+    },
+    {
+      "value": "assign",
+      "description": "Role assigned"
+    },
+    {
+      "value": "unassign",
+      "description": "Role assignment removed"
+    },
+    {
+      "value": "assignment-removed",
+      "description": "Role assignment removed with a role, package, tenant or tenant of a user"
+    },
+    {
+      "value": "role-changed",
+      "description": "Local role changed by the removal of a package"
+    },
+    {
+      "value": "all-authorizations-sign-in",
+      "description": "Sign-in of a user with all authorizations"
+    },
+    {
+      "value": "all-authorizations-restored",
+      "description": "Role with all authorizations restored to its defined form"
+    }
+  ]
+}

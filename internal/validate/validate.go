@@ -55,6 +55,7 @@ func Schema(s *model.Schema, opts Options) error {
 	v.httpServices()
 	v.authorizationObjects()
 	v.roles()
+	v.extensionPoints()
 	for _, name := range s.TableNames() {
 		v.table(s.Tables[name])
 	}

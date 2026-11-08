@@ -1,0 +1,90 @@
+{
+  "name": "/RT/HTTP_SERVICES",
+  "description": "Service nodes of packages: paths with handler classes and settings their subtree inherits",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "LOCAL_PATH",
+      "domain": "/RT/HTTP_PATH",
+      "notNull": true,
+      "description": "Path below the package root"
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "AUTHENTICATION",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "ANONYMOUS",
+      "domain": "/RT/FLAG"
+    },
+    {
+      "name": "ANONYMOUS_TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "TENANT_SOURCES",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "LANGUAGE_SOURCES",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "MAX_BODY_SIZE",
+      "domain": "/RT/BYTE_SIZE"
+    },
+    {
+      "name": "MAX_RESPONSE_SIZE",
+      "domain": "/RT/BYTE_SIZE"
+    },
+    {
+      "name": "TIMEOUT_SECONDS",
+      "domain": "/RT/COUNT"
+    },
+    {
+      "name": "BUDGET",
+      "domain": "/RT/GENERATION",
+      "description": "Instruction budget"
+    },
+    {
+      "name": "AUTH_MODE",
+      "domain": "/RT/HTTP_AUTH_MODE",
+      "description": "Not set: inherited"
+    },
+    {
+      "name": "AUTH_OBJECT",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Authorization object of the check"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

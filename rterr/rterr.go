@@ -62,6 +62,7 @@ const (
 	CodeSource          Code = "source"           // invalid source file or language version
 	CodeAuthorization   Code = "authorization"    // invalid authorization object
 	CodeRole            Code = "role"             // invalid role or authorization of a role
+	CodeExtensionPoint  Code = "extension-point"  // invalid extension point or implementation
 )
 
 // Location points at the place in a package that caused an error.
@@ -543,6 +544,40 @@ type NotAuthorized struct {
 
 func (e *NotAuthorized) Error() string {
 	return fmt.Sprintf("user %s is not authorized for %s with activity %s", e.User, e.Object, e.Activity)
+}
+
+// OverlapValues are the values in which two implementations overlap in one
+// filter field.
+type OverlapValues struct {
+	Field  string `json:"field"`
+	Values string `json:"values"`
+}
+
+// ImplementationOverlap reports two active implementations of an extension
+// point used single that match the same filter values. Tenant is empty for
+// the global activation.
+type ImplementationOverlap struct {
+	ExtensionPoint string `json:"extensionPoint"`
+	// Implementations are the two implementations.
+	Implementations [2]string       `json:"implementations"`
+	Tenant          string          `json:"tenant,omitempty"`
+	Values          []OverlapValues `json:"values"`
+}
+
+func (e *ImplementationOverlap) Error() string {
+	where := "when active everywhere"
+	if e.Tenant != "" {
+		where = "in tenant " + e.Tenant
+	}
+	msg := fmt.Sprintf("extension point %s runs a single implementation, but %s and %s both match %s", e.ExtensionPoint, e.Implementations[0], e.Implementations[1], where)
+	if len(e.Values) == 0 {
+		return msg + " (it has no filter fields)"
+	}
+	var parts []string
+	for _, v := range e.Values {
+		parts = append(parts, v.Field+" = "+v.Values)
+	}
+	return msg + ": " + strings.Join(parts, "; ")
 }
 
 // UnsafeArchive reports a package archive that is rejected: an entry

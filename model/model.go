@@ -407,6 +407,8 @@ type Package struct {
 	HTTPServices         []HTTPService
 	AuthorizationObjects []AuthorizationObject
 	Roles                []Role
+	ExtensionPoints      []ExtensionPoint
+	Implementations      []Implementation
 	Origin               string // where the package was loaded from
 }
 

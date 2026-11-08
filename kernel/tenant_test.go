@@ -57,7 +57,7 @@ func TestTenants(t *testing.T) {
 		for _, c := range dry.Changes {
 			order = append(order, c.Table+" "+c.Detail)
 		}
-		if got := strings.Join(order, ", "); got != "/TROTTO/OTTO_CONNECTIONS 0 rows, /TRFIN/PAYMENTS 0 rows, /TRFIN/ORDERS 0 rows, /TRFIN/COMPANIES_ARCHIVE 0 rows, /TRFIN/BANK_ACCOUNTS 1 rows, /TRFIN/COMPANIES 1 rows, /TRBASE/AUDIT_LOG 0 rows, /RT/ROLE_ASSIGNMENTS 0 rows, /RT/TENANTS tenant ACME" {
+		if got := strings.Join(order, ", "); got != "/TROTTO/OTTO_CONNECTIONS 0 rows, /TRFIN/PAYMENTS 0 rows, /TRFIN/ORDERS 0 rows, /TRFIN/COMPANIES_ARCHIVE 0 rows, /TRFIN/BANK_ACCOUNTS 1 rows, /TRFIN/COMPANIES 1 rows, /TRBASE/AUDIT_LOG 0 rows, /RT/ROLE_ASSIGNMENTS 0 rows, /RT/IMPLEMENTATION_TENANT_STATES 0 rows, /RT/TENANTS tenant ACME" {
 			t.Fatalf("dependent tables must be emptied first: %s", got)
 		}
 		if !strings.Contains(dry.SQL(), "DELETE FROM") {

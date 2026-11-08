@@ -93,18 +93,25 @@ func (v *validator) authorizationField(f model.AuthorizationField, owner model.P
 	case !hasDE && !hasDom:
 		v.fail(rterr.CodeDataElement, loc, obj, "a field needs a data element or a domain; only the field %s has none", model.ActivityField)
 		return
-	case hasDE:
-		v.typeRef(model.TypeRef{Kind: model.TypeDataElement, Name: de}, owner, loc, obj)
-	default:
-		v.typeRef(model.TypeRef{Kind: model.TypeDomain, Name: dom}, owner, loc, obj)
 	}
-	d := v.s.Domains[v.s.AuthorizationFieldDomain(f)]
-	if d == nil {
-		return
-	}
-	if !slices.Contains(authorizationTypes, d.Type) {
+	if d := v.valueField(de, dom, hasDE, owner, loc, obj); d != nil && !slices.Contains(authorizationTypes, d.Type) {
 		v.fail(rterr.CodeAuthorization, loc, obj, "type %s is not allowed; fields of authorization objects are CHAR(n), INT4, INT8, BOOL or UUID", d.TypeString())
 	}
+}
+
+// valueField checks the data element or domain of a field whose values
+// are given as single values, ranges and patterns, and returns its domain
+// or nil.
+func (v *validator) valueField(de, dom string, hasDE bool, owner model.PackageID, loc rterr.Location, obj string) *model.Domain {
+	if hasDE {
+		v.typeRef(model.TypeRef{Kind: model.TypeDataElement, Name: de}, owner, loc, obj)
+		if d := v.s.DataElements[de]; d != nil {
+			return v.s.Domains[d.Domain]
+		}
+		return nil
+	}
+	v.typeRef(model.TypeRef{Kind: model.TypeDomain, Name: dom}, owner, loc, obj)
+	return v.s.Domains[dom]
 }
 
 // activityCodes returns the codes of the activities, the fixed values of

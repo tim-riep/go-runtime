@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/extension-implementation.schema.json",
+  "title": "Implementation of an extension point",
+  "description": "An implementation (schema/extension-implementations/<name without namespace>.json): a public class of the package that implements the interface of an extension point of the package or of a required one, with the values of the filter fields it is meant for.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "extensionPoint",
+    "class"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/descriptions"
+    },
+    "extensionPoint": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "The extension point, of the package or of a package it requires."
+    },
+    "class": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "A public class of the package with a public constructor without parameters that implements the interface of the extension point."
+    },
+    "filters": {
+      "description": "Values per filter field: single values, ranges and patterns as in roles. Every filter field without default is given; * matches all values.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/valueEntries"
+      }
+    },
+    "order": {
+      "description": "Place in the order of a multiple extension point; equal numbers are ordered by package ID and name. Default 0.",
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    }
+  }
+}

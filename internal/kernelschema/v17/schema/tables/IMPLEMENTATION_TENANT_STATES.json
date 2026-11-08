@@ -1,0 +1,36 @@
+{
+  "name": "/RT/IMPLEMENTATION_TENANT_STATES",
+  "description": "Activation of implementations per tenant; it takes precedence over the global activation",
+  "tenantSpecific": true,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "IMPLEMENTATION_NAME"
+  ],
+  "foreignKeys": []
+}

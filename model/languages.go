@@ -83,6 +83,16 @@ func (p *Package) WithLanguages(keep func(lang string) bool) *Package {
 		maps.DeleteFunc(r.Texts, func(l string, _ Label) bool { return !ok(l) })
 		c.Roles[i] = r
 	}
+	c.ExtensionPoints = make([]ExtensionPoint, len(p.ExtensionPoints))
+	for i, e := range p.ExtensionPoints {
+		e.Description = filter(e.Description)
+		c.ExtensionPoints[i] = e
+	}
+	c.Implementations = make([]Implementation, len(p.Implementations))
+	for i, impl := range p.Implementations {
+		impl.Description = filter(impl.Description)
+		c.Implementations[i] = impl
+	}
 	c.AssetRepositories = make([]AssetRepository, len(p.AssetRepositories))
 	for i, r := range p.AssetRepositories {
 		r.Description = filter(r.Description)
