@@ -69,6 +69,7 @@ func examples(t *testing.T) []*model.Package {
 func legacyExample(t *testing.T, name string) *model.Package {
 	p := testutil.Example(t, name)
 	p.Structures, p.ArrayTypes, p.StructureExtensions, p.AuthorizationObjects, p.Roles = nil, nil, nil, nil, nil
+	p.DataElements = withoutKernelDomains(p.DataElements)
 	var tables []model.Table
 	for _, tb := range p.Tables {
 		if tb.Name == "/TRFIN/COMPANIES_ARCHIVE" {
@@ -241,4 +242,10 @@ func TestFailedInstallRollsBack(t *testing.T) {
 			t.Fatalf("failure not logged: %+v", log)
 		}
 	})
+}
+
+// withoutKernelDomains drops data elements on domains of the kernel, which
+// older kernel versions may not have.
+func withoutKernelDomains(des []model.DataElement) []model.DataElement {
+	return slices.DeleteFunc(slices.Clone(des), func(d model.DataElement) bool { return model.IsKernelName(d.Domain) })
 }

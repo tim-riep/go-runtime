@@ -1,0 +1,30 @@
+{
+  "name": "/TRBASE/ROLE_ADMIN",
+  "texts": {
+    "en": {
+      "label": "Role maintenance",
+      "description": "Maintaining, importing and exporting local roles"
+    },
+    "de": {
+      "label": "Rollenpflege",
+      "description": "Lokale Rollen pflegen, importieren und exportieren"
+    }
+  },
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE",
+    "IMPORT",
+    "EXPORT"
+  ]
+}

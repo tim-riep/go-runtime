@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/USER_ADMIN",
+  "texts": {
+    "en": {
+      "label": "User maintenance",
+      "description": "Creating, changing, locking and reading users"
+    },
+    "de": {
+      "label": "Benutzerpflege",
+      "description": "Benutzer anlegen, ändern, sperren und lesen"
+    }
+  },
+  "fields": [
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

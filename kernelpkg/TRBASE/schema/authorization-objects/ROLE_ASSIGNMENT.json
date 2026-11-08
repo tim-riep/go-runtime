@@ -1,0 +1,31 @@
+{
+  "name": "/TRBASE/ROLE_ASSIGNMENT",
+  "texts": {
+    "en": {
+      "label": "Role assignment",
+      "description": "Assigning roles to users in a tenant"
+    },
+    "de": {
+      "label": "Rollenzuordnung",
+      "description": "Benutzern Rollen in einem Mandanten zuordnen"
+    }
+  },
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    },
+    {
+      "name": "TENANT",
+      "dataElement": "/TRBASE/TENANT"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "DELETE"
+  ]
+}

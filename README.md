@@ -77,6 +77,7 @@ TRFIN/
     structure-extensions/*.json  one extension per extended structure
     http-services/*.json       one service node per file, any file name
     authorization-objects/*.json  one authorization object per file, named <NAME>.json
+    roles/*.json               one role or composite role per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -505,6 +506,80 @@ allowed activities with their texts. `rt show authorization-object:/TRFIN/COMPAN
 `rt authorization-objects list [package]` and `rt activities list` show them, with `--json`
 in the form of the reflector. Code reads them with `/TRBASE/REFLECTOR`.
 
+### Roles
+
+A role bundles authorizations on authorization objects (`schema/roles/COMPANY_CLERK.json` of
+`TRFIN`):
+
+```json
+{
+  "name": "/TRFIN/COMPANY_CLERK",
+  "texts": { "en": { "label": "Company clerk" }, "de": { "label": "Sachbearbeitung Firma" } },
+  "authorizations": [
+    {
+      "object": "/TRFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "value": "DE" }, { "value": "AT" }, { "from": "PL", "to": "SK" }],
+        "ACTIVITY": [{ "value": "READ" }, { "value": "UPDATE" }]
+      }
+    }
+  ]
+}
+```
+
+- An authorization names every field of its object; a missing field is an error, not a
+  grant. Each field lists values (`{"value": v}`), ranges with both bounds included
+  (`{"from": a, "to": b}`) and patterns: `*` for all values or a prefix followed by `*`
+  (`DE*`). The entries of a field combine with or, the fields of an authorization with and,
+  and several authorizations on the same object, in one role or several, with or.
+- Values fit the type and length of the field: strings for `CHAR` and `UUID`, numbers for
+  `INT4` and `INT8`, `true` or `false` for `BOOL`; with fixed values only those. Ranges and
+  prefixes need `CHAR` or an integer type; ranges of `CHAR` compare code points, prefixes of
+  integers their decimal digits. `ACTIVITY` takes allowed activities of the object or `*`,
+  which includes activities the object allows later.
+- `""` is a value where the domain allows it, and `*` includes it; a prefix never matches
+  `""`. `null` is never granted.
+- A composite role has `"roles"` instead of `"authorizations"`: single roles only, no
+  composite roles and not `/RT/ALL_AUTHORIZATIONS`.
+- Package roles reference objects and roles of the own and required packages. They are
+  installed, upgraded and uninstalled with their package and must fit their objects then.
+  When an upgrade of another package adds a field to an object or removes an activity,
+  authorizations that no longer fit grant nothing until they are maintained; the plan lists
+  them as `incomplete-authorization` before the commit. An operation that removes a role
+  that is assigned is rejected.
+- Local roles have the same format in the namespace `/LOCAL/` (the package ID `LOCAL` is
+  reserved) and are maintained at runtime: `kernel.Roles().Create`, `Update`, `Import`,
+  `Export`, `Delete`, and the `rt role` commands. They may use every installed object and
+  role. Deleting one that is assigned or in a composite role needs a confirmation, which
+  removes it from both. Uninstalling a package removes its roles from local composite roles,
+  the authorizations on its objects from local roles and the assignments of its roles.
+
+Roles are assigned to users per tenant, with an optional first and last day of validity
+(`kernel.Roles().Assign`, `rt role assign`). A user gets roles only in tenants it works in;
+when it loses the tenant, or the tenant is deleted, its assignments there go too. The same
+role may be assigned several times, also with overlapping periods.
+
+`/RT/ALL_AUTHORIZATIONS` is the role of the kernel that grants every object with all
+values, also objects installed later. It cannot change, is assigned only on its own, and
+every assignment and every sign-in of a user who has it is logged and recorded.
+`rt init --admin <user> --tenant <tenant>` (or the question `rt init` asks on a terminal)
+creates a first user with it. TRBASE brings the authorization objects `/TRBASE/USER_ADMIN`,
+`/TRBASE/ROLE_ADMIN` and `/TRBASE/ROLE_ASSIGNMENT` for the administration, which will be
+checked by a later version.
+
+Every change of local roles and assignments, also those that operations on packages,
+users and tenants make, is recorded in `/RT/ROLE_HISTORY` with who made it and the old and
+new state; entries are never changed (`rt role history`).
+
+`kernel.EffectiveAuthorizations(user, tenant, day)` returns the effective authorizations from
+package [authorization](authorization): the assignments valid on the day, composite roles
+resolved, grouped by object with their origin, compiled for fast checks, and the
+authorizations that are not effective. Locked users have none. Results are cached per user,
+tenant and day until `/RT/AUTH_GENERATION` changes, which every relevant change increases in
+its transaction; every call reads the counter, so that kernels on the same database see the
+changes of each other at once.
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -835,6 +910,15 @@ rt token list anna
 rt show authorization-object:/TRFIN/COMPANY
 rt authorization-objects list TRFIN
 rt activities list --lang de
+rt init --admin root --tenant ACME < password.txt
+rt role list --incomplete
+rt role show /TRFIN/COMPANY_CLERK
+rt role import operations.json
+rt role export /LOCAL/OPERATIONS -o operations.json
+rt role assign anna /LOCAL/OPERATIONS --tenant ACME --from 2027-01-01
+rt user roles anna
+rt user authorizations anna --tenant ACME --date 2027-01-15
+rt role history --user anna
 rt http list TRFIN
 rt http show /trfin/companies
 rt http activate /trfin
@@ -855,7 +939,7 @@ packages; every test method runs in a tenant of its own and leaves no rows.
 
 Flags may appear anywhere: `--db`, `--dry-run`, `--allow-destructive`, `--yes`, `--json`,
 `--description`, `--name`, `--lang`, `--tenant`, `-o`, `--max-asset-size`, `--max-asset-read`, `--label`,
-`--expires`, `--addr`, `--tls-cert`, `--tls-key`, `--read-timeout`, `--write-timeout`,
+`--expires`, `--package`, `--incomplete`, `--user`, `--from`, `--to`, `--date`, `--admin`, `--addr`, `--tls-cert`, `--tls-key`, `--read-timeout`, `--write-timeout`,
 `--shutdown-timeout`. Exit codes: 0 success, 2 usage, 3 validation or dependency error,
 4 destructive change or confirmation required, 5 check found discrepancies, 6 execution
 failed and was rolled back, 1 other errors.
@@ -889,8 +973,10 @@ loader already works on `fs.FS`), joins and aggregates other than `count` in cod
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression and image processing,
-includes in extensions, authorization checks, roles, profiles and the assignment of grants
-to users.
+includes in extensions, authorization checks in code and kernel (the administration is
+open to everyone who may use the command line until then), derived roles with organizational
+levels, suggested values per application, start page contents of roles, groups of users and
+external role sources.
 
 ## License
 

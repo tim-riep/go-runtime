@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ROLE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Role",
+      "medium": "Role",
+      "long": "Name of the role",
+      "heading": "Role"
+    },
+    "de": {
+      "short": "Rolle",
+      "medium": "Rolle",
+      "long": "Name der Rolle",
+      "heading": "Rolle"
+    }
+  }
+}

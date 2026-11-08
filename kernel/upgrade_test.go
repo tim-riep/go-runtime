@@ -45,6 +45,7 @@ func withData(t *testing.T, k *kernel.Kernel) {
 	if k.TargetVersion() < 12 { // before roles
 		for _, p := range pkgs {
 			p.Roles = nil
+			p.DataElements = withoutKernelDomains(p.DataElements)
 		}
 	}
 	if _, err := k.Install(context.Background(), pkgs, kernel.Options{}); err != nil {
