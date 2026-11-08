@@ -701,6 +701,71 @@ afterwards. With `DryRun` only the plan is returned.
 - **Check**: compares repository and database (tables, columns, types, nullability, defaults,
   keys, foreign keys, constraint names) and validates the repository, including all settings.
 
+### Packages from GitHub
+
+Packages come from directories, ZIP files or GitHub repositories, one package per repository
+or several in directories of one:
+
+```bash
+rt install github.com/tim-riep/trfin@v1.2.0
+rt install github.com/tim-riep/trotto@^1.0
+rt install https://github.com/tim-riep/erp-packages/tree/v2.0.0/packages/TRFIN
+rt upgrade TRFIN
+rt outdated
+```
+
+- **Addresses** have the canonical form `github.com/<owner>/<repo>[/<dir>][@<spec>]`; URLs
+  `https://github.com/<owner>/<repo>` and `…/tree/<ref>/<dir>` become that form. The spec is
+  a version (the tag `v1.2.0` or `1.2.0`), a constraint in the syntax of manifests (`^1.0`,
+  `>=1.2.0 <2.0.0`, highest matching tag, pre-releases only when the constraint names one), a
+  full commit hash or, with `--allow-branch`, a branch. Without spec the highest stable version
+  counts. A branch with `/` in its name is written after `@`.
+- **Archives**: the asset `<ID>-<version>.zip` of the release of the tag comes first, the way
+  for packages with a build step; with several package assets the last segment of the
+  directory or `--package <ID>` chooses. Otherwise the archive of the commit counts, with
+  the package at the root or in the directory; of a repository only the package entries
+  (`manifest.json`, `schema/`, `src/`, `assets/`, `transformations/`) are taken, not
+  README.md and the like. The manifest decides the ID, and its version must be that of the
+  tag. Then the usual path follows: validation, namespace check, dependencies, compiling,
+  plan, one transaction.
+- **Dependencies**: a requirement may name a source, `{ "id": "TRFIN", "version": "^1.0",
+  "source": "github.com/tim-riep/trfin" }`. A required package that is missing, or installed
+  but too old, comes from its source at the highest version that every known constraint of
+  the set and of the installed packages allows; a later constraint that excludes it is a
+  conflict. Without source the package must be installed. Upgrades of installed packages need
+  `--upgrade-dependencies`; the plan shows them first. Kernel packages never come from a
+  source. Everything is resolved and downloaded into the cache before the plan is shown, and
+  installed in one transaction in dependency order.
+- **Confirmation**: with an address `rt install` shows the plan with all packages, sources,
+  commits and hashes and asks; `--yes` confirms, `--dry-run` only shows it.
+- **Origins** are kept in `/RT/PACKAGE_ORIGINS`: address, requested spec, the constraint of
+  later upgrades (the requested constraint, else `^<version>`), tag, commit, asset, SHA-256 of
+  the archive, time and who; `rt show <ID>` shows them. Packages from directories and ZIP files
+  are local. `rt upgrade <ID>` chooses the highest version that the constraint and the
+  requirements of the installed packages allow, `rt upgrade <ID>@<spec>` another one;
+  `rt outdated` lists the installed, the highest matching and the latest version.
+- **Integrity**: `--expect-sha256 <hash>` checks the archive of a single address. The commit
+  and hash of every tag seen are kept in `/RT/SOURCE_TAGS`, also after uninstalling; a tag
+  that points elsewhere later is rejected unless `--allow-retag`. `rt export lock -o rt.lock`
+  writes the origins of all packages, `rt install --lock rt.lock` installs exactly these
+  commits and archives elsewhere; local packages of a lock must be installed already.
+- **Cache**: archives are kept by SHA-256 in `$RT_CACHE_DIR` (default the user cache
+  directory, `go-runtime/`), API answers with their ETag beside them. A lock installs from the
+  cache without network.
+- **Access**: public repositories need nothing. `RT_GITHUB_TOKEN`, else `GITHUB_TOKEN`, gives a
+  token for private repositories and higher rate limits; it goes only to the API, never to
+  download hosts, and is never stored, logged or shown. `RT_GITHUB_URL` names a GitHub
+  Enterprise Server (API at `<url>/api/v3`). `RT_SOURCE_HOSTS` lists the hosts requests and
+  redirects may reach (default github.com, api.github.com, codeload.github.com and the
+  download hosts), `RT_SOURCE_ALLOW` the owners or `owner/repo` that packages may come from,
+  also as dependencies. Only HTTPS; requests time out after 30 seconds, downloads after 5
+  minutes; 502, 503, 504 and network errors are retried three times; a reached rate limit is
+  reported with the time of its reset.
+- **Archives are data**: entries outside the package, absolute paths, links and other
+  special files are rejected, and so are archives above 64 MiB, more than 256 MiB of files,
+  files above 32 MiB (at least the asset limit) or more than 20 000 entries. Nothing of an
+  archive is executed; its source files are compiled like any others.
+
 ### Dialect notes
 
 - SQLite: every connection enforces foreign keys. Because `PRAGMA foreign_keys` has no effect
@@ -963,6 +1028,12 @@ if errors.As(err, &dc) { ... }
 tenant, err := k.Tenants().Create(ctx, "ACME", model.Some("Acme Corp"))
 discrepancies, err := k.Check(ctx)
 ```
+
+Packages from sources go through `kernel.Config.Sources` (or `SetSources`) with
+`source/github` or another implementation of `source.Source`: `ResolveSources` resolves a
+`SourceRequest` with its dependencies, `ApplyResolution` installs it (with `DryRun` for the
+plan), `UpgradeSource`, `Outdated`, `PackageOrigin`, `ExportLock`, `ParseLock` and
+`ResolveLock` cover upgrades, listings and locks. `kernel.LoadZip` reads a ZIP file.
 
 All errors are typed (package [rterr](rterr)) and can be inspected with `errors.As`.
 Several problems found at once are returned as `rterr.List`. `kernel.LoadFS` reads a package

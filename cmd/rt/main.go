@@ -45,6 +45,7 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/server"
 	"github.com/tim-riep/go-runtime/setting"
+	"github.com/tim-riep/go-runtime/source"
 	"github.com/tim-riep/go-runtime/structure"
 )
 
@@ -67,8 +68,17 @@ Commands:
                            create or migrate the kernel tables; a first user with all
                            authorizations is created with --admin or asked for on a terminal
   plan <package>           show the install or upgrade plan of a package directory
-  install <package>...     install package directories or ZIP archives
-  upgrade <package>        upgrade an installed package
+  install <package>...     install package directories, ZIP archives or packages from GitHub
+                           addresses: github.com/<owner>/<repo>[/<dir>][@<version|constraint|commit|branch>]
+                           or https://github.com/<owner>/<repo>[/tree/<ref>/<dir>]; dependencies
+                           with a source come along; the plan is confirmed first (--yes);
+                           --package ID, --allow-branch, --expect-sha256 H, --allow-retag,
+                           --upgrade-dependencies, --lock file
+  upgrade <package>        upgrade an installed package from a directory or ZIP archive, or
+                           <ID>[@<spec>] from its source within the constraint of its installation
+  outdated                 list the packages from sources with the installed, the highest
+                           matching and the latest version
+  export lock [-o file]    write where the installed packages come from: commits and hashes
   uninstall <id>           remove a package and its data (needs --yes)
   list                     list installed packages
   show <object>            show a package, table, domain, data element, structure, array type
@@ -189,6 +199,11 @@ type cli struct {
 	check          bool
 	minutes        int
 	maxEntries     int
+	allowBranch    bool
+	allowRetag     bool
+	upgradeDeps    bool
+	expectSHA      string
+	lockFile       string
 	serve          server.Config
 }
 
@@ -212,7 +227,12 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.label, "label", "", "token create: the label of the token")
 	c.fs.StringVar(&c.expires, "expires", "", "token create: the day the token expires, YYYY-MM-DD")
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset or a role to, - for standard output")
-	c.fs.StringVar(&c.pkg, "package", "", "role list: only the roles of a package, LOCAL for local roles")
+	c.fs.StringVar(&c.pkg, "package", "", "role list: only the roles of a package, LOCAL for local roles; install: the package among several assets of a release")
+	c.fs.BoolVar(&c.allowBranch, "allow-branch", false, "install: allow addresses that name a branch, which may change")
+	c.fs.BoolVar(&c.allowRetag, "allow-retag", false, "install, upgrade: accept a tag whose commit or archive changed")
+	c.fs.BoolVar(&c.upgradeDeps, "upgrade-dependencies", false, "install: upgrade installed packages that the new ones need in a newer version")
+	c.fs.StringVar(&c.expectSHA, "expect-sha256", "", "install: the SHA-256 the archive of the only address must have")
+	c.fs.StringVar(&c.lockFile, "lock", "", "install: install the packages of a lock file written by rt export lock")
 	c.fs.BoolVar(&c.incomplete, "incomplete", false, "role list: only roles with authorizations that grant nothing")
 	c.fs.StringVar(&c.userFilter, "user", "", "run: the user of the execution; role history: only the changes of a user")
 	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD")
@@ -282,6 +302,11 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	k.SetMaxAssetSize(c.maxAssetSize)
+	sources, err := newSources()
+	if err != nil {
+		return c.fail(err)
+	}
+	k.SetSources(sources)
 	if c.maxAssetRead <= 0 {
 		fmt.Fprintln(stderr, "error: --max-asset-read must be positive")
 		return exitUsage
@@ -315,7 +340,7 @@ func (c *cli) need(args []string, n int, what string) bool {
 }
 
 func (c *cli) opts() kernel.Options {
-	return kernel.Options{DryRun: c.dryRun, AllowDestructive: c.allowDestr, Confirm: c.yes}
+	return kernel.Options{DryRun: c.dryRun, AllowDestructive: c.allowDestr, Confirm: c.yes, By: "cli"}
 }
 
 func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args []string) int {
@@ -357,6 +382,9 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		}
 		return c.printPlan(p)
 	case "install":
+		if c.lockFile != "" || slices.ContainsFunc(args, func(a string) bool { return source.IsAddress(a, k.SourceHosts()...) }) {
+			return c.installSources(ctx, k, args)
+		}
 		if !c.need(args, -1, "install <package>...") {
 			return exitUsage
 		}
@@ -376,6 +404,9 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 	case "upgrade":
 		if !c.need(args, 1, "upgrade <package>") {
 			return exitUsage
+		}
+		if !isLocal(args[0]) {
+			return c.upgradeSource(ctx, k, args[0])
 		}
 		pkg, err := c.loadPackage(args[0])
 		if err != nil {
@@ -424,6 +455,17 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.user(ctx, k, args)
 	case "trace":
 		return c.trace(ctx, k, args)
+	case "outdated":
+		if !c.need(args, 0, "outdated") {
+			return exitUsage
+		}
+		return c.outdated(ctx, k)
+	case "export":
+		if len(args) != 1 || args[0] != "lock" {
+			fmt.Fprintln(c.stderr, "usage: rt export lock [-o file]")
+			return exitUsage
+		}
+		return c.exportLock(ctx, k)
 	case "token":
 		return c.token(ctx, k, args)
 	case "effects":
@@ -545,8 +587,17 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 		m := d.Package.Manifest
 		fmt.Fprintf(c.stdout, "Package %s %s\n  %s\n", m.ID, m.Version, m.Description)
+		if m.KernelPackage {
+			fmt.Fprintln(c.stdout, "  origin: the kernel")
+		} else {
+			c.showOrigin(ctx, k, m.ID)
+		}
 		for _, r := range m.Requires {
-			fmt.Fprintf(c.stdout, "  requires %s %s\n", r.ID, r.Constraint)
+			fmt.Fprintf(c.stdout, "  requires %s %s", r.ID, r.Constraint)
+			if s, ok := r.Source.Get(); ok {
+				fmt.Fprintf(c.stdout, " from %s", s)
+			}
+			fmt.Fprintln(c.stdout)
 		}
 		if len(d.RequiredBy) > 0 {
 			fmt.Fprintf(c.stdout, "  required by %v\n", d.RequiredBy)
@@ -1247,10 +1298,15 @@ func (c *cli) fail(err error) int {
 		nsv  *rterr.NamespaceViolation
 		ce   *rterr.CompileError
 		kp   *rterr.KernelPackage
+		ua   *rterr.UnsafeArchive
+		ie   *rterr.IntegrityError
 	)
 	switch {
 	case errors.As(err, &dc):
 		fmt.Fprintln(c.stderr, "hint: rerun with --allow-destructive, or with --dry-run to see the plan")
+		return exitNeedsPermit
+	case errors.As(err, &conf) && strings.Contains(conf.Operation, "dependencies"):
+		fmt.Fprintln(c.stderr, "hint: rerun with --upgrade-dependencies, or with --dry-run to see the plan")
 		return exitNeedsPermit
 	case errors.As(err, &conf):
 		fmt.Fprintln(c.stderr, "hint: rerun with --yes, or with --dry-run to see the plan")
@@ -1260,7 +1316,8 @@ func (c *cli) fail(err error) int {
 	case errors.As(err, &ml):
 		fmt.Fprintln(c.stderr, "hint: add the languages with rt language add")
 		return exitInvalid
-	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv), errors.As(err, &ce), errors.As(err, &kp):
+	case errors.As(err, &v), errors.As(err, &dep), errors.As(err, &nc), errors.As(err, &nsv), errors.As(err, &ce), errors.As(err, &kp),
+		errors.As(err, &ua), errors.As(err, &ie):
 		return exitInvalid
 	case errors.As(err, &ee):
 		return exitExec
