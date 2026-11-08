@@ -144,6 +144,7 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts}
 	x.sessions = []*session{{x: x, n: 1}}
 	x.extensions = g.extensionRegistry()
+	x.behaviors = g.behaviorRegistry()
 	defer func() { err = errors.Join(err, x.finish(err)) }()
 	vo := opts.VM
 	vo.Database = x
@@ -208,6 +209,10 @@ type generation struct {
 	// built when an execution runs one.
 	extensions     *extensionRegistry
 	extensionsOnce sync.Once
+	// behaviors are the business objects with their extensions, merged
+	// when an execution changes them.
+	behaviors     *behaviorRegistry
+	behaviorsOnce sync.Once
 }
 
 // generation returns the code of the current generation. An execution

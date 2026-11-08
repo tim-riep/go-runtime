@@ -67,6 +67,8 @@ type execution struct {
 	// schema, and activation their activation, read on first use.
 	extensions *extensionRegistry
 	activation *activation
+	// behaviors are the business objects with their extensions.
+	behaviors *behaviorRegistry
 	// entities is the transaction buffer of business objects, made on
 	// first use.
 	entities *entityBuffer

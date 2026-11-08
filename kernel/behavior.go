@@ -95,11 +95,12 @@ func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, c behavio
 	}
 	defer r.origin(len(r.Failures), len(r.Messages), string(origin))
 	resp := native.NewEntityResponse(len(c.ins))
-	class, ok := c.bo.BehaviorClass.Get()
+	class, ok := c.bo.BehaviorClassOf(origin).Get()
 	if !ok {
-		return nil, nil, fmt.Errorf("%s has no behavior class for %s", c.bo.Name, c.method)
+		return nil, nil, fmt.Errorf("%s has no behavior class of %s for %s", c.bo.Name, origin, c.method)
 	}
-	out, err := behavior.CallBehavior(ctx, class, c.method, keys, c.param, resp)
+	method := model.BehaviorMethodName(c.method)
+	out, err := behavior.CallBehavior(ctx, class, method, keys, c.param, resp)
 	failed := map[*instance]bool{}
 	var exc *vm.Exception
 	switch {
@@ -111,7 +112,7 @@ func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, c behavio
 		if c.static {
 			r.fail(c.entity.Table, c.op, reasonBehavior, nil, nil)
 		}
-		r.message("error", fmt.Sprintf("%s.%s: %s", class, c.method, exc.Text), "", nil, nil)
+		r.message("error", fmt.Sprintf("%s.%s: %s", class, method, exc.Text), "", nil, nil)
 		return nil, failed, nil
 	case err != nil:
 		return nil, nil, err
@@ -165,45 +166,47 @@ func (b *entityBuffer) determine(ctx context.Context, behavior vm.Behavior, when
 	for round := 0; ; round++ {
 		ran := false
 		for _, bo := range b.businessObjects(touched) {
-			for i := range bo.Entities {
-				e := &bo.Entities[i]
-				for _, d := range e.Determinations {
-					if d.When != when || b.running[bo.Name+"."+d.Name] {
-						continue
-					}
-					var ins []*instance
-					for _, in := range touched {
-						ops, fields := in.ops, in.changed
-						if when == model.WhenModify {
-							ops, fields = in.recentOps, in.recent
-						}
-						if in.entity.Table != e.Table || in.bo != bo || done[d.Name][in] || in.state == stateDeleted && !slices.Contains(d.On, model.OperationDelete) {
+			for _, origin := range origins(bo) {
+				for i := range bo.Entities {
+					e := &bo.Entities[i]
+					for _, d := range e.Determinations {
+						if d.Origin != origin || d.When != when || b.running[bo.Name+"."+d.Name] {
 							continue
 						}
-						if triggered(d.Trigger, ops, fields) {
-							ins = append(ins, in)
+						var ins []*instance
+						for _, in := range touched {
+							ops, fields := in.ops, in.changed
+							if when == model.WhenModify {
+								ops, fields = in.recentOps, in.recent
+							}
+							if in.entity.Table != e.Table || in.bo != bo || done[d.Name][in] || in.state == stateDeleted && !slices.Contains(d.On, model.OperationDelete) {
+								continue
+							}
+							if triggered(d.Trigger, ops, fields) {
+								ins = append(ins, in)
+							}
 						}
+						if len(ins) == 0 {
+							continue
+						}
+						if round >= maxRounds {
+							return &native.RuntimeError{Class: "/RT/VALUE_ERROR", Text: fmt.Sprintf("determination %s ran more than %d times in one save; determinations trigger each other", d.Name, maxRounds)}
+						}
+						if done[d.Name] == nil {
+							done[d.Name] = map[*instance]bool{}
+						}
+						for _, in := range ins {
+							done[d.Name][in] = true
+						}
+						key := bo.Name + "." + d.Name
+						b.running[key] = true
+						_, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: d.Name, ins: ins, reason: reasonBehavior, origin: d.Origin}, r)
+						delete(b.running, key)
+						if err != nil {
+							return err
+						}
+						ran = true
 					}
-					if len(ins) == 0 {
-						continue
-					}
-					if round >= maxRounds {
-						return &native.RuntimeError{Class: "/RT/VALUE_ERROR", Text: fmt.Sprintf("determination %s ran more than %d times in one save; determinations trigger each other", d.Name, maxRounds)}
-					}
-					if done[d.Name] == nil {
-						done[d.Name] = map[*instance]bool{}
-					}
-					for _, in := range ins {
-						done[d.Name][in] = true
-					}
-					key := bo.Name + "." + d.Name
-					b.running[key] = true
-					_, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: d.Name, ins: ins, reason: reasonBehavior}, r)
-					delete(b.running, key)
-					if err != nil {
-						return err
-					}
-					ran = true
 				}
 			}
 		}
@@ -235,20 +238,25 @@ func (b *entityBuffer) validate(ctx context.Context, behavior vm.Behavior, r *re
 	}
 	changed := b.changedInstances()
 	for _, bo := range b.businessObjects(changed) {
-		for i := range bo.Entities {
-			e := &bo.Entities[i]
-			for _, v := range e.Validations {
-				var ins []*instance
-				for _, in := range changed {
-					if in.bo == bo && in.entity.Table == e.Table && triggered(v.Trigger, in.ops, in.changed) {
-						ins = append(ins, in)
+		for _, origin := range origins(bo) {
+			for i := range bo.Entities {
+				e := &bo.Entities[i]
+				for _, v := range e.Validations {
+					if v.Origin != origin {
+						continue
 					}
-				}
-				if len(ins) == 0 {
-					continue
-				}
-				if _, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: v.Name, ins: ins, reason: reasonValidation}, r); err != nil {
-					return err
+					var ins []*instance
+					for _, in := range changed {
+						if in.bo == bo && in.entity.Table == e.Table && triggered(v.Trigger, in.ops, in.changed) {
+							ins = append(ins, in)
+						}
+					}
+					if len(ins) == 0 {
+						continue
+					}
+					if _, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: v.Name, ins: ins, reason: reasonValidation, origin: v.Origin}, r); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -269,7 +277,7 @@ func (b *entityBuffer) execute(ctx context.Context, bo *model.BusinessObject, e 
 	if req.Behavior == nil {
 		return nil, nil, fmt.Errorf("action %s needs the behavior class of %s", a.Name, bo.Name)
 	}
-	c := behaviorCall{bo: bo, entity: e, method: a.Name, static: !a.Instance, param: st.Param, op: a.Name, reason: reasonBehavior}
+	c := behaviorCall{bo: bo, entity: e, method: a.Name, static: !a.Instance, param: st.Param, op: a.Name, reason: reasonBehavior, origin: a.Origin}
 	if a.Instance {
 		seen := map[*instance]bool{}
 		for _, k := range st.Rows {
@@ -386,6 +394,9 @@ func (b *entityBuffer) authorizeChange(ctx context.Context, req vm.ModifyRequest
 // objects of configuration without an authorization are checked with
 // the configuration object.
 func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *model.Entity, key string, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
+	if a := e.Action(key); a != nil && (a.Authorization != nil || a.Activity.Valid()) {
+		return b.checkAction(ctx, bo, e, a, values, parent, at)
+	}
 	ra, ok := bo.AuthorizationOf(e)
 	if !ok {
 		return true, nil
@@ -413,6 +424,47 @@ func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *m
 	}
 	maps.Copy(c.Values, ra.Constants)
 	for of, ef := range au.Fields {
+		if values == nil {
+			if c.Any == nil {
+				c.Any = map[string]bool{}
+			}
+			c.Any[of] = true
+			continue
+		}
+		c.Values[of] = checkText(b.domain(table, ef), values[ef])
+	}
+	return b.x.CheckAuthorization(c, at, native.CheckEntity)
+}
+
+// checkAction checks an action of an extension on an entity it does not
+// own: with its authorization object and the fields of the entity when it
+// has one, else with the authorization of the entity; with the activity
+// of the action.
+func (b *entityBuffer) checkAction(ctx context.Context, bo *model.BusinessObject, e *model.Entity, a *model.Action, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
+	c := authorization.Check{Values: map[string]string{}}
+	var fields map[string]string
+	table := e.Table
+	if au := a.Authorization; au != nil {
+		c.Object, fields = au.Object, au.Fields
+	} else {
+		ra, ok := bo.AuthorizationOf(e)
+		if !ok {
+			return true, nil
+		}
+		c.Object, fields = ra.Authorization.Object, ra.Authorization.Fields
+		maps.Copy(c.Values, ra.Constants)
+		if ra.Source == model.AuthorizationInherited && values != nil {
+			var err error
+			if values, err = b.holderValues(ctx, bo, e, ra.Holder, values, parent); err != nil || values == nil {
+				return false, err
+			}
+			table = ra.Holder.Table
+		}
+	}
+	if act, ok := a.Activity.Get(); ok {
+		c.Values[model.ActivityField] = act
+	}
+	for of, ef := range fields {
 		if values == nil {
 			if c.Any == nil {
 				c.Any = map[string]bool{}

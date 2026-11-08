@@ -231,3 +231,237 @@ func TestBusinessObjectExtensionCompiler(t *testing.T) {
 		}
 	})
 }
+
+// runtimeExtension is extensionJSON with an action that an authorization
+// object of TRBX checks.
+var runtimeExtension = strings.Replace(extensionJSON, `"actions": [{ "name": "/TRBX/RERATE", "result": "self", "activity": "UPDATE" }]`,
+	`"actions": [{ "name": "/TRBX/RERATE", "result": "self", "activity": "UPDATE" },
+		{ "name": "/TRBX/PROMOTE", "activity": "EXECUTE", "authorization": { "object": "/TRBX/PROMOTION", "fields": { "ORDER_NAME": "NAME" } } }]`, 1)
+
+// runtimeBehavior rates new orders on save, rejects the name "bad" and
+// rates again with its action, all in local mode.
+const runtimeBehavior = `
+public method RATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  SET_RATING(keys, 5)
+  response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.INFORMATION, "rated by TRBX")
+end
+public method CHECK(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  var rows = read business object /TRBO/ORDER in local mode
+    /TRBO/ORDERS fields (NAME) keys keys
+  end
+  for i, row in rows
+    if (row.NAME default "") = "bad"
+      response.ERROR(i, "TRBX rejects the name")
+    end
+  end
+end
+public method RERATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  SET_RATING(keys, 9)
+end
+public method PROMOTE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.SUCCESS, "promoted")
+end
+private method SET_RATING(keys: array of key of /TRBO/ORDERS, rating: INT4)
+  var rows: array of /TRBO/ORDERS = []
+  for key in keys
+    var r: /TRBO/ORDERS
+    r.ORDER_ID = key.ORDER_ID
+    r./TRBX/RATING = rating
+    rows.APPEND(r)
+  end
+  modify business object /TRBO/ORDER in local mode
+    update /TRBO/ORDERS fields (/TRBX/RATING) from rows
+  end
+end
+`
+
+// runtimeAPI works on /TRBO/ORDER with what TRBX adds.
+const runtimeAPI = `public class /TRBX/API
+
+public static method RATING(id: STRING) returns STRING
+  var keys: array of key of /TRBO/ORDERS = []
+  var k: key of /TRBO/ORDERS
+  k.ORDER_ID = id
+  keys.APPEND(k)
+  var rows = read business object /TRBO/ORDER
+    /TRBO/ORDERS fields (/TRBX/RATING) keys keys
+  end
+  for row in rows
+    return "{row./TRBX/RATING default 0}"
+  end
+  return "none"
+end
+
+public static method RUN(id: STRING, action: STRING) returns /TRBASE/ENTITY_RESULT
+  var keys: array of key of /TRBO/ORDERS = []
+  var k: key of /TRBO/ORDERS
+  k.ORDER_ID = id
+  keys.APPEND(k)
+  if action = "RERATE"
+    modify business object /TRBO/ORDER
+      execute /TRBO/ORDERS./TRBX/RERATE keys keys
+      result outcome
+    end
+    commit business objects result saved
+    saved.FAILURES = outcome.FAILURES
+    return saved
+  end
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS./TRBX/PROMOTE keys keys
+    result outcome
+  end
+  return outcome
+end
+
+public static method LABEL(id: STRING, text: STRING) returns /TRBASE/ENTITY_RESULT
+  var labels: array of /TRBX/LABELS = []
+  var l: /TRBX/LABELS
+  l.ORDER_ID = id
+  l.TEXT = text
+  labels.APPEND(l)
+  modify business object /TRBO/ORDER
+    create /TRBX/LABELS by parent fields (TEXT) from labels
+    result outcome
+  end
+  if outcome.FAILURES is not empty
+    return outcome
+  end
+  commit business objects result saved
+  return saved
+end
+
+end
+`
+
+// followerFiles are the files of TRBA, which extends /TRBO/ORDER after
+// TRBX because it requires TRBX, although its ID comes first.
+func followerFiles(t *testing.T) map[string]string {
+	t.Helper()
+	class, errs := syntax.Format("FOLLOW.class", `public class /TRBA/FOLLOW
+
+public method FOLLOW(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.INFORMATION, "followed by TRBA")
+end
+
+end
+`)
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	return map[string]string{
+		"manifest.json":    `{ "id": "TRBA", "version": "1.0.0", "requires": [{ "id": "TRBASE" }, { "id": "TRBO" }, { "id": "TRBX" }], "languageVersion": 1 }`,
+		"src/FOLLOW.class": class,
+		"schema/business-object-extensions/ORDER.json": `{ "businessObject": "/TRBO/ORDER", "behaviorClass": "/TRBA/FOLLOW", "entities": {
+			"/TRBO/ORDERS": { "determinations": [{ "name": "/TRBA/FOLLOW", "when": "save", "on": ["create"] }] } } }`,
+	}
+}
+
+// TestBusinessObjectExtensionRuntime runs the behavior of extensions with
+// that of the business object: determinations of the extensions after
+// those of the business object in the order of their packages,
+// validations whose failures name the extending package, actions checked
+// with the authorization of the entity or an authorization object of the
+// extending package, and dependent entities that go with their parent.
+func TestBusinessObjectExtensionRuntime(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", orderRoot)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		api, errs := syntax.Format("API.class", runtimeAPI)
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		files := extensionFiles(t, "1.0.0", runtimeExtension, runtimeBehavior, map[string]string{
+			"src/API.class": api,
+			"schema/authorization-objects/PROMOTION.json": `{ "name": "/TRBX/PROMOTION", "texts": { "en": { "label": "Promotion" } },
+				"fields": [{ "name": "ORDER_NAME", "domain": "/TRBASE/NAME" }, { "name": "ACTIVITY" }], "activities": ["EXECUTE"] }`,
+			"schema/roles/RATER.json": `{ "name": "/TRBX/RATER", "texts": { "en": { "label": "Rater" } }, "authorizations": [
+				{ "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }, { "value": "UPDATE" }] } } ] }`,
+			"schema/roles/PROMOTER.json": `{ "name": "/TRBX/PROMOTER", "texts": { "en": { "label": "Promoter" } }, "authorizations": [
+				{ "object": "/TRBX/PROMOTION", "fields": { "ORDER_NAME": [{ "value": "Alpha" }], "ACTIVITY": [{ "value": "EXECUTE" }] } } ] }`,
+		})
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, files), writePackage(t, followerFiles(t))}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		all := allAuthorized(t, k, "ACME", "anna")
+		users := map[string]kernel.ExecOptions{}
+		for user, role := range map[string]string{"rita": "/TRBX/RATER", "paul": "/TRBX/PROMOTER"} {
+			if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+				t.Fatal(err)
+			}
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: user, Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+				t.Fatal(err)
+			}
+			users[user] = kernel.ExecOptions{Tenant: "ACME", User: model.Some(user)}
+		}
+
+		// The determination of TRBX fills its read-only field on save,
+		// then that of TRBA follows; both name their package.
+		r := result(t, mustCallAs(t, k, all, "/TRBO/API", "CREATE", `"A1"`, `"Alpha"`, "null"))
+		if len(r["FAILURES"]) != 0 || len(r["MESSAGES"]) != 2 || r["MESSAGES"][0]["TEXT"] != "rated by TRBX" || r["MESSAGES"][0]["ORIGIN"] != "TRBX" ||
+			r["MESSAGES"][1]["TEXT"] != "followed by TRBA" || r["MESSAGES"][1]["ORIGIN"] != "TRBA" {
+			t.Errorf("create: %v", r)
+		}
+		expectCallAs(t, k, all, "/TRBX/API", "RATING", `"5"`, `"A1"`)
+
+		// A validation of TRBX fails the save with its package.
+		dropping := all
+		dropping.End = kernel.RollbackUnlessCommitted
+		r = result(t, mustCallAs(t, k, dropping, "/TRBO/API", "CREATE", `"B1"`, `"bad"`, "null"))
+		if len(r["FAILURES"]) == 0 || r["FAILURES"][0]["REASON"] != "VALIDATION" || r["FAILURES"][0]["ORIGIN"] != "TRBX" ||
+			len(r["MESSAGES"]) == 0 || r["MESSAGES"][len(r["MESSAGES"])-1]["TEXT"] != "TRBX rejects the name" || r["MESSAGES"][len(r["MESSAGES"])-1]["ORIGIN"] != "TRBX" {
+			t.Errorf("validation: %v", r)
+		}
+
+		// RERATE takes the activity UPDATE of the authorization of the
+		// orders, PROMOTE the authorization object of TRBX.
+		r = result(t, mustCallAs(t, k, users["rita"], "/TRBX/API", "RUN", `"A1"`, `"RERATE"`))
+		if len(r["FAILURES"]) != 0 {
+			t.Errorf("rerate with the authorization of the orders: %v", r)
+		}
+		expectCallAs(t, k, all, "/TRBX/API", "RATING", `"9"`, `"A1"`)
+		r = result(t, mustCallAs(t, k, users["rita"], "/TRBX/API", "RUN", `"A1"`, `"PROMOTE"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" || r["FAILURES"][0]["OPERATION"] != "/TRBX/PROMOTE" {
+			t.Errorf("promote without its authorization: %v", r)
+		}
+		r = result(t, mustCallAs(t, k, users["paul"], "/TRBX/API", "RUN", `"A1"`, `"PROMOTE"`))
+		if len(r["FAILURES"]) != 0 || len(r["MESSAGES"]) != 1 || r["MESSAGES"][0]["ORIGIN"] != "TRBX" {
+			t.Errorf("promote: %v", r)
+		}
+		r = result(t, mustCallAs(t, k, users["paul"], "/TRBX/API", "RUN", `"A1"`, `"RERATE"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" {
+			t.Errorf("rerate without the authorization of the orders: %v", r)
+		}
+
+		// Labels are created below their order and deleted with it, also
+		// by code of TRBO, which knows nothing of them.
+		r = result(t, mustCallAs(t, k, all, "/TRBX/API", "LABEL", `"A1"`, `"urgent"`))
+		if len(r["FAILURES"]) != 0 || count(t, k, "/TRBX/LABELS") != 1 {
+			t.Errorf("label: %v", r)
+		}
+		r = result(t, mustCallAs(t, k, all, "/TRBO/API", "REMOVE", `"A1"`))
+		if len(r["FAILURES"]) != 0 || count(t, k, "/TRBX/LABELS") != 0 || count(t, k, "/TRBO/ORDERS") != 0 {
+			t.Errorf("remove: %v, %d labels", r, count(t, k, "/TRBX/LABELS"))
+		}
+
+		// Code sets the read-only field of the extension only through it.
+		src, errs := syntax.Format("WRITER.class", "public class /TRBZ/WRITER\n\npublic static method RUN(rows: array of /TRBO/ORDERS)\n"+
+			"modify business object /TRBO/ORDER\nupdate /TRBO/ORDERS fields (/TRBX/RATING) from rows\nend\nend\n\nend\n")
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		_, err := k.Install(ctx, []*model.Package{writePackage(t, map[string]string{
+			"manifest.json":    `{ "id": "TRBZ", "version": "1.0.0", "requires": [{ "id": "TRBASE" }, { "id": "TRBO" }, { "id": "TRBX" }], "languageVersion": 1 }`,
+			"src/WRITER.class": src,
+		})}, kernel.Options{})
+		var ce *rterr.CompileError
+		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRBX/RATING is read-only") {
+			t.Errorf("read-only field of the extension: %v", err)
+		}
+	})
+}

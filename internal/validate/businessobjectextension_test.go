@@ -215,3 +215,24 @@ func TestBusinessObjectExtensionBrokenByBase(t *testing.T) {
 		t.Errorf("data class of the base changed: %v", err)
 	}
 }
+
+// TestBusinessObjectExtensionStructureField sets properties of a field
+// that a structure extension of the package adds through an include, and
+// rejects those of a field another package adds that way.
+func TestBusinessObjectExtensionStructureField(t *testing.T) {
+	s := withExtension(t, func(f map[string]string) {
+		f["schema/structure-extensions/ADDRESS.json"] = `{ "structure": "/TRBASE/ADDRESS", "components": [{ "name": "/TRS/FLOOR", "dataElement": "/TRBASE/NAME" }] }`
+		replaceIn(f, extFile, `"/TRS/RATING": { "readOnly": true }`, `"/TRS/RATING": { "readOnly": true }, "/TRS/FLOOR": { "mandatory": true }`)
+	})
+	if err := Schema(s, Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if !s.MergedBusinessObject("/TRFIN/COMPANY", nil).Entity("/TRFIN/COMPANIES").Fields["/TRS/FLOOR"].Mandatory {
+		t.Error("property of the field of the structure extension")
+	}
+	s = withExtension(t, func(f map[string]string) {
+		replaceIn(f, extFile, `"/TRS/RATING": { "readOnly": true }`, `"/TROTTO/PICKUP_POINT": { "readOnly": true }`)
+		replaceIn(f, "manifest.json", `{ "id": "TRFIN" }`, `{ "id": "TRFIN" }, { "id": "TROTTO" }`)
+	})
+	expect(t, s, rterr.CodeBusinessObject, "the field /TROTTO/PICKUP_POINT belongs to TROTTO; an extension sets the properties of fields of its own package only")
+}

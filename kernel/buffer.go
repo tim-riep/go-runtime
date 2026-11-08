@@ -433,7 +433,7 @@ func (r *result) message(severity, text, entity string, key *string, field *stri
 
 // Modify runs modify business object.
 func (b *entityBuffer) Modify(ctx context.Context, req vm.ModifyRequest) (*vm.EntityResult, []any, error) {
-	bo := b.x.schema.BusinessObjects[req.BusinessObject]
+	bo := b.x.businessObject(req.BusinessObject)
 	if bo == nil {
 		return nil, nil, fmt.Errorf("business object %s is not installed", req.BusinessObject)
 	}
@@ -704,7 +704,7 @@ func (b *entityBuffer) remove(ctx context.Context, bo *model.BusinessObject, in 
 
 // Read runs read business object.
 func (b *entityBuffer) Read(ctx context.Context, req vm.ReadRequest) ([]map[string]any, *vm.EntityResult, error) {
-	bo := b.x.schema.BusinessObjects[req.BusinessObject]
+	bo := b.x.businessObject(req.BusinessObject)
 	if bo == nil {
 		return nil, nil, fmt.Errorf("business object %s is not installed", req.BusinessObject)
 	}
