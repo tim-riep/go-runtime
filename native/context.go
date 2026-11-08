@@ -132,11 +132,13 @@ type CheckMode string
 
 // Modes of checks. A failed statement check raises /RT/NOT_AUTHORIZED and
 // is remembered as the last failed check; expressions and filters are
-// expected to fail sometimes.
+// expected to fail sometimes. A failed check of an entity statement fails
+// the instance and is remembered as the last failed check.
 const (
 	CheckStatement  CheckMode = "check"
 	CheckExpression CheckMode = "expression"
 	CheckFilter     CheckMode = "filter"
+	CheckEntity     CheckMode = "entity"
 )
 
 // NotAuthorized is the error of a failed check; the VM raises it as

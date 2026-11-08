@@ -68,7 +68,11 @@ const orderRoot = `, "numbering": "external",
 	"etag": "CHANGED_AT",
 	"determinations": [{ "name": "SET_STATUS", "when": "modify", "on": ["create"] }],
 	"validations": [{ "name": "CHECK_NAME", "on": ["create", "update"], "fields": ["NAME"] }],
-	"actions": [{ "name": "CLOSE", "parameter": "/TRBO/REASON", "result": "self" }, { "name": "COUNT_OPEN", "instance": false, "modifies": false }],
+	"actions": [{ "name": "CLOSE", "parameter": "/TRBO/REASON", "result": "self" }, { "name": "COUNT_OPEN", "instance": false, "modifies": false }]` + orderAuthorization
+
+// orderAuthorization is the authorization of the root entity in orderRoot,
+// which checks the name of an order as user name.
+const orderAuthorization = `,
 	"authorization": { "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": "NAME" },
 		"activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "CLOSE": "UPDATE", "COUNT_OPEN": "READ" } }`
 

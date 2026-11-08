@@ -166,6 +166,33 @@ public static method NAMES(id: STRING) returns STRING
   return out
 end
 
+public static method CLOSE(id: STRING) returns STRING
+  var keys: array of key of /TRBO/ORDERS = []
+  var k: key of /TRBO/ORDERS
+  k.ORDER_ID = id
+  keys.APPEND(k)
+  var p: /TRBO/REASON
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.CLOSE keys keys parameter p into closed
+    execute /TRBO/ORDERS.COUNT_OPEN
+    result outcome
+  end
+  var out = "{closed.LENGTH()}"
+  for f in outcome.FAILURES
+    out = out + " {f.OPERATION}:{f.REASON}"
+  end
+  return out
+end
+
+public static method COUNT() returns STRING
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.COUNT_OPEN
+    result outcome
+  end
+  commit business objects result saved
+  return "{outcome.FAILURES.LENGTH()} {outcome.MESSAGES.LENGTH()} {saved.FAILURES.LENGTH()}"
+end
+
 public static method COMMIT_PENDING(id: STRING)
   STAGE_NOTE(id, "pending")
   commit
@@ -208,10 +235,10 @@ end
 end
 `
 
-// boPackage returns TRBO with the business object, its behavior class and
-// the class /TRBO/API.
-func boPackage(t *testing.T, version string) *model.Package {
-	files := boFiles(version, orderBO(orderRoot), orderBehavior)
+// boPackage returns TRBO with the business object with the given root
+// entity, its behavior class and the class /TRBO/API.
+func boPackage(t *testing.T, version, root string) *model.Package {
+	files := boFiles(version, orderBO(root), orderBehavior)
 	api, errs := syntax.Format("API.class", orderAPI)
 	if len(errs) > 0 {
 		t.Fatal(errs)
@@ -237,7 +264,7 @@ func TestEntityStatements(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", strings.TrimSuffix(orderRoot, orderAuthorization))}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
@@ -814,5 +841,161 @@ func TestActions(t *testing.T) {
 		}
 		expectCall(t, k, "ACME", api, "COUNT", `"counted done"`)
 		expectCall(t, k, "ACME", api, "PING", `"BEHAVIOR PING"`)
+	})
+}
+
+// countingBehavior is orderBehavior with COUNT_OPEN changing the status
+// of A1 in local mode.
+var countingBehavior = strings.Replace(orderBehavior, "public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE)\n", `public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE)
+var rows: array of /TRBO/ORDERS = []
+var r: /TRBO/ORDERS
+r.ORDER_ID = "A1"
+r.STATUS = "counted"
+rows.APPEND(r)
+modify business object /TRBO/ORDER in local mode
+update /TRBO/ORDERS fields (STATUS) from rows
+result outcome
+end
+if outcome.FAILURES is not empty
+response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, "not counted")
+end
+`, 1)
+
+// orderReader is the role /TRBO/READER: reading all orders.
+const orderReader = `{ "name": "/TRBO/READER", "texts": { "en": { "label": "Reader" } },
+	"authorizations": [{ "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } }] }`
+
+// orderClerk is the role /TRBO/CLERK: all activities on orders whose name
+// starts with A.
+const orderClerk = `{ "name": "/TRBO/CLERK", "texts": { "en": { "label": "Clerk" } },
+	"authorizations": [{ "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": [{ "pattern": "A*" }], "ACTIVITY": [{ "pattern": "*" }] } }] }`
+
+// TestEntityAuthorizations checks the authorization of every instance:
+// creations, changes before and after, dependent instances through the
+// root, actions, the filter of read and the last failed check.
+func TestEntityAuthorizations(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		files := boFiles("1.0.0", orderBO(orderRoot), countingBehavior)
+		src, errs := syntax.Format("API.class", orderAPI)
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		files["src/API.class"] = src
+		files["schema/roles/CLERK.json"] = orderClerk
+		files["schema/roles/READER.json"] = orderReader
+		pkg := writePackage(t, files)
+		if _, err := k.Install(ctx, []*model.Package{pkg}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		for _, u := range []string{"anna", "rita", "root"} {
+			if _, err := k.Users().Create(ctx, u, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRBO/CLERK", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "rita", Role: "/TRBO/READER", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "root", Role: model.AllAuthorizationsRole, Tenant: "ACME"}, kernel.RoleOptions{AllAuthorizations: true}); err != nil {
+			t.Fatal(err)
+		}
+		const api = "/TRBO/API"
+		anna := kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}
+		root := kernel.ExecOptions{Tenant: "ACME", User: model.Some("root")}
+		run := func(opts kernel.ExecOptions, method string, args ...string) string {
+			t.Helper()
+			out, err := call(k, opts, api, method, args...)
+			if err != nil {
+				t.Fatalf("%s: %v", method, err)
+			}
+			return out
+		}
+
+		// anna creates orders named A..., not others; the dependent
+		// instances of the failed one have no parent.
+		r := result(t, run(anna, "CREATE", `"A1"`, `"Alpha"`, "null"))
+		if len(r["FAILURES"]) != 0 || len(r["CREATED"]) != 3 {
+			t.Fatalf("Alpha: %v", r)
+		}
+		r = result(t, run(anna, "CREATE", `"B1"`, `"Beta"`, "null"))
+		if len(r["FAILURES"]) != 3 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" || r["FAILURES"][0]["OPERATION"] != "create" ||
+			r["FAILURES"][1]["REASON"] != "PARENT_NOT_FOUND" {
+			t.Fatalf("Beta: %v", r)
+		}
+		f, err := k.LastFailedCheck(ctx, "anna", "ACME")
+		if err != nil || f == nil || f.Object != "/TRBASE/USER_ADMIN" || string(f.Values["USER_NAME"]) != `"Beta"` || string(f.Values["ACTIVITY"]) != `"CREATE"` {
+			t.Errorf("last failed check: %+v, %v", f, err)
+		}
+		if r = result(t, run(root, "CREATE", `"B1"`, `"Beta"`, "null")); len(r["FAILURES"]) != 0 {
+			t.Fatalf("Beta by root: %v", r)
+		}
+
+		// Reading filters what anna may not read, also the dependent
+		// instances of it.
+		if got := run(anna, "NAMES", `"A1"`); got != `"1 0 1 Alpha"` {
+			t.Errorf("names of A1: %s", got)
+		}
+		if got := run(anna, "NAMES", `"B1"`); got != `"0 1 0"` {
+			t.Errorf("names of B1: %s", got)
+		}
+
+		// A change is checked with the values before and after it.
+		r = result(t, run(anna, "RENAME", `"A1"`, `"Bravo"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" || r["FAILURES"][0]["OPERATION"] != "update" {
+			t.Errorf("rename to Bravo: %v", r)
+		}
+		if r = result(t, run(anna, "RENAME", `"A1"`, `"Able"`)); len(r["FAILURES"]) != 0 {
+			t.Errorf("rename to Able: %v", r)
+		}
+		run(anna, "SET_NOTE", `"B1"`, `"mine"`)
+		if got := run(root, "READ", `"B1"`); strings.Contains(got, "mine") {
+			t.Errorf("note of B1: %s", got)
+		}
+
+		// Dependent instances need the activity for update of the root.
+		if r = result(t, run(anna, "ADD_ITEM", `"A1"`, "2")); len(r["FAILURES"]) != 0 {
+			t.Errorf("item of A1: %v", r)
+		}
+		r = result(t, run(anna, "ADD_ITEM", `"B1"`, "2"))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" || r["FAILURES"][0]["ENTITY"] != "/TRBO/ITEMS" {
+			t.Errorf("item of B1: %v", r)
+		}
+
+		// Actions have their own activities; static actions are checked
+		// for any value.
+		if got := run(anna, "CLOSE", `"A1"`); got != `"1"` {
+			t.Errorf("close A1: %s", got)
+		}
+		if got := run(anna, "CLOSE", `"B1"`); got != `"0 CLOSE:NOT_AUTHORIZED"` {
+			t.Errorf("close B1: %s", got)
+		}
+		if got := run(kernel.ExecOptions{Tenant: "ACME"}, "CLOSE", `"A1"`); got != `"0 CLOSE:NOT_AUTHORIZED COUNT_OPEN:NOT_AUTHORIZED"` {
+			t.Errorf("close without user: %s", got)
+		}
+		// Statements in local mode are not checked: rita may only read,
+		// but the static action changes A1 for her.
+		rita := kernel.ExecOptions{Tenant: "ACME", User: model.Some("rita")}
+		if got := run(rita, "COUNT"); got != `"0 0 0"` {
+			t.Errorf("count: %s", got)
+		}
+		if got := run(root, "READ", `"A1"`); !strings.Contains(got, `"STATUS":"counted"`) {
+			t.Errorf("after count: %s", got)
+		}
+		if r = result(t, run(rita, "RENAME", `"A1"`, `"Abe"`)); len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_AUTHORIZED" {
+			t.Errorf("rename by rita: %v", r)
+		}
+		if r = result(t, run(anna, "REMOVE", `"B1"`)); len(r["FAILURES"]) != 1 || r["FAILURES"][0]["OPERATION"] != "delete" {
+			t.Errorf("remove B1: %v", r)
+		}
+		if r = result(t, run(anna, "REMOVE", `"A1"`)); len(r["FAILURES"]) != 0 {
+			t.Errorf("remove A1: %v", r)
+		}
 	})
 }

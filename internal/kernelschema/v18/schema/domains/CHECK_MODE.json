@@ -15,6 +15,10 @@
     {
       "value": "filter",
       "description": "authorized in a where condition"
+    },
+    {
+      "value": "entity",
+      "description": "an entity statement on a business object"
     }
   ]
 }

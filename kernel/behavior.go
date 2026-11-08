@@ -16,12 +16,15 @@ package kernel
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/vm"
@@ -319,13 +322,134 @@ func emptyResult(a *model.Action) any {
 	return nil
 }
 
-// authorize checks the authorization of an operation on new values.
+// authorize checks the authorization to create an instance with values;
+// parent is the parent instance of a dependent entity.
 func (b *entityBuffer) authorize(ctx context.Context, local bool, bo *model.BusinessObject, e *model.Entity, op model.EntityOperation, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
-	return true, nil
+	if local {
+		return true, nil
+	}
+	return b.check(ctx, bo, e, string(op), values, parent, at)
 }
 
 // authorizeChange checks the authorization of an operation, read or an
-// action on an instance; after are the values after an update.
+// action (op) on an instance, or of a static action when in is nil. An
+// update is checked with the values before it and, when it changes a
+// field of the authorization, also with the values after.
 func (b *entityBuffer) authorizeChange(ctx context.Context, req vm.ModifyRequest, bo *model.BusinessObject, e *model.Entity, op any, in *instance, after map[string]any) (bool, error) {
-	return true, nil
+	if req.Local {
+		return true, nil
+	}
+	key := fmt.Sprint(op)
+	if in == nil {
+		return b.check(ctx, bo, e, key, nil, nil, req.Caller)
+	}
+	ok, err := b.check(ctx, bo, e, key, in.values, nil, req.Caller)
+	if !ok || err != nil || after == nil {
+		return ok, err
+	}
+	changed := false
+	if au := e.Authorization; au != nil {
+		for _, f := range au.Fields {
+			if v, set := after[f]; set && jsonValue(nil, v) != jsonValue(nil, in.values[f]) {
+				changed = true
+			}
+		}
+	}
+	if !changed {
+		return true, nil
+	}
+	values := mapsClone(in.values)
+	for f, v := range after {
+		values[f] = v
+	}
+	return b.check(ctx, bo, e, key, values, nil, req.Caller)
+}
+
+// check checks the authorization of an entity for an operation, read or
+// an action (key) with the values of an instance; values nil checks a
+// static action for any values. A dependent entity without authorization
+// of its own is checked with the authorization and values of the root
+// instance: read with the activity for read, everything else with the
+// activity for update of the root. Entities without authorization pass.
+func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *model.Entity, key string, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
+	au := e.Authorization
+	table := e.Table
+	if au == nil {
+		root := bo.Entity(bo.Root)
+		if au = root.Authorization; au == nil {
+			return true, nil
+		}
+		if key != model.ReadActivityKey {
+			key = string(model.OperationUpdate)
+		}
+		if values != nil {
+			var err error
+			if values, err = b.rootValues(ctx, bo, e, values, parent); err != nil || values == nil {
+				return false, err
+			}
+		}
+		table = root.Table
+	}
+	c := authorization.Check{Object: au.Object, Values: map[string]string{}}
+	if len(au.Activities) > 0 {
+		act, ok := au.Activities[key]
+		if !ok {
+			return false, nil
+		}
+		c.Values[model.ActivityField] = act
+	}
+	for of, ef := range au.Fields {
+		if values == nil {
+			if c.Any == nil {
+				c.Any = map[string]bool{}
+			}
+			c.Any[of] = true
+			continue
+		}
+		c.Values[of] = checkText(b.domain(table, ef), values[ef])
+	}
+	return b.x.CheckAuthorization(c, at, native.CheckEntity)
+}
+
+// rootValues returns the values of the root instance of an instance of a
+// dependent entity, found through the foreign keys; nil when a parent
+// does not exist.
+func (b *entityBuffer) rootValues(ctx context.Context, bo *model.BusinessObject, e *model.Entity, values map[string]any, parent *instance) (map[string]any, error) {
+	for {
+		p, ok := e.Parent.Get()
+		if !ok {
+			return values, nil
+		}
+		pe := bo.Entity(p)
+		if parent == nil {
+			pk := map[string]any{}
+			for _, c := range b.foreignKey(e).Columns {
+				pk[c.References] = values[c.Field]
+			}
+			var err error
+			if parent, err = b.find(ctx, bo, pe, pk); err != nil || parent == nil {
+				return nil, err
+			}
+		}
+		e, values, parent = pe, parent.values, nil
+	}
+}
+
+// checkText returns a value of the Go form as the text of an
+// authorization check; null is "".
+func checkText(d *model.Domain, v any) string {
+	switch x := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return x
+	case time.Time:
+		if d != nil && d.Type == model.Date {
+			return x.UTC().Format(model.DateLayout)
+		}
+		return x.UTC().Format(model.TimestampLayout)
+	case []byte:
+		return base64.StdEncoding.EncodeToString(x)
+	}
+	return fmt.Sprint(v)
 }
