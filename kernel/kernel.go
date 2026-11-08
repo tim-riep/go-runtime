@@ -158,6 +158,9 @@ func (k *Kernel) Start(ctx context.Context) error {
 	if _, err := k.syncKernelPackages(ctx, false); err != nil {
 		return err
 	}
+	if err := k.ensureAllAuthorizationsRole(ctx); err != nil {
+		return err
+	}
 	k.warnUndeclaredNatives(ctx)
 	return nil
 }
@@ -351,6 +354,9 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 		merge(result, pkgs)
 		result.Executed = true
 	}
+	if err := k.ensureAllAuthorizationsRole(ctx); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -492,6 +498,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		return nil, err
 	}
 	result.Executed = true
+	if err := k.ensureAllAuthorizationsRole(ctx); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 

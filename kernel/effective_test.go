@@ -127,7 +127,7 @@ func TestAllAuthorizationsSignIn(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withRoleKernel(t, k)
-		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: model.AllAuthorizationsRole, Tenant: "ACME"}, kernel.RoleOptions{By: "cli"}); err != nil {
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: model.AllAuthorizationsRole, Tenant: "ACME"}, kernel.RoleOptions{By: "cli", AllAuthorizations: true}); err != nil {
 			t.Fatal(err)
 		}
 		e, err := k.EffectiveAuthorizations(ctx, "anna", "ACME", time.Now())

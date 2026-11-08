@@ -136,7 +136,7 @@ func (k *Kernel) noteAllAuthorizations(ctx context.Context, user, tenant string)
 	if !e.All {
 		return
 	}
-	slog.Warn("sign-in with all authorizations", "user", user, "tenant", tenant)
+	audit(ctx, "sign-in with all authorizations", "user", user, "tenant", tenant)
 	err = k.repo.InsertRoleChange(ctx, k.db, RoleChange{ChangedAt: k.timestamp(), ChangedBy: user, Kind: ChangeAllSignIn,
 		Role: model.Some(model.AllAuthorizationsRole), Tenant: model.Some(tenant), User: model.Some(user)})
 	if err != nil {

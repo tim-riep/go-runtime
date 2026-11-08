@@ -81,6 +81,9 @@ func (l *Languages) Add(ctx context.Context, code, name string) (*Language, erro
 	if _, err := k.syncKernelPackages(ctx, true); err != nil {
 		return nil, err
 	}
+	if err := k.ensureAllAuthorizationsRole(ctx); err != nil {
+		return nil, err
+	}
 	return &lang, nil
 }
 
@@ -160,6 +163,9 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 		return nil, err
 	}
 	result.Executed = true
+	if err := k.ensureAllAuthorizationsRole(ctx); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 

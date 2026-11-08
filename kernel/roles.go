@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"maps"
 	"slices"
 	"strconv"
@@ -44,6 +43,7 @@ const (
 	ChangeAssignmentRemoved = "assignment-removed"
 	ChangeRoleChanged       = "role-changed"
 	ChangeAllSignIn         = "all-authorizations-sign-in"
+	ChangeAllRestored       = "all-authorizations-restored"
 )
 
 // RoleChange is an entry of the history of roles and role assignments.
@@ -194,10 +194,14 @@ func (k *Kernel) afterRoles(ctx context.Context, q dialect.Querier, cur, want *m
 	return k.repo.NextAuthGeneration(ctx, q, at)
 }
 
-// removeAssignment deletes an assignment and records it.
+// removeAssignment deletes an assignment and records it; for the role with
+// all authorizations also in the audit log.
 func (k *Kernel) removeAssignment(ctx context.Context, q dialect.Querier, a RoleAssignment, kind, by string, at time.Time) error {
 	if err := k.repo.DeleteRoleAssignment(ctx, q, a); err != nil {
 		return err
+	}
+	if a.Role == model.AllAuthorizationsRole {
+		audit(ctx, "all authorizations unassigned", "user", a.User, "tenant", a.Tenant, "by", by, "assignment", a.ID, "change", kind)
 	}
 	return k.repo.InsertRoleChange(ctx, q, RoleChange{ChangedAt: at, ChangedBy: by, Kind: kind, Role: model.Some(a.Role), Tenant: model.Some(a.Tenant),
 		User: model.Some(a.User), Assignment: model.Some(a.ID), OldState: assignmentState(a)})
@@ -285,8 +289,12 @@ type RoleOptions struct {
 	// By names who makes the change in the history: a user, or "cli".
 	// Empty means "api".
 	By string
-	// Confirm permits removing what uses a deleted role.
+	// Confirm permits removing what uses a deleted role, and removing or
+	// locking the last user with all authorizations.
 	Confirm bool
+	// AllAuthorizations permits assigning the role with all
+	// authorizations; the command line sets it, packages never can.
+	AllAuthorizations bool
 }
 
 func (o RoleOptions) by() string {
@@ -605,6 +613,9 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 	k := r.k
 	var out RoleAssignment
 	var overlaps []RoleAssignment
+	if a.Role == model.AllAuthorizationsRole && !opts.AllAuthorizations {
+		return out, nil, &rterr.InvalidArgument{Argument: "role", Message: a.Role + " is assigned only on the command line, with rt role assign"}
+	}
 	from, to := dayOf(a.ValidFrom), dayOf(a.ValidTo)
 	if f, ok := from.Get(); ok {
 		if t, ok := to.Get(); ok && t.Before(f) {
@@ -652,7 +663,7 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 		return k.repo.NextAuthGeneration(ctx, tx, at)
 	})
 	if err == nil && a.Role == model.AllAuthorizationsRole {
-		slog.Warn("all authorizations assigned", "user", a.User, "tenant", a.Tenant, "by", opts.by(), "assignment", out.ID)
+		audit(ctx, "all authorizations assigned", "user", a.User, "tenant", a.Tenant, "by", opts.by(), "assignment", out.ID)
 	}
 	return out, overlaps, err
 }
@@ -660,8 +671,7 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 // Unassign removes a role assignment.
 func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error {
 	k := r.k
-	var removed RoleAssignment
-	err := k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
 		}
@@ -672,17 +682,12 @@ func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error
 		if len(list) == 0 {
 			return &rterr.NotFound{Kind: "role assignment", Name: id}
 		}
-		removed = list[0]
 		at := k.timestamp()
-		if err := k.removeAssignment(ctx, tx, removed, ChangeUnassign, opts.by(), at); err != nil {
+		if err := k.removeAssignment(ctx, tx, list[0], ChangeUnassign, opts.by(), at); err != nil {
 			return err
 		}
 		return k.repo.NextAuthGeneration(ctx, tx, at)
 	})
-	if err == nil && removed.Role == model.AllAuthorizationsRole {
-		slog.Warn("all authorizations unassigned", "user", removed.User, "tenant", removed.Tenant, "by", opts.by(), "assignment", id)
-	}
-	return err
 }
 
 // Assignments returns the role assignments of a user, in one tenant or

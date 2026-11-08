@@ -53,8 +53,22 @@ func roleOwnerValue(id model.PackageID) any {
 	return string(id)
 }
 
+// Role reads one role as stored, or nil.
+func (r *Repo) Role(ctx context.Context, q dialect.Querier, name string) (*model.Role, error) {
+	s := model.NewSchema()
+	if err := r.loadRolesWhere(ctx, q, s, row{"ROLE_NAME": name}); err != nil {
+		return nil, err
+	}
+	return s.Roles[name], nil
+}
+
 func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema) error {
-	roles, err := r.selectRows(ctx, q, TRoles, []string{"ROLE_NAME", "PACKAGE_ID", "COMPOSITE", "FILE_PATH"}, "ROLE_NAME")
+	return r.loadRolesWhere(ctx, q, s, nil)
+}
+
+// loadRolesWhere reads the roles that match the filter, nil for all.
+func (r *Repo) loadRolesWhere(ctx context.Context, q dialect.Querier, s *model.Schema, filter row) error {
+	roles, err := r.selectWhere(ctx, q, TRoles, []string{"ROLE_NAME", "PACKAGE_ID", "COMPOSITE", "FILE_PATH"}, filter, "ROLE_NAME")
 	if err != nil {
 		return err
 	}
@@ -64,7 +78,7 @@ func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema
 		s.Roles[name] = &model.Role{Name: name, Owner: roleOwner(x["PACKAGE_ID"], name), File: opt(x["FILE_PATH"]).Or(""), Composite: composite,
 			Texts: map[string]model.Label{}}
 	}
-	texts, err := r.selectRows(ctx, q, TRoleTexts, []string{"ROLE_NAME", "LANGUAGE", "LABEL", "DESCRIPTION"})
+	texts, err := r.selectWhere(ctx, q, TRoleTexts, []string{"ROLE_NAME", "LANGUAGE", "LABEL", "DESCRIPTION"}, filter)
 	if err != nil {
 		return err
 	}
@@ -73,7 +87,7 @@ func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema
 			role.Texts[str(t["LANGUAGE"])] = model.Label{Label: str(t["LABEL"]), Description: opt(t["DESCRIPTION"])}
 		}
 	}
-	auths, err := r.selectRows(ctx, q, TRoleAuthorizations, []string{"ROLE_NAME", "POSITION", "OBJECT_NAME"}, "ROLE_NAME", "POSITION")
+	auths, err := r.selectWhere(ctx, q, TRoleAuthorizations, []string{"ROLE_NAME", "POSITION", "OBJECT_NAME"}, filter, "ROLE_NAME", "POSITION")
 	if err != nil {
 		return err
 	}
@@ -82,8 +96,8 @@ func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema
 			role.Authorizations = append(role.Authorizations, model.Authorization{Object: str(a["OBJECT_NAME"]), Fields: map[string][]model.ValueEntry{}})
 		}
 	}
-	values, err := r.selectRows(ctx, q, TRoleAuthValues, []string{"ROLE_NAME", "POSITION", "FIELD_NAME", "VALUE_NO", "VALUE_KIND", "LOW", "HIGH"},
-		"ROLE_NAME", "POSITION", "FIELD_NAME", "VALUE_NO")
+	values, err := r.selectWhere(ctx, q, TRoleAuthValues, []string{"ROLE_NAME", "POSITION", "FIELD_NAME", "VALUE_NO", "VALUE_KIND", "LOW", "HIGH"},
+		filter, "ROLE_NAME", "POSITION", "FIELD_NAME", "VALUE_NO")
 	if err != nil {
 		return err
 	}
@@ -97,7 +111,7 @@ func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema
 		field := str(x["FIELD_NAME"])
 		a.Fields[field] = append(a.Fields[field], model.ValueEntry{Kind: model.ValueKind(str(x["VALUE_KIND"])), Low: str(x["LOW"]), High: opt(x["HIGH"]).Or("")})
 	}
-	members, err := r.selectRows(ctx, q, TCompositeRoles, []string{"ROLE_NAME", "POSITION", "MEMBER_ROLE"}, "ROLE_NAME", "POSITION")
+	members, err := r.selectWhere(ctx, q, TCompositeRoles, []string{"ROLE_NAME", "POSITION", "MEMBER_ROLE"}, filter, "ROLE_NAME", "POSITION")
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -85,4 +86,139 @@ func TestAllAuthorizationsRoleDefined(t *testing.T) {
 			t.Errorf("covered objects: %+v %v", d, err)
 		}
 	})
+}
+
+// auditRecorder keeps the records that reach a handler whose level is
+// error, as the audit log does.
+type auditRecorder struct {
+	records *[]slog.Record
+}
+
+func (h auditRecorder) Enabled(_ context.Context, l slog.Level) bool { return l >= slog.LevelError }
+func (h auditRecorder) Handle(_ context.Context, r slog.Record) error {
+	*h.records = append(*h.records, r)
+	return nil
+}
+func (h auditRecorder) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h auditRecorder) WithGroup(string) slog.Handler      { return h }
+
+// recordAudit makes the default logger keep its records at level error,
+// and returns the messages of the audit records it got.
+func recordAudit(t *testing.T) func() []string {
+	var records []slog.Record
+	old := slog.Default()
+	slog.SetDefault(slog.New(auditRecorder{&records}))
+	t.Cleanup(func() { slog.SetDefault(old) })
+	return func() []string {
+		var out []string
+		for _, r := range records {
+			r.Attrs(func(a slog.Attr) bool {
+				if a.Key == "audit" {
+					out = append(out, r.Message)
+				}
+				return true
+			})
+		}
+		records = nil
+		return out
+	}
+}
+
+// TestAllAuthorizationsRoleRestored changes the role directly in the
+// database: the kernel restores it when it starts and after operations,
+// keeps its assignments and records it.
+func TestAllAuthorizationsRoleRestored(t *testing.T) {
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			ctx := context.Background()
+			audits := recordAudit(t)
+			k, err := kernel.Open(ctx, db.DSN)
+			if err != nil {
+				t.Fatal(err)
+			}
+			withRoleKernel(t, k)
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: allRole, Tenant: "ACME"}, kernel.RoleOptions{AllAuthorizations: true}); err != nil {
+				t.Fatal(err)
+			}
+			if got := audits(); len(got) != 1 || got[0] != "all authorizations assigned" {
+				t.Errorf("audit of the assignment: %v", got)
+			}
+			k.Close()
+			exec := func(sql string) {
+				t.Helper()
+				k, err := kernel.Open(ctx, db.DSN)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer k.Close()
+				if _, err := k.DB().ExecContext(ctx, sql); err != nil {
+					t.Fatalf("%s: %v", sql, err)
+				}
+			}
+			for _, damage := range []string{
+				`DELETE FROM "/RT/ROLE_TEXTS" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS'`,
+				`UPDATE "/RT/ROLE_TEXTS" SET "LABEL" = 'Nothing' WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS' AND "LANGUAGE" = 'en'`,
+				`INSERT INTO "/RT/ROLE_AUTHORIZATIONS" ("ROLE_NAME", "POSITION", "OBJECT_NAME") VALUES ('/RT/ALL_AUTHORIZATIONS', 1, '/TRFIN/COMPANY')`,
+			} {
+				// Opening a kernel restores the role, the first time already
+				// in exec, so damage it between two kernels.
+				exec(damage)
+			}
+			// Delete all its rows with a connection of its own, then start.
+			raw, err := kernel.Open(ctx, db.DSN)
+			if err != nil {
+				t.Fatal(err)
+			}
+			audits()
+			for _, sql := range []string{
+				`DELETE FROM "/RT/ROLE_TEXTS" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS'`,
+				`DELETE FROM "/RT/ROLES" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS'`,
+			} {
+				if _, err := raw.DB().ExecContext(ctx, sql); err != nil {
+					t.Fatal(err)
+				}
+			}
+			raw.Close()
+			k, err = kernel.Open(ctx, db.DSN)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer k.Close()
+			if got := audits(); len(got) != 1 || got[0] != "role with all authorizations restored to its defined form" {
+				t.Errorf("audit of the restoration: %v", got)
+			}
+			s, err := k.Schema(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if r := s.Roles[allRole]; r == nil || r.Texts["en"].Label != "All authorizations" || r.Texts["de"].Label != "Alle Berechtigungen" || len(r.Authorizations) != 0 {
+				t.Errorf("restored role: %+v", r)
+			}
+			if list, _ := k.Roles().Assignments(ctx, "anna", "ACME"); len(list) != 1 || list[0].Role != allRole {
+				t.Errorf("assignments after the restoration: %+v", list)
+			}
+			history, _ := k.Roles().History(ctx, allRole, "")
+			n := 0
+			for _, h := range history {
+				if h.Kind == kernel.ChangeAllRestored {
+					n++
+				}
+			}
+			// One for each of the three damages and one for the deletion.
+			if n != 4 || history[len(history)-1].OldState.Valid() {
+				t.Errorf("%d restorations in the history: %+v", n, history[len(history)-1])
+			}
+
+			// An operation restores it too.
+			if _, err := k.DB().ExecContext(ctx, `DELETE FROM "/RT/ROLE_TEXTS" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS' AND "LANGUAGE" = 'de'`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); err != nil {
+				t.Fatal(err)
+			}
+			if s, _ := k.Schema(ctx); s.Roles[allRole].Texts["de"].Label != "Alle Berechtigungen" {
+				t.Errorf("after an uninstall: %+v", s.Roles[allRole].Texts)
+			}
+		})
+	}
 }

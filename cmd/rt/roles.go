@@ -32,7 +32,9 @@ import (
 // cliUser names the command line in the history of roles.
 const cliUser = "cli"
 
-func (c *cli) roleOpts() kernel.RoleOptions { return kernel.RoleOptions{By: cliUser, Confirm: c.yes} }
+func (c *cli) roleOpts() kernel.RoleOptions {
+	return kernel.RoleOptions{By: cliUser, Confirm: c.yes, AllAuthorizations: true}
+}
 
 // role runs the role commands.
 func (c *cli) role(ctx context.Context, k *kernel.Kernel, args []string) int {
