@@ -1,0 +1,20 @@
+{
+  "name": "/TROTTO/COMPANY_CHECKS",
+  "description": {
+    "en": "Companies wait for the OTTO sync",
+    "de": "Firmen warten auf den OTTO-Abgleich"
+  },
+  "extensionPoint": "/TRFIN/COMPANY_CHECKS",
+  "class": "/TROTTO/COMPANY_CHECKS",
+  "filters": {
+    "COUNTRY": [
+      {
+        "value": "DE"
+      },
+      {
+        "value": "AT"
+      }
+    ]
+  },
+  "order": 100
+}

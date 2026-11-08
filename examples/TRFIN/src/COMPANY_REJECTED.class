@@ -1,0 +1,11 @@
+# A check rejected a company before it was created.
+public class /TRFIN/COMPANY_REJECTED extends /RT/EXCEPTION
+
+  public attribute COMPANY_ID: STRING
+
+  public constructor(id: STRING, reason: STRING)
+    super("company {id} rejected: {reason}")
+    COMPANY_ID = id
+  end
+
+end

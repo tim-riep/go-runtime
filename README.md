@@ -59,6 +59,11 @@ transaction together with its own bookkeeping.
   place is taken by all components of an included structure or table.
 - **Structure extension**: additional components for a structure of a required package. They
   appear wherever the structure is used, including every table that includes it.
+- **Extension point**: a place in the code of a package that other packages extend: a public
+  interface, filter fields that select the implementations and whether one or all of them run.
+- **Implementation**: a class of a package that implements the interface of an extension point
+  of the package or of a required one, for the filter values it names. The kernel selects the
+  active implementations when the code runs; the defining package does not know them.
 
 ## Package format
 
@@ -78,6 +83,8 @@ TRFIN/
     http-services/*.json       one service node per file, any file name
     authorization-objects/*.json  one authorization object per file, named <NAME>.json
     roles/*.json               one role or composite role per file, named <NAME>.json
+    extension-points/*.json    one extension point per file, named <NAME>.json
+    extension-implementations/*.json  one implementation per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -662,6 +669,108 @@ The examples check as well: `/TRFIN/COMPANY_API` lists the companies the user ma
 `/TRFIN/COMPANY_INTAKE` creates only companies the user may create, and
 `/TROTTO/COMPANY_SYNC` needs `EXECUTE` on `/TROTTO/SYNC` for the country.
 
+### Extension points
+
+An extension point lets other packages run code at a place of the own code, typed, filtered
+and switchable per tenant. `TRFIN` defines `/TRFIN/COMPANY_CHECKS`
+(`schema/extension-points/COMPANY_CHECKS.json`) on the interface of the same name:
+
+```json
+{
+  "name": "/TRFIN/COMPANY_CHECKS",
+  "description": { "en": "Checks when a company is created", "de": "Prüfungen beim Anlegen einer Company" },
+  "interface": "/TRFIN/COMPANY_CHECKS",
+  "use": "multiple",
+  "filters": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }],
+  "fallback": null
+}
+```
+
+`TROTTO` implements it for Germany and Austria
+(`schema/extension-implementations/COMPANY_CHECKS.json`):
+
+```json
+{
+  "name": "/TROTTO/COMPANY_CHECKS",
+  "description": { "en": "Companies wait for the OTTO sync" },
+  "extensionPoint": "/TRFIN/COMPANY_CHECKS",
+  "class": "/TROTTO/COMPANY_CHECKS",
+  "filters": { "COUNTRY": [{ "value": "DE" }, { "value": "AT" }] },
+  "order": 100
+}
+```
+
+and `/TRFIN/COMPANY_SERVICE.CREATE` runs it with `extension point /TRFIN/COMPANY_CHECKS filters
+COUNTRY = country`; see the [language reference](docs/language.md#extension-points).
+
+- **Extension point**: a name in the namespace of the package, unique among extension points,
+  a description per language (English mandatory, at most 60 characters) and a `public`
+  interface of the own package. `use` is `single`, exactly one implementation runs, or
+  `multiple`, all matching active implementations run in their order. Up to five `filters`
+  with a data element or a domain of the types of fields of authorization objects (`CHAR(n)`,
+  `INT4`, `INT8`, `BOOL`, `UUID`). `fallback` names a class of the own package that implements
+  the interface and runs when no implementation matches; `null` or no attribute is none.
+  Without fallback, no matching implementation is a runtime error for `single`
+  (`/RT/NO_IMPLEMENTATION`) and runs nothing for `multiple`. `commitAllowed` (default `false`)
+  lets implementations commit or roll back the default session.
+- **Implementation**: a name in the namespace of the implementing package, a description, the
+  extension point, which belongs to the package or to a package it requires, a `public` class
+  of the package with a public constructor without parameters that raises no checked
+  exception, and per filter field values, ranges and patterns with the rules of roles: `*` for
+  all values, every field given. `order` (default 0) orders the implementations of a
+  `multiple` extension point; equal numbers are ordered by package ID and name. A package may
+  bring several implementations of one extension point and implement its own ones. Extension
+  points and implementations are names of their own: they may be called like the interface
+  and the class, as in the example.
+- **Checks on installation**: the interface exists, is an interface and public; the classes
+  implement it with the constructor described; the values fit the fields; the methods suit
+  the use (see the language reference). Two active implementations of a `single` extension
+  point that match a common filter value are rejected, globally and in every tenant with
+  settings of its own; the message names both and the values in which they overlap. Should two
+  still match when the code runs, it raises `/RT/IMPLEMENTATION_CONFLICT` with both names.
+- **No recompilation of the definer**: the kernel selects the implementations from a registry
+  that every generation of code builds. Installing or removing an implementation compiles only
+  its own package and starts a new generation. A change of the interface compiles every
+  implementing package again through the requirements, and fails when a class no longer fits.
+- **Upgrades**: new methods in the interface and changed texts are allowed; implementations then
+  have to implement the new methods. The interface has no default methods: a package that wants
+  to add methods later offers a `public open` class implementing the interface, which
+  implementations extend, as `/TRFIN/COMPANY_CHECKS_BASE`. A new filter field needs a `default`
+  (entries as in implementations) for implementations that do not name it. Removing an
+  extension point or a filter field, changing the type of a field, switching between `single`
+  and `multiple`, another interface and forbidding commits are destructive and need
+  `AllowDestructive`; as always, a change that breaks an implementation of another package is
+  rejected in any case.
+
+**Activation.** Implementations are active after their installation.
+`rt implementation deactivate|activate <name> [--tenant T]` (`k.Implementations().Deactivate`,
+`Activate`) switch them globally or for a tenant, whose setting takes precedence over the global
+one; `rt implementation reset <name> [--tenant T]` removes a setting. Activating an
+implementation of a `single` extension point that overlaps with another active one is rejected.
+The settings are runtime configuration in `/RT/IMPLEMENTATION_STATES` and the tenant-specific
+`/RT/IMPLEMENTATION_TENANT_STATES`: upgrades keep them, removing the implementation or its
+package and deleting the tenant remove them. Every change increases
+`/RT/IMPLEMENTATION_GENERATION`; an execution reads it once, when it first runs an extension
+point, so a change reaches every kernel on the database with its next execution, without a
+restart. Every change, also installations and removals of implementations, is recorded in
+`/RT/IMPLEMENTATION_HISTORY` (`rt implementation history [name]`).
+
+**Description and trace.** `kernel.ExtensionPoint` and `ExtensionPoints` (from package
+[reflector](reflector), plus the activation and the code that runs an extension point),
+`rt extension-point list [package]` and `rt extension-point show <name>` describe extension
+points: interface, use, filters, fallback and the implementations with package, class, filter
+values, order and activation globally and per tenant; `--json` gives the form of the reflector.
+Code reads them with `/TRBASE/REFLECTOR`. `rt trace extension-points start|show|stop <user>
+[--tenant T]` records for a time which implementations the extension points that a user runs
+select and why: selected, inactive globally or in the tenant, a filter field that does not
+match, or the fallback class.
+
+**Extension points and `include ... if found`.** Both stay. Extension points are the
+recommended way for business extensions: they are typed against an interface, filtered,
+switchable per tenant and installed without compiling the defining package again.
+`include ... if found` remains for code that belongs into the context of the including package
+itself, such as members or statements that use its private parts.
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -829,7 +938,8 @@ program and its binary encoding with format version), `vm` (the machine with lim
   of other packages by direct indexes and offsets, so the kernel compiles a package again
   in the same transaction when a package it requires, a package with an include it names
   or an object it uses changes. The plan shows these steps as `compile-package` with the
-  reason, such as `compile-package TRFIN (includes /TROTTO/COMPANY_HOOK if found)`.
+  reason, such as `compile-package TROTTO (requires TRFIN)`. Implementations of extension
+  points need no compilation of the package that defines the extension point.
 - `/RT/CODE_USES` records every reference of code with package, file and line;
   `rt show /TRFIN/COMPANIES` lists them, and `rt show class:/TRFIN/COMPANY_SERVICE` shows a
   class. `/RT/CODE_INCLUDES` keeps the includes, also those not found.
@@ -842,7 +952,8 @@ program and its binary encoding with format version), `vm` (the machine with lim
   sessions; see the [language reference](docs/language.md#database-access). The example
   packages show it: `TRFIN` reads and writes companies in `/TRFIN/COMPANY_SERVICE`, and
   `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
-  of its own and inserts `/TROTTO/COMPANY_HOOK` into `TRFIN`.
+  of its own and checks new companies of `TRFIN` through the extension point
+  `/TRFIN/COMPANY_CHECKS`.
 
 - Kernel packages contain methods executed by kernel: Go functions registered in the
   package `native` with the signature they implement, which the compiler checks against
@@ -1123,6 +1234,11 @@ rt role assign anna /LOCAL/OPERATIONS --tenant ACME --from 2027-01-01
 rt user roles anna
 rt user authorizations anna --tenant ACME --date 2027-01-15
 rt role history --user anna
+rt extension-point list TRFIN
+rt extension-point show /TRFIN/COMPANY_CHECKS
+rt implementation deactivate /TROTTO/COMPANY_CHECKS --tenant ACME
+rt implementation history /TROTTO/COMPANY_CHECKS
+rt trace extension-points start anna --tenant ACME
 rt http list TRFIN
 rt http show /trfin/companies
 rt http activate /trfin
@@ -1177,7 +1293,9 @@ reading and writing data through settings, display properties of fields, transla
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression of stored assets and image processing,
 includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
-external role sources.
+external role sources, extension points of kernel packages for events of the kernel such as
+sign-in or installation, implementations in local objects without package, implementations
+called asynchronously after the commit and extensions of user interfaces.
 
 ## License
 

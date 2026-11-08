@@ -152,6 +152,11 @@ func (r *Repo) SaveCode(ctx context.Context, q dialect.Querier, codes []*Code) e
 			return err
 		}
 		for i, u := range c.Uses {
+			// Kernel versions before extension points know no such uses;
+			// the migration compiles the code again.
+			if (u.Kind == "extension-point" || u.Kind == "implementation") && !r.HasExtensionPoints() {
+				continue
+			}
 			var pkg any
 			if p, ok := u.ObjectPackage.Get(); ok {
 				pkg = ownerValue(p)

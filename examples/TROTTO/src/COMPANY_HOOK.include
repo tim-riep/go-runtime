@@ -1,7 +1,0 @@
-# Inserted into /TRFIN/COMPANY_SERVICE.CREATE when this package is
-# installed. It is checked as code of TRFIN, so it uses only what TRFIN
-# may use: the company is created blocked until the next sync connects it.
-statements include /TROTTO/COMPANY_HOOK
-  company.STATUS = /TRFIN/COMPANY_STATUS.BLOCKED
-  log info "{company.COMPANY_ID} waits for the OTTO sync"
-end

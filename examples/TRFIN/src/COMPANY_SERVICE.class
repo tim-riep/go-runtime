@@ -12,13 +12,18 @@ public class /TRFIN/COMPANY_SERVICE
     end
   end
 
-  public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES
+  # Other packages check and adjust new companies through the extension
+  # point /TRFIN/COMPANY_CHECKS, e.g. the connection to OTTO.
+  public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES raises /TRFIN/COMPANY_REJECTED
     var company: /TRFIN/COMPANIES
     company.COMPANY_ID = id
     company.NAME = name
     company.COUNTRY = country
-    # The connection to OTTO adds its own steps when it is installed.
-    include /TROTTO/COMPANY_HOOK if found
+
+    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country
+    checks.VALIDATE(company)
+    company = checks.ADJUST(company)
+
     insert company
     return company
   end

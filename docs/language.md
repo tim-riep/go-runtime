@@ -48,7 +48,8 @@ end
 - `/` right after an operand divides; anywhere else it starts a global name. The
   canonical form has spaces around binary operators, so `a / /TRORDER/X.LIMIT` divides by
   a constant. After the words `set` and `by` of database statements a global name
-  follows, such as an extension field.
+  follows, such as an extension field, and after `extension point` the name of the
+  extension point.
 - Comments start with `#` and run to the end of the line.
 - A statement ends with its line; there is no semicolon. A line continues after a binary
   operator, a comma, `=`, `default`, `and` or `or` at its end, and inside parentheses and
@@ -63,7 +64,8 @@ Database access uses the keywords `commit`, `rollback`, `session`, `using`, `sel
 `ascending`, `descending`, `limit` and `set` are keywords only at their place in a
 database statement. `transform`, `parameters` and `into` belong to the expression
 `transform`. `authorization` and `authorized` belong to authorization checks; `check`
-and `any` are keywords only there and remain usable as names.
+and `any` are keywords only there and remain usable as names. `extension point` and
+`filters` run extension points; they are no keywords and remain usable as names.
 
 ## Types
 
@@ -81,6 +83,7 @@ and `any` are keywords only there and remain usable as names.
 | `function (T) returns R`   | functions, also with `raises`                                  |
 | classes and interfaces     | objects, passed by reference                                   |
 | `SESSION`                  | a database session                                             |
+| `extension point NAME`     | the implementations of an extension point that code runs        |
 
 The schema provides the other types: those of the own package and of the packages it
 requires, directly as listed in the manifest.
@@ -330,6 +333,10 @@ assert steps.JOIN(" ") = "try caught finally"
 
 ## Includes
 
+Includes insert code into the context of the including package. For business extensions
+by other packages, [extension points](#extension-points) are the recommended way: they are
+typed, filtered, switchable per tenant and need no compilation of the defining package.
+
 An include is an object of its own whose content is inserted where it is included. Its
 first line tells what it contains:
 
@@ -389,6 +396,74 @@ removed, so the code of the include is inserted or left out accordingly.
 Code uses the `public` classes and interfaces of required packages and their `public`
 members, extends their `open` classes and implements their interfaces. `package`
 members stay within their package.
+
+## Extension points
+
+An extension point is a place in the code of a package where implementations of other
+packages run (see the README for the files of extension points and implementations).
+`extension point NAME filters FIELD = value, ...` selects the implementations for the
+filter values and gives a value on which the methods of the interface of the extension
+point are called:
+
+```
+public interface /TRFIN/COMPANY_CHECKS
+
+  method VALIDATE(company: /TRFIN/COMPANIES) raises /TRFIN/COMPANY_REJECTED
+  method ADJUST(company: /TRFIN/COMPANIES) returns /TRFIN/COMPANIES
+
+end
+```
+
+```
+public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES raises /TRFIN/COMPANY_REJECTED
+  var company: /TRFIN/COMPANIES
+  company.COMPANY_ID = id
+  company.NAME = name
+  company.COUNTRY = country
+
+  var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country
+  checks.VALIDATE(company)
+  company = checks.ADJUST(company)
+
+  insert company
+  return company
+end
+```
+
+- The extension point belongs to the own package or to a required one. Every filter field
+  is given exactly once with a value of its type that is not `null`, with the rules of the
+  fields of `check authorization`; there is no `any`. An extension point without filter
+  fields is written without `filters`.
+- The implementations are selected when the expression runs: the active implementations
+  in the tenant of the execution whose filter values match, in their order. Their objects
+  are created then, once, and every call on the value uses them, so an implementation keeps
+  its state from `VALIDATE` to `ADJUST`. Nothing stays after the execution.
+- The value has the type `extension point NAME` with exactly the methods of the interface,
+  and `IS_IMPLEMENTED()`, whether an implementation matches (the fallback class does not
+  count), and `COUNT()`, the number of them. It may be kept in variables, passed as
+  parameter and returned, but not kept in attributes, constants, arrays or maps; it is
+  never `null` and cannot be compared.
+- `single` runs exactly one implementation, or the fallback class; without both the
+  expression raises `/RT/NO_IMPLEMENTATION`, and two matching implementations raise
+  `/RT/IMPLEMENTATION_CONFLICT`. Both are runtime errors under `/RT/EXTENSION_ERROR` with
+  `EXTENSION_POINT` and `IMPLEMENTATIONS`. All kinds of methods are allowed.
+- `multiple` runs all matching implementations one after the other, or the fallback class
+  when none matches. A method without result calls each. A method whose result has the type
+  of exactly one of its parameters chains them: the result of one implementation is that
+  argument of the next, the result of the last one is the result of the call, and without
+  implementation it is the argument itself. Other methods with a result are rejected at the
+  definition of the extension point, since a list of results would not be the type the
+  interface declares: such a method returns nothing and raises an exception, or the
+  extension point is `single`.
+- Implementations raise only the exceptions the interface declares, as every class that
+  implements an interface. An exception ends the calls of a `multiple` extension point and
+  reaches the caller.
+- Unless the extension point allows commits, `commit` and `rollback` of the default session
+  while an implementation runs raise `/RT/SESSION_ERROR`; sessions an implementation opens
+  itself are not affected. Written directly in a method that implements the interface, the
+  compiler rejects them.
+- Every evaluation, filter field and method call is recorded as use of the extension point;
+  `rt extension-point show` lists them.
 
 ## Database access
 
@@ -678,7 +753,7 @@ end
 ## Reflector
 
 `/TRBASE/REFLECTOR` describes objects of the schema at runtime; in this version
-authorization objects (see the README) and the activities of the kernel.
+authorization objects (see the README), the activities of the kernel and extension points.
 
 ```
 var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRFIN/COMPANY")
@@ -697,6 +772,9 @@ end
 | `AUTHORIZATION_OBJECTS(pkg)` | `/TRBASE/AUTHORIZATION_OBJECT_ARRAY` of a package, of all for `null`, ordered by name |
 | `ACTIVITIES()` | `/TRBASE/ACTIVITY_ARRAY` with `CODE`, `LABEL` and `DESCRIPTION` |
 | `ALLOWS(object, activity)` | whether the activity can be granted for the object |
+| `EXTENSION_POINT(name)` | `/TRBASE/EXTENSION_POINT`, or `/TRBASE/EXTENSION_POINT_NOT_FOUND` |
+| `EXTENSION_POINT_EXISTS(name)` | `BOOL` |
+| `EXTENSION_POINTS(pkg)` | `/TRBASE/EXTENSION_POINT_ARRAY` of a package, of all for `null`, ordered by name |
 
 - `/TRBASE/AUTHORIZATION_OBJECT` has `NAME`, `PACKAGE_ID`, `LABEL`, `DESCRIPTION`, `FIELDS`,
   `ACTIVITIES` and `ACTIVITY_CODES`, the codes for `CONTAINS`. A field
@@ -706,10 +784,18 @@ end
 - Texts are in the language of the execution, else in English, and `null` when there is
   none, never `""`. Fields with a domain have no labels.
 - Activities are values of the enum of the kernel domain: `/RT/ACTIVITY.APPROVE`.
+- `/TRBASE/EXTENSION_POINT` has `NAME`, `PACKAGE_ID`, `DESCRIPTION`, `INTERFACE_NAME`, `USE`
+  (`/TRBASE/EXTENSION_USE.SINGLE` or `MULTIPLE`), `FALLBACK`, `COMMIT_ALLOWED`, `FILTERS` and
+  `IMPLEMENTATIONS` in the order they run. A filter (`/TRBASE/EXTENSION_FILTER`) has the
+  components of a field of an authorization object without `IS_ACTIVITY`, and `HAS_DEFAULT`
+  and `DEFAULT`. An implementation (`/TRBASE/IMPLEMENTATION`) has `NAME`, `PACKAGE_ID`,
+  `DESCRIPTION`, `CLASS_NAME`, `SORT_ORDER`, `FILTERS` and `ACTIVE`, whether it is active in
+  the tenant of the execution. Filter values (`/TRBASE/FILTER_ENTRY`) have `FIELD`, `KIND`
+  (`VALUE`, `RANGE`, `PATTERN`), `LOW` and `HIGH`.
 - Every package may read every object. With a string literal that names an object of the
-  own, a required or a kernel package, `AUTHORIZATION_OBJECT` is checked when the code
-  compiles and recorded as used, so an upgrade that removes the object fails when the code
-  is compiled again. Other names are looked up when the code runs.
+  own, a required or a kernel package, `AUTHORIZATION_OBJECT` and `EXTENSION_POINT` are
+  checked when the code compiles and recorded as used, so an upgrade that removes the object
+  fails when the code is compiled again. Other names are looked up when the code runs.
 
 ## Authorization checks
 
@@ -1118,7 +1204,7 @@ params        = "(" [ LOCAL ":" type { "," LOCAL ":" type } ] ")" ;
 raises        = "raises" GLOBAL { "," GLOBAL } ;
 type          = ( "STRING" | "INT4" | "INT8" | "DEC" "(" INT "," INT ")" | "DATE" | "TIMESTAMP"
               | "BOOL" | "UUID" | "BYTES" | GLOBAL ) [ "?" ]
-              | "array" "of" type | "map" "of" type "to" type
+              | "array" "of" type | "map" "of" type "to" type | "extension" "point" GLOBAL
               | "function" "(" [ type { "," type } ] ")" [ "returns" type ] [ raises ] ;
 stmt          = "var" LOCAL [ ":" type ] "=" expr | "var" LOCAL ":" type | place "=" expr | call
               | updateExpr | deleteExpr
@@ -1140,8 +1226,9 @@ expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr "
               | ( "-" | "not" ) expr | expr OPERATOR expr | expr "is" [ "not" ] ( "null" | "empty" )
               | expr "as" type | expr "." GLOBAL | expr "in" expr
               | selectExpr | updateExpr | deleteExpr | "open" "session" | transformExpr
-              | "authorized" GLOBAL NL authFields "end" ;
+              | "authorized" GLOBAL NL authFields "end" | extensionExpr ;
 authFields    = { MEMBER "=" ( "any" | expr ) NL } ;
+extensionExpr = "extension" "point" GLOBAL [ "filters" MEMBER "=" expr { "," MEMBER "=" expr } ] ;
 transformExpr = "transform" expr "using" GLOBAL [ "parameters" MEMBER "=" expr { "," MEMBER "=" expr } ]
                 [ "into" type ] ;
 args          = expr { "," expr } | MEMBER ":" expr { "," MEMBER ":" expr } ;

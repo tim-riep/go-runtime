@@ -1,0 +1,13 @@
+# Checks that accept every company unchanged. Implementations of
+# /TRFIN/COMPANY_CHECKS extend it and override what they need, so that a
+# method added to the interface later does not break them.
+public open class /TRFIN/COMPANY_CHECKS_BASE implements /TRFIN/COMPANY_CHECKS
+
+  public open method VALIDATE(company: /TRFIN/COMPANIES) raises /TRFIN/COMPANY_REJECTED
+  end
+
+  public open method ADJUST(company: /TRFIN/COMPANIES) returns /TRFIN/COMPANIES
+    return company
+  end
+
+end

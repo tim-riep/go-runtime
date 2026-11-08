@@ -34,6 +34,10 @@ const tenantA = "ACME"
 // usesXLSX are the classes of the examples that use workbooks.
 var usesXLSX = map[string]bool{"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true}
 
+// usesExtensionPoints are the classes and interfaces of the examples that
+// kernels before extension points cannot install.
+var usesExtensionPoints = map[string]bool{"/TRFIN/COMPANY_CHECKS": true, "/TRFIN/COMPANY_CHECKS_BASE": true, "/TROTTO/COMPANY_CHECKS": true}
+
 func withData(t *testing.T, k *kernel.Kernel) {
 	t.Helper()
 	initialized(t, k)
@@ -56,6 +60,16 @@ func withData(t *testing.T, k *kernel.Kernel) {
 		for _, p := range pkgs {
 			p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesXLSX[s.Name] })
 			p.HTTPServices = slices.DeleteFunc(p.HTTPServices, func(h model.HTTPService) bool { return strings.HasPrefix(h.Path, "companies/") })
+		}
+	}
+	if k.TargetVersion() < 17 { // before extension points
+		for _, p := range pkgs {
+			p.ExtensionPoints, p.Implementations = nil, nil
+			p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesExtensionPoints[s.Name] })
+			for i, s := range p.Sources {
+				p.Sources[i].Text = strings.Replace(s.Text, "\n    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country\n"+
+					"    checks.VALIDATE(company)\n    company = checks.ADJUST(company)\n", "", 1)
+			}
 		}
 	}
 	if _, err := k.Install(context.Background(), pkgs, kernel.Options{}); err != nil {

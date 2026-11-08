@@ -1,0 +1,16 @@
+{
+  "name": "/TRFIN/COMPANY_CHECKS",
+  "description": {
+    "en": "Checks when a company is created",
+    "de": "Prüfungen beim Anlegen einer Company"
+  },
+  "interface": "/TRFIN/COMPANY_CHECKS",
+  "use": "multiple",
+  "filters": [
+    {
+      "name": "COUNTRY",
+      "dataElement": "/TRBASE/COUNTRY"
+    }
+  ],
+  "fallback": null
+}

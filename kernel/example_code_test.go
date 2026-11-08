@@ -16,6 +16,7 @@ package kernel_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -28,8 +29,8 @@ import (
 
 // TestExampleCode runs the code of the example packages: TRFIN reads and
 // writes companies, TROTTO syncs them and writes the audit log of TRBASE
-// in a session of its own, and its hook is inserted into TRFIN once it is
-// installed.
+// in a session of its own, and implements the extension point of TRFIN
+// that checks new companies once it is installed.
 func TestExampleCode(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
@@ -50,28 +51,52 @@ func TestExampleCode(t *testing.T) {
 			t.Errorf("CREATE without TROTTO = %s", got)
 		}
 
-		// Installing TROTTO recompiles TRFIN, whose include of the hook
-		// now finds it.
+		// Installing TROTTO brings an implementation of the extension point
+		// /TRFIN/COMPANY_CHECKS. TRFIN is compiled again only because TROTTO
+		// adds a field to /TRFIN/COMPANIES, not for the implementation.
 		p, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TROTTO")}, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		found := false
 		for _, c := range p.Changes {
-			found = found || c.Kind == plan.CompilePackage && c.String() == "compile-package TRFIN (includes /TROTTO/COMPANY_HOOK if found)"
+			if c.Kind == plan.CompilePackage && c.Name == "TRFIN" && c.Detail != "uses /TRFIN/COMPANIES" {
+				t.Errorf("TRFIN compiled again: %s", c)
+			}
 		}
-		if !found {
-			t.Errorf("no recompilation of TRFIN in %v", p.Changes)
+		if !strings.Contains(planText(p), "create-implementation /TROTTO/COMPANY_CHECKS (of /TRFIN/COMPANY_CHECKS by /TROTTO/COMPANY_CHECKS)") {
+			t.Errorf("plan:\n%s", planText(p))
 		}
 		rec := &vm.LogRecorder{}
 		out, err := call(k, kernel.ExecOptions{Tenant: "ACME", VM: vm.Options{Log: rec}}, S, "CREATE", `"C2"`, `"Alpha"`, `"DE"`)
 		if err != nil || !strings.Contains(out, `"STATUS":"BLOCKED"`) {
 			t.Errorf("CREATE with TROTTO = %s, %v", out, err)
 		}
-		if len(rec.Entries) != 1 || rec.Entries[0].Text != "C2 waits for the OTTO sync" {
+		if len(rec.Entries) != 1 || rec.Entries[0].Text != "C2 waits for the OTTO sync as OTTO-C2" {
 			t.Errorf("log = %v", rec.Entries)
 		}
-		expectCall(t, k, "ACME", S, "BLOCK_COUNTRY", "1", `"DE"`)
+		// Other countries are not checked by TROTTO, and a company without
+		// name in Germany is rejected.
+		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"FR"`, `"France"`)
+		if got := mustCall(t, k, "ACME", S, "CREATE", `"C3"`, `"Beta"`, `"FR"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+			t.Errorf("CREATE in FR = %s", got)
+		}
+		_, err = call(k, kernel.ExecOptions{Tenant: "ACME"}, S, "CREATE", `"C4"`, `""`, `"DE"`)
+		var exc *vm.Exception
+		if !errors.As(err, &exc) || exc.Class != "/TRFIN/COMPANY_REJECTED" || exc.Text != "company C4 rejected: OTTO needs a name" {
+			t.Errorf("CREATE without name: %v", err)
+		}
+		// Deactivated for the tenant, TROTTO checks nothing there.
+		if err := k.Implementations().Deactivate(ctx, "/TROTTO/COMPANY_CHECKS", kernel.ImplementationOptions{Tenant: "ACME"}); err != nil {
+			t.Fatal(err)
+		}
+		if got := mustCall(t, k, "ACME", S, "CREATE", `"C5"`, `"Gamma"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+			t.Errorf("CREATE with TROTTO inactive = %s", got)
+		}
+		if err := k.Implementations().Reset(ctx, "/TROTTO/COMPANY_CHECKS", kernel.ImplementationOptions{Tenant: "ACME"}); err != nil {
+			t.Fatal(err)
+		}
+		// C1 and C5 are active in DE, C2 waits for the sync.
+		expectCall(t, k, "ACME", S, "BLOCK_COUNTRY", "2", `"DE"`)
 		mustCall(t, k, "ACME", S, "RENAME", `"C1"`, `"Zeta AG"`)
 		if got := mustCall(t, k, "ACME", S, "IN_COUNTRY", `"DE"`); !strings.Contains(got, `"NAME":"Alpha"`) || strings.Index(got, "Alpha") > strings.Index(got, "Zeta AG") {
 			t.Errorf("IN_COUNTRY = %s", got)
@@ -114,7 +139,7 @@ func TestExampleCode(t *testing.T) {
 			}
 			return
 		}
-		sync("2")
+		sync("3")
 		if got := mustCall(t, k, "ACME", S, "FIND", `"C1"`); !strings.Contains(got, `"/TROTTO/OTTO_ID":"OTTO-C1"`) {
 			t.Errorf("FIND C1 after SYNC = %s", got)
 		}
