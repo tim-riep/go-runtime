@@ -1,0 +1,11 @@
+# A workbook has no sheet of the name.
+public class /TRBASE/XLSX_SHEET_NOT_FOUND extends /TRBASE/XLSX_ERROR
+
+  public attribute SHEET: STRING
+
+  public constructor(sheet: STRING)
+    super("the workbook has no sheet {sheet}")
+    SHEET = sheet
+  end
+
+end

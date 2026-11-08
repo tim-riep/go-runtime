@@ -1,0 +1,62 @@
+# Uses workbooks for the tests of the kernel.
+public class /TRXLSX/WORKBOOKS
+
+  # The articles with price of a sheet, as text.
+  public static method PRICES(data: BYTES, sheet: STRING) returns array of STRING raises /TRBASE/XLSX_ERROR
+    var book = /TRBASE/XLSX_WORKBOOK.OPEN(data)
+    var out = new array of STRING
+    for row in book.ROWS(sheet)
+      var column = /TRBASE/XLSX_WORKBOOK.COLUMN("C")
+      if row.KIND(column) <> /TRBASE/XLSX_CELL_KIND.NUMBER
+        continue
+      end
+      var article = row.TEXT(1)
+      var price = row.DECIMAL(column)
+      if article is not null and price is not null
+        out.APPEND("{row.NUMBER()} {article}: {price as DEC(15,2)}")
+      end
+    end
+    book.CLOSE()
+    return out
+  end
+
+  # Reads a cell as decimal, or tells what went wrong.
+  public static method DECIMAL(data: BYTES, sheet: STRING, cell: STRING) returns STRING
+    try
+      var book = /TRBASE/XLSX_WORKBOOK.OPEN(data)
+      var v = book.DECIMAL(sheet, cell)
+      if v is null
+        return "null"
+      end
+      return "{v as DEC(15,2)}"
+    catch e: /TRBASE/XLSX_TYPE_MISMATCH
+      return "mismatch {e.SHEET} {e.CELL} {e.RAW default "<null>"} {e.EXPECTED}"
+    catch e: /TRBASE/XLSX_SHEET_NOT_FOUND
+      return "sheet " + e.SHEET
+    catch e: /TRBASE/XLSX_CELL_INVALID
+      return "cell " + e.CELL
+    catch e: /TRBASE/XLSX_PROTECTED
+      return "protected"
+    catch e: /TRBASE/XLSX_LIMIT_EXCEEDED
+      return "limit"
+    catch e: /TRBASE/XLSX_ERROR
+      return "error " + e.TEXT
+    end
+  end
+
+  # The kind of a cell.
+  public static method KIND(data: BYTES, sheet: STRING, cell: STRING) returns /TRBASE/XLSX_CELL_KIND raises /TRBASE/XLSX_ERROR
+    return /TRBASE/XLSX_WORKBOOK.OPEN(data).KIND(sheet, cell)
+  end
+
+  # A report as in the guide.
+  public static method REPORT(total: DEC(15,2)) returns BYTES raises /TRBASE/XLSX_ERROR
+    var report = /TRBASE/XLSX_WORKBOOK.CREATE()
+    report.ADD_SHEET("Summary")
+    report.SET_TEXT("Summary", "A1", "Total")
+    report.SET_DECIMAL("Summary", "B1", total)
+    report.SET_BOLD("Summary", "A1:B1")
+    return report.SAVE()
+  end
+
+end

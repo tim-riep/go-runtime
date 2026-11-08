@@ -1,0 +1,18 @@
+# The content of a cell does not fit the requested type, such as text
+# read as decimal; it never becomes null instead.
+public class /TRBASE/XLSX_TYPE_MISMATCH extends /TRBASE/XLSX_ERROR
+
+  public attribute SHEET: STRING
+  public attribute CELL: STRING
+  public attribute RAW: STRING?
+  public attribute EXPECTED: STRING
+
+  public constructor(sheet: STRING, cell: STRING, raw: STRING?, expected: STRING, reason: STRING)
+    super("cell {cell} of sheet {sheet} holds no {expected}: {reason}")
+    SHEET = sheet
+    CELL = cell
+    RAW = raw
+    EXPECTED = expected
+  end
+
+end

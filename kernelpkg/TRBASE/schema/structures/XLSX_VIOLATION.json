@@ -1,0 +1,44 @@
+{
+  "name": "/TRBASE/XLSX_VIOLATION",
+  "texts": {
+    "en": {
+      "label": "Violation",
+      "description": "A value of a sheet that does not fit its component"
+    },
+    "de": {
+      "label": "Verstoß",
+      "description": "Ein Wert eines Blatts, der nicht zu seiner Komponente passt"
+    }
+  },
+  "components": [
+    {
+      "name": "ROW_NO",
+      "dataElement": "/TRBASE/ROW_NO",
+      "notNull": true
+    },
+    {
+      "name": "COLUMN_NAME",
+      "dataElement": "/TRBASE/COLUMN_NAME",
+      "notNull": true
+    },
+    {
+      "name": "HEADER",
+      "dataElement": "/TRBASE/HEADER_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "COMPONENT",
+      "dataElement": "/TRBASE/COMPONENT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "RAW",
+      "dataElement": "/TRBASE/RAW_VALUE"
+    },
+    {
+      "name": "MESSAGE",
+      "dataElement": "/TRBASE/MESSAGE",
+      "notNull": true
+    }
+  ]
+}

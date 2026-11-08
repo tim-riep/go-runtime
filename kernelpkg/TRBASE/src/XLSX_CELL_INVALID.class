@@ -1,0 +1,11 @@
+# A cell reference such as B7, a range or a column is not valid.
+public class /TRBASE/XLSX_CELL_INVALID extends /TRBASE/XLSX_ERROR
+
+  public attribute CELL: STRING
+
+  public constructor(cell: STRING, text: STRING)
+    super(text)
+    CELL = cell
+  end
+
+end

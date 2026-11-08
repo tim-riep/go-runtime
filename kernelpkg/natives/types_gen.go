@@ -41,6 +41,20 @@ const (
 	ActivityAdminister Activity = "ADMINISTER"
 )
 
+// XlsxCellKind is the enum /TRBASE/XLSX_CELL_KIND.
+type XlsxCellKind string
+
+// Fixed values of /TRBASE/XLSX_CELL_KIND.
+const (
+	XlsxCellKindEmpty   XlsxCellKind = "EMPTY"
+	XlsxCellKindText    XlsxCellKind = "TEXT"
+	XlsxCellKindNumber  XlsxCellKind = "NUMBER"
+	XlsxCellKindBool    XlsxCellKind = "BOOL"
+	XlsxCellKindDate    XlsxCellKind = "DATE"
+	XlsxCellKindFormula XlsxCellKind = "FORMULA"
+	XlsxCellKindError   XlsxCellKind = "ERROR"
+)
+
 // ZipEntryKind is the enum /TRBASE/ZIP_ENTRY_KIND.
 type ZipEntryKind string
 
@@ -111,6 +125,15 @@ type FixedValue struct {
 	Value       string                 `rt:"VALUE"`
 	Name        model.Optional[string] `rt:"NAME"`
 	Description model.Optional[string] `rt:"DESCRIPTION"`
+}
+
+// XlsxDimension is the structure /TRBASE/XLSX_DIMENSION.
+type XlsxDimension struct {
+	FirstRow    int32  `rt:"FIRST_ROW"`
+	FirstColumn int32  `rt:"FIRST_COLUMN"`
+	LastRow     int32  `rt:"LAST_ROW"`
+	LastColumn  int32  `rt:"LAST_COLUMN"`
+	Ref         string `rt:"REF"`
 }
 
 // ZipEntry is the structure /TRBASE/ZIP_ENTRY.

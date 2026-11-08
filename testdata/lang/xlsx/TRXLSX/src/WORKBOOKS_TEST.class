@@ -1,0 +1,51 @@
+# Tests of workbooks in code.
+public test class /TRXLSX/WORKBOOKS_TEST
+
+  public test method WRITES_AND_READS()
+    try
+      var book = /TRBASE/XLSX_WORKBOOK.CREATE()
+      book.RENAME_SHEET("Sheet1", "Data")
+      book.SET_TEXT("Data", "A1", "text")
+      book.SET_TEXT("Data", "A2", "")
+      book.SET_INTEGER("Data", "B1", 9007199254740993)
+      book.SET_DECIMAL("Data", "B2", 0.30)
+      book.SET_DATE("Data", "C1", "2026-11-08" as DATE)
+      book.SET_TIMESTAMP("Data", "C2", "2026-11-08T10:11:12.345Z" as TIMESTAMP)
+      book.SET_BOOL("Data", "D1", true)
+      book.SET_FORMULA("Data", "D2", "=B1*2")
+      book.SET_COLUMN_WIDTH("Data", "A", 20.5)
+      book.FREEZE_ROWS("Data", 1)
+      book.SET_AUTOFILTER("Data", "A1:D2")
+      book.ADD_SHEET("Second")
+      assert book.SHEETS() = ["Data", "Second"]
+      var again = /TRBASE/XLSX_WORKBOOK.OPEN(book.SAVE())
+      var v1 = again.TEXT("Data", "A1")
+      assert v1 is not null and v1 = "text"
+      var v2 = again.TEXT("Data", "A2")
+      assert v2 is not null and v2 = ""
+      assert again.TEXT("Data", "A3") is null
+      assert again.KIND("Data", "A2") = /TRBASE/XLSX_CELL_KIND.TEXT
+      assert again.KIND("Data", "A3") = /TRBASE/XLSX_CELL_KIND.EMPTY
+      var v3 = again.INTEGER("Data", "B1")
+      assert v3 is not null and v3 = 9007199254740993
+      var v4 = again.DECIMAL("Data", "B2")
+      assert v4 is not null and v4 = 0.3
+      var v5 = again.DATE("Data", "C1")
+      assert v5 is not null and v5 = "2026-11-08" as DATE
+      var v6 = again.TIMESTAMP("Data", "C2")
+      assert v6 is not null and v6 = "2026-11-08T10:11:12.345Z" as TIMESTAMP
+      var v7 = again.BOOL("Data", "D1")
+      assert v7 is not null and v7 = true
+      var v8 = again.FORMULA("Data", "D2")
+      assert v8 is not null and v8 = "=B1*2"
+      assert again.KIND("Data", "D2") = /TRBASE/XLSX_CELL_KIND.FORMULA
+      assert again.DIMENSION("Data").REF = "A1:D2"
+      again.DELETE_SHEET("Second")
+      assert not again.HAS_SHEET("Second")
+      assert /TRBASE/XLSX_WORKBOOK.COLUMN_NAME(28) = "AB"
+    catch e: /TRBASE/XLSX_ERROR
+      assert false, e.TEXT
+    end
+  end
+
+end

@@ -1,0 +1,36 @@
+# A row of a sheet, from /TRBASE/XLSX_WORKBOOK.ROWS, with access to its
+# cells by column number from 1; /TRBASE/XLSX_WORKBOOK.COLUMN turns a
+# column such as C into its number.
+public class /TRBASE/XLSX_ROW executed by kernel
+
+  # The number of the row in the sheet.
+  public method NUMBER() returns INT4 executed by kernel
+
+  # The last column with a cell.
+  public method LAST_COLUMN() returns INT4 executed by kernel
+
+  # The value as text: text as it is, numbers as stored, truth values as TRUE or FALSE. Empty cells are null.
+  public method TEXT(column: INT4) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A whole number, from a number or a text. Empty cells are null.
+  public method INTEGER(column: INT4) returns INT8? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A number exactly, from its stored digits, never through floating point. Empty cells are null.
+  public method DECIMAL(column: INT4) returns DEC(38,15)? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A date from a serial number or ISO text. Empty cells are null.
+  public method DATE(column: INT4) returns DATE? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A point in time in UTC, to the millisecond. Empty cells are null.
+  public method TIMESTAMP(column: INT4) returns TIMESTAMP? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A truth value from a truth value cell. Empty cells are null.
+  public method BOOL(column: INT4) returns BOOL? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method KIND(column: INT4) returns /TRBASE/XLSX_CELL_KIND raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method RAW(column: INT4) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method FORMULA(column: INT4) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+end

@@ -1,0 +1,102 @@
+# A workbook in xlsx format in memory, for access cell by cell: opened
+# from bytes or created, changed and saved. Formulas are never computed;
+# their last stored value is read. Macros, external links and embedded
+# objects are never run or loaded, and macros are left out on saving.
+public class /TRBASE/XLSX_WORKBOOK executed by kernel
+
+  public static method OPEN(data: BYTES) returns /TRBASE/XLSX_WORKBOOK raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A workbook with the sheet Sheet1.
+  public static method CREATE() returns /TRBASE/XLSX_WORKBOOK executed by kernel
+
+  # The number of a column such as C, from 1.
+  public static method COLUMN(name: STRING) returns INT4 raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The name of a column number, such as C for 3.
+  public static method COLUMN_NAME(number: INT4) returns STRING raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SAVE() returns BYTES raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # Frees the workbook; it cannot be used afterwards.
+  public method CLOSE() executed by kernel
+
+  # The names of the sheets in order.
+  public method SHEETS() returns array of STRING executed by kernel
+
+  public method HAS_SHEET(sheet: STRING) returns BOOL executed by kernel
+
+  public method ADD_SHEET(sheet: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method RENAME_SHEET(sheet: STRING, name: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method DELETE_SHEET(sheet: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The used area of a sheet.
+  public method DIMENSION(sheet: STRING) returns /TRBASE/XLSX_DIMENSION raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The rows of a sheet that have cells, in order.
+  public method ROWS(sheet: STRING) returns array of /TRBASE/XLSX_ROW raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The value as text: text as it is, numbers as stored, truth values as TRUE or FALSE. Empty cells are null.
+  public method TEXT(sheet: STRING, cell: STRING) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A whole number, from a number or a text. Empty cells are null.
+  public method INTEGER(sheet: STRING, cell: STRING) returns INT8? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A number exactly, from its stored digits, never through floating point. Empty cells are null.
+  public method DECIMAL(sheet: STRING, cell: STRING) returns DEC(38,15)? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A date from a serial number or ISO text. Empty cells are null.
+  public method DATE(sheet: STRING, cell: STRING) returns DATE? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A point in time in UTC, to the millisecond. Empty cells are null.
+  public method TIMESTAMP(sheet: STRING, cell: STRING) returns TIMESTAMP? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A truth value from a truth value cell. Empty cells are null.
+  public method BOOL(sheet: STRING, cell: STRING) returns BOOL? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method KIND(sheet: STRING, cell: STRING) returns /TRBASE/XLSX_CELL_KIND raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The value as stored in the file, of formulas the last computed one.
+  public method RAW(sheet: STRING, cell: STRING) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method FORMULA(sheet: STRING, cell: STRING) returns STRING? raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SET_TEXT(sheet: STRING, cell: STRING, value: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # Beyond 2^53 as text, which numbers cannot hold exactly.
+  public method SET_INTEGER(sheet: STRING, cell: STRING, value: INT8) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # As number; with more than 15 significant digits as text.
+  public method SET_DECIMAL(sheet: STRING, cell: STRING, value: DEC(38,15)) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SET_DATE(sheet: STRING, cell: STRING, value: DATE) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SET_TIMESTAMP(sheet: STRING, cell: STRING, value: TIMESTAMP) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SET_BOOL(sheet: STRING, cell: STRING, value: BOOL) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A formula such as =B1*2; it has no stored value until a program
+  # computes it.
+  public method SET_FORMULA(sheet: STRING, cell: STRING, formula: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method CLEAR(sheet: STRING, cell: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # A number format code such as 0.00 or yyyy-mm-dd.
+  public method SET_NUMBER_FORMAT(sheet: STRING, cell: STRING, format: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  public method SET_COLUMN_FORMAT(sheet: STRING, column: STRING, format: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # The width in characters.
+  public method SET_COLUMN_WIDTH(sheet: STRING, column: STRING, width: DEC(5,2)) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # Makes the cells of a range such as A1:D1 bold.
+  public method SET_BOLD(sheet: STRING, range: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # Keeps the first rows in view.
+  public method FREEZE_ROWS(sheet: STRING, rows: INT4) raises /TRBASE/XLSX_ERROR executed by kernel
+
+  # Puts a filter over a range such as A1:D20.
+  public method SET_AUTOFILTER(sheet: STRING, range: STRING) raises /TRBASE/XLSX_ERROR executed by kernel
+
+end

@@ -1,0 +1,43 @@
+{
+  "name": "/TRBASE/XLSX_CELL_KIND",
+  "description": "Kind of a cell of a workbook",
+  "type": "CHAR",
+  "length": 7,
+  "values": [
+    {
+      "value": "EMPTY",
+      "name": "EMPTY",
+      "description": "No value"
+    },
+    {
+      "value": "TEXT",
+      "name": "TEXT",
+      "description": "Text"
+    },
+    {
+      "value": "NUMBER",
+      "name": "NUMBER",
+      "description": "A number"
+    },
+    {
+      "value": "BOOL",
+      "name": "BOOL",
+      "description": "A truth value"
+    },
+    {
+      "value": "DATE",
+      "name": "DATE",
+      "description": "A number shown as date or time"
+    },
+    {
+      "value": "FORMULA",
+      "name": "FORMULA",
+      "description": "A formula, with its last stored value"
+    },
+    {
+      "value": "ERROR",
+      "name": "ERROR",
+      "description": "An error such as #DIV/0!"
+    }
+  ]
+}

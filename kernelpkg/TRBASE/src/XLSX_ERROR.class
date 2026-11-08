@@ -1,0 +1,9 @@
+# The base of the errors of workbooks in xlsx format, for code that
+# handles them all at once.
+public open class /TRBASE/XLSX_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

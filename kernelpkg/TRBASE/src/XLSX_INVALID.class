@@ -1,0 +1,8 @@
+# The data is no workbook, or a change of the workbook is not possible.
+public class /TRBASE/XLSX_INVALID extends /TRBASE/XLSX_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

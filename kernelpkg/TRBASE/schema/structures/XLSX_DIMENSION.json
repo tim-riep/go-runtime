@@ -1,0 +1,40 @@
+{
+  "name": "/TRBASE/XLSX_DIMENSION",
+  "texts": {
+    "en": {
+      "label": "Used area",
+      "description": "The used area of a sheet: first and last row and column"
+    },
+    "de": {
+      "label": "Genutzter Bereich",
+      "description": "Der genutzte Bereich eines Blatts: erste und letzte Zeile und Spalte"
+    }
+  },
+  "components": [
+    {
+      "name": "FIRST_ROW",
+      "dataElement": "/TRBASE/ROW_NO",
+      "notNull": true
+    },
+    {
+      "name": "FIRST_COLUMN",
+      "dataElement": "/TRBASE/COLUMN_NO",
+      "notNull": true
+    },
+    {
+      "name": "LAST_ROW",
+      "dataElement": "/TRBASE/ROW_NO",
+      "notNull": true
+    },
+    {
+      "name": "LAST_COLUMN",
+      "dataElement": "/TRBASE/COLUMN_NO",
+      "notNull": true
+    },
+    {
+      "name": "REF",
+      "dataElement": "/TRBASE/CELL_RANGE",
+      "notNull": true
+    }
+  ]
+}

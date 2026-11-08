@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/XLSX_CELL_KIND",
+  "domain": "/TRBASE/XLSX_CELL_KIND",
+  "texts": {
+    "en": {
+      "short": "Kind",
+      "medium": "Cell kind",
+      "long": "Kind of the cell",
+      "heading": "Kind"
+    },
+    "de": {
+      "short": "Art",
+      "medium": "Zellart",
+      "long": "Art der Zelle",
+      "heading": "Art"
+    }
+  }
+}

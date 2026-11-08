@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/HEADER_TEXT",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Header",
+      "medium": "Header",
+      "long": "Text of the header of a column",
+      "heading": "Header"
+    },
+    "de": {
+      "short": "Überschr.",
+      "medium": "Überschrift",
+      "long": "Text der Überschrift einer Spalte",
+      "heading": "Überschrift"
+    }
+  }
+}

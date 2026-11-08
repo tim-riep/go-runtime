@@ -1,0 +1,8 @@
+# A workbook is encrypted with a password; such workbooks are not read.
+public class /TRBASE/XLSX_PROTECTED extends /TRBASE/XLSX_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

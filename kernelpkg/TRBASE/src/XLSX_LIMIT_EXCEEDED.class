@@ -1,0 +1,9 @@
+# A workbook exceeds a limit: its size unpacked, the number of sheets,
+# rows, columns or cells.
+public class /TRBASE/XLSX_LIMIT_EXCEEDED extends /TRBASE/XLSX_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

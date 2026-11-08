@@ -1,0 +1,12 @@
+# Values of a sheet do not fit the components they are read into; all of
+# them up to a limit, so that the file can be corrected in one pass.
+public class /TRBASE/XLSX_READ_FAILED extends /TRBASE/XLSX_ERROR
+
+  public attribute VIOLATIONS: /TRBASE/XLSX_VIOLATION_ARRAY
+
+  public constructor(text: STRING, violations: /TRBASE/XLSX_VIOLATION_ARRAY)
+    super(text)
+    VIOLATIONS = violations
+  end
+
+end

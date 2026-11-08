@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/RAW_VALUE",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Value",
+      "medium": "Stored value",
+      "long": "The value as stored in the file",
+      "heading": "Stored value"
+    },
+    "de": {
+      "short": "Wert",
+      "medium": "Gespeicherter Wert",
+      "long": "Der Wert, wie er in der Datei steht",
+      "heading": "Gespeicherter Wert"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/XLSX_VIOLATION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Violations"
+    },
+    "de": {
+      "label": "Verstöße"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/XLSX_VIOLATION"
+  }
+}

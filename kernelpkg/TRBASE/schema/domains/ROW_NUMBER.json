@@ -1,0 +1,5 @@
+{
+  "name": "/TRBASE/ROW_NUMBER",
+  "description": "Number of a row or column of a sheet, from 1",
+  "type": "INT4"
+}
