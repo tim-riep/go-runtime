@@ -60,6 +60,16 @@
       "name": "BUDGET",
       "domain": "/RT/GENERATION",
       "description": "Instruction budget"
+    },
+    {
+      "name": "AUTH_MODE",
+      "domain": "/RT/HTTP_AUTH_MODE",
+      "description": "Not set: inherited"
+    },
+    {
+      "name": "AUTH_OBJECT",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Authorization object of the check"
     }
   ],
   "primaryKey": [

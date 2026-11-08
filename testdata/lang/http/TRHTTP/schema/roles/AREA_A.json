@@ -1,0 +1,5 @@
+{
+  "name": "/TRHTTP/AREA_A",
+  "texts": { "en": { "label": "Reads area A" } },
+  "authorizations": [{ "object": "/TRHTTP/AREA", "fields": { "AREA": [{ "value": "A" }], "ACTIVITY": [{ "value": "READ" }] } }]
+}

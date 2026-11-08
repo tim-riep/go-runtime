@@ -1,0 +1,6 @@
+{
+  "path": "guarded",
+  "texts": { "en": { "label": "Needs area A" } },
+  "handlers": [{ "class": "/TRHTTP/VERSION" }],
+  "settings": { "authorization": { "object": "/TRHTTP/AREA", "fields": { "AREA": "A", "ACTIVITY": "READ" } } }
+}

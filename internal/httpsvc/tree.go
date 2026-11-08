@@ -37,6 +37,8 @@ type Settings struct {
 	MaxResponseSize int64                  `json:"maxResponseSize"`
 	Timeout         time.Duration          `json:"timeout"`
 	Budget          int64                  `json:"budget"`
+	// Authorization is the additional check of the node, nil for none.
+	Authorization *model.HTTPAuthorization `json:"authorization"`
 }
 
 // Defaults are the settings of the kernel for the root node of every
@@ -156,6 +158,9 @@ func resolve(n *Node, inherited Settings) {
 		}
 		if v, ok := own.Budget.Get(); ok {
 			s.Budget = v
+		}
+		if own.Authorization.Set {
+			s.Authorization = own.Authorization.Check
 		}
 	}
 	n.Settings = s

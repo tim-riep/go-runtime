@@ -33,6 +33,14 @@ const (
 	THTTPHandlerParams = model.KernelNamespace + "HTTP_HANDLER_PARAMETERS"
 	THTTPStates        = model.KernelNamespace + "HTTP_SERVICE_STATES"
 	THTTPGeneration    = model.KernelNamespace + "HTTP_GENERATION"
+	THTTPAuthFields    = model.KernelNamespace + "HTTP_SERVICE_AUTH_FIELDS"
+)
+
+// Modes of the additional check of a service node in AUTH_MODE; null
+// inherits it.
+const (
+	httpAuthCheck = "check"
+	httpAuthNone  = "none"
 )
 
 func list(v any) model.Optional[[]string] {
@@ -72,7 +80,7 @@ func optValue[T any](o model.Optional[T]) any {
 
 func (r *Repo) loadHTTPServices(ctx context.Context, q dialect.Querier, s *model.Schema) error {
 	rows, err := r.selectRows(ctx, q, THTTPServices, []string{"SERVICE_PATH", "PACKAGE_ID", "LOCAL_PATH", "FILE_PATH", "AUTHENTICATION", "ANONYMOUS",
-		"ANONYMOUS_TENANT", "TENANT_SOURCES", "LANGUAGE_SOURCES", "MAX_BODY_SIZE", "MAX_RESPONSE_SIZE", "TIMEOUT_SECONDS", "BUDGET"}, "SERVICE_PATH")
+		"ANONYMOUS_TENANT", "TENANT_SOURCES", "LANGUAGE_SOURCES", "MAX_BODY_SIZE", "MAX_RESPONSE_SIZE", "TIMEOUT_SECONDS", "BUDGET", "AUTH_MODE", "AUTH_OBJECT"}, "SERVICE_PATH")
 	if err != nil {
 		return err
 	}
@@ -86,6 +94,23 @@ func (r *Repo) loadHTTPServices(ctx context.Context, q dialect.Querier, s *model
 			Settings: model.HTTPSettings{Authentication: list(h["AUTHENTICATION"]), Anonymous: optBool(h["ANONYMOUS"]), AnonymousTenant: opt(h["ANONYMOUS_TENANT"]),
 				TenantSources: list(h["TENANT_SOURCES"]), LanguageSources: list(h["LANGUAGE_SOURCES"]), MaxBodySize: optInt64(h["MAX_BODY_SIZE"]),
 				MaxResponseSize: optInt64(h["MAX_RESPONSE_SIZE"]), TimeoutSeconds: optInt64(h["TIMEOUT_SECONDS"]), Budget: optInt64(h["BUDGET"])}}
+		switch str(h["AUTH_MODE"]) {
+		case httpAuthNone:
+			s.HTTPServices[path].Settings.Authorization = model.HTTPAuthSetting{Set: true}
+		case httpAuthCheck:
+			s.HTTPServices[path].Settings.Authorization = model.HTTPAuthSetting{Set: true,
+				Check: &model.HTTPAuthorization{Object: str(h["AUTH_OBJECT"]), Fields: map[string]model.HTTPAuthValue{}}}
+		}
+	}
+	fields, err := r.selectRows(ctx, q, THTTPAuthFields, []string{"SERVICE_PATH", "FIELD_NAME", "ANY_VALUE", "VALUE"}, "SERVICE_PATH", "FIELD_NAME")
+	if err != nil {
+		return err
+	}
+	for _, f := range fields {
+		if h := s.HTTPServices[str(f["SERVICE_PATH"])]; h != nil && h.Settings.Authorization.Check != nil {
+			any, _ := f["ANY_VALUE"].(bool)
+			h.Settings.Authorization.Check.Fields[str(f["FIELD_NAME"])] = model.HTTPAuthValue{Any: any, Value: str(f["VALUE"])}
+		}
 	}
 	texts, err := r.selectRows(ctx, q, THTTPServiceTexts, []string{"SERVICE_PATH", "LANGUAGE", "LABEL", "DESCRIPTION"})
 	if err != nil {
@@ -128,11 +153,30 @@ func (r *Repo) writeHTTPServices(ctx context.Context, q dialect.Querier, s *mode
 			local = "-"
 		}
 		set := h.Settings
-		if err := r.insert(ctx, q, THTTPServices, row{"SERVICE_PATH": path, "PACKAGE_ID": string(h.Owner), "LOCAL_PATH": local, "FILE_PATH": h.File,
+		var mode, object any
+		if set.Authorization.Set {
+			mode = httpAuthNone
+			if a := set.Authorization.Check; a != nil {
+				mode, object = httpAuthCheck, a.Object
+			}
+		}
+		if err := r.insert(ctx, q, THTTPServices, row{"AUTH_MODE": mode, "AUTH_OBJECT": object, "SERVICE_PATH": path, "PACKAGE_ID": string(h.Owner), "LOCAL_PATH": local, "FILE_PATH": h.File,
 			"AUTHENTICATION": listValue(set.Authentication), "ANONYMOUS": optValue(set.Anonymous), "ANONYMOUS_TENANT": val(set.AnonymousTenant),
 			"TENANT_SOURCES": listValue(set.TenantSources), "LANGUAGE_SOURCES": listValue(set.LanguageSources), "MAX_BODY_SIZE": optValue(set.MaxBodySize),
 			"MAX_RESPONSE_SIZE": optValue(set.MaxResponseSize), "TIMEOUT_SECONDS": optValue(set.TimeoutSeconds), "BUDGET": optValue(set.Budget)}); err != nil {
 			return err
+		}
+		if a := set.Authorization.Check; a != nil {
+			for _, name := range slices.Sorted(maps.Keys(a.Fields)) {
+				f := a.Fields[name]
+				var value any
+				if !f.Any {
+					value = f.Value
+				}
+				if err := r.insert(ctx, q, THTTPAuthFields, row{"SERVICE_PATH": path, "FIELD_NAME": name, "ANY_VALUE": f.Any, "VALUE": value}); err != nil {
+					return err
+				}
+			}
 		}
 		for _, lang := range slices.Sorted(maps.Keys(h.Texts)) {
 			l := h.Texts[lang]

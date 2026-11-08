@@ -113,6 +113,41 @@
           "description": "Instruction budget of a request.",
           "type": "integer",
           "minimum": 1
+        },
+        "authorization": {
+          "description": "A check that requests with sign-in pass after the check of /TRBASE/HTTP_SERVICE, before the first handler; null makes no additional check for the node and its subtree.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["object", "fields"],
+              "properties": {
+                "object": {
+                  "$ref": "common.schema.json#/$defs/objectName",
+                  "description": "An authorization object of the package, of a required package or of the kernel."
+                },
+                "fields": {
+                  "description": "A value for every field of the object, or {\"any\": true} to leave a field out.",
+                  "type": "object",
+                  "additionalProperties": {
+                    "oneOf": [
+                      { "type": "string" },
+                      { "type": "integer" },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["any"],
+                        "properties": { "any": { "const": true } }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     }

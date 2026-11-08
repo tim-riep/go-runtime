@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/SERVICE_USER",
+  "texts": {
+    "en": { "label": "Company services", "description": "Calls the http services of companies; what a request may read or change comes from the other roles" },
+    "de": { "label": "Firmen-Services", "description": "Ruft die HTTP-Services der Firmen auf; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [{ "value": "TRFIN" }],
+        "SERVICE_PATH": [{ "pattern": "/trfin*" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }]
+      }
+    }
+  ]
+}

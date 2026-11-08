@@ -1,0 +1,29 @@
+{
+  "name": "/TRBASE/HTTP_SERVICE",
+  "texts": {
+    "en": {
+      "label": "HTTP services",
+      "description": "Calling service nodes with sign-in, by package and full path"
+    },
+    "de": {
+      "label": "HTTP-Services",
+      "description": "Serviceknoten mit Anmeldung aufrufen, nach Paket und vollem Pfad"
+    }
+  },
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID"
+    },
+    {
+      "name": "SERVICE_PATH",
+      "dataElement": "/TRBASE/SERVICE_PATH"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "EXECUTE"
+  ]
+}

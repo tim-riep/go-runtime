@@ -15,6 +15,9 @@
 package model
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"maps"
 	"regexp"
 	"slices"
@@ -61,6 +64,87 @@ type HTTPSettings struct {
 	MaxResponseSize Optional[int64]    `json:"maxResponseSize"`
 	TimeoutSeconds  Optional[int64]    `json:"timeoutSeconds"`
 	Budget          Optional[int64]    `json:"budget"`
+	Authorization   HTTPAuthSetting    `json:"authorization,omitzero"`
+}
+
+// HTTPAuthorization is a check that a service node makes after the check
+// of /TRBASE/HTTP_SERVICE: an authorization object with a value or any for
+// every field.
+type HTTPAuthorization struct {
+	Object string                   `json:"object"`
+	Fields map[string]HTTPAuthValue `json:"fields"`
+}
+
+// HTTPAuthValue is the value of a field of a node check in canonical text
+// form, or any. JSON writes a string or {"any": true}.
+type HTTPAuthValue struct {
+	Any   bool
+	Value string
+}
+
+// MarshalJSON writes the value as string or {"any": true}.
+func (v HTTPAuthValue) MarshalJSON() ([]byte, error) {
+	if v.Any {
+		return []byte(`{"any":true}`), nil
+	}
+	return json.Marshal(v.Value)
+}
+
+// UnmarshalJSON reads a string, a number or {"any": true}.
+func (v *HTTPAuthValue) UnmarshalJSON(data []byte) error {
+	var obj struct {
+		Any bool `json:"any"`
+	}
+	switch t := bytes.TrimSpace(data); {
+	case len(t) > 0 && t[0] == '{':
+		if err := json.Unmarshal(t, &obj); err != nil || !obj.Any {
+			return errors.New(`a field of a node check is a value or {"any": true}`)
+		}
+		*v = HTTPAuthValue{Any: true}
+	case len(t) > 0 && t[0] == '"':
+		var s string
+		if err := json.Unmarshal(t, &s); err != nil {
+			return err
+		}
+		*v = HTTPAuthValue{Value: s}
+	default:
+		var n json.Number
+		if err := json.Unmarshal(t, &n); err != nil {
+			return errors.New(`a field of a node check is a value or {"any": true}`)
+		}
+		*v = HTTPAuthValue{Value: n.String()}
+	}
+	return nil
+}
+
+// HTTPAuthSetting is the setting authorization of a node. Not set, the
+// node inherits it; set to null (Check nil), the node and its subtree
+// make no additional check.
+type HTTPAuthSetting struct {
+	Set   bool
+	Check *HTTPAuthorization
+}
+
+// IsZero reports a setting that is not set.
+func (s HTTPAuthSetting) IsZero() bool { return !s.Set }
+
+// MarshalJSON writes null or the check.
+func (s HTTPAuthSetting) MarshalJSON() ([]byte, error) {
+	if s.Check == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(s.Check)
+}
+
+// UnmarshalJSON reads null or a check; a missing key leaves the setting
+// unset.
+func (s *HTTPAuthSetting) UnmarshalJSON(data []byte) error {
+	*s = HTTPAuthSetting{Set: true}
+	if string(bytes.TrimSpace(data)) == "null" {
+		return nil
+	}
+	s.Check = &HTTPAuthorization{}
+	return json.Unmarshal(data, s.Check)
 }
 
 // Authentication methods, tenant sources and language sources of
@@ -112,6 +196,9 @@ func (s *HTTPService) FullPath() string {
 func cloneHTTPService(s *HTTPService) *HTTPService {
 	c := *s
 	c.Texts = maps.Clone(s.Texts)
+	if a := s.Settings.Authorization.Check; a != nil {
+		c.Settings.Authorization.Check = &HTTPAuthorization{Object: a.Object, Fields: maps.Clone(a.Fields)}
+	}
 	c.Handlers = make([]HTTPHandlerRef, len(s.Handlers))
 	for i, h := range s.Handlers {
 		c.Handlers[i] = HTTPHandlerRef{Class: h.Class, Parameters: slices.Clone(h.Parameters)}

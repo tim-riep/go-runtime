@@ -96,7 +96,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 			t.Fatalf("expected ConfirmationRequired, got %v", err)
 		}
 		dry, err := k.Languages().Remove(ctx, "de", kernel.Options{DryRun: true})
-		if err != nil || dry.Changes[0].Detail != "43 texts" {
+		if err != nil || dry.Changes[0].Detail != "44 texts" {
 			t.Fatalf("dry run: %v %+v", err, dry)
 		}
 		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {

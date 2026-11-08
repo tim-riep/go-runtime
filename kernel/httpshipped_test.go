@@ -45,6 +45,11 @@ func TestShippedHandlers(t *testing.T) {
 		if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
 		}
+		for _, role := range []string{"/TRFIN/SERVICE_USER", "/TRFIN/COMPANY_ADMIN"} {
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+				t.Fatal(err)
+			}
+		}
 		for _, p := range []string{"/trbase", "/trfin"} {
 			if err := k.ActivateHTTPService(ctx, p); err != nil {
 				t.Fatal(err)
@@ -103,6 +108,9 @@ func TestShippedHandlers(t *testing.T) {
 			t.Fatalf("GET: %d %s", a.status, a.body)
 		}
 		if err := k.Users().AddTenant(ctx, "anna", "BETA"); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/SERVICE_USER", Tenant: "BETA"}, kernel.RoleOptions{By: "test"}); err != nil {
 			t.Fatal(err)
 		}
 		a = c.do("GET", "/trfin/companies", func(r *http.Request) { anna(r); r.Header.Set("X-Tenant", "BETA") }, "")

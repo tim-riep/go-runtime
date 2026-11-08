@@ -279,7 +279,21 @@ func RoleJSON(s *model.Schema, r *model.Role) ([]byte, error) {
 
 // Roles manages roles: package roles are read only, local roles are
 // maintained at runtime.
-type Roles struct{ k *Kernel }
+type Roles struct {
+	k     *Kernel
+	actor *Actor // nil: unchecked
+}
+
+// authorize checks an activity of the actor on a role.
+func (r *Roles) authorize(ctx context.Context, activity, role, function string) error {
+	return r.k.authorizeActor(ctx, r.actor, RoleAdminObject, activity, map[string]string{"ROLE_NAME": role}, function)
+}
+
+// authorizeAssignment checks an activity of the actor on the assignments
+// of a role in a tenant.
+func (r *Roles) authorizeAssignment(ctx context.Context, activity, role, tenant, function string) error {
+	return r.k.authorizeActor(ctx, r.actor, RoleAssignmentObject, activity, map[string]string{"ROLE_NAME": role, "TENANT": tenant}, function)
+}
 
 // Roles returns the role manager.
 func (k *Kernel) Roles() *Roles { return &Roles{k: k} }
@@ -319,8 +333,15 @@ func (r *Roles) List(ctx context.Context) ([]RoleSummary, error) {
 	if err != nil {
 		return nil, err
 	}
+	e, err := r.k.actorAuthorizations(ctx, r.actor)
+	if err != nil {
+		return nil, err
+	}
 	out := []RoleSummary{}
 	for _, name := range s.RoleNames() {
+		if !actorMay(e, r.actor, RoleAdminObject, "READ", map[string]string{"ROLE_NAME": name}) {
+			continue
+		}
 		role := s.Roles[name]
 		sum := RoleSummary{Name: name, Package: role.Owner, Composite: role.Composite, Label: role.Texts[model.DefaultLanguage].Label}
 		for _, a := range role.Authorizations {
@@ -361,6 +382,9 @@ type RoleAuthorization struct {
 
 // Get returns a role with its resolved authorizations.
 func (r *Roles) Get(ctx context.Context, name string) (*RoleDetail, error) {
+	if err := r.authorize(ctx, "READ", name, "Roles.Get"); err != nil {
+		return nil, err
+	}
 	s, err := r.k.Schema(ctx)
 	if err != nil {
 		return nil, err
@@ -419,6 +443,9 @@ func (r *Roles) Get(ctx context.Context, name string) (*RoleDetail, error) {
 
 // Export writes a role in the format of role files.
 func (r *Roles) Export(ctx context.Context, name string) ([]byte, error) {
+	if err := r.authorize(ctx, "EXPORT", name, "Roles.Export"); err != nil {
+		return nil, err
+	}
 	s, err := r.k.Schema(ctx)
 	if err != nil {
 		return nil, err
@@ -435,11 +462,17 @@ func ParseRole(data []byte, file string) (*model.Role, error) { return pkgload.P
 
 // Create creates a local role.
 func (r *Roles) Create(ctx context.Context, role *model.Role, opts RoleOptions) error {
+	if err := r.authorize(ctx, "CREATE", role.Name, "Roles.Create"); err != nil {
+		return err
+	}
 	return r.save(ctx, role, opts, 1)
 }
 
 // Update replaces a local role.
 func (r *Roles) Update(ctx context.Context, role *model.Role, opts RoleOptions) error {
+	if err := r.authorize(ctx, "UPDATE", role.Name, "Roles.Update"); err != nil {
+		return err
+	}
 	return r.save(ctx, role, opts, -1)
 }
 
@@ -447,6 +480,9 @@ func (r *Roles) Update(ctx context.Context, role *model.Role, opts RoleOptions) 
 func (r *Roles) Import(ctx context.Context, data []byte, file string, opts RoleOptions) (*model.Role, error) {
 	role, err := ParseRole(data, file)
 	if err != nil {
+		return nil, err
+	}
+	if err := r.authorize(ctx, "IMPORT", role.Name, "Roles.Import"); err != nil {
 		return nil, err
 	}
 	return role, r.save(ctx, role, opts, 0)
@@ -495,7 +531,7 @@ func (r *Roles) save(ctx context.Context, role *model.Role, opts RoleOptions, mo
 			return err
 		}
 		at := k.timestamp()
-		c := RoleChange{ChangedAt: at, ChangedBy: opts.by(), Kind: ChangeCreateRole, Role: model.Some(role.Name), NewState: roleState(s, role)}
+		c := RoleChange{ChangedAt: at, ChangedBy: opts.byActor(r.actor), Kind: ChangeCreateRole, Role: model.Some(role.Name), NewState: roleState(s, role)}
 		if old != nil {
 			c.Kind, c.OldState = ChangeUpdateRole, roleState(before, old)
 		}
@@ -510,6 +546,10 @@ func (r *Roles) save(ctx context.Context, role *model.Role, opts RoleOptions, mo
 // needs Confirm, which removes it from the composite roles and removes
 // its assignments; a composite role without members left is deleted too.
 func (r *Roles) Delete(ctx context.Context, name string, opts RoleOptions) error {
+	if err := r.authorize(ctx, "DELETE", name, "Roles.Delete"); err != nil {
+		return err
+	}
+	opts.By = opts.byActor(r.actor)
 	k := r.k
 	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
 		if err := k.requireInit(ctx, tx); err != nil {
@@ -616,6 +656,10 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 	if a.Role == model.AllAuthorizationsRole && !opts.AllAuthorizations {
 		return out, nil, &rterr.InvalidArgument{Argument: "role", Message: a.Role + " is assigned only on the command line, with rt role assign"}
 	}
+	if err := r.authorizeAssignment(ctx, "CREATE", a.Role, a.Tenant, "Roles.Assign"); err != nil {
+		return out, nil, err
+	}
+	opts.By = opts.byActor(r.actor)
 	from, to := dayOf(a.ValidFrom), dayOf(a.ValidTo)
 	if f, ok := from.Get(); ok {
 		if t, ok := to.Get(); ok && t.Before(f) {
@@ -671,6 +715,22 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 // Unassign removes a role assignment.
 func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error {
 	k := r.k
+	if r.actor != nil {
+		if err := k.requireInit(ctx, k.db); err != nil {
+			return err
+		}
+		list, err := k.repo.RoleAssignments(ctx, k.db, repo.AssignmentFilter{ID: id})
+		if err != nil {
+			return err
+		}
+		if len(list) == 0 {
+			return &rterr.NotFound{Kind: "role assignment", Name: id}
+		}
+		if err := r.authorizeAssignment(ctx, "DELETE", list[0].Role, list[0].Tenant, "Roles.Unassign"); err != nil {
+			return err
+		}
+		opts.By = opts.byActor(r.actor)
+	}
 	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
@@ -699,7 +759,21 @@ func (r *Roles) Assignments(ctx context.Context, user, tenant string) ([]RoleAss
 	if err := r.k.requireInit(ctx, r.k.db); err != nil {
 		return nil, err
 	}
-	return r.k.repo.RoleAssignments(ctx, r.k.db, repo.AssignmentFilter{User: user, Tenant: tenant})
+	list, err := r.k.repo.RoleAssignments(ctx, r.k.db, repo.AssignmentFilter{User: user, Tenant: tenant})
+	if err != nil || r.actor == nil {
+		return list, err
+	}
+	e, err := r.k.actorAuthorizations(ctx, r.actor)
+	if err != nil {
+		return nil, err
+	}
+	out := []RoleAssignment{}
+	for _, a := range list {
+		if actorMay(e, r.actor, RoleAssignmentObject, "READ", map[string]string{"ROLE_NAME": a.Role, "TENANT": a.Tenant}) {
+			out = append(out, a)
+		}
+	}
+	return out, nil
 }
 
 // removeTenantAssignments removes the assignments of a user, or of all

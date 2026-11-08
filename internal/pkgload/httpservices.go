@@ -35,12 +35,16 @@ func init() {
 		NewDoc:   func() any { return &model.HTTPService{} },
 		FileName: func(doc any) (string, bool) { return "", false },
 		// Paths belong to the package through its prefix; the handler
-		// classes are references.
+		// classes and the object of the node check are references.
 		Definitions: func(doc any) []NameRef { return nil },
 		References: func(doc any) []NameRef {
 			var out []NameRef
-			for i, h := range doc.(*model.HTTPService).Handlers {
+			svc := doc.(*model.HTTPService)
+			for i, h := range svc.Handlers {
 				out = append(out, NameRef{Name: h.Class, Pointer: fmt.Sprintf("/handlers/%d/class", i)})
+			}
+			if a := svc.Settings.Authorization.Check; a != nil {
+				out = append(out, NameRef{Name: a.Object, Pointer: "/settings/authorization/object"})
 			}
 			return out
 		},

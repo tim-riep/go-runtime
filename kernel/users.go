@@ -37,7 +37,10 @@ type User = repo.User
 type APIToken = repo.APIToken
 
 // Users manages the users of a kernel.
-type Users struct{ k *Kernel }
+type Users struct {
+	k     *Kernel
+	actor *Actor // nil: unchecked
+}
 
 // Users returns the user operations.
 func (k *Kernel) Users() *Users { return &Users{k: k} }
@@ -53,6 +56,9 @@ type UserOptions struct {
 
 // Create adds an active user with a password.
 func (u *Users) Create(ctx context.Context, name, password string, opts UserOptions) (*User, error) {
+	if err := u.authorize(ctx, "CREATE", name, "Users.Create"); err != nil {
+		return nil, err
+	}
 	if !userName.MatchString(name) {
 		return nil, &rterr.InvalidArgument{Argument: "user", Message: "a user name has 1 to 64 lower-case letters, digits, '.', '_', '@' or '-' and starts with a letter or digit"}
 	}
@@ -94,16 +100,39 @@ func (k *Kernel) userTx(ctx context.Context, fn func(q dialect.Querier) error) e
 	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error { return fn(tx) })
 }
 
-// List returns all users ordered by name.
+// authorize checks an activity of the actor on a user.
+func (u *Users) authorize(ctx context.Context, activity, name, function string) error {
+	return u.k.authorizeActor(ctx, u.actor, UserAdminObject, activity, map[string]string{"USER_NAME": name}, function)
+}
+
+// List returns all users ordered by name; with an actor the users it may
+// read.
 func (u *Users) List(ctx context.Context) ([]*User, error) {
 	if err := u.k.requireInit(ctx, u.k.db); err != nil {
 		return nil, err
 	}
-	return u.k.repo.Users(ctx, u.k.db, "")
+	list, err := u.k.repo.Users(ctx, u.k.db, "")
+	if err != nil || u.actor == nil {
+		return list, err
+	}
+	e, err := u.k.actorAuthorizations(ctx, u.actor)
+	if err != nil {
+		return nil, err
+	}
+	out := []*User{}
+	for _, user := range list {
+		if actorMay(e, u.actor, UserAdminObject, "READ", map[string]string{"USER_NAME": user.Name}) {
+			out = append(out, user)
+		}
+	}
+	return out, nil
 }
 
 // Get returns a user.
 func (u *Users) Get(ctx context.Context, name string) (*User, error) {
+	if err := u.authorize(ctx, "READ", name, "Users.Get"); err != nil {
+		return nil, err
+	}
 	if err := u.k.requireInit(ctx, u.k.db); err != nil {
 		return nil, err
 	}
@@ -148,6 +177,9 @@ func (u *Users) change(ctx context.Context, name string, fn func(user *User) err
 // Lock locks a user: it cannot sign in any more. Locking the last user
 // with all authorizations needs opts.Confirm.
 func (u *Users) Lock(ctx context.Context, name string, opts ...RoleOptions) error {
+	if err := u.authorize(ctx, "UPDATE", name, "Users.Lock"); err != nil {
+		return err
+	}
 	o := RoleOptions{}
 	if len(opts) > 0 {
 		o = opts[0]
@@ -162,6 +194,9 @@ func (u *Users) Lock(ctx context.Context, name string, opts ...RoleOptions) erro
 
 // Unlock unlocks a user and resets its failed logins.
 func (u *Users) Unlock(ctx context.Context, name string) error {
+	if err := u.authorize(ctx, "UPDATE", name, "Users.Unlock"); err != nil {
+		return err
+	}
 	return u.change(ctx, name, func(user *User) error {
 		user.Status, user.LockedAt, user.FailedLogins = "active", model.None[time.Time](), 0
 		return nil
@@ -170,6 +205,9 @@ func (u *Users) Unlock(ctx context.Context, name string) error {
 
 // SetPassword replaces the password of a user.
 func (u *Users) SetPassword(ctx context.Context, name, password string) error {
+	if err := u.authorize(ctx, "UPDATE", name, "Users.SetPassword"); err != nil {
+		return err
+	}
 	if password == "" {
 		return &rterr.InvalidArgument{Argument: "password", Message: "the password must not be empty"}
 	}
@@ -185,6 +223,9 @@ func (u *Users) SetPassword(ctx context.Context, name, password string) error {
 
 // AddTenant lets a user work in a tenant.
 func (u *Users) AddTenant(ctx context.Context, name, tenant string) error {
+	if err := u.authorize(ctx, "UPDATE", name, "Users.AddTenant"); err != nil {
+		return err
+	}
 	k := u.k
 	return k.userTx(ctx, func(q dialect.Querier) error {
 		user, err := k.user(ctx, q, name)
@@ -199,12 +240,15 @@ func (u *Users) AddTenant(ctx context.Context, name, tenant string) error {
 // the user has none afterwards. The role assignments of the user in the
 // tenant are removed and recorded with opts.By.
 func (u *Users) RemoveTenant(ctx context.Context, name, tenant string, opts ...RoleOptions) error {
+	if err := u.authorize(ctx, "UPDATE", name, "Users.RemoveTenant"); err != nil {
+		return err
+	}
 	k := u.k
 	o := RoleOptions{}
 	if len(opts) > 0 {
 		o = opts[0]
 	}
-	by := o.by()
+	by := o.byActor(u.actor)
 	return k.userTx(ctx, func(q dialect.Querier) error {
 		user, err := k.user(ctx, q, name)
 		if err != nil {

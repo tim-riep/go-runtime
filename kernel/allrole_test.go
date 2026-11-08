@@ -85,7 +85,7 @@ func TestAllAuthorizationsRoleDefined(t *testing.T) {
 		}
 		d, err := roles.Get(ctx, allRole)
 		// It covers the objects of TRBASE, installed with the kernel.
-		if err != nil || !d.All || len(d.Authorizations) != 3 || d.Authorizations[0].Authorization.Object != "/TRBASE/ROLE_ADMIN" || !d.Authorizations[0].AllActivities {
+		if err != nil || !d.All || len(d.Authorizations) != 4 || d.Authorizations[0].Authorization.Object != "/TRBASE/HTTP_SERVICE" || !d.Authorizations[0].AllActivities {
 			t.Errorf("covered objects: %+v %v", d, err)
 		}
 	})
@@ -351,7 +351,7 @@ func TestAllAuthorizationsLater(t *testing.T) {
 		if e, _ := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now()); !e.Allows("/TRFIN/COMPANY", values) || len(e.NotEffective) != 0 {
 			t.Errorf("a field added later: %+v", e)
 		}
-		if d, _ := k.Roles().Get(ctx, allRole); len(d.Authorizations) != 6 {
+		if d, _ := k.Roles().Get(ctx, allRole); len(d.Authorizations) != 7 {
 			t.Errorf("covered objects: %d", len(d.Authorizations))
 		}
 	})

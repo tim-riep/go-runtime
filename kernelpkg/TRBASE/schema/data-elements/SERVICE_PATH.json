@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/SERVICE_PATH",
+  "domain": "/RT/HTTP_PATH",
+  "texts": {
+    "en": {
+      "short": "Path",
+      "medium": "Service path",
+      "long": "Full path of a service node",
+      "heading": "Service path"
+    },
+    "de": {
+      "short": "Pfad",
+      "medium": "Servicepfad",
+      "long": "Voller Pfad eines Serviceknotens",
+      "heading": "Servicepfad"
+    }
+  }
+}

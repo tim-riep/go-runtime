@@ -530,3 +530,16 @@ func (e *CompileError) Error() string {
 	}
 	return b.String()
 }
+
+// NotAuthorized reports that the actor of a library call lacks an
+// authorization. It names the object and the activity, not the
+// authorizations of the actor.
+type NotAuthorized struct {
+	User     string
+	Object   string
+	Activity string
+}
+
+func (e *NotAuthorized) Error() string {
+	return fmt.Sprintf("user %s is not authorized for %s with activity %s", e.User, e.Object, e.Activity)
+}

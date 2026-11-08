@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/internal/auth"
 	"github.com/tim-riep/go-runtime/internal/httpsvc"
 	"github.com/tim-riep/go-runtime/kernelpkg/natives"
@@ -156,6 +157,20 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	if u, ok := userName.Get(); ok && tenant.Valid() {
 		k.noteAllAuthorizations(ctx, u, tenant.Or(""))
 	}
+	// Nodes with sign-in check the node and their additional check before
+	// the first handler.
+	if user != nil && !set.Anonymous {
+		allowed, err := k.checkNode(ctx, node, user.Name, tenant.Or(""))
+		if err != nil {
+			slog.Error("checking the authorization of a request", "node", node.Path, "error", err)
+			fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+			return
+		}
+		if !allowed {
+			fail(http.StatusForbidden, httpsvc.CodeForbidden)
+			return
+		}
+	}
 
 	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, Package: node.Package, MaxBody: set.MaxBodySize}
 	resp := natives.NewHTTPResponse(set.MaxResponseSize)
@@ -249,4 +264,44 @@ func (s slogSink) Log(level, text string) {
 		l = slog.LevelError
 	}
 	slog.Log(context.Background(), l, text, "node", s.node)
+}
+
+// HTTPServiceObject is the authorization object of the kernel package
+// TRBASE that requests with sign-in need for a service node.
+const HTTPServiceObject = "/TRBASE/HTTP_SERVICE"
+
+// nodeChecks returns the checks of a request to a node: EXECUTE on the
+// node, then its additional check.
+func nodeChecks(node *httpsvc.Node) []authorization.Check {
+	out := []authorization.Check{{Object: HTTPServiceObject,
+		Values: map[string]string{"PACKAGE_ID": string(node.Package), "SERVICE_PATH": node.Path, model.ActivityField: "EXECUTE"}}}
+	if a := node.Settings.Authorization; a != nil {
+		c := authorization.Check{Object: a.Object, Values: map[string]string{}}
+		for name, v := range a.Fields {
+			if v.Any {
+				if c.Any == nil {
+					c.Any = map[string]bool{}
+				}
+				c.Any[name] = true
+			} else {
+				c.Values[name] = v.Value
+			}
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// checkNode reports whether a user may call a node in a tenant.
+func (k *Kernel) checkNode(ctx context.Context, node *httpsvc.Node, user, tenant string) (bool, error) {
+	e, err := k.EffectiveAuthorizations(ctx, user, tenant, k.now())
+	if err != nil {
+		return false, err
+	}
+	for _, c := range nodeChecks(node) {
+		if !e.Check(c) {
+			return false, nil
+		}
+	}
+	return true, nil
 }

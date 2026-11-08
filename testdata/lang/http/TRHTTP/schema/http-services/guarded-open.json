@@ -1,0 +1,6 @@
+{
+  "path": "guarded/open",
+  "texts": { "en": { "label": "Without the check of guarded" } },
+  "handlers": [{ "class": "/TRHTTP/VERSION" }],
+  "settings": { "authorization": null }
+}

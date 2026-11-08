@@ -99,6 +99,9 @@ func httpKernel(t *testing.T, k *kernel.Kernel) client {
 	if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 		t.Fatal(err)
 	}
+	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRHTTP/CALLER", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+		t.Fatal(err)
+	}
 	srv := httptest.NewServer(k.HTTPHandler())
 	t.Cleanup(srv.Close)
 	return client{t, srv.URL}
@@ -227,6 +230,61 @@ func TestHandlerReferences(t *testing.T) {
 		var ce *rterr.CompileError
 		if !errors.As(err, &ce) || ce.Package != "TRHUSE" || !strings.Contains(err.Error(), "/TRHTTP/ECHO is not a class") {
 			t.Errorf("upgrade without a used handler: %v", err)
+		}
+	})
+}
+
+// TestNodeChecks requires EXECUTE on a node for requests with sign-in and
+// the additional check of a node, which its subtree inherits and null
+// leaves out; anonymous nodes are not checked.
+func TestNodeChecks(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		c := httpKernel(t, k)
+		if err := k.ActivateHTTPService(ctx, "/trhttp"); err != nil {
+			t.Fatal(err)
+		}
+		for _, u := range []string{"bob", "carl"} {
+			if _, err := k.Users().Create(ctx, u, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "bob", Role: "/TRHTTP/CALLER", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		expect := func(user, path string, want int) {
+			t.Helper()
+			if a := c.do("GET", path, basicAuth(user, "secret"), ""); a.status != want {
+				t.Errorf("%s %s: %d %s, want %d", user, path, a.status, a.body, want)
+			}
+		}
+		expect("carl", "/trhttp/version", 403)
+		expect("bob", "/trhttp/version", 200)
+		expect("bob", "/trhttp/guarded", 403)
+		expect("bob", "/trhttp/guarded/inner", 403)
+		expect("bob", "/trhttp/guarded/open", 200)
+		if a := c.do("GET", "/trhttp/public", nil, ""); a.status == 403 {
+			t.Errorf("anonymous: %d", a.status)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "bob", Role: "/TRHTTP/AREA_A", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		expect("bob", "/trhttp/guarded", 200)
+		expect("bob", "/trhttp/guarded/inner", 200)
+		expect("carl", "/trhttp/guarded/open", 403)
+
+		s, err := k.Schema(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a := s.HTTPServices["/trhttp/guarded"].Settings.Authorization; a.Check == nil || a.Check.Fields["AREA"].Value != "A" {
+			t.Errorf("stored check: %+v", a)
+		}
+		if a := s.HTTPServices["/trhttp/guarded/open"].Settings.Authorization; !a.Set || a.Check != nil {
+			t.Errorf("stored null: %+v", a)
+		}
+		if a := s.HTTPServices["/trhttp/guarded/inner"].Settings.Authorization; a.Set {
+			t.Errorf("stored inheritance: %+v", a)
 		}
 	})
 }

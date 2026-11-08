@@ -15,6 +15,7 @@
 package kernel
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/tim-riep/go-runtime/authorization"
@@ -77,4 +78,9 @@ func (x *execution) CheckAuthorization(c authorization.Check, at native.CheckLoc
 // the execution.
 func (x *execution) notAuthorized(c authorization.Check) *native.NotAuthorized {
 	return &native.NotAuthorized{Check: c, Text: notAuthorizedText(x.Language(), c.Object, x.opts.User.Valid())}
+}
+
+// rememberFailedCheck records the last failed check of a user in a
+// tenant; it is filled in with the diagnosis of failed checks.
+func (k *Kernel) rememberFailedCheck(ctx context.Context, user, tenant string, c authorization.Check, function string) {
 }

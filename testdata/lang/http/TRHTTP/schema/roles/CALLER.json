@@ -1,0 +1,14 @@
+{
+  "name": "/TRHTTP/CALLER",
+  "texts": { "en": { "label": "Calls the services of TRHTTP" } },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [{ "value": "TRHTTP" }],
+        "SERVICE_PATH": [{ "pattern": "/trhttp*" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }]
+      }
+    }
+  ]
+}

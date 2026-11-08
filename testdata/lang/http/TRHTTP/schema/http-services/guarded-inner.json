@@ -1,0 +1,1 @@
+{ "path": "guarded/inner", "texts": { "en": { "label": "Inherits the check of guarded" } }, "handlers": [{ "class": "/TRHTTP/VERSION" }] }

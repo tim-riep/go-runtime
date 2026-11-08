@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -117,5 +118,50 @@ func TestHTTPServiceLifecycle(t *testing.T) {
 			t.Errorf("states left: %d %v", left, err)
 		}
 		consistent(t, k)
+	})
+}
+
+// TestNodeCheckDefinitions rejects additional checks of service nodes
+// whose object, fields or values do not fit, and needs the object's
+// package in requires.
+func TestNodeCheckDefinitions(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		node := func(auth string) string {
+			dir := servicePackage(t, "1.0.0", map[string]string{"node.json": `{"path":"node","texts":{"en":{"label":"Node"}},"settings":{"authorization":` + auth + `}}`})
+			testutil.WriteFile(t, dir, "manifest.json", []byte(`{"id":"TRSVC","version":"1.0.0","requires":[{"id":"TRBASE"}]}`))
+			return dir
+		}
+		for _, c := range []struct{ auth, want string }{
+			{`{"object":"/RT/NONE","fields":{}}`, "authorization object /RT/NONE does not exist"},
+			{`{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":{"any":true}}}`, "needs the field ACTIVITY"},
+			{`{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":{"any":true},"ACTIVITY":"EXECUTE"}}`, `does not allow the activity "EXECUTE"`},
+			{`{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":{"any":true},"ACTIVITY":"READ","COLOR":"RED"}}`, "has no field COLOR"},
+			{`{"object":"/TRBASE/HTTP_SERVICE","fields":{"PACKAGE_ID":"` + strings.Repeat("X", 40) + `","SERVICE_PATH":{"any":true},"ACTIVITY":"EXECUTE"}}`, "is no value of PACKAGE_ID"},
+		} {
+			_, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, node(c.auth))}, kernel.Options{})
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("%s: %v", c.auth, err)
+			}
+		}
+		if _, err := kernel.LoadDir(node(`{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":{"any":false},"ACTIVITY":"READ"}}`)); err == nil ||
+			!strings.Contains(err.Error(), "at /settings/authorization") {
+			t.Errorf("any false: %v", err)
+		}
+		// Objects of packages that are not required are not visible.
+		_, err := kernel.LoadDir(node(`{"object":"/TRFIN/COMPANY","fields":{}}`))
+		var nv *rterr.NamespaceViolation
+		if !errors.As(err, &nv) {
+			t.Errorf("object of another package: %v", err)
+		}
+		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t,
+			node(`{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":"anna","ACTIVITY":"READ"}}`))}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		n, err := k.HTTPService(ctx, "/trsvc/node")
+		if err != nil || n.Settings.Authorization == nil || n.Settings.Authorization.Fields["USER_NAME"].Value != "anna" {
+			t.Errorf("node: %+v %v", n, err)
+		}
 	})
 }

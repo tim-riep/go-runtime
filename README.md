@@ -587,9 +587,19 @@ direct access to the database, is restored with its assignments kept and recorde
 - `rt init --admin <user> --tenant <tenant>` creates a first user with it, with the password
   on standard input; `RT_ADMIN_USER`, `RT_ADMIN_TENANT` and `RT_ADMIN_PASSWORD` do the same,
   flags win. On a terminal of a database without users, `rt init` asks. A missing tenant is
-  created. TRBASE brings the authorization objects `/TRBASE/USER_ADMIN`,
-`/TRBASE/ROLE_ADMIN` and `/TRBASE/ROLE_ASSIGNMENT` for the administration, which will be
-checked by a later version.
+  created.
+
+TRBASE brings the authorization objects `/TRBASE/USER_ADMIN` (`USER_NAME`),
+`/TRBASE/ROLE_ADMIN` (`ROLE_NAME`, also `IMPORT` and `EXPORT`) and
+`/TRBASE/ROLE_ASSIGNMENT` (`ROLE_NAME`, `TENANT`) for the administration. Applications that
+let their users administer call the library on behalf of an actor:
+`k.Users().As(kernel.Actor{User: "rita", Tenant: "ACME"})` and `k.Roles().As(...)` check
+every function with the actor's authorizations in the tenant first: creating needs
+`CREATE`, changes, locks, passwords and tenants `UPDATE`, reading `READ`, deleting
+`DELETE`; `List` and `Assignments` return only what the actor may read. A failed check
+returns `*rterr.NotAuthorized`, which names the object and the activity but not the
+authorizations; the history records the actor as who made the change. Without actor, as
+on the command line, nothing is checked.
 
 Every change of local roles and assignments, also those that operations on packages,
 users and tenants make, is recorded in `/RT/ROLE_HISTORY` with who made it and the old and
@@ -785,6 +795,7 @@ node `/<package ID in lower case>`; a file in `schema/http-services` adds a node
   | `maxResponseSize` | 16 MiB                      | larger responses fail with 500                  |
   | `timeoutSeconds`  | 30                          | longer requests are answered with 503           |
   | `budget`          | 10 000 000                  | instructions per request                        |
+  | `authorization`   | none                        | an additional check, see below; `null` removes the inherited one |
 
 Nodes are not reachable after installation. `rt http activate <path>` activates a node and
 the nodes below it that were never activated; `rt http deactivate <path>` deactivates one.
@@ -806,6 +817,35 @@ The tenant of a request comes from the first source of the node that gives one; 
 user is not assigned to is answered with 403, a request without tenant with 400. Anonymous
 requests run in `anonymousTenant` only. The language is the first one of the sources that is
 set up, else English.
+
+### Authorizations of requests
+
+Before the first handler runs, a request with sign-in to a node without anonymous access
+needs the authorization object `/TRBASE/HTTP_SERVICE` of TRBASE in the tenant of the
+request, with the package of the node, its full path and the activity `EXECUTE`:
+
+```json
+{ "object": "/TRBASE/HTTP_SERVICE",
+  "fields": { "PACKAGE_ID": [{ "value": "TRFIN" }], "SERVICE_PATH": [{ "pattern": "/trfin*" }],
+              "ACTIVITY": [{ "value": "EXECUTE" }] } }
+```
+
+A node may add a check of its own with the setting `authorization`, which its subtree
+inherits; `"authorization": null` removes the inherited check for a node and its subtree.
+Every field of the object needs a value of its type, or `{"any": true}`; the object belongs
+to the package, a required one or the kernel, and the activity must be one of the object:
+
+```json
+"settings": {
+  "authorization": { "object": "/TRFIN/COMPANY",
+                     "fields": { "COMPANY_ID": { "any": true }, "COUNTRY": { "any": true }, "ACTIVITY": "READ" } }
+}
+```
+
+A failed check answers 403 `forbidden` without saying which authorization is missing.
+Nodes with anonymous access check nothing. The code of the handlers checks further with
+`check authorization` and `authorized`, and an unhandled `/RT/NOT_AUTHORIZED` answers 403
+as well and rolls the request back.
 
 ### Requests
 

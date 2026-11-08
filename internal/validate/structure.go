@@ -342,5 +342,52 @@ func (v *validator) httpServices() {
 		if n := tree.Node(path); n != nil && h.Settings.AnonymousTenant.Valid() && !n.Settings.Anonymous {
 			v.fail(rterr.CodeName, h.Src.At("/settings/anonymousTenant"), "service node "+path, "anonymousTenant needs anonymous access at the node")
 		}
+		if a := h.Settings.Authorization.Check; a != nil {
+			v.nodeCheck("service node "+path, h.Src.At("/settings/authorization"), a)
+		}
+	}
+}
+
+// nodeCheck checks the additional check of a service node: the object
+// exists, every field has a value of its domain or any, and an activity is
+// one the object allows. Values become canonical. The namespace check of
+// the loader makes sure the object is visible to the package.
+func (v *validator) nodeCheck(obj string, src rterr.Location, a *model.HTTPAuthorization) {
+	o := v.s.AuthorizationObjects[a.Object]
+	if o == nil {
+		v.fail(rterr.CodeAuthorization, src.At("/object"), obj, "authorization object %s does not exist", a.Object)
+		return
+	}
+	for _, name := range slices.Sorted(maps.Keys(a.Fields)) {
+		if _, ok := o.Field(name); !ok {
+			v.fail(rterr.CodeAuthorization, src.At("/fields/"+name), obj, "%s has no field %s", o.Name, name)
+		}
+	}
+	for _, f := range o.Fields {
+		val, ok := a.Fields[f.Name]
+		at := src.At("/fields/" + f.Name)
+		switch {
+		case !ok:
+			v.fail(rterr.CodeAuthorization, src.At("/fields"), obj, "the check of %s needs the field %s, with a value or {\"any\": true}", o.Name, f.Name)
+		case val.Any:
+		case f.IsActivity():
+			if !slices.Contains(o.Activities, val.Value) {
+				v.fail(rterr.CodeAuthorization, at, obj, "%s does not allow the activity %q; it allows %s", o.Name, val.Value, strings.Join(o.Activities, ", "))
+			}
+		default:
+			d := v.s.Domains[v.s.AuthorizationFieldDomain(f)]
+			if d == nil {
+				continue
+			}
+			c, err := d.Canonical(val.Value)
+			if err != nil {
+				v.fail(rterr.CodeAuthorization, at, obj, "%q is no value of %s: %v", val.Value, f.Name, err)
+				continue
+			}
+			if len(d.Values) > 0 && !d.HasValue(c) {
+				v.fail(rterr.CodeAuthorization, at, obj, "%q is no fixed value of %s", c, d.Name)
+			}
+			a.Fields[f.Name] = model.HTTPAuthValue{Value: c}
+		}
 	}
 }

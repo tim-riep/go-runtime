@@ -1,0 +1,6 @@
+{
+  "name": "/TRHTTP/AREA",
+  "texts": { "en": { "label": "Areas" } },
+  "fields": [{ "name": "AREA", "domain": "/TRHTTP/AREA" }, { "name": "ACTIVITY" }],
+  "activities": ["READ"]
+}
