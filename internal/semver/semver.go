@@ -17,7 +17,10 @@
 // A constraint is a list of comparisons separated by commas or spaces, all of
 // which must hold: "=1.2.3", "1.2.3", ">1.0.0", ">=1.0.0", "<2.0.0",
 // "<=1.4.0", "^1.2.0" (same major version) and "~1.2.0" (same minor
-// version). An empty constraint matches every version.
+// version). An empty constraint matches every version. Versions in
+// constraints may leave out the minor and patch version, which count as 0:
+// "^1.0" is "^1.0.0"; without operator "1.2" is every 1.2.x and "1" every
+// 1.x.x.
 package semver
 
 import (
@@ -149,6 +152,24 @@ func ParseConstraint(s string) (Constraint, error) {
 	return c, nil
 }
 
+// partial parses a version that may lack minor and patch, which count as
+// 0, and returns how many parts were given.
+func partial(s string) (Version, int, error) {
+	if v, err := Parse(s); err == nil {
+		return v, 3, nil
+	}
+	parts := strings.Split(s, ".")
+	if len(parts) > 2 {
+		return Version{}, 0, fmt.Errorf("%q is not a semantic version", s)
+	}
+	full := strings.Join(append(parts, []string{"0", "0"}[:3-len(parts)]...), ".")
+	v, err := Parse(full)
+	if err != nil || len(v.Pre) > 0 {
+		return Version{}, 0, fmt.Errorf("%q is not a semantic version", s)
+	}
+	return v, len(parts), nil
+}
+
 func parseComparison(tok string) ([]comparison, error) {
 	prefixes := []struct {
 		p  string
@@ -156,7 +177,7 @@ func parseComparison(tok string) ([]comparison, error) {
 	}{{">=", opGe}, {"<=", opLe}, {">", opGt}, {"<", opLt}, {"=", opEq}}
 	for _, p := range prefixes {
 		if rest, ok := strings.CutPrefix(tok, p.p); ok {
-			v, err := Parse(rest)
+			v, _, err := partial(rest)
 			if err != nil {
 				return nil, err
 			}
@@ -164,7 +185,7 @@ func parseComparison(tok string) ([]comparison, error) {
 		}
 	}
 	if rest, ok := strings.CutPrefix(tok, "^"); ok {
-		v, err := Parse(rest)
+		v, _, err := partial(rest)
 		if err != nil {
 			return nil, err
 		}
@@ -178,17 +199,49 @@ func parseComparison(tok string) ([]comparison, error) {
 		return []comparison{{opGe, v}, {opLt, upper}}, nil
 	}
 	if rest, ok := strings.CutPrefix(tok, "~"); ok {
-		v, err := Parse(rest)
+		v, _, err := partial(rest)
 		if err != nil {
 			return nil, err
 		}
 		return []comparison{{opGe, v}, {opLt, Version{Major: v.Major, Minor: v.Minor + 1}}}, nil
 	}
-	v, err := Parse(tok)
-	if err != nil {
+	v, n, err := partial(tok)
+	switch {
+	case err != nil:
 		return nil, err
+	case n == 1:
+		return []comparison{{opGe, v}, {opLt, Version{Major: v.Major + 1}}}, nil
+	case n == 2:
+		return []comparison{{opGe, v}, {opLt, Version{Major: v.Major, Minor: v.Minor + 1}}}, nil
 	}
 	return []comparison{{opEq, v}}, nil
+}
+
+// Prerelease reports whether the constraint names a pre-release version;
+// only then do pre-releases take part when a version is chosen.
+func (c Constraint) Prerelease() bool {
+	for _, cmp := range c.cmps {
+		if len(cmp.v.Pre) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// Highest returns the highest of the versions that satisfy the
+// constraint, pre-releases only if the constraint names one.
+func (c Constraint) Highest(versions []Version) (Version, bool) {
+	var best Version
+	found := false
+	for _, v := range versions {
+		if len(v.Pre) > 0 && !c.Prerelease() || !c.Match(v) {
+			continue
+		}
+		if !found || Compare(v, best) > 0 {
+			best, found = v, true
+		}
+	}
+	return best, found
 }
 
 // Match reports whether v satisfies the constraint.

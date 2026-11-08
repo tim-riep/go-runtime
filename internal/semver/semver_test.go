@@ -70,3 +70,36 @@ func TestConstraints(t *testing.T) {
 		t.Error("expected error for invalid constraint")
 	}
 }
+
+// TestPartialVersions accepts versions without minor or patch in
+// constraints and chooses the highest version, pre-releases only on
+// request.
+func TestPartialVersions(t *testing.T) {
+	for _, c := range []struct {
+		constraint, version string
+		want              bool
+	}{
+		{"^1.0", "1.9.3", true}, {"^1.0", "2.0.0", false}, {"^1", "1.0.0", true}, {"~1.2", "1.2.9", true}, {"~1.2", "1.3.0", false},
+		{"1.2", "1.2.7", true}, {"1.2", "1.3.0", false}, {"1", "1.99.0", true}, {"1", "2.0.0", false},
+		{">=1.2 <2", "1.5.0", true}, {">=1.2 <2", "2.0.0", false}, {"1.2.3", "1.2.4", false},
+	} {
+		if got, err := Satisfies(c.version, c.constraint); err != nil || got != c.want {
+			t.Errorf("%s %s: %v %v", c.constraint, c.version, got, err)
+		}
+	}
+	if _, err := ParseConstraint("^1.2.3.4"); err == nil {
+		t.Error("four parts")
+	}
+	var vs []Version
+	for _, s := range []string{"1.0.0", "1.4.0", "1.5.0-rc.1", "2.0.0-beta", "0.9.0"} {
+		v, _ := Parse(s)
+		vs = append(vs, v)
+	}
+	for c, want := range map[string]string{"^1.0": "1.4.0", "": "1.4.0", "~1.5.0-rc.1": "1.5.0-rc.1", "^2": ""} {
+		pc, _ := ParseConstraint(c)
+		v, ok := pc.Highest(vs)
+		if got := map[bool]string{true: v.String(), false: ""}[ok]; got != want {
+			t.Errorf("highest %q = %q, want %q", c, got, want)
+		}
+	}
+}
