@@ -12,20 +12,49 @@ public class /TRFIN/COMPANY_SERVICE
     end
   end
 
-  # Other packages check and adjust new companies through the extension
-  # point /TRFIN/COMPANY_CHECKS, e.g. the connection to OTTO.
+  # Creates a company through the business object /TRFIN/COMPANY and saves
+  # it. Other packages check and adjust new companies through the extension
+  # point /TRFIN/COMPANY_CHECKS, e.g. the connection to OTTO; a company
+  # they or the user's authorizations reject raises /TRFIN/COMPANY_REJECTED.
   public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES raises /TRFIN/COMPANY_REJECTED
-    var company: /TRFIN/COMPANIES
+    var companies: array of new of /TRFIN/COMPANIES = []
+    var company: new of /TRFIN/COMPANIES
     company.COMPANY_ID = id
     company.NAME = name
     company.COUNTRY = country
+    companies.APPEND(company)
+    modify business object /TRFIN/COMPANY
+      create /TRFIN/COMPANIES fields (COMPANY_ID, NAME, COUNTRY) from companies
+      result created
+    end
+    if created.FAILURES is not empty
+      rollback business objects
+      raise /TRFIN/COMPANY_REJECTED with id, REASON(created)
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+      raise /TRFIN/COMPANY_REJECTED with id, REASON(saved)
+    end
+    var stored = FIND(id)
+    if stored is null
+      raise /TRFIN/COMPANY_REJECTED with id, "not saved"
+    end
+    return stored
+  end
 
-    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country
-    checks.VALIDATE(company)
-    company = checks.ADJUST(company)
-
-    insert company
-    return company
+  # The first error message of a result, else the reason of its first
+  # failure.
+  private static method REASON(result: /TRBASE/ENTITY_RESULT) returns STRING
+    for m in result.MESSAGES
+      if m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+        return m.TEXT
+      end
+    end
+    if result.FAILURES is empty
+      return "unknown"
+    end
+    return "{result.FAILURES[1].REASON}"
   end
 
   public static method FIND(id: /TRFIN/COMPANY) returns /TRFIN/COMPANIES?
@@ -37,21 +66,49 @@ public class /TRFIN/COMPANY_SERVICE
   end
 
   public static method RENAME(id: /TRFIN/COMPANY, name: STRING) raises /TRFIN/UNKNOWN_COMPANY
-    var company = FIND(id)
-    if company is null
+    var rows: array of /TRFIN/COMPANIES = []
+    var row: /TRFIN/COMPANIES
+    row.COMPANY_ID = id
+    row.NAME = name
+    rows.APPEND(row)
+    modify business object /TRFIN/COMPANY
+      update /TRFIN/COMPANIES fields (NAME) from rows
+      result outcome
+    end
+    if outcome.FAILURES is not empty
       raise /TRFIN/UNKNOWN_COMPANY with id
     end
-    company.NAME = name
-    update company
   end
 
   # Blocks all active companies of a country and returns their number.
   public static method BLOCK_COUNTRY(country: /TRFIN/COUNTRY_CODE) returns INT8
-    return update /TRFIN/COMPANIES set STATUS = /TRFIN/COMPANY_STATUS.BLOCKED where COUNTRY = country and STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+    var keys: array of key of /TRFIN/COMPANIES = []
+    for company in select from /TRFIN/COMPANIES where COUNTRY = country and STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+      var key: key of /TRFIN/COMPANIES
+      key.COMPANY_ID = company.COMPANY_ID
+      keys.APPEND(key)
+    end
+    var reason: /TRFIN/BLOCK_REASON
+    reason.TEXT = "country {country} blocked"
+    modify business object /TRFIN/COMPANY
+      execute /TRFIN/COMPANIES.BLOCK keys keys parameter reason into blocked
+    end
+    return blocked.LENGTH()
   end
 
+  # Deletes the closed companies with their contacts and bank accounts.
   public static method REMOVE_CLOSED() returns INT8
-    return delete from /TRFIN/COMPANIES where STATUS = /TRFIN/COMPANY_STATUS.CLOSED
+    var keys: array of key of /TRFIN/COMPANIES = []
+    for company in select from /TRFIN/COMPANIES where STATUS = /TRFIN/COMPANY_STATUS.CLOSED
+      var key: key of /TRFIN/COMPANIES
+      key.COMPANY_ID = company.COMPANY_ID
+      keys.APPEND(key)
+    end
+    modify business object /TRFIN/COMPANY
+      delete /TRFIN/COMPANIES keys keys
+      result outcome
+    end
+    return keys.LENGTH() - outcome.FAILURES.LENGTH()
   end
 
 end

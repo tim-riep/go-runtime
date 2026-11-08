@@ -2,10 +2,12 @@
 public class /TRFIN/COMPANY_REJECTED extends /RT/EXCEPTION
 
   public attribute COMPANY_ID: STRING
+  public attribute REASON: STRING
 
   public constructor(id: STRING, reason: STRING)
     super("company {id} rejected: {reason}")
     COMPANY_ID = id
+    REASON = reason
   end
 
 end

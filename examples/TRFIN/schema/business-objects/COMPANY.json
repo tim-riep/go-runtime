@@ -1,0 +1,46 @@
+{
+  "name": "/TRFIN/COMPANY",
+  "description": { "en": "Company", "de": "Firma" },
+  "root": "/TRFIN/COMPANIES",
+  "behaviorClass": "/TRFIN/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "operations": ["create", "update", "delete"],
+      "numbering": "external",
+      "fields": {
+        "NAME": { "mandatory": true },
+        "STATUS": { "readOnly": true }
+      },
+      "administrative": { "createdBy": "CREATED_BY", "createdAt": "CREATED_AT", "changedBy": "CHANGED_BY", "changedAt": "CHANGED_AT" },
+      "etag": "CHANGED_AT",
+      "determinations": [
+        { "name": "SET_INITIAL_STATUS", "when": "modify", "on": ["create"] },
+        { "name": "ADJUST", "when": "save", "on": ["create"] }
+      ],
+      "validations": [
+        { "name": "CHECK_COUNTRY", "on": ["create", "update"], "fields": ["COUNTRY"] }
+      ],
+      "actions": [
+        { "name": "BLOCK", "parameter": "/TRFIN/BLOCK_REASON", "result": "self" }
+      ],
+      "authorization": {
+        "object": "/TRFIN/COMPANY",
+        "fields": { "COMPANY_ID": "COMPANY_ID", "COUNTRY": "COUNTRY" },
+        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "BLOCK": "UPDATE" }
+      }
+    },
+    "/TRFIN/CONTACTS": {
+      "parent": "/TRFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid",
+      "fields": { "NAME": { "mandatory": true } }
+    },
+    "/TRFIN/BANK_ACCOUNTS": {
+      "parent": "/TRFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "external"
+    }
+  }
+}

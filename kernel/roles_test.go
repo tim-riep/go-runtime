@@ -75,9 +75,16 @@ func finWithField(t *testing.T, version string, roles bool) *model.Package {
 }
 
 // regionInChecks adds REGION = any to the checks of /TRFIN/COMPANY in the
-// sources of TRFIN in dir.
+// sources of TRFIN in dir, and the city as region to the authorization of
+// the business object /TRFIN/COMPANY.
 func regionInChecks(t *testing.T, dir string) {
 	t.Helper()
+	bo, err := os.ReadFile(filepath.Join(dir, "schema", "business-objects", "COMPANY.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bo = []byte(strings.Replace(string(bo), `"COUNTRY": "COUNTRY" }`, `"COUNTRY": "COUNTRY", "REGION": "CITY" }`, 1))
+	testutil.WriteFile(t, dir, "schema/business-objects/COMPANY.json", bo)
 	for _, f := range []string{"COMPANY_API.class", "COMPANY_INTAKE.class", "COMPANY_FILES.class"} {
 		b, err := os.ReadFile(filepath.Join(dir, "src", f))
 		if err != nil {
@@ -175,7 +182,8 @@ func TestRoleLifecycle(t *testing.T) {
 		}
 		list, _ := roles.List(ctx)
 		for _, r := range list {
-			if (r.Name == "/LOCAL/CLERK" || r.Name == "/TRROLE/READER") != (r.Incomplete == 1) {
+			// SYNC_OPERATOR of TROTTO grants updates of companies.
+			if (r.Name == "/LOCAL/CLERK" || r.Name == "/TRROLE/READER" || r.Name == "/TROTTO/SYNC_OPERATOR") != (r.Incomplete == 1) {
 				t.Errorf("list: %+v", r)
 			}
 		}

@@ -11,6 +11,14 @@
         "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
         "ACTIVITY": [{ "value": "EXECUTE" }, { "value": "IMPORT" }]
       }
+    },
+    {
+      "object": "/TRFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
+        "ACTIVITY": [{ "value": "READ" }, { "value": "UPDATE" }]
+      }
     }
   ]
 }

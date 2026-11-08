@@ -1,6 +1,8 @@
-# Creates a company from a JSON body sent with POST and answers with 201
-# and the stored company, or with 400 for a body that is no company. A user
-# who may not create the company gets 403, and nothing is stored.
+# Creates a company from a JSON body sent with POST through the business
+# object /TRFIN/COMPANY and answers with 201 and the stored company, or
+# with 400 for a body that is no company. A user who may not create the
+# company gets 403, a company that its checks reject 422 with the
+# messages; nothing is stored then.
 public class /TRFIN/COMPANY_INTAKE implements /TRBASE/HTTP_HANDLER
 
   public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
@@ -10,14 +12,39 @@ public class /TRFIN/COMPANY_INTAKE implements /TRBASE/HTTP_HANDLER
     response.SET_HEADER("Content-Type", "application/json")
     try
       var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFIN/COMPANIES
-      check authorization /TRFIN/COMPANY
-        COMPANY_ID = company.COMPANY_ID
-        COUNTRY = company.COUNTRY default ""
-        ACTIVITY = CREATE
+      var companies: array of /TRFIN/COMPANIES = []
+      companies.APPEND(company)
+      modify business object /TRFIN/COMPANY
+        create /TRFIN/COMPANIES fields (COMPANY_ID, NAME, STREET, POSTAL_CODE, CITY, COUNTRY, CAPITAL, FOUNDED_ON) from companies
+        result created
       end
-      insert company
+      commit business objects result saved
+      var failures = created.FAILURES
+      var messages = created.MESSAGES
+      if failures is empty
+        failures = saved.FAILURES
+        messages = saved.MESSAGES
+      end
+      if failures is not empty
+        rollback business objects
+        if failures[1].REASON = /TRBASE/FAILURE_REASON.NOT_AUTHORIZED
+          response.SET_STATUS(403)
+          response.WRITE_TEXT("\{\"error\":\"forbidden\"\}")
+        else
+          response.SET_STATUS(422)
+          response.WRITE_TEXT(transform messages using /TRBASE/JSON)
+        end
+        return true
+      end
+      var keys: array of key of /TRFIN/COMPANIES = []
+      var key: key of /TRFIN/COMPANIES
+      key.COMPANY_ID = company.COMPANY_ID
+      keys.APPEND(key)
+      var stored = read business object /TRFIN/COMPANY
+        /TRFIN/COMPANIES fields all keys keys
+      end
       response.SET_STATUS(201)
-      response.WRITE_TEXT(transform company using /TRBASE/JSON)
+      response.WRITE_TEXT(transform stored[1] using /TRBASE/JSON)
     catch e: /TRBASE/TRANSFORM_RESULT_INVALID
       response.SET_STATUS(400)
       response.WRITE_TEXT(transform e.TEXT using /TRBASE/JSON)

@@ -242,7 +242,8 @@ func TestReflectorLiterals(t *testing.T) {
 		pkg := testutil.LoadDir(t, fin)
 		pkg.Manifest.Version = "1.1.0"
 		_, err = k.Upgrade(ctx, pkg, kernel.Options{AllowDestructive: true})
-		if !errors.As(err, &ce) || ce.Package != "TRFIN" || !strings.Contains(err.Error(), "authorization object /TRFIN/COMPANY does not exist") {
+		// The role of TROTTO and the business object of TRFIN need it as well.
+		if err == nil || !strings.Contains(err.Error(), "authorization object /TRFIN/COMPANY does not exist") {
 			t.Errorf("upgrade without the object: %v", err)
 		}
 	})

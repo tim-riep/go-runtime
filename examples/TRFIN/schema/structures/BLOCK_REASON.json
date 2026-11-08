@@ -1,0 +1,13 @@
+{
+  "name": "/TRFIN/BLOCK_REASON",
+  "texts": {
+    "en": { "label": "Reason for blocking a company" },
+    "de": { "label": "Grund für die Sperre einer Firma" }
+  },
+  "components": [
+    {
+      "name": "TEXT",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

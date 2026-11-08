@@ -69,6 +69,7 @@ func examples(t *testing.T) []*model.Package {
 func legacyExample(t *testing.T, name string) *model.Package {
 	p := testutil.Example(t, name)
 	p.Structures, p.ArrayTypes, p.StructureExtensions, p.AuthorizationObjects, p.Roles = nil, nil, nil, nil, nil
+	withoutBusinessObjects(p)
 	p.DataElements = withoutKernelDomains(p.DataElements)
 	var tables []model.Table
 	for _, tb := range p.Tables {

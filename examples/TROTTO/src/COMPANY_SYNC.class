@@ -1,6 +1,6 @@
-# Gives the companies of a country a partner ID on OTTO and writes a line
-# to the audit log in a session of its own, which stays even if the sync
-# is rolled back. The user needs the authorization to run the exchange
+# Gives the companies of a country a partner ID on OTTO through the
+# business object /TRFIN/COMPANY and writes a line to the audit log in a
+# session of its own, which stays even if the sync is rolled back. The user needs the authorization to run the exchange
 # for the country.
 public class /TROTTO/COMPANY_SYNC
 
@@ -10,12 +10,21 @@ public class /TROTTO/COMPANY_SYNC
       ACTIVITY = EXECUTE
     end
     var audit = open session
-    var count = 0
-
+    var rows: array of /TRFIN/COMPANIES = []
     for company in select from /TRFIN/COMPANIES where COUNTRY = country and /TROTTO/OTTO_ID is null
       company./TROTTO/OTTO_ID = /TROTTO/ID_RULES.BUILD(company.COMPANY_ID)
-      update company
+      rows.APPEND(company)
+    end
+    modify business object /TRFIN/COMPANY
+      update /TRFIN/COMPANIES fields (/TROTTO/OTTO_ID) from rows
+      result outcome
+    end
+    var count = 0
+    for row in rows
       count = count + 1
+    end
+    for failure in outcome.FAILURES
+      count = count - 1
     end
 
     var entry: /TRBASE/AUDIT_LOG
@@ -25,7 +34,7 @@ public class /TROTTO/COMPANY_SYNC
     commit audit
 
     if count > 1000
-      rollback
+      rollback business objects
       return 0
     end
     return count

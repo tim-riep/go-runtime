@@ -48,9 +48,12 @@ public class /TRFIN/COMPANY_FILES
 
   # Imports the companies of the sheet Companies, from the entry
   # companies.xlsx of a zip archive or from a workbook: new companies are
-  # created, existing ones updated, each after the check of the activity.
-  # Returns the number of companies.
-  public static method IMPORT(data: BYTES) returns INT8 raises /TRBASE/XLSX_ERROR, /TRBASE/ARCHIVE_ERROR
+  # created, existing ones updated through the business object
+  # /TRFIN/COMPANY, which checks the authorization of each. The status
+  # stays with the business object. When one company fails, none is
+  # imported and /TRFIN/COMPANY_REJECTED tells the reason, e.g.
+  # NOT_AUTHORIZED. Returns the number of companies.
+  public static method IMPORT(data: BYTES) returns INT8 raises /TRBASE/XLSX_ERROR, /TRBASE/ARCHIVE_ERROR, /TRFIN/COMPANY_REJECTED
     var book = data
     var archive = /TRBASE/ZIP_ARCHIVE.OPEN(data)
     if not archive.HAS("[Content_Types].xml")
@@ -58,23 +61,23 @@ public class /TRFIN/COMPANY_FILES
     end
     archive.CLOSE()
     var companies = transform book using /TRBASE/XLSX parameters SHEET = "Companies" into /TRFIN/COMPANY_ARRAY
+    var created: array of /TRFIN/COMPANIES = []
+    var updated: array of /TRFIN/COMPANIES = []
     for company in companies
-      var existing = select count from /TRFIN/COMPANIES where COMPANY_ID = company.COMPANY_ID
-      if existing = 0
-        check authorization /TRFIN/COMPANY
-          COMPANY_ID = company.COMPANY_ID
-          COUNTRY = company.COUNTRY default ""
-          ACTIVITY = CREATE
-        end
-        insert company
+      if (select count from /TRFIN/COMPANIES where COMPANY_ID = company.COMPANY_ID) = 0
+        created.APPEND(company)
       else
-        check authorization /TRFIN/COMPANY
-          COMPANY_ID = company.COMPANY_ID
-          COUNTRY = company.COUNTRY default ""
-          ACTIVITY = UPDATE
-        end
-        update company
+        updated.APPEND(company)
       end
+    end
+    modify business object /TRFIN/COMPANY
+      create /TRFIN/COMPANIES fields (COMPANY_ID, NAME, STREET, POSTAL_CODE, CITY, COUNTRY, CAPITAL, FOUNDED_ON) from created
+      update /TRFIN/COMPANIES fields (NAME, STREET, POSTAL_CODE, CITY, COUNTRY, CAPITAL, FOUNDED_ON) from updated
+      result outcome
+    end
+    for failure in outcome.FAILURES
+      rollback business objects
+      raise /TRFIN/COMPANY_REJECTED with failure.KEY default "", "{failure.REASON}"
     end
     return companies.LENGTH()
   end

@@ -1,0 +1,40 @@
+{
+  "name": "/TRFIN/CONTACTS",
+  "description": "Contact persons of a company",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "CONTACT_ID",
+      "domain": "/TRBASE/GUID"
+    },
+    {
+      "name": "COMPANY_ID",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME"
+    },
+    {
+      "name": "EMAIL",
+      "domain": "/TRBASE/TEXT"
+    }
+  ],
+  "primaryKey": [
+    "CONTACT_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

@@ -358,6 +358,68 @@
               "notNull": false
             },
             {
+              "name": "CREATED_BY",
+              "description": null,
+              "origin": {
+                "declared": "/TRFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/NAME",
+              "type": "CHAR",
+              "length": 80,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "CREATED_AT",
+              "description": null,
+              "origin": {
+                "declared": "/TRFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/TIMESTAMP",
+              "type": "TIMESTAMP",
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
+              "name": "CHANGED_BY",
+              "description": null,
+              "origin": {
+                "declared": "/TRFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/NAME",
+              "type": "CHAR",
+              "length": 80,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "CHANGED_AT",
+              "description": null,
+              "origin": {
+                "declared": "/TRFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/TIMESTAMP",
+              "type": "TIMESTAMP",
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
               "name": "/TROTTO/OTTO_ID",
               "description": "Partner ID of the company",
               "origin": {
@@ -426,7 +488,7 @@
     {
       "package": "TRFIN",
       "file": "src/COMPANY_FILES.class",
-      "line": 60,
+      "line": 63,
       "kind": "array-type",
       "object": "/TRFIN/COMPANY_ARRAY",
       "member": null

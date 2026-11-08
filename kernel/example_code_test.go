@@ -24,6 +24,7 @@ import (
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
+	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
 
@@ -45,9 +46,10 @@ func TestExampleCode(t *testing.T) {
 			t.Fatal(err)
 		}
 		const S = "/TRFIN/COMPANY_SERVICE"
+		boss := companyAdmin(t, k, "ACME")
 		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
 		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		if got := mustCall(t, k, "ACME", S, "CREATE", `"C1"`, `"Zeta"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+		if got := mustCallAs(t, k, boss, S, "CREATE", `"C1"`, `"Zeta"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("CREATE without TROTTO = %s", got)
 		}
 
@@ -67,7 +69,7 @@ func TestExampleCode(t *testing.T) {
 			t.Errorf("plan:\n%s", planText(p))
 		}
 		rec := &vm.LogRecorder{}
-		out, err := call(k, kernel.ExecOptions{Tenant: "ACME", VM: vm.Options{Log: rec}}, S, "CREATE", `"C2"`, `"Alpha"`, `"DE"`)
+		out, err := call(k, kernel.ExecOptions{Tenant: "ACME", User: boss.User, VM: vm.Options{Log: rec}}, S, "CREATE", `"C2"`, `"Alpha"`, `"DE"`)
 		if err != nil || !strings.Contains(out, `"STATUS":"BLOCKED"`) {
 			t.Errorf("CREATE with TROTTO = %s, %v", out, err)
 		}
@@ -77,10 +79,10 @@ func TestExampleCode(t *testing.T) {
 		// Other countries are not checked by TROTTO, and a company without
 		// name in Germany is rejected.
 		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"FR"`, `"France"`)
-		if got := mustCall(t, k, "ACME", S, "CREATE", `"C3"`, `"Beta"`, `"FR"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+		if got := mustCallAs(t, k, boss, S, "CREATE", `"C3"`, `"Beta"`, `"FR"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("CREATE in FR = %s", got)
 		}
-		_, err = call(k, kernel.ExecOptions{Tenant: "ACME"}, S, "CREATE", `"C4"`, `""`, `"DE"`)
+		_, err = call(k, boss, S, "CREATE", `"C4"`, `""`, `"DE"`)
 		var exc *vm.Exception
 		if !errors.As(err, &exc) || exc.Class != "/TRFIN/COMPANY_REJECTED" || exc.Text != "company C4 rejected: OTTO needs a name" {
 			t.Errorf("CREATE without name: %v", err)
@@ -89,15 +91,17 @@ func TestExampleCode(t *testing.T) {
 		if err := k.Implementations().Deactivate(ctx, "/TROTTO/COMPANY_CHECKS", kernel.ImplementationOptions{Tenant: "ACME"}); err != nil {
 			t.Fatal(err)
 		}
-		if got := mustCall(t, k, "ACME", S, "CREATE", `"C5"`, `"Gamma"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+		if got := mustCallAs(t, k, boss, S, "CREATE", `"C5"`, `"Gamma"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("CREATE with TROTTO inactive = %s", got)
 		}
 		if err := k.Implementations().Reset(ctx, "/TROTTO/COMPANY_CHECKS", kernel.ImplementationOptions{Tenant: "ACME"}); err != nil {
 			t.Fatal(err)
 		}
 		// C1 and C5 are active in DE, C2 waits for the sync.
-		expectCall(t, k, "ACME", S, "BLOCK_COUNTRY", "2", `"DE"`)
-		mustCall(t, k, "ACME", S, "RENAME", `"C1"`, `"Zeta AG"`)
+		if got := mustCallAs(t, k, boss, S, "BLOCK_COUNTRY", `"DE"`); got != "2" {
+			t.Errorf("BLOCK_COUNTRY = %s", got)
+		}
+		mustCallAs(t, k, boss, S, "RENAME", `"C1"`, `"Zeta AG"`)
 		if got := mustCall(t, k, "ACME", S, "IN_COUNTRY", `"DE"`); !strings.Contains(got, `"NAME":"Alpha"`) || strings.Index(got, "Alpha") > strings.Index(got, "Zeta AG") {
 			t.Errorf("IN_COUNTRY = %s", got)
 		}
@@ -129,13 +133,15 @@ func TestExampleCode(t *testing.T) {
 		}
 		if k.Dialect().Name() == "sqlite" {
 			// SQLite has one writing transaction at a time: the audit session
-			// cannot insert while the default session has updated companies.
+			// writes first, and the companies cannot be saved at the end of
+			// the execution while it holds the database.
 			_, err := call(k, ops, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`)
-			if exceptionClass(err) != "/RT/SESSION_ERROR" {
+			var ns *rterr.BusinessObjectsNotSaved
+			if !errors.As(err, &ns) || !strings.Contains(err.Error(), "/RT/LOCK_TIMEOUT") {
 				t.Errorf("SYNC on SQLite: %v", err)
 			}
-			if n, _ := count(); n != 0 {
-				t.Errorf("audit log has %d rows", n)
+			if got := mustCall(t, k, "ACME", S, "FIND", `"C1"`); strings.Contains(got, "OTTO-C1") {
+				t.Errorf("C1 synced on SQLite: %s", got)
 			}
 			return
 		}

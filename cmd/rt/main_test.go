@@ -48,7 +48,15 @@ func TestCLI(t *testing.T) {
 				{[]string{"extension-point", "list", "TRFIN"}, exitOK, "/TRFIN/COMPANY_CHECKS  TRFIN    multiple  /TRFIN/COMPANY_CHECKS  COUNTRY  1"},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "implementation 1: /TROTTO/COMPANY_CHECKS (package TROTTO, class /TROTTO/COMPANY_CHECKS, order 100)"},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, `COUNTRY: "DE" "AT"`},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "used by TRFIN src/COMPANY_SERVICE.class:"},
+				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "used by TRFIN src/COMPANY_BEHAVIOR.class:"},
+				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    /TRFIN/COMPANIES  3"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "entity /TRFIN/CONTACTS  key (CONTACT_ID)  operations create, update, delete  numbering uuid"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "field CHANGED_AT  TIMESTAMP"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "action BLOCK  instance  parameter /TRFIN/BLOCK_REASON  result self  modifies true  activity UPDATE"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "used by TRFIN src/COMPANY_SERVICE.class:"},
+				{[]string{"business-object", "show", "--json", "/TRFIN/COMPANY"}, exitOK, `"behaviorClass": "/TRFIN/COMPANY_BEHAVIOR"`},
+				{[]string{"business-object", "show", "/TRFIN/NOPE"}, exitError, "business object /TRFIN/NOPE"},
+				{[]string{"business-object", "list", "NOPE"}, exitError, "NOPE"},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS", "--json"}, exitOK, `"use": "multiple"`},
 				{[]string{"extension-point", "show", "/TRFIN/NOPE"}, exitError, "not found"},
 				{[]string{"implementation", "deactivate", "/TROTTO/COMPANY_CHECKS"}, exitOK, "Implementation /TROTTO/COMPANY_CHECKS deactivated globally."},
@@ -209,7 +217,8 @@ func TestDisasm(t *testing.T) {
 		t.Error("the listing has functions of other classes")
 	}
 	out.Reset()
-	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; update set /TRFIN/COMPANIES") {
+	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; select /TRFIN/COMPANIES") ||
+		!strings.Contains(out.String(), "ENTITY 16") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
 		t.Errorf("database statement: %d %s", code, out.String())
 	}
 	errOut.Reset()
@@ -332,13 +341,16 @@ func TestRoleCommands(t *testing.T) {
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, `ACTIVITY="READ" COMPANY_ID=any COUNTRY="FR"`},
 				{[]string{"trace", "authorizations", "stop", "anna"}, exitOK, "Trace of anna stopped."},
 				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `["DE", "Germany"]`, "--tenant", "ACME"}, exitOK, "null"},
-				{[]string{"trace", "extension-points", "start", "anna", "--tenant", "ACME"}, exitOK, "Tracing the extension points that anna runs in ACME"},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "anna"}, exitOK, `"STATUS": "BLOCKED"`},
-				{[]string{"trace", "extension-points", "show", "anna"}, exitOK, "/TRFIN/COMPANY_CHECKS  COUNTRY=\"DE\""},
-				{[]string{"trace", "extension-points", "show", "anna"}, exitOK, "/TROTTO/COMPANY_CHECKS: selected"},
-				{[]string{"trace", "extension-points", "stop", "anna"}, exitOK, "Trace of anna stopped."},
+				// The business object /TRFIN/COMPANY checks the creation; anna
+				// may only update companies.
+				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "anna"}, exitError, "NOT_AUTHORIZED"},
+				{[]string{"trace", "extension-points", "start", "root", "--tenant", "ACME"}, exitOK, "Tracing the extension points that root runs in ACME"},
+				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "BLOCKED"`},
+				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TRFIN/COMPANY_CHECKS  COUNTRY=\"DE\""},
+				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TROTTO/COMPANY_CHECKS: selected"},
+				{[]string{"trace", "extension-points", "stop", "root"}, exitOK, "Trace of root stopped."},
 				{[]string{"implementation", "deactivate", "/TROTTO/COMPANY_CHECKS", "--tenant", "ACME"}, exitOK, "deactivated in tenant ACME"},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C10", "Neu", "DE"]`, "--tenant", "ACME"}, exitOK, `"STATUS": "ACTIVE"`},
+				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C10", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "ACTIVE"`},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "in tenant ACME: inactive"},
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, "No trace of anna runs."},
 				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "Used in code:\n  TRAUTH src/CHECKS.class:6\n"},

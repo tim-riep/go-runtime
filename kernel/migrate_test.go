@@ -17,7 +17,6 @@ package kernel_test
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
@@ -193,7 +192,8 @@ func TestMigrateKeepsCode(t *testing.T) {
 				t.Errorf("%s is not declared after the migration", n.Key)
 			}
 		}
-		if got := mustCall(t, k, tenantA, "/TRFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme GmbH"`) {
+		// Before business objects, the fixture has no COMPANY_SERVICE.
+		if got := mustCall(t, k, tenantA, "/TRFIN/ORDER_INTAKE", "FIND", `"O-1"`); got != "null" {
 			t.Errorf("code after the migration: %s", got)
 		}
 		consistent(t, k)

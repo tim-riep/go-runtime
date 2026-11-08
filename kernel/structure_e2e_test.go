@@ -118,7 +118,17 @@ func TestStructureExamples(t *testing.T) {
 		}
 		consistent(t, k)
 
-		// A removed component is destructive in every including table.
+		// A removed component is destructive in every including table. The
+		// entity statements of TRFIN name the fields of the address; a
+		// version without POSTAL_CODE in them comes first.
+		fin := testutil.Example(t, "TRFIN")
+		for i := range fin.Sources {
+			fin.Sources[i].Text = strings.ReplaceAll(fin.Sources[i].Text, "POSTAL_CODE, ", "")
+		}
+		fin.Manifest.Version = "9.0.0"
+		if _, err := k.Upgrade(ctx, fin, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
 		noPostal := trbase(t, "50.1.0", func(st *model.Structure) {
 			st.Elements = append(st.Elements, model.Element{Component: &model.Component{Name: "REGION",
 				Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/NAME"}}})

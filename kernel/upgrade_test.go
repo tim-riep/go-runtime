@@ -38,12 +38,33 @@ var usesXLSX = map[string]bool{"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXP
 // kernels before extension points cannot install.
 var usesExtensionPoints = map[string]bool{"/TRFIN/COMPANY_CHECKS": true, "/TRFIN/COMPANY_CHECKS_BASE": true, "/TROTTO/COMPANY_CHECKS": true}
 
+// usesBusinessObjects are the classes of the examples that kernels before
+// business objects cannot install: the behavior class and the classes
+// with entity statements or that call them.
+var usesBusinessObjects = map[string]bool{"/TRFIN/COMPANY_BEHAVIOR": true, "/TRFIN/COMPANY_SERVICE": true, "/TRFIN/COMPANY_INTAKE": true,
+	"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true, "/TROTTO/COMPANY_SYNC": true}
+
+// withoutBusinessObjects removes the business objects of a package and
+// the classes and HTTP services that use them.
+func withoutBusinessObjects(p *model.Package) {
+	p.BusinessObjects = nil
+	p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesBusinessObjects[s.Name] })
+	p.HTTPServices = slices.DeleteFunc(p.HTTPServices, func(h model.HTTPService) bool {
+		return slices.ContainsFunc(h.Handlers, func(r model.HTTPHandlerRef) bool { return usesBusinessObjects[r.Class] })
+	})
+}
+
 func withData(t *testing.T, k *kernel.Kernel) {
 	t.Helper()
 	initialized(t, k)
 	pkgs := examples(t)
 	if k.TargetVersion() < 5 {
 		pkgs = legacyExamples(t)
+	}
+	if k.TargetVersion() < 18 { // before business objects
+		for _, p := range pkgs {
+			withoutBusinessObjects(p)
+		}
 	}
 	if k.TargetVersion() < 11 { // before authorization objects
 		for _, p := range pkgs {

@@ -71,7 +71,7 @@ func TestTransform(t *testing.T) {
 
 		// An order is read into a structure and stored.
 		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme"`, `"DE"`)
+		mustCallAs(t, k, companyAdmin(t, k, "ACME"), "/TRFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme"`, `"DE"`)
 		row := mustCall(t, k, "ACME", O, "IMPORT", `"<order id=\"O-1\" company=\"C1\" date=\"2026-11-07\"><amount>12.5</amount><note/></order>"`)
 		if !strings.Contains(row, `"AMOUNT":"12.50"`) || !strings.Contains(row, `"NOTE":""`) {
 			t.Errorf("IMPORT = %s", row)

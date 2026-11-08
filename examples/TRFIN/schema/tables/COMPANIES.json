@@ -29,6 +29,22 @@
     {
       "name": "FOUNDED_ON",
       "domain": "/TRBASE/DATE"
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
     }
   ],
   "primaryKey": [

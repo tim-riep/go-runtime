@@ -1018,7 +1018,7 @@ func TestTableBecomesEntity(t *testing.T) {
 			t.Fatal(errs)
 		}
 		files := map[string]string{
-			"manifest.json":     `{ "id": "TRBO", "version": "1.0.0", "requires": [{ "id": "TRBASE" }], "languageVersion": 1 }`,
+			"manifest.json":    `{ "id": "TRBO", "version": "1.0.0", "requires": [{ "id": "TRBASE" }], "languageVersion": 1 }`,
 			"src/WRITER.class": src,
 		}
 		for name, v := range orderTables {

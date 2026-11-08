@@ -1,6 +1,7 @@
 # Imports companies from a zip archive or a workbook sent with POST and
 # answers with the number of companies. Values that do not fit give 422
-# with all violations, other files 400; nothing is stored then.
+# with all violations, other files 400, a company the user may not create
+# or change 403 and one rejected otherwise 422; nothing is stored then.
 public class /TRFIN/COMPANY_UPLOAD implements /TRBASE/HTTP_HANDLER
 
   public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
@@ -11,6 +12,13 @@ public class /TRFIN/COMPANY_UPLOAD implements /TRBASE/HTTP_HANDLER
     try
       var count = /TRFIN/COMPANY_FILES.IMPORT(request.BODY())
       response.WRITE_TEXT("\{\"imported\":{count}\}")
+    catch e: /TRFIN/COMPANY_REJECTED
+      if e.REASON = "NOT_AUTHORIZED"
+        response.SET_STATUS(403)
+      else
+        response.SET_STATUS(422)
+      end
+      response.WRITE_TEXT(transform e.TEXT using /TRBASE/JSON)
     catch e: /TRBASE/XLSX_READ_FAILED
       response.SET_STATUS(422)
       response.WRITE_TEXT(transform e.VIOLATIONS using /TRBASE/JSON)

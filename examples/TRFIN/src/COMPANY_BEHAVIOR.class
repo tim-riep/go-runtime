@@ -1,0 +1,72 @@
+# The behavior of the business object /TRFIN/COMPANY: new companies start
+# active, other packages check and adjust them through the extension point
+# /TRFIN/COMPANY_CHECKS, and the action BLOCK blocks companies.
+public class /TRFIN/COMPANY_BEHAVIOR
+
+  # New companies are active until an adjustment or BLOCK says otherwise.
+  public method SET_INITIAL_STATUS(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var rows: array of /TRFIN/COMPANIES = []
+    for key in keys
+      var row: /TRFIN/COMPANIES
+      row.COMPANY_ID = key.COMPANY_ID
+      row.STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+      rows.APPEND(row)
+    end
+    modify business object /TRFIN/COMPANY in local mode
+      update /TRFIN/COMPANIES fields (STATUS) from rows
+    end
+  end
+
+  # The implementations of /TRFIN/COMPANY_CHECKS for the country adjust
+  # the name and the status of new companies when they are saved.
+  public method ADJUST(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRFIN/COMPANY in local mode
+      /TRFIN/COMPANIES fields all keys keys
+    end
+    var adjusted: array of /TRFIN/COMPANIES = []
+    for company in companies
+      var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = company.COUNTRY default ""
+      adjusted.APPEND(checks.ADJUST(company))
+    end
+    modify business object /TRFIN/COMPANY in local mode
+      update /TRFIN/COMPANIES fields (NAME, STATUS) from adjusted
+    end
+  end
+
+  # The country exists, and the implementations of /TRFIN/COMPANY_CHECKS
+  # for it accept the company.
+  public method CHECK_COUNTRY(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRFIN/COMPANY in local mode
+      /TRFIN/COMPANIES fields all keys keys
+    end
+    for i, company in companies
+      var country = company.COUNTRY default ""
+      if (select count from /TRFIN/COUNTRIES where COUNTRY_CODE = country) = 0
+        response.FIELD_ERROR(i, "COUNTRY", "the country {country} does not exist")
+        continue
+      end
+      var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country
+      try
+        checks.VALIDATE(company)
+      catch e: /TRFIN/COMPANY_REJECTED
+        response.ERROR(i, e.REASON)
+      end
+    end
+  end
+
+  # Blocks companies for a reason.
+  public method BLOCK(keys: array of key of /TRFIN/COMPANIES, parameter: /TRFIN/BLOCK_REASON, response: /TRBASE/ENTITY_RESPONSE)
+    var rows: array of /TRFIN/COMPANIES = []
+    for key in keys
+      var row: /TRFIN/COMPANIES
+      row.COMPANY_ID = key.COMPANY_ID
+      row.STATUS = /TRFIN/COMPANY_STATUS.BLOCKED
+      rows.APPEND(row)
+      log info "{key.COMPANY_ID} blocked: {parameter.TEXT default "no reason"}"
+    end
+    modify business object /TRFIN/COMPANY in local mode
+      update /TRFIN/COMPANIES fields (STATUS) from rows
+    end
+  end
+
+end

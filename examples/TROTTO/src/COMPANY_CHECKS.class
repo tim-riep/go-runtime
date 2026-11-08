@@ -1,21 +1,18 @@
 # Runs for companies in Germany and Austria when TRFIN creates them: OTTO
 # needs a name, and the company is created blocked until the next sync
-# connects it. VALIDATE and ADJUST run on the same object, which keeps the
-# partner ID between them.
+# connects it. TRFIN adjusts new companies before it validates them, each
+# on an object of its own.
 public class /TROTTO/COMPANY_CHECKS extends /TRFIN/COMPANY_CHECKS_BASE
-
-  private attribute PARTNER: STRING?
 
   public override method VALIDATE(company: /TRFIN/COMPANIES) raises /TRFIN/COMPANY_REJECTED
     if company.NAME is empty
       raise /TRFIN/COMPANY_REJECTED with company.COMPANY_ID, "OTTO needs a name"
     end
-    PARTNER = /TROTTO/ID_RULES.BUILD(company.COMPANY_ID)
   end
 
   public override method ADJUST(company: /TRFIN/COMPANIES) returns /TRFIN/COMPANIES
     company.STATUS = /TRFIN/COMPANY_STATUS.BLOCKED
-    log info "{company.COMPANY_ID} waits for the OTTO sync as {PARTNER default "unknown partner"}"
+    log info "{company.COMPANY_ID} waits for the OTTO sync as {/TROTTO/ID_RULES.BUILD(company.COMPANY_ID)}"
     return company
   end
 
