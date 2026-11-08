@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,6 +31,9 @@ const tenantA = "ACME"
 
 // withData installs the examples and adds one tenant, country, company and
 // bank account.
+// usesXLSX are the classes of the examples that use workbooks.
+var usesXLSX = map[string]bool{"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true}
+
 func withData(t *testing.T, k *kernel.Kernel) {
 	t.Helper()
 	initialized(t, k)
@@ -46,6 +50,12 @@ func withData(t *testing.T, k *kernel.Kernel) {
 		for _, p := range pkgs {
 			p.Roles = nil
 			p.DataElements = withoutKernelDomains(p.DataElements)
+		}
+	}
+	if k.TargetVersion() < 16 { // before the transformation format xlsx
+		for _, p := range pkgs {
+			p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesXLSX[s.Name] })
+			p.HTTPServices = slices.DeleteFunc(p.HTTPServices, func(h model.HTTPService) bool { return strings.HasPrefix(h.Path, "companies/") })
 		}
 	}
 	if _, err := k.Install(context.Background(), pkgs, kernel.Options{}); err != nil {

@@ -1,0 +1,33 @@
+# Answers GET with the zip archive of COMPANY_FILES.EXPORT for download, or
+# with one file of it, ?file=companies.xlsx or ?file=invoice.html, which is
+# unpacked into the response as it is sent.
+public class /TRFIN/COMPANY_EXPORT implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    if request.METHOD() <> "GET"
+      return false
+    end
+    var data = /TRFIN/COMPANY_FILES.EXPORT(/TRBASE/CLOCK.TODAY())
+    var file = request.QUERY("file")
+    if file is null
+      response.SET_HEADER("Content-Type", "application/zip")
+      response.SET_HEADER("Content-Disposition", "attachment; filename=\"companies.zip\"")
+      response.WRITE(data)
+      return true
+    end
+    var archive = /TRBASE/ZIP_ARCHIVE.OPEN(data)
+    if not archive.HAS(file)
+      response.SET_STATUS(404)
+      return true
+    end
+    var kind = "text/html; charset=utf-8"
+    if file = "companies.xlsx"
+      kind = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+    response.SET_HEADER("Content-Type", kind)
+    response.SET_HEADER("Content-Disposition", "attachment; filename=\"{file}\"")
+    response.SEND_ZIP_ENTRY(archive, file)
+    return true
+  end
+
+end

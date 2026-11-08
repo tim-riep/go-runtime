@@ -25,6 +25,24 @@ public test class /TRARCH/ARCHIVES_TEST
     end
   end
 
+  # Entries keep their time; without one they get the first time of the
+  # format.
+  public test method TIMES()
+    try
+      var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+      archive.ADD_ENTRY("dated.txt", "d" as BYTES, "2026-11-08T10:30:14Z" as TIMESTAMP, false)
+      archive.ADD_TEXT("plain.txt", "p")
+      var entries = /TRBASE/ZIP_ARCHIVE.OPEN(archive.SAVE()).ENTRIES()
+      var none = "0001-01-01T00:00:00Z" as TIMESTAMP
+      var dated = entries[1].MODIFIED_AT default none
+      var plain = entries[2].MODIFIED_AT default none
+      assert dated = "2026-11-08T10:30:14Z" as TIMESTAMP, "{dated}"
+      assert plain = "1980-01-01T00:00:00Z" as TIMESTAMP, "{plain}"
+    catch e: /TRBASE/ARCHIVE_ERROR
+      assert false, e.TEXT
+    end
+  end
+
   public test method GZIP_ROUND()
     try
       var text = "grüße " + "x"

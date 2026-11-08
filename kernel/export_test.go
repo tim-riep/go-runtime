@@ -17,6 +17,7 @@ package kernel
 import (
 	"context"
 	"slices"
+	"sync"
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
@@ -27,14 +28,25 @@ import (
 func (k *Kernel) TargetVersion() int { return k.target }
 
 // SetTargetVersion makes the kernel work with an older kernel schema
-// version, so tests can create databases that need a migration.
+// version, so tests can create databases that need a migration. Before
+// version 16 the kernel packages have no transformation of format xlsx and
+// a prerelease version, so that the kernel upgrades them after the
+// migration.
 func (k *Kernel) SetTargetVersion(v int) {
 	k.target = v
 	k.repo = k.repo.At(v)
-	if v < 16 { // before the native transformation format xlsx
+	fullMu.Lock()
+	defer fullMu.Unlock()
+	full, saved := fullKernelPkgs[k]
+	switch {
+	case v >= 16 && saved:
+		k.kernelPkgs = full
+	case v < 16 && !saved:
+		fullKernelPkgs[k] = k.kernelPkgs
 		pkgs := make([]*model.Package, len(k.kernelPkgs))
 		for i, p := range k.kernelPkgs {
 			c := *p
+			c.Manifest.Version += "-no-xlsx"
 			c.Transformations = slices.DeleteFunc(slices.Clone(p.Transformations), func(t model.Transformation) bool {
 				return t.Native.Or("") == model.TransformXLSX
 			})
@@ -43,6 +55,13 @@ func (k *Kernel) SetTargetVersion(v int) {
 		k.kernelPkgs = pkgs
 	}
 }
+
+// fullKernelPkgs are the kernel packages of kernels that work with a
+// version before 16.
+var (
+	fullKernelPkgs = map[*Kernel][]*model.Package{}
+	fullMu         sync.Mutex
+)
 
 // ContentReads returns the number of asset contents that code read from
 // the database.

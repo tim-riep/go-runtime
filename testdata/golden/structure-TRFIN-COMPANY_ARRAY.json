@@ -414,5 +414,22 @@
       "via": "component MEMBERS"
     }
   ],
-  "codeUses": []
+  "codeUses": [
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_FILES.class",
+      "line": 9,
+      "kind": "array-type",
+      "object": "/TRFIN/COMPANY_ARRAY",
+      "member": null
+    },
+    {
+      "package": "TRFIN",
+      "file": "src/COMPANY_FILES.class",
+      "line": 60,
+      "kind": "array-type",
+      "object": "/TRFIN/COMPANY_ARRAY",
+      "member": null
+    }
+  ]
 }

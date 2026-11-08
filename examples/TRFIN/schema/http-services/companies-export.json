@@ -1,0 +1,8 @@
+{
+  "path": "companies/export",
+  "texts": {
+    "en": { "label": "Company export", "description": "Downloads the companies as workbook in a zip archive with an invoice" },
+    "de": { "label": "Firmenexport", "description": "Lädt die Firmen als Arbeitsmappe in einem ZIP-Archiv mit einer Rechnung herunter" }
+  },
+  "handlers": [{ "class": "/TRFIN/COMPANY_EXPORT" }]
+}

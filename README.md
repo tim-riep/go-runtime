@@ -863,6 +863,21 @@ program and its binary encoding with format version), `vm` (the machine with lim
   `/TRFIN/INVOICE_HTML`, imports orders with `/TRFIN/ORDER_IMPORT` into the table
   `/TRFIN/ORDERS` and renders a print template of its asset repository with
   `/TRBASE/XSLT_UTILITIES` and `/TRBASE/XSLT_STYLESHEET`.
+- TRBASE reads and writes zip archives (`/TRBASE/ZIP_ARCHIVE`), gzip data (`/TRBASE/GZIP`)
+  and workbooks in xlsx format, cell by cell with `/TRBASE/XLSX_WORKBOOK` and as whole
+  arrays with the native transformation `/TRBASE/XLSX`, which matches columns by the
+  headings of the data elements in all languages and reports all values that do not fit
+  at once. Limits against archives that unpack to far more than they claim are measured
+  while unpacking and set with `kernel.Config.Formats`; see the
+  [language reference](docs/language.md#xlsx). `TRFIN` exports its companies with
+  `/TRFIN/COMPANY_FILES` as workbook in a zip archive with an invoice and imports them
+  again, from code and through the nodes `/trfin/companies/export` and
+  `/trfin/companies/import`:
+
+  ```bash
+  rt run TRFIN /TRFIN/COMPANY_FILES EXPORT '["2026-11-08"]' --tenant ACME --user anna | jq -r . | base64 -d > companies.zip
+  rt run TRFIN /TRFIN/COMPANY_FILES IMPORT "[\"$(base64 < companies.zip | tr -d '\n')\"]" --tenant ACME --user anna
+  ```
 
 ```go
 out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC",
@@ -999,6 +1014,9 @@ rt serve --addr :8080
 curl localhost:8080/trbase/ping
 curl -u anna localhost:8080/trfin/companies
 curl -H "Authorization: Bearer rt_..." -H "X-Tenant: ACME" localhost:8080/trfin/companies
+curl -u anna -o companies.zip localhost:8080/trfin/companies/export
+curl -u anna -o companies.xlsx "localhost:8080/trfin/companies/export?file=companies.xlsx"
+curl -u anna --data-binary @companies.zip localhost:8080/trfin/companies/import
 ```
 
 `rt serve` serves until SIGINT or SIGTERM. Then it accepts no new connections and gives
@@ -1157,7 +1175,7 @@ language server and a debugger, user interface, views, indexes beyond keys,
 data migrations with custom logic, joins and aggregates other than `count` in code,
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
-other packages, references to assets from other objects, compression and image processing,
+other packages, references to assets from other objects, compression of stored assets and image processing,
 includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
 external role sources.
 

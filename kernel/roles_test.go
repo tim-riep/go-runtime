@@ -78,7 +78,7 @@ func finWithField(t *testing.T, version string, roles bool) *model.Package {
 // sources of TRFIN in dir.
 func regionInChecks(t *testing.T, dir string) {
 	t.Helper()
-	for _, f := range []string{"COMPANY_API.class", "COMPANY_INTAKE.class"} {
+	for _, f := range []string{"COMPANY_API.class", "COMPANY_INTAKE.class", "COMPANY_FILES.class"} {
 		b, err := os.ReadFile(filepath.Join(dir, "src", f))
 		if err != nil {
 			t.Fatal(err)

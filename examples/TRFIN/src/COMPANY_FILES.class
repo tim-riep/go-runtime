@@ -1,0 +1,82 @@
+# Exports the companies of the tenant as a sheet of a workbook, packed in a
+# zip archive with an invoice of the export, and imports companies from
+# such an archive or from a workbook.
+public class /TRFIN/COMPANY_FILES
+
+  # The companies the user may export, as a workbook with the sheet
+  # Companies.
+  public static method WORKBOOK() returns BYTES raises /TRBASE/XLSX_ERROR
+    var companies: /TRFIN/COMPANY_ARRAY = select from /TRFIN/COMPANIES where authorized /TRFIN/COMPANY
+      COMPANY_ID = COMPANY_ID
+      COUNTRY = COUNTRY
+      ACTIVITY = EXPORT
+    end order by COMPANY_ID
+    return transform companies using /TRBASE/XLSX parameters SHEET = "Companies" into BYTES
+  end
+
+  # The workbook companies.xlsx and the invoice invoice.html of the export
+  # in a zip archive. The invoice bills every exported company record to
+  # the first company.
+  public static method EXPORT(issued: DATE) returns BYTES raises /TRBASE/XLSX_ERROR, /TRBASE/ARCHIVE_ERROR, /TRBASE/XSLT_FAILED
+    var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+    archive.ADD("companies.xlsx", WORKBOOK())
+    var companies = select from /TRFIN/COMPANIES where authorized /TRFIN/COMPANY
+      COMPANY_ID = COMPANY_ID
+      COUNTRY = COUNTRY
+      ACTIVITY = EXPORT
+    end order by COMPANY_ID
+    if companies.LENGTH() > 0
+      var invoice: /TRFIN/INVOICE
+      invoice.INVOICE_ID = "EXPORT"
+      invoice.COMPANY_ID = companies[1].COMPANY_ID
+      invoice.ISSUED_ON = issued
+      invoice.TOTAL = 0
+      var items: /TRFIN/INVOICE_ITEMS
+      for i, company in companies
+        var item: /TRFIN/INVOICE_ITEM
+        item.POSITION = i
+        item.TEXT = "Company record {company.COMPANY_ID} {company.NAME}"
+        item.AMOUNT = 0.10
+        items.APPEND(item)
+        invoice.TOTAL = invoice.TOTAL + item.AMOUNT
+      end
+      invoice.ITEMS = items
+      archive.ADD_TEXT("invoice.html", transform invoice using /TRFIN/INVOICE_HTML parameters LANG = "en")
+    end
+    return archive.SAVE()
+  end
+
+  # Imports the companies of the sheet Companies, from the entry
+  # companies.xlsx of a zip archive or from a workbook: new companies are
+  # created, existing ones updated, each after the check of the activity.
+  # Returns the number of companies.
+  public static method IMPORT(data: BYTES) returns INT8 raises /TRBASE/XLSX_ERROR, /TRBASE/ARCHIVE_ERROR
+    var book = data
+    var archive = /TRBASE/ZIP_ARCHIVE.OPEN(data)
+    if not archive.HAS("[Content_Types].xml")
+      book = archive.GET("companies.xlsx")
+    end
+    archive.CLOSE()
+    var companies = transform book using /TRBASE/XLSX parameters SHEET = "Companies" into /TRFIN/COMPANY_ARRAY
+    for company in companies
+      var existing = select count from /TRFIN/COMPANIES where COMPANY_ID = company.COMPANY_ID
+      if existing = 0
+        check authorization /TRFIN/COMPANY
+          COMPANY_ID = company.COMPANY_ID
+          COUNTRY = company.COUNTRY default ""
+          ACTIVITY = CREATE
+        end
+        insert company
+      else
+        check authorization /TRFIN/COMPANY
+          COMPANY_ID = company.COMPANY_ID
+          COUNTRY = company.COUNTRY default ""
+          ACTIVITY = UPDATE
+        end
+        update company
+      end
+    end
+    return companies.LENGTH()
+  end
+
+end

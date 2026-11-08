@@ -1,0 +1,9 @@
+{
+  "path": "companies/import",
+  "texts": {
+    "en": { "label": "Company import", "description": "Creates and updates companies from an uploaded zip archive or workbook" },
+    "de": { "label": "Firmenimport", "description": "Legt Firmen aus einem hochgeladenen ZIP-Archiv oder einer Arbeitsmappe an und ändert sie" }
+  },
+  "handlers": [{ "class": "/TRFIN/COMPANY_UPLOAD" }],
+  "settings": { "maxBodySize": 16777216 }
+}

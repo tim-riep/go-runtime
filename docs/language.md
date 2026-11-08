@@ -598,6 +598,9 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/CLOCK` | `NOW()` and `TODAY()`, capability `clock` |
 | `/TRBASE/UUID` | `NEW()`: a random UUID |
 | `/TRBASE/HASH` | `SHA256(data)` |
+| `/TRBASE/ZIP_ARCHIVE` | native class: zip archives, see [Zip archives and gzip](#zip-archives-and-gzip) |
+| `/TRBASE/GZIP` | `COMPRESS`, `DECOMPRESS` and more, see [Zip archives and gzip](#zip-archives-and-gzip) |
+| `/TRBASE/XLSX_WORKBOOK` | native class: workbooks in xlsx format cell by cell, see [Workbooks](#workbooks) |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
 `LINE_NO`, the line in the stylesheet or `null`.
@@ -808,8 +811,165 @@ var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFIN/COMPA
 - JSON that does not fit the type of `into` raises `/TRBASE/TRANSFORM_RESULT_INVALID` with
   the path and the reason. There are no parameters, and the output is compact.
 
-Only kernel packages define native transformations, with `"native": "json"` in the
-description file and no stylesheet.
+Only kernel packages define native transformations, with `"native": "json"` or
+`"native": "xlsx"` in the description file and no stylesheet. The kernel package registers
+the parameters, the allowed values of literals, the shapes of source and result and the
+checked exceptions of a native transformation, and the compiler checks them.
+
+### xlsx
+
+`/TRBASE/XLSX` writes an array of a structure or table as a sheet of a workbook in xlsx
+format and reads a sheet back into an array type of the schema:
+
+```
+var data = transform companies using /TRBASE/XLSX parameters SHEET = "Companies" into BYTES
+var back = transform data using /TRBASE/XLSX parameters SHEET = "Companies" into /TRFIN/COMPANY_ARRAY
+```
+
+- The source is an array of a structure or table whose components are all of simple
+  types; the result of reading is an array type of the schema with such a row type.
+  Anything else, and an unknown parameter, is a compile error. `transform` with
+  `/TRBASE/XLSX` raises `/TRBASE/XLSX_ERROR`.
+- Writing gives one column per component: a bold heading row that stays visible when
+  scrolling, an autofilter over the data, number formats by domain (`0.00` for the scale,
+  `yyyy-mm-dd`, `yyyy-mm-dd hh:mm:ss`) and widths from heading and content. Headings that
+  two components share are written as the names of the components.
+- Reading matches the heading row by the names of the components and by the headings of
+  their data elements in all languages, ignoring case and spaces around them. Unknown
+  columns are left out, and so is a heading that two components share. Empty rows are
+  skipped. A column that is missing takes the default of the component, else `null`.
+- Two columns for one component, a missing column for a component with `notNull` and no
+  default, and values that do not fit are violations. They are collected, up to
+  `MAX_ERRORS`, and raised together as `/TRBASE/XLSX_READ_FAILED`, whose `VIOLATIONS` hold
+  `ROW_NO`, `COLUMN_NAME`, `HEADER`, `COMPONENT`, the stored value `RAW` and `MESSAGE`.
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `SHEET` | text | first sheet; writing: `Sheet1` | the sheet |
+| `HEADER` | `LABEL`, `NAME` | `LABEL` | writing: headings of the data elements in the language of the execution, else English, else the name; or the names |
+| `FIRST_ROW` | whole number | 1 | reading: the row of the headings; rows above it are left out |
+| `DATE_SYSTEM` | `1900`, `1904` | `1900` | writing: the date system; reading uses the one of the file |
+| `LONG_DECIMALS` | `TEXT`, `ERROR` | `TEXT` | writing: a `DEC` with more than 15 significant digits as text, with a note in the log, or an error |
+| `BOOL_TEXT` | `NO`, `YES` | `NO` | reading: accept the texts `TRUE`, `FALSE`, `WAHR` and `FALSCH` as truth values |
+| `MAX_ERRORS` | whole number | 100 | reading: violations collected at most |
+
+Values map exactly:
+
+- An empty cell is `null`, a cell with an empty text is `""`; writing does the same. An
+  empty cell for a component with `notNull` takes its default, else it is a violation.
+- `DEC` is read from the stored decimal text, never through a binary floating point
+  number: the exact value if it has at most the scale of the domain, else rounded half away from zero
+  to 15 significant digits, which numbers hold, and a violation if it still has more
+  digits (`1.005` for a scale of 2). Text that is a decimal number is accepted. Writing
+  gives numbers up to 15 significant digits; longer ones follow `LONG_DECIMALS`.
+- Whole numbers beyond 2^53 are written as text, which numbers cannot hold exactly; both
+  are read.
+- `DATE` and `TIMESTAMP` are serial numbers of the date system, in UTC and with
+  milliseconds. A number is a date when its format is one of dates, and for components of
+  these types always; ISO 8601 text is accepted.
+- `BOOL` comes from truth value cells; text only with `BOOL_TEXT = "YES"`.
+- Fixed values, lengths of `CHAR`, `allowEmpty` and the ranges of `INT4` are checked.
+  `UUID` is text, `BYTES` base64 text.
+- A formula is read by its stored value; one without a stored value, and an error such as
+  `#DIV/0!`, is a violation.
+- Text keeps every character: those that XML cannot hold are written in the escape form of
+  the file format, and a text longer than a cell holds (32,767 characters) is an error.
+
+The sheet is read as a stream, so beyond the source and the result only the shared texts
+of the workbook are held in memory.
+
+## Zip archives and gzip
+
+```
+var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+archive.ADD("companies.xlsx", data)
+archive.ADD_TEXT("readme.txt", "Exported companies")
+var zipped = archive.SAVE()
+
+var opened = /TRBASE/ZIP_ARCHIVE.OPEN(zipped)
+for entry in opened.ENTRIES()
+  log info "{entry.NAME} {entry.SIZE}"
+end
+var text = opened.GET_TEXT("readme.txt")
+
+var packed = /TRBASE/GZIP.COMPRESS(data)
+var unpacked = /TRBASE/GZIP.DECOMPRESS(packed)
+```
+
+| `/TRBASE/ZIP_ARCHIVE` | Effect |
+|---|---|
+| `OPEN(data)`, `CREATE()` | an archive from bytes, or a new one |
+| `ENTRIES()` | `/TRBASE/ZIP_ENTRY_ARRAY`: `NAME`, `KIND` (`FILE`, `FOLDER`, `LINK`), `COMPRESSED_SIZE`, `SIZE`, `MODIFIED_AT`, `CRC32`, `COMMENT`, `ENCRYPTED` |
+| `HAS(name)`, `GET(name)`, `GET_TEXT(name)` | whether an entry exists, its content as `BYTES` or as UTF-8 text |
+| `ADD(name, data)`, `ADD_TEXT(name, text)`, `ADD_FOLDER(name)` | add an entry; a name that exists is an error |
+| `ADD_ENTRY(name, data, modified, stored)` | with a time and without compression |
+| `REMOVE(name)`, `SAVE()`, `CLOSE()` | remove an entry, the archive as bytes, free it |
+
+- Names are normalized: a leading `./` and doubled `/` go, folders end with `/`. Absolute
+  paths, drives, `..`, backslashes, control characters and empty segments raise
+  `/TRBASE/ZIP_NAME_INVALID`. Names are written in UTF-8 with its flag; names without the
+  flag are read as UTF-8 when they are valid UTF-8, else as CP437.
+- Links are entries of kind `LINK`; `GET` gives the stored target, which is never
+  followed. Encrypted entries are listed and raise `/TRBASE/ZIP_ENTRY_ENCRYPTED` on `GET`.
+- `SAVE` copies entries that did not change without unpacking them. Entries without a time
+  get 1980-01-01, the first time the format holds, so that archives are reproducible.
+- `/TRBASE/GZIP` has `COMPRESS(data)`, `COMPRESS_WITH(data, level, name)` with a level of
+  1 to 9 and an optional name in the header, `DECOMPRESS(data)` for data of one or more
+  members, `DECOMPRESS_TEXT(data)` and `IS_GZIP(data)`.
+- Damaged data and a wrong checksum raise `/TRBASE/ARCHIVE_CORRUPT`; all exceptions
+  extend `/TRBASE/ARCHIVE_ERROR`.
+
+Limits against archives that unpack to far more than they claim are measured while
+unpacking, never taken from the headers, and are set with `kernel.Config.Formats`:
+
+| Limit | Default |
+|---|---|
+| unpacked in total | 256 MiB |
+| per entry | 64 MiB |
+| entries | 10,000 |
+| ratio of unpacked to packed, checked from 1 MiB unpacked | 1,000 |
+| sheets, rows, columns and cells of a workbook | 256, 1,048,576, 16,384 and 10 million |
+
+Exceeding one raises `/TRBASE/ARCHIVE_LIMIT_EXCEEDED` or `/TRBASE/XLSX_LIMIT_EXCEEDED`.
+The source of all methods is limited like the input of every native method, their results
+by the limits of the execution, and they run under its time limit.
+
+## Workbooks
+
+`/TRBASE/XLSX_WORKBOOK` reads and writes workbooks cell by cell; `/TRBASE/XLSX` above is
+the way for whole arrays and large sheets.
+
+```
+var book = /TRBASE/XLSX_WORKBOOK.OPEN(data)
+for row in book.ROWS("Prices")
+  var article = row.TEXT(1)
+  var price = row.DECIMAL(/TRBASE/XLSX_WORKBOOK.COLUMN("C"))
+end
+var total = book.DECIMAL("Prices", "E3")
+
+var report = /TRBASE/XLSX_WORKBOOK.CREATE()
+report.SET_TEXT("Sheet1", "A1", "Total")
+report.SET_DECIMAL("Sheet1", "B1", 1234.50)
+report.SET_BOLD("Sheet1", "A1:B1")
+var saved = report.SAVE()
+```
+
+- Cells are named by sheet and reference (`B7`); rows of `ROWS(sheet)` by column number,
+  which `COLUMN("C")` and `COLUMN_NAME(3)` convert.
+- `TEXT`, `INTEGER`, `DECIMAL` (`DEC(38,15)`), `DATE`, `TIMESTAMP` and `BOOL` read a cell
+  with the rules of the value mapping above and return `null` for an empty cell. A value
+  of another kind raises `/TRBASE/XLSX_TYPE_MISMATCH` with `SHEET`, `CELL`, `RAW` and
+  `EXPECTED`, never `null`. `KIND` gives `/TRBASE/XLSX_CELL_KIND` (`EMPTY`, `TEXT`,
+  `NUMBER`, `BOOL`, `DATE`, `FORMULA`, `ERROR`), `RAW` the stored value and `FORMULA` the
+  formula.
+- `SET_TEXT`, `SET_INTEGER`, `SET_DECIMAL`, `SET_DATE`, `SET_TIMESTAMP`, `SET_BOOL`,
+  `SET_FORMULA` and `CLEAR` write cells; `SET_NUMBER_FORMAT`, `SET_COLUMN_FORMAT`,
+  `SET_COLUMN_WIDTH`, `SET_BOLD`, `FREEZE_ROWS` and `SET_AUTOFILTER` format them.
+  `SHEETS`, `HAS_SHEET`, `ADD_SHEET`, `RENAME_SHEET`, `DELETE_SHEET` and `DIMENSION`
+  manage sheets.
+- An opened workbook is held in memory. Workbooks with macros are read, and `SAVE` writes
+  them without the macros. Encrypted workbooks raise `/TRBASE/XLSX_PROTECTED`. External
+  links and embedded objects are never followed.
 
 ### Canonical XML format
 
@@ -876,6 +1036,7 @@ when no handler catches it.
 | `SET_HEADER(name, value)`, `ADD_HEADER(name, value)` | replace or add a header field          |
 | `WRITE(data)`, `WRITE_TEXT(text)` | append to the body                                       |
 | `SEND_ASSET(request, repository, path)` | an asset as body with the headers of `/TRBASE/ASSET_HANDLER`, streamed |
+| `SEND_ZIP_ENTRY(archive, name)` | an entry of a zip archive as body, unpacked while it is sent |
 
 `SEND_ASSET` sends an asset of an opened `/TRBASE/ASSET_REPOSITORY` in the language of the
 request: `Content-Type`, `Content-Length`, `ETag`, `Last-Modified` and `Cache-Control`, 304

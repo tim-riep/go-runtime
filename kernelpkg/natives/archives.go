@@ -20,11 +20,13 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"context"
+	"encoding/binary"
 	"errors"
 	"hash/crc32"
 	"io"
 	"io/fs"
 	"log/slog"
+	"math"
 	"net/http"
 	"time"
 	"unicode/utf8"
@@ -209,6 +211,7 @@ func (a *zipArchive) save() ([]byte, error) {
 				h.SetMode(0o644)
 			}
 			raw = bytes.NewReader(e.packed)
+			modTime(&h, e.modified.Or(zipStart))
 		}
 		h.Name, h.Comment, h.NonUTF8 = e.name, e.comment, false
 		h.Flags |= 0x800
@@ -225,6 +228,23 @@ func (a *zipArchive) save() ([]byte, error) {
 		return nil, native.Raise(errCorrupt, err.Error())
 	}
 	return buf.Bytes(), nil
+}
+
+// modTime sets the time of a new entry, which CreateRaw leaves to the
+// caller: the MS-DOS fields in UTC and the extended timestamp with the
+// seconds since 1970, as other zip writers do.
+func modTime(h *zip.FileHeader, t time.Time) {
+	t = t.UTC()
+	h.ModifiedDate = uint16(t.Day() + int(t.Month())<<5 + (t.Year()-1980)<<9)
+	h.ModifiedTime = uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
+	if u := t.Unix(); u >= 0 && u <= math.MaxUint32 {
+		var extra [9]byte
+		binary.LittleEndian.PutUint16(extra[0:], 0x5455)
+		binary.LittleEndian.PutUint16(extra[2:], 5)
+		extra[4] = 1
+		binary.LittleEndian.PutUint32(extra[5:], uint32(u))
+		h.Extra = append(h.Extra, extra[:]...)
+	}
 }
 
 // Close implements io.Closer for the release of the object.
