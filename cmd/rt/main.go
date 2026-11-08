@@ -151,6 +151,11 @@ Commands:
   extension-point show <name>
                            show an extension point with its implementations, their activation
                            globally and per tenant, and the code that runs it
+  business-object list [package]
+                           list the business objects of a package or of all packages
+  business-object show <name>
+                           show a business object with its entities, fields, behavior,
+                           authorization and the code that works on it
   implementation activate|deactivate <name> [--tenant T]
                            activate or deactivate an implementation of an extension point,
                            globally or in a tenant, whose setting wins over the global one
@@ -454,6 +459,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.implementation(ctx, k, args)
 	case "extension-point":
 		return c.extensionPoint(ctx, k, args)
+	case "business-object":
+		return c.businessObject(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
 	case "role":

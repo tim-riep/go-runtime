@@ -1,0 +1,173 @@
+// Copyright 2026 The go-runtime Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"text/tabwriter"
+
+	"github.com/tim-riep/go-runtime/kernel"
+	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
+)
+
+// businessObject runs the commands on business objects.
+func (c *cli) businessObject(ctx context.Context, k *kernel.Kernel, args []string) int {
+	usage := func() int {
+		fmt.Fprintln(c.stderr, "usage: rt business-object list [package] | show <name>")
+		return exitUsage
+	}
+	switch {
+	case len(args) >= 1 && len(args) <= 2 && args[0] == "list":
+		pkg := model.PackageID("")
+		if len(args) == 2 {
+			pkg = model.PackageID(args[1])
+		}
+		list, err := k.BusinessObjects(ctx, pkg)
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(list)
+			return exitOK
+		}
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "NAME\tPACKAGE\tROOT\tENTITIES\tBEHAVIOR\tDESCRIPTION")
+		for _, b := range list {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\n", b.Name, b.Package, b.Root.Table, countEntities(b.Root), b.BehaviorClass,
+				reflector.In(b.Description, c.lang).Or(""))
+		}
+		w.Flush()
+		return exitOK
+	case len(args) == 2 && args[0] == "show":
+		d, err := k.BusinessObject(ctx, args[1])
+		if err != nil {
+			return c.fail(err)
+		}
+		if c.asJSON {
+			c.json(d)
+			return exitOK
+		}
+		c.printBusinessObject(d)
+		return exitOK
+	}
+	return usage()
+}
+
+func countEntities(e *reflector.Entity) int {
+	n := 1
+	for _, c := range e.Children {
+		n += countEntities(c)
+	}
+	return n
+}
+
+func (c *cli) printBusinessObject(d *kernel.BusinessObjectDetail) {
+	out := c.stdout
+	fmt.Fprintf(out, "Business object %s (package %s)\n", d.Name, d.Package)
+	fmt.Fprintf(out, "  description: %s\n", reflector.In(d.Description, c.lang).Or("-"))
+	fmt.Fprintf(out, "  behavior class: %s\n", d.BehaviorClass)
+	c.printEntity(d.Root, "  ")
+	if len(d.CodeUses) == 0 {
+		fmt.Fprintln(out, "  not used by code")
+	}
+	for _, u := range d.CodeUses {
+		member := ""
+		if m, ok := u.Member.Get(); ok {
+			member = " " + m
+		}
+		fmt.Fprintf(out, "  used by %s %s:%d %s %s%s\n", u.Package, u.File, u.Line, u.Kind, u.Object, member)
+	}
+}
+
+func (c *cli) printEntity(e *reflector.Entity, indent string) {
+	out := c.stdout
+	ops := make([]string, len(e.Operations))
+	for i, op := range e.Operations {
+		ops[i] = string(op)
+	}
+	fmt.Fprintf(out, "%sentity %s  key (%s)  operations %s  numbering %s\n", indent, e.Table, strings.Join(e.Key, ", "), strings.Join(ops, ", "), e.Numbering)
+	in := indent + "  "
+	if p := e.ParentKey; p != nil {
+		var pairs []string
+		for _, f := range p.Fields {
+			pairs = append(pairs, f.Field+" = "+f.References)
+		}
+		fmt.Fprintf(out, "%sparent %s through %s (%s)\n", in, p.Parent, p.ForeignKey, strings.Join(pairs, ", "))
+	}
+	for _, f := range e.Fields {
+		var props []string
+		for _, p := range []struct {
+			on   bool
+			name string
+		}{{f.Key, "key"}, {f.ReadOnly, "read-only"}, {f.ReadOnlyOnUpdate, "read-only on update"}, {f.Mandatory, "mandatory"}, {f.ETag, "etag"}} {
+			if p.on {
+				props = append(props, p.name)
+			}
+		}
+		if a, ok := f.Administrative.Get(); ok {
+			props = append(props, a)
+		}
+		typ := string(f.Type)
+		if f.Length > 0 {
+			typ += fmt.Sprintf("(%d)", f.Length)
+		}
+		label := ""
+		if f.DataElement != nil {
+			if t, ok := reflector.In(f.DataElement.Texts, c.lang).Get(); ok {
+				label = t.Medium
+			}
+		}
+		fmt.Fprintf(out, "%sfield %s  %s  %s  %s\n", in, f.Name, typ, label, strings.Join(props, ", "))
+	}
+	for _, d := range e.Determinations {
+		fmt.Fprintf(out, "%sdetermination %s on %s%s\n", in, d.Name, d.When, trigger(d.Trigger))
+	}
+	for _, v := range e.Validations {
+		fmt.Fprintf(out, "%svalidation %s%s\n", in, v.Name, trigger(v.Trigger))
+	}
+	for _, a := range e.Actions {
+		kind := "instance"
+		if !a.Instance {
+			kind = "static"
+		}
+		fmt.Fprintf(out, "%saction %s  %s  parameter %s  result %s  modifies %v  activity %s\n", in, a.Name, kind, a.Parameter.Or("-"),
+			a.Result.Or("-"), a.Modifies, a.Activity.Or("-"))
+	}
+	switch {
+	case e.Authorization != nil && e.Inherited:
+		fmt.Fprintf(out, "%sauthorization of the root: %s\n", in, e.Authorization.Object)
+	case e.Authorization != nil:
+		fmt.Fprintf(out, "%sauthorization %s\n", in, e.Authorization.Object)
+	}
+	for _, ch := range e.Children {
+		c.printEntity(ch, in)
+	}
+}
+
+// trigger describes the operations and fields of a trigger.
+func trigger(t model.Trigger) string {
+	ops := make([]string, len(t.On))
+	for i, op := range t.On {
+		ops[i] = string(op)
+	}
+	s := " (" + strings.Join(ops, ", ")
+	if len(t.Fields) > 0 {
+		s += "; fields " + strings.Join(t.Fields, ", ")
+	}
+	return s + ")"
+}

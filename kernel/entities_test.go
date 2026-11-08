@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -1033,6 +1034,57 @@ func TestTableBecomesEntity(t *testing.T) {
 		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "WRITER.class:4:") || !strings.Contains(err.Error(), "WRITER.class:5:") ||
 			!strings.Contains(err.Error(), "instead of insert") {
 			t.Errorf("upgrade: %v", err)
+		}
+	})
+}
+
+// TestBusinessObjectDescription describes a business object with its
+// entities as a tree and the places of code that work on it.
+func TestBusinessObjectDescription(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", orderRoot)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		d, err := k.BusinessObject(ctx, "/TRBO/ORDER")
+		if err != nil {
+			t.Fatal(err)
+		}
+		root := d.Root
+		if d.Package != "TRBO" || d.Description["de"] != "Auftrag" || root.Table != "/TRBO/ORDERS" || len(root.Children) != 2 ||
+			root.Children[0].Table != "/TRBO/ITEMS" || root.Children[1].Numbering != model.NumberingUUID {
+			t.Fatalf("tree: %+v", d.BusinessObject)
+		}
+		fields := map[string]string{}
+		for _, f := range root.Fields {
+			fields[f.Name] = fmt.Sprintf("%v %v %v %s %v", f.Key, f.ReadOnly, f.Mandatory, f.Administrative.Or("-"), f.ETag)
+		}
+		if fields["ORDER_ID"] != "true false false - false" || fields["STATUS"] != "false true false - false" || fields["NAME"] != "false false true - false" ||
+			fields["CHANGED_AT"] != "false false false changedAt true" {
+			t.Errorf("fields: %v", fields)
+		}
+		items := root.Children[0]
+		if items.ParentKey == nil || items.ParentKey.Parent != "/TRBO/ORDERS" || !items.Inherited || items.Authorization == nil ||
+			len(root.Actions) != 2 || root.Actions[0].Activity.Or("") != "UPDATE" {
+			t.Errorf("items: %+v, actions %+v", items, root.Actions)
+		}
+		kinds := map[string]bool{}
+		for _, u := range d.CodeUses {
+			if u.File != "src/API.class" {
+				t.Errorf("use in %s", u.File)
+			}
+			kinds[u.Kind] = true
+		}
+		if !kinds["business-object"] || !kinds["entity"] || !kinds["action"] {
+			t.Errorf("uses: %+v", d.CodeUses)
+		}
+		list, err := k.BusinessObjects(ctx, "TRBO")
+		if err != nil || len(list) != 1 {
+			t.Errorf("list: %v, %v", list, err)
+		}
+		if _, err := k.BusinessObjects(ctx, "NOPE"); err == nil {
+			t.Error("list of a package that is not installed")
 		}
 	})
 }
