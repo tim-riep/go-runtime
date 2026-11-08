@@ -412,3 +412,27 @@ func visitStmts(ss []syntax.Stmt, fn func(syntax.Stmt)) {
 		}
 	}
 }
+
+// reflectedExtensionPoint checks the name that /TRBASE/REFLECTOR.
+// EXTENSION_POINT gets as a string literal of an extension point of the
+// own, a required or a kernel package, and records the use. Other names
+// are looked up when the code runs.
+func (c *checker) reflectedExtensionPoint(x *syntax.CallExpr) {
+	if len(x.Args) != 1 || c.cfg.Schema == nil {
+		return
+	}
+	name, ok := literal(x.Args[0].Value)
+	if !ok {
+		return
+	}
+	pos := x.Args[0].Value.Start()
+	pkg, _, ok := model.SplitName(name)
+	if !ok || pkg != c.cfg.Package && pkg != model.Kernel && !slices.Contains(c.cfg.Visible, pkg) {
+		return
+	}
+	if c.cfg.Schema.ExtensionPoints[name] == nil {
+		c.errorf(pos, CodeExtensionPoint, "extension point %s does not exist", name)
+		return
+	}
+	c.use(pos, "extension-point", name, "")
+}

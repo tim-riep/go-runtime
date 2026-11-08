@@ -1,0 +1,69 @@
+{
+  "name": "/TRBASE/EXTENSION_FILTER",
+  "texts": {
+    "en": {
+      "label": "Filter field",
+      "description": "A filter field of an extension point with its type"
+    },
+    "de": {
+      "label": "Filterfeld",
+      "description": "Ein Filterfeld eines Erweiterungspunkts mit Typ"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "DATA_ELEMENT",
+      "dataElement": "/TRBASE/DATA_ELEMENT_NAME"
+    },
+    {
+      "name": "DOMAIN",
+      "dataElement": "/TRBASE/DOMAIN_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TYPE",
+      "dataElement": "/TRBASE/BASE_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "LENGTH",
+      "dataElement": "/TRBASE/TYPE_LENGTH"
+    },
+    {
+      "name": "SHORT_LABEL",
+      "dataElement": "/TRBASE/SHORT_LABEL"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/FIELD_LABEL"
+    },
+    {
+      "name": "LONG_LABEL",
+      "dataElement": "/TRBASE/LONG_LABEL"
+    },
+    {
+      "name": "HEADING",
+      "dataElement": "/TRBASE/HEADING"
+    },
+    {
+      "name": "VALUES",
+      "arrayType": "/TRBASE/FIXED_VALUE_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "HAS_DEFAULT",
+      "dataElement": "/TRBASE/HAS_DEFAULT",
+      "notNull": true
+    },
+    {
+      "name": "DEFAULT",
+      "arrayType": "/TRBASE/FILTER_ENTRY_ARRAY",
+      "notNull": true
+    }
+  ]
+}

@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/rterr"
@@ -31,6 +32,17 @@ import (
 type activation struct {
 	global  map[string]bool
 	tenants map[string]map[string]bool // tenant -> implementation -> active
+	// traces are the running traces of the selection by user.
+	traces map[string]repo.AuthTrace
+}
+
+// where tells where the setting that decides the activation of an
+// implementation in a tenant was made.
+func (a *activation) where(impl, tenant string) string {
+	if _, ok := a.tenants[tenant][impl]; ok && tenant != "" {
+		return "in tenant " + tenant
+	}
+	return "globally"
 }
 
 // active reports whether an implementation is active in a tenant; ""
@@ -167,15 +179,33 @@ func (x *execution) SelectImplementations(point string, values map[string]string
 	}
 	p := rp.point
 	sel := native.Selection{Use: p.Use, CommitAllowed: p.CommitAllowed}
+	trace := x.selectionTrace(act)
+	var reasons []SelectionReason
+	note := func(impl, reason string) {
+		if trace != nil {
+			reasons = append(reasons, SelectionReason{Implementation: impl, Reason: reason})
+		}
+	}
+	defer func() {
+		if trace != nil {
+			x.recordSelection(point, values, reasons, at)
+		}
+	}()
 	for _, ri := range rp.impls {
 		if !act.active(ri.impl.Name, x.tenant) {
+			note(ri.impl.Name, "inactive "+act.where(ri.impl.Name, x.tenant))
 			continue
 		}
-		if _, ok := rp.matches(ri, values); !ok {
+		if field, ok := rp.matches(ri, values); !ok {
+			note(ri.impl.Name, "the filter field "+field+" does not match")
 			continue
 		}
+		note(ri.impl.Name, "selected")
 		sel.Classes = append(sel.Classes, ri.impl.Class)
 		sel.Implementations = append(sel.Implementations, ri.impl.Name)
+	}
+	if len(sel.Implementations) == 0 && p.Fallback.Valid() {
+		note(p.Fallback.Or(""), "fallback class, no implementation matches")
 	}
 	switch {
 	case p.Use == model.UseSingle && len(sel.Implementations) > 1:
@@ -191,6 +221,16 @@ func (x *execution) SelectImplementations(point string, values map[string]string
 			Text: fmt.Sprintf("no active implementation of extension point %s matches %s, and it has no fallback class", point, filterValuesText(p, values))}
 	}
 	return sel, nil
+}
+
+// ImplementationActive reports whether an implementation is active in the
+// tenant of the execution.
+func (x *execution) ImplementationActive(name string) (bool, error) {
+	a, err := x.loadActivation()
+	if err != nil {
+		return false, err
+	}
+	return a.active(name, x.tenant), nil
 }
 
 // filterValuesText writes filter values for messages, in the order of the

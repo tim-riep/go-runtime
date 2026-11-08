@@ -125,3 +125,97 @@ func activityInfo(a reflector.Activity, lang string) ActivityInfo {
 	}
 	return out
 }
+
+func init() {
+	static(reflectorClass, "EXTENSION_POINT", "(name: STRING) returns /TRBASE/EXTENSION_POINT raises /TRBASE/EXTENSION_POINT_NOT_FOUND",
+		func(c *native.Context, name string) (ExtensionPoint, error) {
+			r, err := reflectorOf(c)
+			if err != nil {
+				return ExtensionPoint{}, err
+			}
+			p, err := r.ExtensionPoint(name)
+			var nf *rterr.NotFound
+			if errors.As(err, &nf) {
+				return ExtensionPoint{}, native.Raise("/TRBASE/EXTENSION_POINT_NOT_FOUND", name)
+			}
+			if err != nil {
+				return ExtensionPoint{}, err
+			}
+			return extensionPoint(c, p)
+		})
+	static(reflectorClass, "EXTENSION_POINT_EXISTS", "(name: STRING) returns BOOL", func(c *native.Context, name string) (bool, error) {
+		r, err := reflectorOf(c)
+		if err != nil {
+			return false, err
+		}
+		_, err = r.ExtensionPoint(name)
+		return err == nil, nil
+	})
+	static(reflectorClass, "EXTENSION_POINTS", "(pkg: STRING?) returns /TRBASE/EXTENSION_POINT_ARRAY",
+		func(c *native.Context, pkg model.Optional[string]) ([]ExtensionPoint, error) {
+			r, err := reflectorOf(c)
+			if err != nil {
+				return nil, err
+			}
+			out := []ExtensionPoint{}
+			for _, p := range r.ExtensionPoints(model.PackageID(pkg.Or(""))) {
+				ep, err := extensionPoint(c, p)
+				if err != nil {
+					return nil, err
+				}
+				out = append(out, ep)
+			}
+			return out, nil
+		})
+}
+
+// extensionPoint turns a definition into the structure of TRBASE with the
+// texts of the language of the execution, else English, else null, and
+// the activation of the implementations in its tenant.
+func extensionPoint(c *native.Context, p *reflector.ExtensionPoint) (ExtensionPoint, error) {
+	lang := c.Language()
+	out := ExtensionPoint{Name: p.Name, PackageID: string(p.Package), Description: reflector.In(p.Description, lang), InterfaceName: p.Interface,
+		Use: ExtensionUse(p.Use), Fallback: p.Fallback, CommitAllowed: p.CommitAllowed, Filters: []ExtensionFilter{}, Implementations: []Implementation{}}
+	for _, f := range p.Filters {
+		ef := ExtensionFilter{Name: f.Name, DataElement: f.DataElement, Domain: f.Domain, Type: string(f.Type), Values: []FixedValue{}, Default: []FilterEntry{}}
+		if n, ok := f.Length.Get(); ok {
+			ef.Length = model.Some(int32(n))
+		}
+		if l, ok := reflector.In(f.Labels, lang).Get(); ok {
+			ef.ShortLabel, ef.Label, ef.LongLabel, ef.Heading = model.Some(l.Short), model.Some(l.Medium), model.Some(l.Long), model.Some(l.Heading)
+		}
+		for _, v := range f.Values {
+			ef.Values = append(ef.Values, FixedValue{Value: v.Value, Name: v.Name, Description: v.Description})
+		}
+		if d, ok := f.Default.Get(); ok {
+			ef.HasDefault = true
+			ef.Default = filterEntries(f.Name, d)
+		}
+		out.Filters = append(out.Filters, ef)
+	}
+	for _, impl := range p.Implementations {
+		active, err := c.Host.ImplementationActive(impl.Name)
+		if err != nil {
+			return ExtensionPoint{}, err
+		}
+		ei := Implementation{Name: impl.Name, PackageID: string(impl.Package), Description: reflector.In(impl.Description, lang), ClassName: impl.Class,
+			SortOrder: impl.Order, Filters: []FilterEntry{}, Active: active}
+		for _, f := range p.Filters {
+			ei.Filters = append(ei.Filters, filterEntries(f.Name, impl.Filters[f.Name])...)
+		}
+		out.Implementations = append(out.Implementations, ei)
+	}
+	return out, nil
+}
+
+func filterEntries(field string, entries []model.ValueEntry) []FilterEntry {
+	out := []FilterEntry{}
+	for _, e := range entries {
+		fe := FilterEntry{Field: field, Kind: ValueKind(e.Kind), Low: e.Low}
+		if e.Kind == model.ValueRange {
+			fe.High = model.Some(e.High)
+		}
+		out = append(out, fe)
+	}
+	return out
+}

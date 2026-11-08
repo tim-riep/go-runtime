@@ -23,6 +23,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/dialect"
+	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
@@ -66,6 +67,9 @@ type execution struct {
 	// schema, and activation their activation, read on first use.
 	extensions *extensionRegistry
 	activation *activation
+	// selections are the evaluations of extension points a trace records,
+	// written when the execution ends.
+	selections []repo.SelectionEntry
 }
 
 // session is a database session: its own connection and a transaction

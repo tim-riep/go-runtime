@@ -173,3 +173,95 @@ func (r *Repo) ImplementationChanges(ctx context.Context, q dialect.Querier, imp
 	}
 	return out, nil
 }
+
+// Tables of traces of the selection of implementations.
+const (
+	TImplementationTraces       = model.KernelNamespace + "IMPLEMENTATION_TRACES"
+	TImplementationTraceEntries = model.KernelNamespace + "IMPLEMENTATION_TRACE_ENTRIES"
+)
+
+// ImplementationTraces returns the running traces of the selection of
+// implementations by user.
+func (r *Repo) ImplementationTraces(ctx context.Context, q dialect.Querier) (map[string]AuthTrace, error) {
+	rows, err := r.selectRows(ctx, q, TImplementationTraces, []string{"USER_NAME", "TENANT", "STARTED_AT", "UNTIL", "MAX_ENTRIES", "STARTED_BY"})
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]AuthTrace{}
+	for _, x := range rows {
+		out[str(x["USER_NAME"])] = AuthTrace{User: str(x["USER_NAME"]), Tenant: opt(x["TENANT"]), StartedAt: tm(x["STARTED_AT"]), Until: tm(x["UNTIL"]),
+			MaxEntries: num(x["MAX_ENTRIES"]), StartedBy: str(x["STARTED_BY"])}
+	}
+	return out, nil
+}
+
+// PutImplementationTrace starts or replaces the trace of a user and
+// removes its entries.
+func (r *Repo) PutImplementationTrace(ctx context.Context, q dialect.Querier, t AuthTrace) error {
+	if err := r.DeleteImplementationTrace(ctx, q, t.User); err != nil {
+		return err
+	}
+	if err := r.deleteWhere(ctx, q, TImplementationTraceEntries, row{"USER_NAME": t.User}); err != nil {
+		return err
+	}
+	return r.insert(ctx, q, TImplementationTraces, row{"USER_NAME": t.User, "TENANT": val(t.Tenant), "STARTED_AT": t.StartedAt, "UNTIL": t.Until,
+		"MAX_ENTRIES": int64(t.MaxEntries), "STARTED_BY": t.StartedBy})
+}
+
+// DeleteImplementationTrace stops the trace of a user; its entries stay.
+func (r *Repo) DeleteImplementationTrace(ctx context.Context, q dialect.Querier, user string) error {
+	return r.deleteWhere(ctx, q, TImplementationTraces, row{"USER_NAME": user})
+}
+
+// SelectionEntry is an evaluation of an extension point recorded by a
+// trace. Filters and Selection are JSON.
+type SelectionEntry struct {
+	ID             string                 `json:"id"`
+	At             time.Time              `json:"at"`
+	User           string                 `json:"user"`
+	Tenant         model.Optional[string] `json:"tenant"`
+	ExtensionPoint string                 `json:"extensionPoint"`
+	Filters        string                 `json:"-"`
+	Selection      string                 `json:"-"`
+	Site           CheckSite              `json:"site"`
+}
+
+// InsertSelectionEntries writes trace entries.
+func (r *Repo) InsertSelectionEntries(ctx context.Context, q dialect.Querier, entries []SelectionEntry) error {
+	for _, e := range entries {
+		values := row{"ENTRY_ID": e.ID, "TRACED_AT": e.At, "USER_NAME": e.User, "TENANT": val(e.Tenant), "POINT_NAME": e.ExtensionPoint,
+			"FILTER_VALUES": e.Filters, "SELECTION": e.Selection}
+		e.Site.row(values)
+		if err := r.insert(ctx, q, TImplementationTraceEntries, values); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SelectionEntries returns the entries of a user in the order they were
+// recorded, of one tenant or of all for "".
+func (r *Repo) SelectionEntries(ctx context.Context, q dialect.Querier, user, tenant string) ([]SelectionEntry, error) {
+	filter := row{"USER_NAME": user}
+	if tenant != "" {
+		filter["TENANT"] = tenant
+	}
+	rows, err := r.selectWhere(ctx, q, TImplementationTraceEntries, append([]string{"ENTRY_ID", "TRACED_AT", "USER_NAME", "TENANT", "POINT_NAME",
+		"FILTER_VALUES", "SELECTION"}, siteColumns...), filter, "TRACED_AT", "ENTRY_ID")
+	if err != nil {
+		return nil, err
+	}
+	out := []SelectionEntry{}
+	for _, x := range rows {
+		out = append(out, SelectionEntry{ID: str(x["ENTRY_ID"]), At: tm(x["TRACED_AT"]), User: str(x["USER_NAME"]), Tenant: opt(x["TENANT"]),
+			ExtensionPoint: str(x["POINT_NAME"]), Filters: str(x["FILTER_VALUES"]), Selection: str(x["SELECTION"]), Site: siteOf(x)})
+	}
+	return out, nil
+}
+
+// CountSelectionEntries returns the number of entries of a user.
+func (r *Repo) CountSelectionEntries(ctx context.Context, q dialect.Querier, user string) (int, error) {
+	var n int
+	err := q.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+r.d.QuoteIdent(TImplementationTraceEntries)+" WHERE "+r.d.QuoteIdent("USER_NAME")+" = "+r.d.Placeholder(1), user).Scan(&n)
+	return n, err
+}

@@ -1,0 +1,49 @@
+{
+  "name": "/TRBASE/IMPLEMENTATION",
+  "texts": {
+    "en": {
+      "label": "Implementation",
+      "description": "An implementation of an extension point"
+    },
+    "de": {
+      "label": "Implementierung",
+      "description": "Eine Implementierung eines Erweiterungspunkts"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/IMPLEMENTATION_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    },
+    {
+      "name": "CLASS_NAME",
+      "dataElement": "/TRBASE/CLASS_NAME",
+      "notNull": true
+    },
+    {
+      "name": "SORT_ORDER",
+      "dataElement": "/TRBASE/SORT_ORDER",
+      "notNull": true
+    },
+    {
+      "name": "FILTERS",
+      "arrayType": "/TRBASE/FILTER_ENTRY_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "dataElement": "/TRBASE/IS_ACTIVE",
+      "notNull": true
+    }
+  ]
+}

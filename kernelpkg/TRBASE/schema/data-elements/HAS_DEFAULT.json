@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/HAS_DEFAULT",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Default",
+      "medium": "Has default values",
+      "long": "Implementations may leave the field out",
+      "heading": "Default"
+    },
+    "de": {
+      "short": "Vorgabe",
+      "medium": "Hat Vorgabewerte",
+      "long": "Implementierungen lassen das Feld aus",
+      "heading": "Vorgabe"
+    }
+  }
+}

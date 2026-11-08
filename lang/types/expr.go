@@ -1108,6 +1108,8 @@ func (c *checker) call(f *fnCtx, sc *scope, x *syntax.CallExpr, e env, want Type
 					c.assetRepository(x)
 				case t.Name == ReflectorClass && name == "AUTHORIZATION_OBJECT":
 					c.authorizationObject(x)
+				case t.Name == ReflectorClass && name == "EXTENSION_POINT":
+					c.reflectedExtensionPoint(x)
 				}
 				return c.methodCall(f, sc, x, m, nil, e, false)
 			case *Enum:

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/COMMIT_ALLOWED",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Commit",
+      "medium": "Commit allowed",
+      "long": "Implementations may commit",
+      "heading": "Commit allowed"
+    },
+    "de": {
+      "short": "Commit",
+      "medium": "Commit erlaubt",
+      "long": "Implementierungen dürfen committen",
+      "heading": "Commit erlaubt"
+    }
+  }
+}

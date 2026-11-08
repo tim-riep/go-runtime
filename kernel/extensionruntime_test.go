@@ -34,6 +34,8 @@ import (
 func stepsFiles(version string) map[string]string {
 	return map[string]string{
 		"manifest.json": `{ "id": "TRSTEPS", "version": "` + version + `", "requires": [{ "id": "TRBASE" }], "languageVersion": 1 }`,
+		"schema/extension-points/STEPS.json": `{ "name": "/TRSTEPS/STEPS", "description": { "en": "Steps", "de": "Schritte" }, "interface": "/TRSTEPS/STEPS",
+			"use": "multiple", "filters": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }, { "name": "NO", "domain": "/TRBASE/COUNTER" }] }`,
 		"src/STEPS.interface": `public interface /TRSTEPS/STEPS
 
   method REMEMBER(text: STRING)
@@ -91,10 +93,17 @@ end
     return (extension point /TRSTEPS/STRICT filters COUNTRY = country).PRICE(1)
   end
 
+  public static method REFLECT() returns STRING raises /TRBASE/EXTENSION_POINT_NOT_FOUND
+    var p = /TRBASE/REFLECTOR.EXTENSION_POINT("/TRSTEPS/STEPS")
+    var out = "{p.USE.NAME()} {p.INTERFACE_NAME} {p.FILTERS.LENGTH()} {p.FILTERS[2].TYPE} {p.DESCRIPTION default "-"}"
+    for impl in p.IMPLEMENTATIONS
+      out = out + " {impl.NAME}:{impl.ACTIVE}:{impl.FILTERS.LENGTH()}"
+    end
+    return out
+  end
+
 end
 `,
-		"schema/extension-points/STEPS.json": `{ "name": "/TRSTEPS/STEPS", "description": { "en": "Steps" }, "interface": "/TRSTEPS/STEPS",
-			"use": "multiple", "filters": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }, { "name": "NO", "domain": "/TRBASE/COUNTER" }] }`,
 		"schema/extension-points/PRICE.json": `{ "name": "/TRSTEPS/PRICE", "description": { "en": "Price" }, "interface": "/TRSTEPS/PRICING",
 			"use": "single", "filters": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }], "fallback": "/TRSTEPS/DEFAULT_PRICE" }`,
 		"schema/extension-points/STRICT.json": `{ "name": "/TRSTEPS/STRICT", "description": { "en": "Strict" }, "interface": "/TRSTEPS/PRICING",

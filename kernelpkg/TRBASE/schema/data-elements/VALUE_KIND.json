@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/VALUE_KIND",
+  "domain": "/TRBASE/VALUE_KIND",
+  "texts": {
+    "en": {
+      "short": "Kind",
+      "medium": "Kind of entry",
+      "long": "Single value, range or pattern",
+      "heading": "Kind"
+    },
+    "de": {
+      "short": "Art",
+      "medium": "Art des Eintrags",
+      "long": "Einzelwert, Bereich oder Muster",
+      "heading": "Art"
+    }
+  }
+}

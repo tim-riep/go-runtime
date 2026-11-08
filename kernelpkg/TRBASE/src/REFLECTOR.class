@@ -1,5 +1,6 @@
 # Describes objects of the schema at runtime; in this version
-# authorization objects and the activities of the kernel. Every package
+# authorization objects, the activities of the kernel and extension points
+# with their implementations. Every package
 # may read every definition. Texts are in the language of the execution,
 # else in English, and null when there is none.
 public class /TRBASE/REFLECTOR
@@ -14,6 +15,17 @@ public class /TRBASE/REFLECTOR
 
   # The activities of the kernel in their order.
   public static method ACTIVITIES() returns /TRBASE/ACTIVITY_ARRAY executed by kernel
+
+  # An extension point with its implementations in the order they run;
+  # ACTIVE tells whether an implementation is active in the tenant of the
+  # execution.
+  public static method EXTENSION_POINT(name: STRING) returns /TRBASE/EXTENSION_POINT raises /TRBASE/EXTENSION_POINT_NOT_FOUND executed by kernel
+
+  public static method EXTENSION_POINT_EXISTS(name: STRING) returns BOOL executed by kernel
+
+  # The extension points of a package, or of all packages for null,
+  # ordered by name.
+  public static method EXTENSION_POINTS(pkg: STRING?) returns /TRBASE/EXTENSION_POINT_ARRAY executed by kernel
 
   # Whether the activity can be granted for the object.
   public static method ALLOWS(object: /TRBASE/AUTHORIZATION_OBJECT, activity: /RT/ACTIVITY) returns BOOL executed by kernel

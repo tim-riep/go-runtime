@@ -140,9 +140,17 @@ Commands:
                            stop recording; the entries stay until the next start
   trace authorizations show <user> [--tenant T]
                            show the recorded checks with their result and place
+  trace extension-points start|stop|show <user> [--tenant T] [--minutes 30] [--max 10000]
+                           record which implementations the extension points that a user
+                           runs select, and why
   authorization-objects list [package]
                            list the authorization objects of a package or of all packages
   activities list          list the activities of the kernel (--lang for the texts)
+  extension-point list [package]
+                           list the extension points of a package or of all packages
+  extension-point show <name>
+                           show an extension point with its implementations, their activation
+                           globally and per tenant, and the code that runs it
   implementation activate|deactivate <name> [--tenant T]
                            activate or deactivate an implementation of an extension point,
                            globally or in a tenant, whose setting wins over the global one
@@ -444,6 +452,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.http(ctx, k, args)
 	case "implementation":
 		return c.implementation(ctx, k, args)
+	case "extension-point":
+		return c.extensionPoint(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
 	case "role":

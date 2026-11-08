@@ -74,6 +74,9 @@ type Host interface {
 	// with the activation in the tenant of the execution. A selection that
 	// fails returns an *ExtensionError.
 	SelectImplementations(point string, values map[string]string, at CheckLocation) (Selection, error)
+	// ImplementationActive reports whether an implementation is active in
+	// the tenant of the execution.
+	ImplementationActive(name string) (bool, error)
 }
 
 // Selection is what an extension point runs: the classes in order and

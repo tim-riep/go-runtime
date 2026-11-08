@@ -185,6 +185,7 @@ func (x *execution) finish(failure error) error {
 		s.close()
 	}
 	x.flushDiagnosis()
+	x.flushSelections()
 	return errors.Join(errs...)
 }
 

@@ -105,8 +105,11 @@ func (c *cli) lastFailedCheck(ctx context.Context, k *kernel.Kernel, user string
 
 // trace starts, stops and shows authorization traces.
 func (c *cli) trace(ctx context.Context, k *kernel.Kernel, args []string) int {
+	if len(args) == 3 && args[0] == "extension-points" {
+		return c.selectionTrace(ctx, k, args[1], args[2])
+	}
 	if len(args) != 3 || args[0] != "authorizations" {
-		fmt.Fprintln(c.stderr, "usage: rt trace authorizations start|stop|show <user> [--tenant T] [--minutes 30] [--max 10000]")
+		fmt.Fprintln(c.stderr, "usage: rt trace authorizations|extension-points start|stop|show <user> [--tenant T] [--minutes 30] [--max 10000]")
 		return exitUsage
 	}
 	user := args[2]

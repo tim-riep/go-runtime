@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/EXTENSION_POINT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Extension points"
+    },
+    "de": {
+      "label": "Erweiterungspunkte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/EXTENSION_POINT"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/VALUE_KIND",
+  "description": "Kind of an entry of values",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "value",
+      "name": "VALUE",
+      "description": "Single value"
+    },
+    {
+      "value": "range",
+      "name": "RANGE",
+      "description": "Range with both bounds"
+    },
+    {
+      "value": "pattern",
+      "name": "PATTERN",
+      "description": "* or a prefix followed by *"
+    }
+  ]
+}

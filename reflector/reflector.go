@@ -14,8 +14,9 @@
 
 // Package reflector describes objects of the schema at runtime, resolved
 // into types that Go code and the VM read without the repository. This
-// version describes authorization objects and the activities of the
-// kernel; later versions add further kinds of objects.
+// version describes authorization objects, the activities of the kernel
+// and extension points with their implementations; later versions add
+// further kinds of objects.
 //
 // The types are stable: fields are only added, never renamed or removed,
 // within one FormatVersion. null and "" are different values throughout:

@@ -41,6 +41,25 @@ const (
 	ActivityAdminister Activity = "ADMINISTER"
 )
 
+// ExtensionUse is the enum /TRBASE/EXTENSION_USE.
+type ExtensionUse string
+
+// Fixed values of /TRBASE/EXTENSION_USE.
+const (
+	ExtensionUseSingle   ExtensionUse = "single"
+	ExtensionUseMultiple ExtensionUse = "multiple"
+)
+
+// ValueKind is the enum /TRBASE/VALUE_KIND.
+type ValueKind string
+
+// Fixed values of /TRBASE/VALUE_KIND.
+const (
+	ValueKindValue   ValueKind = "value"
+	ValueKindRange   ValueKind = "range"
+	ValueKindPattern ValueKind = "pattern"
+)
+
 // XlsxCellKind is the enum /TRBASE/XLSX_CELL_KIND.
 type XlsxCellKind string
 
@@ -120,11 +139,59 @@ type AuthorizationObject struct {
 	ActivityCodes []Activity             `rt:"ACTIVITY_CODES"`
 }
 
+// ExtensionFilter is the structure /TRBASE/EXTENSION_FILTER.
+type ExtensionFilter struct {
+	Name        string                 `rt:"NAME"`
+	DataElement model.Optional[string] `rt:"DATA_ELEMENT"`
+	Domain      string                 `rt:"DOMAIN"`
+	Type        string                 `rt:"TYPE"`
+	Length      model.Optional[int32]  `rt:"LENGTH"`
+	ShortLabel  model.Optional[string] `rt:"SHORT_LABEL"`
+	Label       model.Optional[string] `rt:"LABEL"`
+	LongLabel   model.Optional[string] `rt:"LONG_LABEL"`
+	Heading     model.Optional[string] `rt:"HEADING"`
+	Values      []FixedValue           `rt:"VALUES"`
+	HasDefault  bool                   `rt:"HAS_DEFAULT"`
+	Default     []FilterEntry          `rt:"DEFAULT"`
+}
+
+// ExtensionPoint is the structure /TRBASE/EXTENSION_POINT.
+type ExtensionPoint struct {
+	Name            string                 `rt:"NAME"`
+	PackageID       string                 `rt:"PACKAGE_ID"`
+	Description     model.Optional[string] `rt:"DESCRIPTION"`
+	InterfaceName   string                 `rt:"INTERFACE_NAME"`
+	Use             ExtensionUse           `rt:"USE"`
+	Fallback        model.Optional[string] `rt:"FALLBACK"`
+	CommitAllowed   bool                   `rt:"COMMIT_ALLOWED"`
+	Filters         []ExtensionFilter      `rt:"FILTERS"`
+	Implementations []Implementation       `rt:"IMPLEMENTATIONS"`
+}
+
+// FilterEntry is the structure /TRBASE/FILTER_ENTRY.
+type FilterEntry struct {
+	Field string                 `rt:"FIELD"`
+	Kind  ValueKind              `rt:"KIND"`
+	Low   string                 `rt:"LOW"`
+	High  model.Optional[string] `rt:"HIGH"`
+}
+
 // FixedValue is the structure /TRBASE/FIXED_VALUE.
 type FixedValue struct {
 	Value       string                 `rt:"VALUE"`
 	Name        model.Optional[string] `rt:"NAME"`
 	Description model.Optional[string] `rt:"DESCRIPTION"`
+}
+
+// Implementation is the structure /TRBASE/IMPLEMENTATION.
+type Implementation struct {
+	Name        string                 `rt:"NAME"`
+	PackageID   string                 `rt:"PACKAGE_ID"`
+	Description model.Optional[string] `rt:"DESCRIPTION"`
+	ClassName   string                 `rt:"CLASS_NAME"`
+	SortOrder   int32                  `rt:"SORT_ORDER"`
+	Filters     []FilterEntry          `rt:"FILTERS"`
+	Active      bool                   `rt:"ACTIVE"`
 }
 
 // XlsxDimension is the structure /TRBASE/XLSX_DIMENSION.

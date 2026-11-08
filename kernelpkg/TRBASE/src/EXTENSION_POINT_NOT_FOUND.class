@@ -1,0 +1,11 @@
+# There is no extension point with this name.
+public class /TRBASE/EXTENSION_POINT_NOT_FOUND extends /RT/EXCEPTION
+
+  public attribute NAME: STRING
+
+  public constructor(name: STRING)
+    super("extension point {name} does not exist")
+    NAME = name
+  end
+
+end

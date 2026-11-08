@@ -1,0 +1,34 @@
+{
+  "name": "/TRBASE/FILTER_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Entry of filter values",
+      "description": "A value, range or pattern of a filter field"
+    },
+    "de": {
+      "label": "Eintrag von Filterwerten",
+      "description": "Ein Wert, Bereich oder Muster eines Filterfelds"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRBASE/VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "LOW",
+      "dataElement": "/TRBASE/FILTER_VALUE",
+      "notNull": true
+    },
+    {
+      "name": "HIGH",
+      "dataElement": "/TRBASE/FILTER_VALUE"
+    }
+  ]
+}

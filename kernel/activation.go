@@ -23,6 +23,7 @@ import (
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -62,7 +63,11 @@ func (k *Kernel) readActivation(ctx context.Context, q dialect.Querier) (*activa
 	if err != nil {
 		return nil, err
 	}
-	a := &activation{global: map[string]bool{}, tenants: map[string]map[string]bool{}}
+	traces, err := k.repo.ImplementationTraces(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	a := &activation{global: map[string]bool{}, tenants: map[string]map[string]bool{}, traces: traces}
 	for _, s := range states {
 		if s.Tenant == "" {
 			a.global[s.Implementation] = s.Active
@@ -294,4 +299,84 @@ func (k *Kernel) syncActivation(ctx context.Context, q dialect.Querier, cur, wan
 		return nil
 	}
 	return k.repo.NextImplementationGeneration(ctx, q, now)
+}
+
+// ExtensionPointDetail describes an extension point with its
+// implementations, their activation globally and per tenant, and where
+// code runs it.
+type ExtensionPointDetail struct {
+	*reflector.ExtensionPoint
+	CodeUses []CodeUse `json:"codeUses"`
+}
+
+// ExtensionPoint returns the description of an extension point, or
+// rterr.NotFound.
+func (k *Kernel) ExtensionPoint(ctx context.Context, name string) (*ExtensionPointDetail, error) {
+	r, err := k.Reflector(ctx)
+	if err != nil {
+		return nil, err
+	}
+	p, err := r.ExtensionPoint(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := k.addActivation(ctx, p); err != nil {
+		return nil, err
+	}
+	uses, err := k.CodeUses(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	d := &ExtensionPointDetail{ExtensionPoint: p, CodeUses: []CodeUse{}}
+	for _, u := range uses {
+		if u.Kind == "extension-point" {
+			d.CodeUses = append(d.CodeUses, u)
+		}
+	}
+	return d, nil
+}
+
+// ExtensionPoints returns the extension points of a package, or of all
+// packages for "", ordered by name, with the activation of their
+// implementations.
+func (k *Kernel) ExtensionPoints(ctx context.Context, pkg model.PackageID) ([]*reflector.ExtensionPoint, error) {
+	r, err := k.Reflector(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if pkg != "" {
+		if s, _ := k.Schema(ctx); s != nil && s.Packages[pkg] == nil {
+			return nil, &rterr.NotInstalled{Package: string(pkg)}
+		}
+	}
+	list := r.ExtensionPoints(pkg)
+	for _, p := range list {
+		if err := k.addActivation(ctx, p); err != nil {
+			return nil, err
+		}
+	}
+	return list, nil
+}
+
+// addActivation adds the activation to the implementations of an
+// extension point.
+func (k *Kernel) addActivation(ctx context.Context, p *reflector.ExtensionPoint) error {
+	a, err := k.readActivation(ctx, k.db)
+	if err != nil {
+		return err
+	}
+	for i := range p.Implementations {
+		impl := &p.Implementations[i]
+		act := &reflector.Activation{Active: a.active(impl.Name, ""), Tenants: map[string]bool{}}
+		if on, ok := a.global[impl.Name]; ok {
+			act.Global = model.Some(on)
+		}
+		for tenant, settings := range a.tenants {
+			if on, ok := settings[impl.Name]; ok {
+				act.Tenants[tenant] = on
+			}
+		}
+		impl.Activation = act
+	}
+	return nil
 }

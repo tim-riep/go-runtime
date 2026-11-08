@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/SORT_ORDER",
+  "domain": "/TRBASE/SORT_ORDER",
+  "texts": {
+    "en": {
+      "short": "Order",
+      "medium": "Order",
+      "long": "Place in the order of implementations",
+      "heading": "Order"
+    },
+    "de": {
+      "short": "Reihenf.",
+      "medium": "Reihenfolge",
+      "long": "Platz in der Reihenfolge",
+      "heading": "Reihenfolge"
+    }
+  }
+}

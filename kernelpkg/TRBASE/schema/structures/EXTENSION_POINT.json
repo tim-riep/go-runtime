@@ -1,0 +1,58 @@
+{
+  "name": "/TRBASE/EXTENSION_POINT",
+  "texts": {
+    "en": {
+      "label": "Extension point",
+      "description": "The definition of an extension point with its implementations"
+    },
+    "de": {
+      "label": "Erweiterungspunkt",
+      "description": "Die Definition eines Erweiterungspunkts mit Implementierungen"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/EXTENSION_POINT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    },
+    {
+      "name": "INTERFACE_NAME",
+      "dataElement": "/TRBASE/CLASS_NAME",
+      "notNull": true
+    },
+    {
+      "name": "USE",
+      "dataElement": "/TRBASE/EXTENSION_USE",
+      "notNull": true
+    },
+    {
+      "name": "FALLBACK",
+      "dataElement": "/TRBASE/CLASS_NAME"
+    },
+    {
+      "name": "COMMIT_ALLOWED",
+      "dataElement": "/TRBASE/COMMIT_ALLOWED",
+      "notNull": true
+    },
+    {
+      "name": "FILTERS",
+      "arrayType": "/TRBASE/EXTENSION_FILTER_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "IMPLEMENTATIONS",
+      "arrayType": "/TRBASE/IMPLEMENTATION_ARRAY",
+      "notNull": true
+    }
+  ]
+}

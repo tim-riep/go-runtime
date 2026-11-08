@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/IMPLEMENTATION_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Impl.",
+      "medium": "Implementation",
+      "long": "Name of the implementation",
+      "heading": "Implementation"
+    },
+    "de": {
+      "short": "Impl.",
+      "medium": "Implementierung",
+      "long": "Name der Implementierung",
+      "heading": "Implementierung"
+    }
+  }
+}

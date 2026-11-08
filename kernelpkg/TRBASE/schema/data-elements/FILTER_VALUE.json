@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/FILTER_VALUE",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Value",
+      "medium": "Value",
+      "long": "Value, lower bound or pattern",
+      "heading": "Value"
+    },
+    "de": {
+      "short": "Wert",
+      "medium": "Wert",
+      "long": "Wert, Untergrenze oder Muster",
+      "heading": "Wert"
+    }
+  }
+}

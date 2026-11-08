@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/IS_ACTIVE",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Active",
+      "medium": "Active",
+      "long": "Active in the tenant of the execution",
+      "heading": "Active"
+    },
+    "de": {
+      "short": "Aktiv",
+      "medium": "Aktiv",
+      "long": "Aktiv im Mandanten der Ausführung",
+      "heading": "Aktiv"
+    }
+  }
+}

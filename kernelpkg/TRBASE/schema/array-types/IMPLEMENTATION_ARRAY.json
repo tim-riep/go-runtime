@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/IMPLEMENTATION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Implementations"
+    },
+    "de": {
+      "label": "Implementierungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/IMPLEMENTATION"
+  }
+}

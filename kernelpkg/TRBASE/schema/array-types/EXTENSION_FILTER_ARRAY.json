@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/EXTENSION_FILTER_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Filter fields"
+    },
+    "de": {
+      "label": "Filterfelder"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/EXTENSION_FILTER"
+  }
+}

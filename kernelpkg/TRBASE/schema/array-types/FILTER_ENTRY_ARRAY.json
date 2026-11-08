@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/FILTER_ENTRY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Entries of filter values"
+    },
+    "de": {
+      "label": "Einträge von Filterwerten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/FILTER_ENTRY"
+  }
+}
