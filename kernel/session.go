@@ -62,6 +62,10 @@ type execution struct {
 	traced []checkRecord
 	// grants are the authorizations a test method granted itself.
 	grants *testGrants
+	// extensions are the extension points and implementations of the
+	// schema, and activation their activation, read on first use.
+	extensions *extensionRegistry
+	activation *activation
 }
 
 // session is a database session: its own connection and a transaction

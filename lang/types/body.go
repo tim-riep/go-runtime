@@ -281,6 +281,9 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 			if IsKind(want, Session) {
 				c.errorf(s.Name.Pos, CodeType, "a SESSION comes from open session")
 			}
+			if p, ok := want.(*ExtensionPoint); ok {
+				c.errorf(s.Name.Pos, CodeExtensionPoint, "the value of %s comes from extension point %s", p.Name, p.Name)
+			}
 			c.info.Vars[s] = []*Local{c.declare(f, sc, s.Name, want)}
 			e.invalidate(s.Name.Name)
 			break

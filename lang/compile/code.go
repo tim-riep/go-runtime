@@ -876,6 +876,8 @@ func (f *fn) expr0(x syntax.Expr) {
 		f.transform(x)
 	case *syntax.AuthorizedExpr:
 		f.authCheck(x.Pos, &x.AuthCheck, false)
+	case *syntax.ExtensionPointExpr:
+		f.extensionPoint(x)
 	default:
 		f.c.failf("cannot compile %T", x)
 	}
@@ -1115,6 +1117,8 @@ func (f *fn) call(x *syntax.CallExpr) {
 	}
 	f.line(x.Fun.Start())
 	switch ci.Kind {
+	case types.CallExtension:
+		f.extensionCall(x, ci)
 	case types.CallClosure:
 		f.expr(x.Fun)
 		f.args(ci.Args)

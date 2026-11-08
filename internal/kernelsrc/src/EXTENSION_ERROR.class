@@ -1,0 +1,12 @@
+# Root of the errors of extension points. EXTENSION_POINT is the extension
+# point and IMPLEMENTATIONS are the implementations the error concerns.
+public open class /RT/EXTENSION_ERROR extends /RT/RUNTIME_ERROR
+
+  public attribute EXTENSION_POINT: STRING
+  public attribute IMPLEMENTATIONS: array of STRING
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

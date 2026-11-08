@@ -591,6 +591,8 @@ func (p *printer) typ(t *Type) {
 		}
 	case NamedType:
 		p.w(t.Name)
+	case ExtensionPointType:
+		p.w("extension point " + t.Name)
 	case ArrayType:
 		p.w("array of ")
 		p.typ(t.Elem)
@@ -792,6 +794,17 @@ func (p *printer) expr(x Expr) {
 		if x.Into != nil {
 			p.w(" into ")
 			p.typ(x.Into)
+		}
+	case *ExtensionPointExpr:
+		p.w("extension point " + x.Point.Name)
+		for i, f := range x.Filters {
+			if i == 0 {
+				p.w(" filters ")
+			} else {
+				p.w(", ")
+			}
+			p.w(f.Name.Name + " = ")
+			p.expr(f.Value)
 		}
 	case *UpdateExpr:
 		p.w("update " + x.Table.Name + " set ")

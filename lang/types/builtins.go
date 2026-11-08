@@ -194,7 +194,7 @@ func ordered(t Type) bool {
 // comparable reports types whose values can be compared with =.
 func comparable(t Type) bool {
 	switch x := NonOpt(t).(type) {
-	case *Func:
+	case *Func, *ExtensionPoint:
 		return false
 	case *Struct:
 		for _, f := range x.Fields {

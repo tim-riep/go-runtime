@@ -159,6 +159,7 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 			c.errorf(x.Pos, CodeType, "the element type of [] cannot be derived; write var a: array of T = [] or new array of T")
 			return TypInvalid
 		}
+		c.noSession(elem, x.Pos, "an array")
 		if a, ok := NonOpt(want).(*Array); ok && Identical(a.Elem, elem) {
 			return a
 		}
@@ -187,6 +188,7 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		if !mapKey(kt) {
 			c.errorf(x.Pos, CodeType, "%s cannot be a map key", kt)
 		}
+		c.noSession(vt, x.Pos, "a map")
 		return &Map{Key: kt, Elem: vt}
 	case *syntax.FuncExpr:
 		return c.funcExpr(f, sc, x, e, want)
@@ -198,6 +200,8 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		return c.delete(f, sc, x, e)
 	case *syntax.OpenSessionExpr:
 		return TypSession
+	case *syntax.ExtensionPointExpr:
+		return c.extensionPointExpr(f, sc, x, e)
 	case *syntax.TransformExpr:
 		return c.transform(f, sc, x, e)
 	case *syntax.AuthorizedExpr:
@@ -1134,6 +1138,9 @@ func (c *checker) call(f *fnCtx, sc *scope, x *syntax.CallExpr, e env, want Type
 			return TypInvalid
 		}
 		c.notNull(fun.X, rt)
+		if p, ok := NonOpt(rt).(*ExtensionPoint); ok {
+			return c.extensionCall(f, sc, x, fun, p, e)
+		}
 		if k, ok := NonOpt(rt).(*Class); ok {
 			m, ok := k.Member(name).(*Method)
 			if !ok {

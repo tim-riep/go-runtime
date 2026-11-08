@@ -218,6 +218,18 @@ func (f *Func) String() string {
 	return b.String()
 }
 
+// ExtensionPoint is the type of the value of extension point NAME: the
+// implementations selected by the filter values, called through the
+// methods of the interface of the extension point. There is one value per
+// extension point, so values compare by identity.
+type ExtensionPoint struct {
+	Name      string
+	Point     *model.ExtensionPoint
+	Interface *Class
+}
+
+func (p *ExtensionPoint) String() string { return "extension point " + p.Name }
+
 // Optional is T?.
 type Optional struct {
 	Elem Type

@@ -544,6 +544,10 @@ func (p *parser) typ() *Type {
 	case p.tok.Kind == GLOBAL:
 		t.Kind, t.Name = NamedType, p.tok.Text
 		p.next()
+	case p.extensionPoint():
+		p.next()
+		p.next()
+		t.Kind, t.Name = ExtensionPointType, p.global().Name
 	case p.isKw("array"):
 		p.next()
 		p.expectKw("of")
@@ -996,6 +1000,9 @@ func (p *parser) primary() Expr {
 		p.next()
 		return p.stringLit(t)
 	case IDENT:
+		if p.extensionPoint() {
+			return p.extensionPointExpr()
+		}
 		p.next()
 		return &Ident{Pos: t.Pos, Name: t.Text}
 	case GLOBAL:
@@ -1372,6 +1379,35 @@ func (p *parser) transformExpr() Expr {
 	if p.isKw("into") {
 		p.next()
 		e.Into = p.typ()
+	}
+	return e
+}
+
+// extensionPoint reports the words extension point, which are no keywords
+// and remain usable as names elsewhere.
+func (p *parser) extensionPoint() bool {
+	return p.isWord("extension") && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == IDENT && p.toks[p.i+1].Text == "point"
+}
+
+// extensionPointExpr reads extension point /PKG/NAME [filters FIELD =
+// value, ...].
+func (p *parser) extensionPointExpr() Expr {
+	e := &ExtensionPointExpr{Pos: p.tok.Pos}
+	p.next()
+	p.next()
+	e.Point = p.global()
+	if p.isWord("filters") {
+		p.next()
+		for {
+			pv := ParamValue{Name: p.ident()}
+			p.expectOp("=")
+			pv.Value = p.expr(0)
+			e.Filters = append(e.Filters, pv)
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
 	}
 	return e
 }

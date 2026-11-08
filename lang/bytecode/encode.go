@@ -268,6 +268,16 @@ func Encode(p *Program) []byte {
 		}
 		w.bool(a.Statement)
 	}
+	w.int(len(p.Extensions))
+	for _, e := range p.Extensions {
+		w.str(e.Name)
+		w.int(e.Interface)
+		w.int(len(e.Fields))
+		for _, f := range e.Fields {
+			w.str(f.Name)
+			w.int(f.Type)
+		}
+	}
 	return w.b.Bytes()
 }
 
@@ -493,6 +503,14 @@ func Decode(b []byte) (*Program, error) {
 		a.Statement = r.bool()
 		p.AuthChecks[i] = a
 	}
+	p.Extensions = make([]Extension, r.count())
+	for i := range p.Extensions {
+		e := Extension{Name: r.str(), Interface: r.int(), Fields: make([]AuthField, r.count())}
+		for j := range e.Fields {
+			e.Fields[j] = AuthField{Name: r.str(), Type: r.int()}
+		}
+		p.Extensions[i] = e
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -560,6 +578,8 @@ func (p *Program) Verify() error {
 				ok = in(arg(0), len(p.Transforms))
 			case AUTH_CHECK:
 				ok = in(arg(0), len(p.AuthChecks))
+			case EXT_GET, EXT_CALL, EXT_INFO:
+				ok = in(arg(0), len(p.Extensions))
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -591,6 +611,15 @@ func (p *Program) Verify() error {
 			if f.Type != -1 && !in(f.Type, len(p.Types)) {
 				return fmt.Errorf("bytecode: invalid authorization check of %s", a.Object)
 			}
+		}
+	}
+	for _, e := range p.Extensions {
+		ok := ref(e.Interface, len(p.Classes))
+		for _, f := range e.Fields {
+			ok = ok && in(f.Type, len(p.Types))
+		}
+		if !ok {
+			return fmt.Errorf("bytecode: invalid extension point %s", e.Name)
 		}
 	}
 	for _, q := range p.Queries {

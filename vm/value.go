@@ -237,7 +237,7 @@ func (m *Machine) zero(p *bytecode.Program, t int) Value {
 		return Value{R: m.newArray(p, t)}
 	case bytecode.TMap:
 		return Value{R: m.newMap(p, t)}
-	case bytecode.TObject, bytecode.TFunc:
+	case bytecode.TObject, bytecode.TFunc, bytecode.TExtension:
 		return Null
 	}
 	return Value{}
@@ -396,7 +396,7 @@ func (m *Machine) equal(p *bytecode.Program, t int, a, b Value) bool {
 			}
 		}
 		return true
-	case bytecode.TObject, bytecode.TFunc:
+	case bytecode.TObject, bytecode.TFunc, bytecode.TExtension:
 		return a.R == b.R
 	}
 	return a.N == b.N

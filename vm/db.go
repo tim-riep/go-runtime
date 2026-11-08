@@ -413,6 +413,9 @@ func (m *Machine) endSession(v Value, rollback bool) (*thrown, error) {
 	if sess.cursors > 0 {
 		return m.fail("/RT/SESSION_ERROR", "%s of session %d would end its open cursor of a for ... in select", what, sess.s.Number()), nil
 	}
+	if n := len(m.noCommit); n > 0 && sess.s.Number() == 1 {
+		return m.fail("/RT/SESSION_ERROR", "%s of the default session is not allowed in an implementation of extension point %s; open a session of its own", what, m.noCommit[n-1]), nil
+	}
 	if rollback {
 		err = sess.s.Rollback(m.ctx)
 	} else {

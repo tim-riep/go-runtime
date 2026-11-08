@@ -1,0 +1,9 @@
+# No active implementation of a single extension point matches the filter
+# values, and the extension point has no fallback class.
+public class /RT/NO_IMPLEMENTATION extends /RT/EXTENSION_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -239,6 +239,7 @@ const (
 	ArrayType
 	MapType
 	FuncType
+	ExtensionPointType // extension point GLOBAL: the value of an extension point
 )
 
 // Type is a type expression.
@@ -530,6 +531,13 @@ type (
 		Params []ParamValue
 		Into   *Type // nil: the result is a STRING
 	}
+	// ExtensionPointExpr selects the implementations of an extension point
+	// by the values of its filter fields.
+	ExtensionPointExpr struct {
+		Pos     Pos
+		Point   Name
+		Filters []ParamValue
+	}
 	// AuthorizedExpr tells whether the user has an authorization. Head is
 	// the comment after the object, End the comments before end.
 	AuthorizedExpr struct {
@@ -555,7 +563,8 @@ type AuthField struct {
 	Value Expr // nil for any
 }
 
-// ParamValue is NAME = value of transform ... parameters.
+// ParamValue is NAME = value of transform ... parameters and of
+// extension point ... filters.
 type ParamValue struct {
 	Name  Ident
 	Value Expr
@@ -574,12 +583,13 @@ type SetItem struct {
 	Value Expr
 }
 
-func (e *QueryExpr) Start() Pos       { return e.Pos }
-func (e *UpdateExpr) Start() Pos      { return e.Pos }
-func (e *DeleteExpr) Start() Pos      { return e.Pos }
-func (e *OpenSessionExpr) Start() Pos { return e.Pos }
-func (e *TransformExpr) Start() Pos   { return e.Pos }
-func (e *AuthorizedExpr) Start() Pos  { return e.Pos }
+func (e *QueryExpr) Start() Pos          { return e.Pos }
+func (e *UpdateExpr) Start() Pos         { return e.Pos }
+func (e *DeleteExpr) Start() Pos         { return e.Pos }
+func (e *OpenSessionExpr) Start() Pos    { return e.Pos }
+func (e *TransformExpr) Start() Pos      { return e.Pos }
+func (e *ExtensionPointExpr) Start() Pos { return e.Pos }
+func (e *AuthorizedExpr) Start() Pos     { return e.Pos }
 
 // Arg is an argument, possibly named (NAME: value).
 type Arg struct {

@@ -143,6 +143,7 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 	image := g.image
 	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts}
 	x.sessions = []*session{{x: x, n: 1}}
+	x.extensions = g.extensionRegistry()
 	defer func() { err = errors.Join(err, x.finish(err)) }()
 	vo := opts.VM
 	vo.Database = x
@@ -198,6 +199,10 @@ type generation struct {
 	// tree are the service nodes, built when a request needs them.
 	tree     *httpsvc.Tree
 	treeOnce sync.Once
+	// extensions are the extension points with their implementations,
+	// built when an execution runs one.
+	extensions     *extensionRegistry
+	extensionsOnce sync.Once
 }
 
 // generation returns the code of the current generation. An execution

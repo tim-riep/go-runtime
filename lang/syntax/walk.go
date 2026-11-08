@@ -84,6 +84,10 @@ func Inspect(x Expr, fn func(Expr)) {
 		for _, f := range x.Fields {
 			Inspect(f.Value, fn)
 		}
+	case *ExtensionPointExpr:
+		for _, f := range x.Filters {
+			Inspect(f.Value, fn)
+		}
 	}
 }
 

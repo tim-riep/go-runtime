@@ -76,8 +76,9 @@ func (l *lexer) emit(k Kind, text string, p Pos) {
 	switch k {
 	case IDENT:
 		// After the contextual words of update ... set and order by a
-		// global name may follow, such as an extension field.
-		l.operand = text != "set" && text != "by"
+		// global name may follow, such as an extension field, and after
+		// extension point the name of the extension point.
+		l.operand = text != "set" && text != "by" && !(text == "point" && l.after("extension"))
 	case GLOBAL, INT, DEC, STRING:
 		l.operand = true
 	case KEYWORD:
@@ -87,6 +88,13 @@ func (l *lexer) emit(k Kind, text string, p Pos) {
 	default:
 		l.operand = false
 	}
+}
+
+// after reports whether the token before the one just emitted is the
+// name word.
+func (l *lexer) after(word string) bool {
+	n := len(l.toks)
+	return n >= 2 && l.toks[n-2].Kind == IDENT && l.toks[n-2].Text == word && l.toks[n-2].Pos.Line == l.toks[n-1].Pos.Line
 }
 
 func (l *lexer) run() {

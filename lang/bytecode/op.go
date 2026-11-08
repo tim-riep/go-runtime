@@ -170,6 +170,11 @@ const (
 	// Authorizations.
 	AUTH_CHECK // a: pop the values of authorization check a; raise /RT/NOT_AUTHORIZED, or push the result of authorized
 
+	// Extension points.
+	EXT_GET  // e: pop the filter values of extension point e, select its implementations and push the value
+	EXT_CALL // e method argc chain: call method of the interface on every selected implementation; argc includes the value; chain is the parameter that passes the result on, or ExtCallEach
+	EXT_INFO // e which: pop the value of extension point e and push IS_IMPLEMENTED (0) or COUNT (1)
+
 	opCount
 )
 
@@ -201,6 +206,7 @@ var opInfo = [opCount]struct {
 	LOG: {"LOG", 1}, FOR_TEST: {"FOR_TEST", 4}, FOR_STEP: {"FOR_STEP", 5},
 	DB_QUERY: {"DB_QUERY", 1}, DB_CURSOR: {"DB_CURSOR", 1}, DB_NEXT: {"DB_NEXT", 1}, DB_CLOSE: {"DB_CLOSE", 0}, DB_END: {"DB_END", 1}, DB_OPEN: {"DB_OPEN", 0},
 	XFORM: {"XFORM", 1}, AUTH_CHECK: {"AUTH_CHECK", 1},
+	EXT_GET: {"EXT_GET", 1}, EXT_CALL: {"EXT_CALL", 4}, EXT_INFO: {"EXT_INFO", 2},
 }
 
 func (o Op) String() string {

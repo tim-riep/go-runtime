@@ -128,6 +128,8 @@ type Info struct {
 	Cursors   map[*syntax.ForStmt]bool
 	// Transforms describes the transform expressions.
 	Transforms map[*syntax.TransformExpr]*Transform
+	// ExtensionPoints describes the extension point expressions.
+	ExtensionPoints map[*syntax.ExtensionPointExpr]*ExtensionExpr
 	// AuthChecks describes check authorization and authorized.
 	AuthChecks map[*syntax.AuthCheck]*AuthCheck
 }
@@ -198,6 +200,7 @@ const (
 	CallCtor                      // super(...) in a constructor
 	CallClosure                   // a value of a function type
 	CallBuiltin                   // a built-in method of a type
+	CallExtension                 // a method of the value of an extension point
 )
 
 // Call describes a call.
@@ -208,6 +211,9 @@ type Call struct {
 	Receiver syntax.Expr // receiver of instance and built-in methods; nil for me
 	Args     []syntax.Expr
 	Named    []string // names of named arguments, aligned with Args
+	// Extension is the extension point of CallExtension; Method is nil for
+	// IS_IMPLEMENTED and COUNT, which Builtin names.
+	Extension *ExtensionPoint
 }
 
 type checker struct {
@@ -221,6 +227,9 @@ type checker struct {
 	loc      Site                  // file and include chain of the code being checked
 	included map[string]bool
 	quiet    bool // declarations of libraries were checked with their package
+	// extensionTypes are the types of the values of extension points, one
+	// per extension point.
+	extensionTypes map[string]*ExtensionPoint
 }
 
 // Check checks a program. Diagnostics with severity Error make the
@@ -232,7 +241,8 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		TypeExprs: map[*syntax.Type]Type{}, Funcs: map[*syntax.FuncExpr]*FuncInfo{}, Vars: map[syntax.Stmt][]*Local{},
 		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
 		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{},
-		Transforms: map[*syntax.TransformExpr]*Transform{}, AuthChecks: map[*syntax.AuthCheck]*AuthCheck{}}
+		Transforms: map[*syntax.TransformExpr]*Transform{}, AuthChecks: map[*syntax.AuthCheck]*AuthCheck{},
+		ExtensionPoints: map[*syntax.ExtensionPointExpr]*ExtensionExpr{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)
 	c.declareClasses()
 	c.hierarchy()
@@ -247,6 +257,8 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		}
 	}
 	c.httpHandlers()
+	c.extensionPointDefinitions()
+	c.implementations()
 	for _, k := range c.sorted() {
 		if !k.External {
 			c.bodies(k)
@@ -574,6 +586,14 @@ func (c *checker) typeOf(t *syntax.Type) Type {
 		elem := c.resolveType(t.Elem)
 		c.noSession(elem, t.Elem.Pos, "a map")
 		return &Map{Key: key, Elem: elem}
+	case syntax.ExtensionPointType:
+		if t.Optional {
+			c.errorf(t.Pos, CodeType, "the value of an extension point is never null; write extension point %s without ?", t.Name)
+		}
+		if p := c.extensionPointType(syntax.Name{Pos: t.Pos, Name: t.Name}); p != nil {
+			return p
+		}
+		return TypInvalid
 	case syntax.FuncType:
 		f := &Func{Result: TypVoid}
 		for _, p := range t.Params {
@@ -1028,10 +1048,15 @@ func (c *checker) useField(pos syntax.Pos, st *Struct, field string) {
 	}
 }
 
-// noSession rejects SESSION in places that outlive a call: attributes,
-// constants, arrays and maps.
+// noSession rejects SESSION and values of extension points in places
+// that outlive a call: attributes, constants, arrays and maps.
 func (c *checker) noSession(t Type, pos syntax.Pos, where string) {
-	if IsKind(NonOpt(t), Session) {
-		c.errorf(pos, CodeType, "a SESSION cannot be kept in %s; pass it as parameter instead", where)
+	switch x := NonOpt(t).(type) {
+	case *Basic:
+		if x.Kind == Session {
+			c.errorf(pos, CodeType, "a SESSION cannot be kept in %s; pass it as parameter instead", where)
+		}
+	case *ExtensionPoint:
+		c.errorf(pos, CodeExtensionPoint, "the value of %s cannot be kept in %s; keep it in a variable or pass it as parameter instead", x.Name, where)
 	}
 }

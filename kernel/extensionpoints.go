@@ -16,11 +16,14 @@ package kernel
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -99,4 +102,126 @@ func checkOverlaps(s *model.Schema, a *activation) error {
 // loadActivation reads the activation of the implementations.
 func (k *Kernel) loadActivation(ctx context.Context, q dialect.Querier) (*activation, error) {
 	return &activation{}, nil
+}
+
+// extensionRegistry holds the extension points of a schema with their
+// implementations in the order they run. The defining code knows no
+// implementation; every execution selects them here.
+type extensionRegistry struct {
+	points map[string]*registeredPoint
+}
+
+type registeredPoint struct {
+	point   *model.ExtensionPoint
+	domains map[string]*model.Domain // of the filter fields
+	impls   []registeredImplementation
+}
+
+type registeredImplementation struct {
+	impl   *model.Implementation
+	values map[string][]model.ValueEntry // per filter field, with defaults
+}
+
+func newExtensionRegistry(s *model.Schema) *extensionRegistry {
+	r := &extensionRegistry{points: map[string]*registeredPoint{}}
+	for _, name := range s.ExtensionPointNames() {
+		p := s.ExtensionPoints[name]
+		rp := &registeredPoint{point: p, domains: map[string]*model.Domain{}}
+		for _, f := range p.Filters {
+			rp.domains[f.Name] = s.Domains[s.FilterDomain(f)]
+		}
+		for _, impl := range s.ImplementationsOf(name) {
+			rp.impls = append(rp.impls, registeredImplementation{impl: impl, values: s.ImplementationValues(impl)})
+		}
+		r.points[name] = rp
+	}
+	return r
+}
+
+// extensionRegistry returns the registry of the generation.
+func (g *generation) extensionRegistry() *extensionRegistry {
+	g.extensionsOnce.Do(func() { g.extensions = newExtensionRegistry(g.schema) })
+	return g.extensions
+}
+
+// matches reports whether the values of an implementation match the
+// filter values, and otherwise the first field that does not.
+func (rp *registeredPoint) matches(ri registeredImplementation, values map[string]string) (string, bool) {
+	for _, f := range rp.point.Filters {
+		d := rp.domains[f.Name]
+		if d == nil || !model.EntriesMatch(d, ri.values[f.Name], values[f.Name]) {
+			return f.Name, false
+		}
+	}
+	return "", true
+}
+
+// SelectImplementations selects the active implementations of an
+// extension point whose filter values match, in order. A single
+// extension point runs exactly one: the matching implementation or the
+// fallback class.
+func (x *execution) SelectImplementations(point string, values map[string]string, at native.CheckLocation) (native.Selection, error) {
+	if x.extensions == nil {
+		x.extensions = newExtensionRegistry(x.schema)
+	}
+	rp := x.extensions.points[point]
+	if rp == nil {
+		return native.Selection{}, fmt.Errorf("extension point %s is not installed", point)
+	}
+	act, err := x.loadActivation()
+	if err != nil {
+		return native.Selection{}, err
+	}
+	p := rp.point
+	sel := native.Selection{Use: p.Use, CommitAllowed: p.CommitAllowed}
+	for _, ri := range rp.impls {
+		if !act.active(ri.impl.Name, x.tenant) {
+			continue
+		}
+		if _, ok := rp.matches(ri, values); !ok {
+			continue
+		}
+		sel.Classes = append(sel.Classes, ri.impl.Class)
+		sel.Implementations = append(sel.Implementations, ri.impl.Name)
+	}
+	switch {
+	case p.Use == model.UseSingle && len(sel.Implementations) > 1:
+		return native.Selection{}, &native.ExtensionError{Class: model.KernelNamespace + "IMPLEMENTATION_CONFLICT", ExtensionPoint: point,
+			Implementations: sel.Implementations[:2],
+			Text: fmt.Sprintf("extension point %s runs a single implementation, but %s and %s both match %s", point, sel.Implementations[0],
+				sel.Implementations[1], filterValuesText(p, values))}
+	case len(sel.Implementations) > 0:
+	case p.Fallback.Valid():
+		sel.Classes, sel.Fallback = []string{p.Fallback.Or("")}, true
+	case p.Use == model.UseSingle:
+		return native.Selection{}, &native.ExtensionError{Class: model.KernelNamespace + "NO_IMPLEMENTATION", ExtensionPoint: point,
+			Text: fmt.Sprintf("no active implementation of extension point %s matches %s, and it has no fallback class", point, filterValuesText(p, values))}
+	}
+	return sel, nil
+}
+
+// filterValuesText writes filter values for messages, in the order of the
+// fields.
+func filterValuesText(p *model.ExtensionPoint, values map[string]string) string {
+	if len(p.Filters) == 0 {
+		return "without filter values"
+	}
+	var parts []string
+	for _, f := range p.Filters {
+		parts = append(parts, fmt.Sprintf("%s = %q", f.Name, values[f.Name]))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// loadActivation returns the activation of the implementations for the
+// execution, read once.
+func (x *execution) loadActivation() (*activation, error) {
+	if x.activation == nil {
+		a, err := x.k.loadActivation(x.ctx, x.k.db)
+		if err != nil {
+			return nil, err
+		}
+		x.activation = a
+	}
+	return x.activation, nil
 }

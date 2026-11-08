@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 6
+const FormatVersion = 7
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -61,6 +61,8 @@ type Program struct {
 	Transforms []Transform
 	// AuthChecks are the authorization checks.
 	AuthChecks []AuthCheck
+	// Extensions are the extension points the code runs.
+	Extensions []Extension
 	Tests      bool // contains test classes
 }
 
@@ -105,6 +107,7 @@ const (
 	TFunc
 	TVoid
 	TSession
+	TExtension // the value of an extension point
 )
 
 // TypeDesc describes a type for zero values, copies, comparison, keys and
@@ -311,6 +314,21 @@ type AuthField struct {
 	Name string
 	Type int
 }
+
+// Extension is an extension point that code runs: its name, its
+// interface, and the filter fields in the order of their values on the
+// stack with the TypeDesc of each value.
+type Extension struct {
+	Name      string
+	Interface Ref
+	Fields    []AuthField
+}
+
+// Modes of EXT_CALL.
+const (
+	// ExtCallEach calls the method of every selected implementation.
+	ExtCallEach = -1
+)
 
 // Transform is a transform expression: the transformation, the names and
 // types of its parameters in the order of their values on the stack, and

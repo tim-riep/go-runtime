@@ -69,7 +69,37 @@ type Host interface {
 	// Components returns the components of a structure or table in the
 	// order of its resolved definition.
 	Components(structure string) ([]Component, error)
+	// SelectImplementations selects the implementations of an extension
+	// point for the values of its filter fields in canonical text form,
+	// with the activation in the tenant of the execution. A selection that
+	// fails returns an *ExtensionError.
+	SelectImplementations(point string, values map[string]string, at CheckLocation) (Selection, error)
 }
+
+// Selection is what an extension point runs: the classes in order and
+// whether they are the fallback class.
+type Selection struct {
+	// Classes are the classes of the selected implementations in order,
+	// or the fallback class alone.
+	Classes []string
+	// Implementations are the names of the selected implementations;
+	// empty when the fallback runs.
+	Implementations []string
+	Fallback        bool
+	Use             model.ExtensionUse
+	CommitAllowed   bool
+}
+
+// ExtensionError is a selection of an extension point that fails: Class
+// is /RT/NO_IMPLEMENTATION or /RT/IMPLEMENTATION_CONFLICT.
+type ExtensionError struct {
+	Class           string
+	Text            string
+	ExtensionPoint  string
+	Implementations []string
+}
+
+func (e *ExtensionError) Error() string { return e.Class + ": " + e.Text }
 
 // TestGrant changes the authorizations of a test method: Clear removes
 // them, All grants all, Role adds the authorizations of a role, Object adds

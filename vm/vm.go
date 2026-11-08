@@ -133,6 +133,9 @@ type Machine struct {
 	callers []native.Caller
 	// handles are the objects of native classes the execution created.
 	handles []*Record
+	// noCommit are the extension points without commits whose
+	// implementations run, innermost last.
+	noCommit []string
 }
 
 // New prepares an image for execution and runs the initial values of
@@ -958,6 +961,32 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 			v, t, err = m.authCheck(fn, start, a, values)
 			stack = stack[:len(stack)-n]
 			if t == nil && err == nil && !a.Statement {
+				push(v)
+			}
+		case EXT_GET:
+			e := &p.Extensions[arg(0)]
+			n := len(e.Fields)
+			var v Value
+			v, t, err = m.extGet(fn, start, e, stack[len(stack)-n:])
+			stack = stack[:len(stack)-n]
+			if t == nil && err == nil {
+				push(v)
+			}
+		case EXT_CALL:
+			argc := arg(2)
+			args := append([]Value(nil), stack[len(stack)-argc+1:]...)
+			recv := stack[len(stack)-argc]
+			stack = stack[:len(stack)-argc]
+			var v Value
+			var has bool
+			v, has, t, err = m.extCall(pr, &p.Extensions[arg(0)], arg(1), arg(3), recv, args)
+			if t == nil && err == nil && has {
+				push(v)
+			}
+		case EXT_INFO:
+			var v Value
+			v, t = m.extInfo(pop(), arg(1))
+			if t == nil {
 				push(v)
 			}
 		case DB_OPEN:

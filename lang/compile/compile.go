@@ -72,6 +72,7 @@ type compiler struct {
 	decs    map[[2]uint64]int
 	files   map[string]int
 	chains  map[string]int
+	exts    map[string]int // extension points by name
 	pending []pendingFunc
 }
 
@@ -89,7 +90,7 @@ func Compile(tp *types.Program, opts Options) (prog *bytecode.Program, err error
 	c := &compiler{tp: tp, info: tp.Info, opts: opts, libs: map[string]*lib{}, classes: map[*types.Class]int{}, ctors: map[*types.Class]int{},
 		inits: map[*types.Class]int{}, funcs: map[*types.Method]int{}, ifaces: map[*types.Class][]string{}, layouts: map[*types.Struct]int{},
 		inst: map[*types.Class]int{}, statics: map[*types.Class]int{}, enums: map[*types.Enum]int{}, tdescs: map[string]int{},
-		strs: map[string]int{}, decs: map[[2]uint64]int{}, files: map[string]int{}, chains: map[string]int{}}
+		strs: map[string]int{}, decs: map[[2]uint64]int{}, files: map[string]int{}, chains: map[string]int{}, exts: map[string]int{}}
 	c.out = &bytecode.Program{Package: string(tp.Package), LanguageVersion: opts.LanguageVersion, Tests: opts.Tests,
 		Chains: []bytecode.Chain{{}}}
 	for i, p := range opts.Imports {
@@ -586,6 +587,8 @@ func kindOf(t types.Type) bytecode.TypeKind {
 		return bytecode.TObject
 	case *types.Func:
 		return bytecode.TFunc
+	case *types.ExtensionPoint:
+		return bytecode.TExtension
 	}
 	return bytecode.TVoid
 }

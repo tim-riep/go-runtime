@@ -1,0 +1,9 @@
+# Two active implementations of a single extension point match the filter
+# values. IMPLEMENTATIONS names both.
+public class /RT/IMPLEMENTATION_CONFLICT extends /RT/EXTENSION_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end
