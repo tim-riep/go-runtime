@@ -16,7 +16,10 @@
 package testutil
 
 import (
+	"archive/zip"
+	"bytes"
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -157,4 +160,34 @@ func CopyDir(t testing.TB, src string) string {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+// ZipDir returns a ZIP archive of the files below src, each under prefix
+// (e.g. "TRFIN/"; "" for the root).
+func ZipDir(t testing.TB, src, prefix string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	err := fs.WalkDir(os.DirFS(src), ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		b, err := os.ReadFile(filepath.Join(src, p))
+		if err != nil {
+			return err
+		}
+		f, err := w.Create(prefix + p)
+		if err != nil {
+			return err
+		}
+		_, err = f.Write(b)
+		return err
+	})
+	if err == nil {
+		err = w.Close()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }

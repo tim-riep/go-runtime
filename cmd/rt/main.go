@@ -67,7 +67,7 @@ Commands:
                            create or migrate the kernel tables; a first user with all
                            authorizations is created with --admin or asked for on a terminal
   plan <package>           show the install or upgrade plan of a package directory
-  install <package>...     install package directories
+  install <package>...     install package directories or ZIP archives
   upgrade <package>        upgrade an installed package
   uninstall <id>           remove a package and its data (needs --yes)
   list                     list installed packages
@@ -362,7 +362,7 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		}
 		var pkgs []*model.Package
 		for _, a := range args {
-			pkg, err := kernel.LoadDir(a)
+			pkg, err := c.loadPackage(a)
 			if err != nil {
 				return c.fail(err)
 			}
@@ -377,7 +377,7 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		if !c.need(args, 1, "upgrade <package>") {
 			return exitUsage
 		}
-		pkg, err := kernel.LoadDir(args[0])
+		pkg, err := c.loadPackage(args[0])
 		if err != nil {
 			return c.fail(err)
 		}
@@ -1706,4 +1706,14 @@ func (c *cli) activities(ctx context.Context, k *kernel.Kernel, args []string) i
 	}
 	w.Flush()
 	return exitOK
+}
+
+// loadPackage loads a package from a directory or a ZIP archive.
+func (c *cli) loadPackage(path string) (*model.Package, error) {
+	if strings.HasSuffix(strings.ToLower(path), ".zip") {
+		limits := kernel.DefaultArchiveLimits
+		limits.File = max(limits.File, c.maxAssetSize)
+		return kernel.LoadZip(path, limits)
+	}
+	return kernel.LoadDir(path)
 }

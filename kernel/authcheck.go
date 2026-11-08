@@ -90,4 +90,3 @@ func (x *execution) CheckAuthorization(c authorization.Check, at native.CheckLoc
 func (x *execution) notAuthorized(c authorization.Check) *native.NotAuthorized {
 	return &native.NotAuthorized{Check: c, Text: notAuthorizedText(x.Language(), c.Object, x.opts.User.Valid())}
 }
-

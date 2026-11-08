@@ -543,3 +543,19 @@ type NotAuthorized struct {
 func (e *NotAuthorized) Error() string {
 	return fmt.Sprintf("user %s is not authorized for %s with activity %s", e.User, e.Object, e.Activity)
 }
+
+// UnsafeArchive reports a package archive that is rejected: an entry
+// outside the package, a link, a size beyond the limits or no package in
+// it.
+type UnsafeArchive struct {
+	Archive string
+	Entry   string // "" for the archive as a whole
+	Reason  string
+}
+
+func (e *UnsafeArchive) Error() string {
+	if e.Entry == "" {
+		return fmt.Sprintf("archive %s is rejected: %s", e.Archive, e.Reason)
+	}
+	return fmt.Sprintf("archive %s is rejected: entry %q %s", e.Archive, e.Entry, e.Reason)
+}

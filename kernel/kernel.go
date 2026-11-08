@@ -28,6 +28,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"maps"
 	"os"
@@ -41,6 +42,7 @@ import (
 	"github.com/tim-riep/go-runtime/dialect/sqlite"
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
 	"github.com/tim-riep/go-runtime/internal/pkgload"
+	"github.com/tim-riep/go-runtime/internal/pkgzip"
 	"github.com/tim-riep/go-runtime/internal/planner"
 	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/internal/validate"
@@ -239,6 +241,34 @@ func (k *Kernel) timestamp() time.Time { return k.now().UTC().Truncate(time.Micr
 // LoadDir loads a package from a directory.
 func LoadDir(path string) (*model.Package, error) {
 	return pkgload.Load(os.DirFS(path), path)
+}
+
+// ArchiveLimits restrict package archives: their size, the size of their
+// files and the number of entries.
+type ArchiveLimits = pkgzip.Limits
+
+// DefaultArchiveLimits are 64 MiB per archive, 256 MiB of files, 32 MiB per
+// file and 20 000 entries.
+var DefaultArchiveLimits = pkgzip.DefaultLimits
+
+// LoadZip loads a package from a ZIP archive with the package at its root
+// or in a single top-level directory. Entries outside the package, links
+// and archives beyond the limits are rejected.
+func LoadZip(path string, limits ArchiveLimits) (*model.Package, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, limits.Archive+1))
+	if err != nil {
+		return nil, err
+	}
+	fsys, err := pkgzip.Open(path, data, limits, pkgzip.Options{})
+	if err != nil {
+		return nil, err
+	}
+	return pkgload.Load(fsys, path)
 }
 
 // LoadFS loads a package from a file system, e.g. an opened ZIP archive.

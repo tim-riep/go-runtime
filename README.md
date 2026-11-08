@@ -1008,6 +1008,7 @@ rt fmt --check .
 rt build examples/TRORDER
 rt disasm examples/TRORDER /TRORDER/ORDER_RATING
 rt install examples/TRORDER
+rt install TRFIN-1.0.0.zip
 rt tenant create ACME
 rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME --user anna
 rt run TRFIN /TRFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]' --tenant ACME
@@ -1082,8 +1083,7 @@ Stylesheets that include, import or read other stylesheets and documents, native
 with network or file access, outgoing HTTP connections, responses streamed from code,
 further ways of signing in, messages with texts per language, a
 language server and a debugger, user interface, views, indexes beyond keys,
-data migrations with custom logic, remote package sources, installing from ZIP files (the
-loader already works on `fs.FS`), joins and aggregates other than `count` in code,
+data migrations with custom logic, joins and aggregates other than `count` in code,
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression and image processing,
