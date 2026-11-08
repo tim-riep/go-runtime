@@ -1,0 +1,41 @@
+# Tests of zip archives and gzip data in code.
+public test class /TRARCH/ARCHIVES_TEST
+
+  # Creates an archive, opens it again, changes and saves it.
+  public test method ROUND_TRIP()
+    try
+      var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+      archive.ADD_TEXT("Grüße/a.txt", "a")
+      archive.ADD("empty.txt", "" as BYTES)
+      archive.ADD_FOLDER("docs")
+      archive.ADD_ENTRY("stored.txt", "stored" as BYTES, null, true)
+      var bytes = archive.SAVE()
+      archive.CLOSE()
+      var again = /TRBASE/ZIP_ARCHIVE.OPEN(bytes)
+      assert again.GET_TEXT("Grüße/a.txt") = "a"
+      assert again.GET("empty.txt") = "" as BYTES
+      again.REMOVE("stored.txt")
+      again.ADD_TEXT("docs/b.txt", "b")
+      var entries = /TRBASE/ZIP_ARCHIVE.OPEN(again.SAVE()).ENTRIES()
+      assert entries.LENGTH() = 4
+      assert entries[1].NAME = "Grüße/a.txt" and entries[3].NAME = "docs/" and entries[3].KIND = /TRBASE/ZIP_ENTRY_KIND.FOLDER
+      assert entries[4].NAME = "docs/b.txt" and entries[2].SIZE = 0
+    catch e: /TRBASE/ARCHIVE_ERROR
+      assert false, e.TEXT
+    end
+  end
+
+  public test method GZIP_ROUND()
+    try
+      var text = "grüße " + "x"
+      var packed = /TRBASE/GZIP.COMPRESS_WITH(text as BYTES, 9, "a.txt")
+      assert /TRBASE/GZIP.IS_GZIP(packed)
+      assert not /TRBASE/GZIP.IS_GZIP(text as BYTES)
+      assert /TRBASE/GZIP.DECOMPRESS(/TRBASE/GZIP.COMPRESS(text as BYTES)) = text as BYTES
+      assert /TRBASE/GZIP.DECOMPRESS_TEXT(packed) = text
+    catch e: /TRBASE/ARCHIVE_ERROR
+      assert false, e.TEXT
+    end
+  end
+
+end

@@ -1,0 +1,11 @@
+# A zip entry is encrypted; encrypted entries are not read.
+public class /TRBASE/ZIP_ENTRY_ENCRYPTED extends /TRBASE/ARCHIVE_ERROR
+
+  public attribute NAME: STRING
+
+  public constructor(name: STRING)
+    super("the entry {name} is encrypted")
+    NAME = name
+  end
+
+end

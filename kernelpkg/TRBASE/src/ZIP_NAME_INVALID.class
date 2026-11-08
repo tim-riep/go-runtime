@@ -1,0 +1,12 @@
+# The name of a zip entry is rejected: an absolute path, a drive, .., a
+# backslash, a control character, or a name the archive has already.
+public class /TRBASE/ZIP_NAME_INVALID extends /TRBASE/ARCHIVE_ERROR
+
+  public attribute NAME: STRING
+
+  public constructor(name: STRING, reason: STRING)
+    super("the entry name {reason}")
+    NAME = name
+  end
+
+end

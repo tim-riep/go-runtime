@@ -53,6 +53,9 @@ type Config struct {
 	// Sources are the remote package sources, such as GitHub; without
 	// them only directories and ZIP files are installed.
 	Sources SourceConfig
+	// Formats are the limits of native methods for zip, gzip and xlsx;
+	// zero fields mean native.DefaultLimits.
+	Formats native.Limits
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

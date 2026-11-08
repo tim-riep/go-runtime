@@ -1,0 +1,9 @@
+# The base of the errors of zip archives and gzip data, for code that
+# handles them all at once.
+public open class /TRBASE/ARCHIVE_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -1,0 +1,11 @@
+# A zip archive has no entry of the name.
+public class /TRBASE/ZIP_ENTRY_NOT_FOUND extends /TRBASE/ARCHIVE_ERROR
+
+  public attribute NAME: STRING
+
+  public constructor(name: STRING)
+    super("the archive has no entry {name}")
+    NAME = name
+  end
+
+end

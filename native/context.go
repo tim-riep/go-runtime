@@ -154,6 +154,9 @@ type Context struct {
 	MaxInput int64 // largest input in bytes a method should accept
 	// Method is the native method called, /CLASS.METHOD.
 	Method string
+	// Limits restrict the formats the method reads; zero fields mean
+	// DefaultLimits.
+	Limits Limits
 }
 
 // Reader returns the package whose rules apply to reading assets: that of

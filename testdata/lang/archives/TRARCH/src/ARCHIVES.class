@@ -1,0 +1,57 @@
+# Uses zip archives and gzip data for the tests of the kernel.
+public class /TRARCH/ARCHIVES
+
+  public static method ENTRIES(data: BYTES) returns /TRBASE/ZIP_ENTRY_ARRAY raises /TRBASE/ARCHIVE_ERROR
+    var archive = /TRBASE/ZIP_ARCHIVE.OPEN(data)
+    return archive.ENTRIES()
+  end
+
+  # The text of an entry, or what went wrong.
+  public static method TEXT(data: BYTES, name: STRING) returns STRING
+    try
+      var archive = /TRBASE/ZIP_ARCHIVE.OPEN(data)
+      if not archive.HAS(name)
+        return "missing"
+      end
+      return "text:" + archive.GET_TEXT(name)
+    catch e: /TRBASE/ZIP_ENTRY_ENCRYPTED
+      return "encrypted " + e.NAME
+    catch e: /TRBASE/ZIP_NAME_INVALID
+      return "name " + e.TEXT
+    catch e: /TRBASE/ARCHIVE_LIMIT_EXCEEDED
+      return "limit " + e.LIMIT
+    catch e: /TRBASE/ARCHIVE_CORRUPT
+      return "corrupt " + e.TEXT
+    catch e: /TRBASE/ARCHIVE_ERROR
+      return "error " + e.TEXT
+    end
+  end
+
+  # Adds an entry under a name, or tells why not.
+  public static method ADD_NAME(name: STRING) returns STRING
+    try
+      var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+      archive.ADD_TEXT("x.txt", "x")
+      archive.ADD_TEXT(name, "y")
+      return "added " + archive.ENTRIES()[2].NAME
+    catch e: /TRBASE/ZIP_NAME_INVALID
+      return "rejected"
+    catch e: /TRBASE/ARCHIVE_ERROR
+      return "error " + e.TEXT
+    end
+  end
+
+  # The text of gzip data, or what went wrong.
+  public static method GUNZIP(data: BYTES) returns STRING
+    try
+      return "text:" + /TRBASE/GZIP.DECOMPRESS_TEXT(data)
+    catch e: /TRBASE/ARCHIVE_LIMIT_EXCEEDED
+      return "limit " + e.LIMIT
+    catch e: /TRBASE/ARCHIVE_CORRUPT
+      return "corrupt " + e.TEXT
+    catch e: /TRBASE/ARCHIVE_ERROR
+      return "error " + e.TEXT
+    end
+  end
+
+end

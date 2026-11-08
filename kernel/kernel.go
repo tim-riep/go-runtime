@@ -92,6 +92,8 @@ type Kernel struct {
 	natives *native.Registry
 	// sources are the remote package sources.
 	sources SourceConfig
+	// formats are the limits of native methods for formats.
+	formats native.Limits
 	// kernelPkgs are the kernel packages in installation order.
 	kernelPkgs []*model.Package
 	// maxFailedLogins locks a user after this many failed logins.
@@ -196,7 +198,7 @@ func New(db *sql.DB, d dialect.Dialect) *Kernel {
 func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
 		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
-		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry), sources: cfg.Sources,
+		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry), sources: cfg.Sources, formats: cfg.Formats,
 		effective: newEffectiveCache()}
 	if k.maxAssetRead <= 0 {
 		k.maxAssetRead = DefaultMaxAssetRead

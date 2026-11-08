@@ -41,6 +41,16 @@ const (
 	ActivityAdminister Activity = "ADMINISTER"
 )
 
+// ZipEntryKind is the enum /TRBASE/ZIP_ENTRY_KIND.
+type ZipEntryKind string
+
+// Fixed values of /TRBASE/ZIP_ENTRY_KIND.
+const (
+	ZipEntryKindFile   ZipEntryKind = "FILE"
+	ZipEntryKindFolder ZipEntryKind = "FOLDER"
+	ZipEntryKindLink   ZipEntryKind = "LINK"
+)
+
 // ActivityInfo is the structure /TRBASE/ACTIVITY_INFO.
 type ActivityInfo struct {
 	Code        Activity               `rt:"CODE"`
@@ -101,4 +111,16 @@ type FixedValue struct {
 	Value       string                 `rt:"VALUE"`
 	Name        model.Optional[string] `rt:"NAME"`
 	Description model.Optional[string] `rt:"DESCRIPTION"`
+}
+
+// ZipEntry is the structure /TRBASE/ZIP_ENTRY.
+type ZipEntry struct {
+	Name           string                    `rt:"NAME"`
+	Kind           ZipEntryKind              `rt:"KIND"`
+	CompressedSize int64                     `rt:"COMPRESSED_SIZE"`
+	Size           int64                     `rt:"SIZE"`
+	ModifiedAt     model.Optional[time.Time] `rt:"MODIFIED_AT"`
+	Crc32          int64                     `rt:"CRC32"`
+	Comment        string                    `rt:"COMMENT"`
+	Encrypted      bool                      `rt:"ENCRYPTED"`
 }

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ZIP_ENTRY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Zip entries"
+    },
+    "de": {
+      "label": "ZIP-Einträge"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ZIP_ENTRY"
+  }
+}

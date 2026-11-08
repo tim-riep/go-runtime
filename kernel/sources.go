@@ -26,6 +26,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/resolve"
 	"github.com/tim-riep/go-runtime/internal/semver"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/source"
@@ -43,6 +44,10 @@ type SourceConfig struct {
 	// Limits restrict archives; zero means DefaultArchiveLimits.
 	Limits ArchiveLimits
 }
+
+// SetFormatLimits replaces the limits of native methods for zip, gzip
+// and xlsx.
+func (k *Kernel) SetFormatLimits(l native.Limits) { k.formats = l }
 
 // SetSources replaces the remote package sources.
 func (k *Kernel) SetSources(c SourceConfig) { k.sources = c }

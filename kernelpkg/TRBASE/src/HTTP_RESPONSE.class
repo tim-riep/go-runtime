@@ -22,4 +22,8 @@ public class /TRBASE/HTTP_RESPONSE executed by kernel
   # dropped; writes after it fail.
   public method SEND_ASSET(request: /TRBASE/HTTP_REQUEST, repository: /TRBASE/ASSET_REPOSITORY, path: STRING) raises /TRBASE/ASSET_NOT_FOUND, /TRBASE/ASSET_PATH_INVALID executed by kernel
 
+  # Sends an entry of a zip archive as body, unpacked while it is sent,
+  # under the limits of archives.
+  public method SEND_ZIP_ENTRY(archive: /TRBASE/ZIP_ARCHIVE, name: STRING) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
 end

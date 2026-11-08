@@ -149,6 +149,7 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 	vo.MaxRows = opts.MaxRows
 	vo.MaxNativeInput = opts.MaxNativeInput
 	vo.Host = x
+	vo.Limits = k.formats.OrDefault()
 	vo.Transformer = x
 	m, err := vm.New(image, vo)
 	if err != nil {

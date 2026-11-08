@@ -54,6 +54,8 @@ type Options struct {
 	MaxRows int
 	// Host gives native methods access to the kernel.
 	Host native.Host
+	// Limits restrict the formats that native methods read.
+	Limits native.Limits
 	// MaxNativeInput is the largest input of native methods and of
 	// transform in bytes; 0 means 16 MiB.
 	MaxNativeInput int64

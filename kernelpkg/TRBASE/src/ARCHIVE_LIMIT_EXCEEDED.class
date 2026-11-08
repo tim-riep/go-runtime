@@ -1,0 +1,12 @@
+# Unpacking exceeded a limit: total or entry size, number of entries or
+# the ratio of unpacked to packed size, measured while unpacking.
+public class /TRBASE/ARCHIVE_LIMIT_EXCEEDED extends /TRBASE/ARCHIVE_ERROR
+
+  public attribute LIMIT: STRING
+
+  public constructor(limit: STRING, max: INT8)
+    super("the {limit} exceeds the limit of {max}")
+    LIMIT = limit
+  end
+
+end

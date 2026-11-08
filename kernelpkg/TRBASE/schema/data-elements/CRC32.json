@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/CRC32",
+  "domain": "/TRBASE/COUNTER",
+  "texts": {
+    "en": {
+      "short": "CRC-32",
+      "medium": "CRC-32",
+      "long": "CRC-32 checksum of the content",
+      "heading": "CRC-32"
+    },
+    "de": {
+      "short": "CRC-32",
+      "medium": "CRC-32",
+      "long": "CRC-32-Prüfsumme des Inhalts",
+      "heading": "CRC-32"
+    }
+  }
+}

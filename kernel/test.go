@@ -110,6 +110,7 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 		vo.MaxRows = opts.MaxRows
 		vo.MaxNativeInput = opts.MaxNativeInput
 		vo.Host = x
+		vo.Limits = k.formats.OrDefault()
 		vo.Transformer = x
 		err = run(vo)
 		err = errors.Join(err, x.finish(err))

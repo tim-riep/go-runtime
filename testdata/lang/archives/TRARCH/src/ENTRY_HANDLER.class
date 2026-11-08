@@ -1,0 +1,13 @@
+# Sends an entry of an archive it creates, unpacked while it is sent.
+public class /TRARCH/ENTRY_HANDLER implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var archive = /TRBASE/ZIP_ARCHIVE.CREATE()
+    archive.ADD_TEXT("report.txt", "streamed report")
+    var opened = /TRBASE/ZIP_ARCHIVE.OPEN(archive.SAVE())
+    response.SET_HEADER("Content-Type", "text/plain")
+    response.SEND_ZIP_ENTRY(opened, request.QUERY("name") default "report.txt")
+    return true
+  end
+
+end

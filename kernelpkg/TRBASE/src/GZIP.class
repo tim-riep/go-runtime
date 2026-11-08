@@ -1,0 +1,19 @@
+# Compresses and decompresses data in gzip format. Decompressing reads
+# data of several members completely and measures the unpacked size
+# against the limits.
+public class /TRBASE/GZIP
+
+  public static method COMPRESS(data: BYTES) returns BYTES raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # Level 1 (fastest) to 9 (smallest); the name goes into the header.
+  public static method COMPRESS_WITH(data: BYTES, level: INT4, name: STRING?) returns BYTES raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public static method DECOMPRESS(data: BYTES) returns BYTES raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # The decompressed data as UTF-8 text.
+  public static method DECOMPRESS_TEXT(data: BYTES) returns STRING raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # Whether the data starts with the gzip signature.
+  public static method IS_GZIP(data: BYTES) returns BOOL executed by kernel
+
+end

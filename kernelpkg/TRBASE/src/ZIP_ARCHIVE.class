@@ -1,0 +1,39 @@
+# A zip archive in memory: opened from bytes or created, changed and
+# saved. Names are only names; nothing is unpacked into a file system.
+# Names are normalized and checked when an archive is opened and when
+# entries are added.
+public class /TRBASE/ZIP_ARCHIVE executed by kernel
+
+  public static method OPEN(data: BYTES) returns /TRBASE/ZIP_ARCHIVE raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public static method CREATE() returns /TRBASE/ZIP_ARCHIVE executed by kernel
+
+  # The archive in zip format, with UTF-8 names.
+  public method SAVE() returns BYTES raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # Frees the archive; it cannot be used afterwards.
+  public method CLOSE() executed by kernel
+
+  # The entries in the order of the archive.
+  public method ENTRIES() returns /TRBASE/ZIP_ENTRY_ARRAY executed by kernel
+
+  public method HAS(name: STRING) returns BOOL executed by kernel
+
+  public method GET(name: STRING) returns BYTES raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # The content of an entry as UTF-8 text.
+  public method GET_TEXT(name: STRING) returns STRING raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public method ADD(name: STRING, data: BYTES) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public method ADD_TEXT(name: STRING, text: STRING) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public method ADD_FOLDER(name: STRING) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  # An entry with the time of its change (1980-01-01 without) and stored
+  # uncompressed or compressed with deflate.
+  public method ADD_ENTRY(name: STRING, data: BYTES, modified: TIMESTAMP?, stored: BOOL) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+  public method REMOVE(name: STRING) raises /TRBASE/ARCHIVE_ERROR executed by kernel
+
+end

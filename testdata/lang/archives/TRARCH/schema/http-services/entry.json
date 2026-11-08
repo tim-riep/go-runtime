@@ -1,0 +1,1 @@
+{ "path": "entry", "texts": { "en": { "label": "An entry of a zip archive" } }, "handlers": [{ "class": "/TRARCH/ENTRY_HANDLER" }], "settings": { "anonymous": true } }

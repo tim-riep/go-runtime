@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ZIP_ENTRY_KIND",
+  "description": "Kind of an entry of a zip archive",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "FILE",
+      "name": "FILE",
+      "description": "A file"
+    },
+    {
+      "value": "FOLDER",
+      "name": "FOLDER",
+      "description": "A folder"
+    },
+    {
+      "value": "LINK",
+      "name": "LINK",
+      "description": "A symbolic link, never followed"
+    }
+  ]
+}

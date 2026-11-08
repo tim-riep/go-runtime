@@ -414,7 +414,7 @@ func (m *Machine) callNative(fn *LinkedFunc, me Value, args []Value) (result Val
 		ctx, cancel = context.WithTimeout(ctx, nf.m.Timeout)
 		defer cancel()
 	}
-	c := &native.Context{Context: ctx, Host: m.opts.Host, MaxInput: m.opts.MaxNativeInput, Method: fn.Def.Name}
+	c := &native.Context{Context: ctx, Host: m.opts.Host, MaxInput: m.opts.MaxNativeInput, Method: fn.Def.Name, Limits: m.opts.Limits}
 	if len(m.callers) > 0 {
 		c.Caller = m.callers[len(m.callers)-1]
 		c.Callers = slices.Clone(m.callers)

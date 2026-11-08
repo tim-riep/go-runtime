@@ -1,0 +1,9 @@
+# Zip or gzip data that cannot be unpacked: damaged, truncated, with a
+# wrong checksum, or text that is no UTF-8.
+public class /TRBASE/ARCHIVE_CORRUPT extends /TRBASE/ARCHIVE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

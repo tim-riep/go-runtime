@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ENTRY_NAME",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Name",
+      "medium": "Entry name",
+      "long": "Name of the entry in the archive",
+      "heading": "Name"
+    },
+    "de": {
+      "short": "Name",
+      "medium": "Name des Eintrags",
+      "long": "Name des Eintrags im Archiv",
+      "heading": "Name"
+    }
+  }
+}

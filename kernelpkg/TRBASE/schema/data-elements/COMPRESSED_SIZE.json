@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/COMPRESSED_SIZE",
+  "domain": "/TRBASE/BYTE_SIZE",
+  "texts": {
+    "en": {
+      "short": "Packed",
+      "medium": "Packed size",
+      "long": "Size in the archive in bytes",
+      "heading": "Packed"
+    },
+    "de": {
+      "short": "Gepackt",
+      "medium": "Gepackte Größe",
+      "long": "Größe im Archiv in Bytes",
+      "heading": "Gepackt"
+    }
+  }
+}

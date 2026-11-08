@@ -1,0 +1,54 @@
+{
+  "name": "/TRBASE/ZIP_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Zip entry",
+      "description": "An entry of a zip archive with its metadata"
+    },
+    "de": {
+      "label": "ZIP-Eintrag",
+      "description": "Ein Eintrag eines ZIP-Archivs mit seinen Metadaten"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/ENTRY_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRBASE/ZIP_ENTRY_KIND",
+      "notNull": true
+    },
+    {
+      "name": "COMPRESSED_SIZE",
+      "dataElement": "/TRBASE/COMPRESSED_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "SIZE",
+      "dataElement": "/TRBASE/BYTE_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "MODIFIED_AT",
+      "dataElement": "/TRBASE/MODIFIED_AT"
+    },
+    {
+      "name": "CRC32",
+      "dataElement": "/TRBASE/CRC32",
+      "notNull": true
+    },
+    {
+      "name": "COMMENT",
+      "dataElement": "/TRBASE/COMMENT",
+      "notNull": true
+    },
+    {
+      "name": "ENCRYPTED",
+      "dataElement": "/TRBASE/IS_ENCRYPTED",
+      "notNull": true
+    }
+  ]
+}
