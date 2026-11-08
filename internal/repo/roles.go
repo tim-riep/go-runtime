@@ -34,16 +34,20 @@ const (
 	TAuthGeneration     = model.KernelNamespace + "AUTH_GENERATION"
 )
 
-// roleOwner reads the owner column of roles: NULL for local roles.
-func roleOwner(v any) model.PackageID {
+// roleOwner reads the owner column of roles: NULL for the roles of the
+// kernel, in its namespace, and for local roles.
+func roleOwner(v any, name string) model.PackageID {
 	if s, ok := v.(string); ok {
 		return model.PackageID(s)
+	}
+	if model.IsKernelName(name) {
+		return model.Kernel
 	}
 	return model.Local
 }
 
 func roleOwnerValue(id model.PackageID) any {
-	if id == model.Local {
+	if id == model.Local || id == model.Kernel {
 		return nil
 	}
 	return string(id)
@@ -57,7 +61,7 @@ func (r *Repo) loadRoles(ctx context.Context, q dialect.Querier, s *model.Schema
 	for _, x := range roles {
 		name := str(x["ROLE_NAME"])
 		composite, _ := x["COMPOSITE"].(bool)
-		s.Roles[name] = &model.Role{Name: name, Owner: roleOwner(x["PACKAGE_ID"]), File: opt(x["FILE_PATH"]).Or(""), Composite: composite,
+		s.Roles[name] = &model.Role{Name: name, Owner: roleOwner(x["PACKAGE_ID"], name), File: opt(x["FILE_PATH"]).Or(""), Composite: composite,
 			Texts: map[string]model.Label{}}
 	}
 	texts, err := r.selectRows(ctx, q, TRoleTexts, []string{"ROLE_NAME", "LANGUAGE", "LABEL", "DESCRIPTION"})
@@ -327,4 +331,9 @@ func (r *Repo) NextAuthGeneration(ctx context.Context, q dialect.Querier, at tim
 	_, err = q.ExecContext(ctx, "UPDATE "+r.d.QuoteIdent(TAuthGeneration)+" SET "+gen+" = "+gen+" + 1, "+stamp+" = "+r.d.Placeholder(1)+
 		" WHERE "+r.d.QuoteIdent("ID")+" = 1", ts)
 	return err
+}
+
+// InsertRoleText adds the label of a role in a language.
+func (r *Repo) InsertRoleText(ctx context.Context, q dialect.Querier, name, lang string, l model.Label) error {
+	return r.insert(ctx, q, TRoleTexts, row{"ROLE_NAME": name, "LANGUAGE": lang, "LABEL": l.Label, "DESCRIPTION": val(l.Description)})
 }

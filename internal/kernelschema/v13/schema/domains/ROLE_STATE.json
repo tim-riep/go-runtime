@@ -1,0 +1,5 @@
+{
+  "name": "/RT/ROLE_STATE",
+  "description": "State of a role or role assignment as JSON",
+  "type": "STRING"
+}

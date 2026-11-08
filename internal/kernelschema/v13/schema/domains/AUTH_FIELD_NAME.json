@@ -1,0 +1,6 @@
+{
+  "name": "/RT/AUTH_FIELD_NAME",
+  "description": "Name of a field of an authorization object",
+  "type": "CHAR",
+  "length": 30
+}

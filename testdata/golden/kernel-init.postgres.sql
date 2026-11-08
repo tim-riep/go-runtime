@@ -601,7 +601,7 @@ CREATE TABLE "/RT/ROLE_HISTORY" (
   "OLD_STATE" TEXT,
   "NEW_STATE" TEXT,
   CONSTRAINT "/RT/ROLE_HISTORY#PK" PRIMARY KEY ("CHANGE_ID"),
-  CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGE_KIND" CHECK ("CHANGE_KIND" IN ('create-role', 'update-role', 'delete-role', 'assign', 'unassign', 'assignment-removed', 'role-changed', 'all-authorizations-sign-in'))
+  CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGE_KIND" CHECK ("CHANGE_KIND" IN ('create-role', 'update-role', 'delete-role', 'assign', 'unassign', 'assignment-removed', 'role-changed', 'all-authorizations-sign-in', 'all-authorizations-restored'))
 );
 
 -- create-table /RT/ROLE_TEXTS

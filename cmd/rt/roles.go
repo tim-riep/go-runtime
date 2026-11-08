@@ -194,6 +194,9 @@ func (c *cli) showRole(ctx context.Context, k *kernel.Kernel, name string) int {
 	if r.Composite {
 		fmt.Fprintf(c.stdout, "  roles: %s\n", strings.Join(r.Roles, ", "))
 	}
+	if d.All {
+		fmt.Fprintf(c.stdout, "  all values of every authorization object; objects and activities installed later are included.\n  It covers now:\n")
+	}
 	for _, a := range d.Authorizations {
 		fmt.Fprintln(c.stdout)
 		origin := ""

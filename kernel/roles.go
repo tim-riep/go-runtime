@@ -335,6 +335,10 @@ type RoleDetail struct {
 	UsedBy []string `json:"usedBy"`
 	// Assignments is the number of assignments of the role.
 	Assignments int `json:"assignments"`
+	// All marks the role with all authorizations: Authorizations are the
+	// objects it covers now; objects and activities installed later are
+	// covered as well.
+	All bool `json:"all"`
 }
 
 // RoleAuthorization is an authorization of a role with its origin.
@@ -357,7 +361,20 @@ func (r *Roles) Get(ctx context.Context, name string) (*RoleDetail, error) {
 	if role == nil {
 		return nil, &rterr.NotFound{Kind: "role", Name: name}
 	}
-	d := &RoleDetail{Role: role, Authorizations: []RoleAuthorization{}, UsedBy: []string{}}
+	d := &RoleDetail{Role: role, Authorizations: []RoleAuthorization{}, UsedBy: []string{}, All: name == model.AllAuthorizationsRole}
+	if d.All {
+		// The role grants every object; it stores nothing, so what it
+		// covers now is derived from the installed objects.
+		for _, obj := range s.AuthorizationObjectNames() {
+			o := s.AuthorizationObjects[obj]
+			a := model.Authorization{Object: obj, Fields: map[string][]model.ValueEntry{}}
+			for _, f := range o.Fields {
+				a.Fields[f.Name] = []model.ValueEntry{{Kind: model.ValuePattern, Low: model.AllValues}}
+			}
+			d.Authorizations = append(d.Authorizations, RoleAuthorization{Role: name, Authorization: a, Problems: []model.AuthorizationProblem{},
+				AllActivities: o.HasActivity()})
+		}
+	}
 	members := []*model.Role{role}
 	if role.Composite {
 		members = nil
@@ -498,6 +515,8 @@ func (r *Roles) Delete(ctx context.Context, name string, opts RoleOptions) error
 		switch {
 		case role == nil:
 			return &rterr.NotFound{Kind: "role", Name: name}
+		case role.Owner == model.Kernel:
+			return &rterr.InvalidArgument{Argument: "role", Message: name + " is a role of the kernel; it cannot change"}
 		case role.Owner != model.Local:
 			return &rterr.InvalidArgument{Argument: "role", Message: name + " belongs to package " + string(role.Owner) + "; package roles change with their package"}
 		}

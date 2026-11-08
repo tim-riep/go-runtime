@@ -1,0 +1,16 @@
+{
+  "name": "/RT/ELEMENT_KIND",
+  "description": "Kind of a structure element",
+  "type": "CHAR",
+  "length": 9,
+  "values": [
+    {
+      "value": "COMPONENT",
+      "description": "Component"
+    },
+    {
+      "value": "INCLUDE",
+      "description": "Include of a structure or table"
+    }
+  ]
+}

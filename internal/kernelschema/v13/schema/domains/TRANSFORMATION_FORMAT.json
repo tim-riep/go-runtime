@@ -1,0 +1,12 @@
+{
+  "name": "/RT/TRANSFORMATION_FORMAT",
+  "description": "Format a native transformation implements",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "json",
+      "description": "JSON"
+    }
+  ]
+}

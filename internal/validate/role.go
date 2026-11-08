@@ -37,6 +37,9 @@ func (v *validator) role(r *model.Role) {
 	loc := r.Src
 	v.objectName(r.Name, r.Owner, loc.At("/name"), obj)
 	v.labels(obj, loc, r.Texts, r.Languages())
+	if r.Owner == model.Kernel && (r.Name != model.AllAuthorizationsRole || r.Composite || len(r.Authorizations) > 0) {
+		v.fail(rterr.CodeReservedObject, loc, obj, "the kernel has only the role %s, a single role without stored authorizations", model.AllAuthorizationsRole)
+	}
 	visible := func(owner model.PackageID) bool { return r.Owner == model.Local || v.s.Visible(r.Owner, owner) }
 	if r.Composite {
 		if len(r.Authorizations) > 0 {

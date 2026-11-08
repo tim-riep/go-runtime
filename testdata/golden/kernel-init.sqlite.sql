@@ -763,7 +763,7 @@ CREATE TABLE "/RT/ROLE_HISTORY" (
   CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGE_ID" CHECK ("CHANGE_ID" IS NULL OR ("CHANGE_ID" GLOB '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]')),
   CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGED_AT" CHECK ("CHANGED_AT" IS NULL OR ("CHANGED_AT" GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9][0-9][0-9][0-9]Z' AND strftime('%Y-%m-%dT%H:%M:%S', substr("CHANGED_AT", 1, 19)) IS substr("CHANGED_AT", 1, 19))),
   CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGED_BY" CHECK ("CHANGED_BY" IS NULL OR (length("CHANGED_BY") <= 64)),
-  CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGE_KIND" CHECK ("CHANGE_KIND" IS NULL OR (length("CHANGE_KIND") <= 32 AND "CHANGE_KIND" IN ('create-role', 'update-role', 'delete-role', 'assign', 'unassign', 'assignment-removed', 'role-changed', 'all-authorizations-sign-in'))),
+  CONSTRAINT "/RT/ROLE_HISTORY#CK#CHANGE_KIND" CHECK ("CHANGE_KIND" IS NULL OR (length("CHANGE_KIND") <= 32 AND "CHANGE_KIND" IN ('create-role', 'update-role', 'delete-role', 'assign', 'unassign', 'assignment-removed', 'role-changed', 'all-authorizations-sign-in', 'all-authorizations-restored'))),
   CONSTRAINT "/RT/ROLE_HISTORY#CK#ROLE_NAME" CHECK ("ROLE_NAME" IS NULL OR (length("ROLE_NAME") <= 63)),
   CONSTRAINT "/RT/ROLE_HISTORY#CK#TENANT" CHECK ("TENANT" IS NULL OR (length("TENANT") <= 16)),
   CONSTRAINT "/RT/ROLE_HISTORY#CK#USER_NAME" CHECK ("USER_NAME" IS NULL OR (length("USER_NAME") <= 64)),

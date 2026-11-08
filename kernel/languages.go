@@ -163,8 +163,8 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 	return result, nil
 }
 
-// addKernelTexts writes the labels of the data elements of the kernel in a
-// language that was set up.
+// addKernelTexts writes the texts of the data elements and roles of the
+// kernel in a language that was set up.
 func (k *Kernel) addKernelTexts(ctx context.Context, lang string) error {
 	pkg, err := kernelschema.Package(k.target)
 	if err != nil {
@@ -173,6 +173,13 @@ func (k *Kernel) addKernelTexts(ctx context.Context, lang string) error {
 	for _, d := range pkg.DataElements {
 		if t, ok := d.Texts[lang]; ok {
 			if err := k.repo.InsertDataElementText(ctx, k.db, d.Name, lang, t); err != nil {
+				return err
+			}
+		}
+	}
+	for _, r := range pkg.Roles {
+		if t, ok := r.Texts[lang]; ok {
+			if err := k.repo.InsertRoleText(ctx, k.db, r.Name, lang, t); err != nil {
 				return err
 			}
 		}
