@@ -5,4 +5,9 @@ public class /TROTTO/ID_RULES
     return "OTTO-" + id
   end
 
+  # The countries with an OTTO marketplace.
+  public static method MARKET(country: STRING) returns BOOL
+    return country = "DE" or country = "AT"
+  end
+
 end

@@ -76,7 +76,7 @@ func TestReflector(t *testing.T) {
 		if err != nil || len(list) != 2 || list[0].Name != "/TRFIN/COMPANY" || list[1].Name != "/TRFIN/STATUS_SCOPE" {
 			t.Errorf("objects of TRFIN: %v %v", list, err)
 		}
-		if all, err := k.AuthorizationObjects(ctx, ""); err != nil || len(all) != 8 || all[7].Name != "/TROTTO/SYNC" {
+		if all, err := k.AuthorizationObjects(ctx, ""); err != nil || len(all) != 8 || all[7].Name != "/TROTTO/MARKETPLACE" {
 			t.Errorf("all objects: %v %v", all, err)
 		}
 		acts, err := k.Activities(ctx)
@@ -189,10 +189,10 @@ func TestReflectorInCode(t *testing.T) {
 		if run("en", R, "EXISTS", `"/TRFIN/COMPANY"`) != "true" || run("en", R, "EXISTS", `"/TRFIN/NOPE"`) != "false" {
 			t.Error("EXISTS")
 		}
-		if got := run("en", R, "NAMES", `"TROTTO"`); got != `["/TROTTO/SYNC"]` {
+		if got := run("en", R, "NAMES", `"TROTTO"`); got != `["/TROTTO/MARKETPLACE"]` {
 			t.Errorf("objects of TROTTO: %s", got)
 		}
-		if got := run("en", R, "NAMES", "null"); got != `["/TRBASE/CONFIGURATION","/TRBASE/HTTP_SERVICE","/TRBASE/ROLE_ADMIN","/TRBASE/ROLE_ASSIGNMENT","/TRBASE/USER_ADMIN","/TRFIN/COMPANY","/TRFIN/STATUS_SCOPE","/TROTTO/SYNC"]` {
+		if got := run("en", R, "NAMES", "null"); got != `["/TRBASE/CONFIGURATION","/TRBASE/HTTP_SERVICE","/TRBASE/ROLE_ADMIN","/TRBASE/ROLE_ASSIGNMENT","/TRBASE/USER_ADMIN","/TRFIN/COMPANY","/TRFIN/STATUS_SCOPE","/TROTTO/MARKETPLACE"]` {
 			t.Errorf("all objects: %s", got)
 		}
 		if got := run("en", R, "CODES", `"/TRFIN/COMPANY"`); got != `"true false 5"` {

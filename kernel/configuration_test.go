@@ -23,6 +23,7 @@ import (
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
@@ -147,11 +148,16 @@ func TestConfigurationMaintenance(t *testing.T) {
 			t.Errorf("last failed check: %+v %v", trace, err)
 		}
 
-		d, err := k.BusinessObject(ctx, "/TRCONF/CURRENCY")
+		d, err := k.BusinessObject(ctx, "/TRCONF/CURRENCY", kernel.BusinessObjectOptions{})
 		if err != nil || d.DataClass != model.Configuration || d.BehaviorClass.Valid() ||
 			d.Root.AuthorizationSource != model.Some(model.AuthorizationConfiguration) || d.Root.Authorization.Object != model.ConfigurationObject ||
 			d.Root.AuthorizationConstants[model.ConfigurationBusinessObject] != "/TRCONF/CURRENCY" {
 			t.Errorf("description: %+v %v", d, err)
+		}
+		for class, want := range map[model.DataClass]int{model.Configuration: 1, model.RuntimeConfiguration: 0, model.Application: 0} {
+			if list, err := k.BusinessObjects(ctx, reflector.BusinessObjectFilter{DataClass: class}); err != nil || len(list) != want {
+				t.Errorf("business objects of %s: %d %v", class, len(list), err)
+			}
 		}
 	})
 }

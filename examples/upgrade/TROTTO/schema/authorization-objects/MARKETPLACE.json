@@ -1,0 +1,12 @@
+{
+  "name": "/TROTTO/MARKETPLACE",
+  "texts": {
+    "en": { "label": "OTTO marketplace", "description": "Exchanging companies with the OTTO marketplace" },
+    "de": { "label": "OTTO-Marktplatz", "description": "Firmen mit dem OTTO-Marktplatz austauschen" }
+  },
+  "fields": [
+    { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" },
+    { "name": "ACTIVITY" }
+  ],
+  "activities": ["EXECUTE", "IMPORT", "SEND"]
+}

@@ -90,7 +90,7 @@ func TestBusinessObjectExtensionValid(t *testing.T) {
 	b := s.MergedBusinessObject("/TRFIN/COMPANY", nil)
 	root := b.Entity("/TRFIN/COMPANIES")
 	if b.Entity("/TRS/CHANNELS") == nil || b.Entity("/TRS/CHANNELS").Origin != "TRS" || !root.Fields["/TRS/RATING"].ReadOnly ||
-		root.Determinations[len(root.Determinations)-1].Origin != "TRS" || root.Actions[0].Origin != "TRFIN" || len(b.Extensions) != 1 {
+		root.Determinations[len(root.Determinations)-1].Origin != "TRS" || root.Actions[0].Origin != "TRFIN" || len(b.Extensions) != 2 || b.Extensions[1].Package != "TRS" {
 		t.Errorf("merged: %+v", b)
 	}
 }

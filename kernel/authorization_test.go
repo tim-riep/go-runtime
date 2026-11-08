@@ -59,7 +59,7 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 			!o.Fields[2].IsActivity() || strings.Join(o.Activities, ",") != "READ,CREATE,UPDATE,DELETE,EXPORT" || o.Texts["de"].Label != "Stammdaten Firma" {
 			t.Fatalf("read back: %+v", o)
 		}
-		if s.AuthorizationObjects["/TROTTO/SYNC"] == nil || s.AuthorizationObjects["/TRFIN/STATUS_SCOPE"].HasActivity() {
+		if s.AuthorizationObjects["/TROTTO/MARKETPLACE"] == nil || s.AuthorizationObjects["/TRFIN/STATUS_SCOPE"].HasActivity() {
 			t.Fatal("objects of the examples")
 		}
 		de, err := k.DataElement(ctx, "/TRBASE/COUNTRY")
@@ -67,7 +67,7 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 			t.Errorf("uses of /TRBASE/COUNTRY: %v %v", de, err)
 		}
 		act, err := k.DataElement(ctx, model.ActivityDomain)
-		if err != nil || strings.Join(act.UsedBy, " ") != "/TRBASE/CONFIGURATION.ACTIVITY /TRBASE/HTTP_SERVICE.ACTIVITY /TRBASE/ROLE_ADMIN.ACTIVITY /TRBASE/ROLE_ASSIGNMENT.ACTIVITY /TRBASE/USER_ADMIN.ACTIVITY /TRFIN/COMPANY.ACTIVITY /TROTTO/SYNC.ACTIVITY" {
+		if err != nil || strings.Join(act.UsedBy, " ") != "/TRBASE/CONFIGURATION.ACTIVITY /TRBASE/HTTP_SERVICE.ACTIVITY /TRBASE/ROLE_ADMIN.ACTIVITY /TRBASE/ROLE_ASSIGNMENT.ACTIVITY /TRBASE/USER_ADMIN.ACTIVITY /TRFIN/COMPANY.ACTIVITY /TROTTO/MARKETPLACE.ACTIVITY" {
 			t.Errorf("uses of ACTIVITY: %v %v", act, err)
 		}
 

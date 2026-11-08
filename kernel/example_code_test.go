@@ -106,21 +106,39 @@ func TestExampleCode(t *testing.T) {
 			t.Errorf("IN_COUNTRY = %s", got)
 		}
 
-		// The sync needs EXECUTE on /TROTTO/SYNC for the country.
-		if _, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`); exceptionClass(err) != model.NotAuthorizedClass {
-			t.Errorf("SYNC without user: %v", err)
+		// New companies in Germany got their partner ID when they were
+		// saved, C1 from before TROTTO has none. The action /TROTTO/SYNC
+		// needs EXECUTE on /TROTTO/MARKETPLACE for the country.
+		if got := mustCall(t, k, "ACME", S, "FIND", `"C2"`); !strings.Contains(got, `"/TROTTO/OTTO_ID":"OTTO-C2"`) {
+			t.Errorf("FIND C2 = %s", got)
+		}
+		if got := mustCall(t, k, "ACME", S, "FIND", `"C3"`); !strings.Contains(got, `"/TROTTO/OTTO_ID":null`) {
+			t.Errorf("FIND C3 in FR = %s", got)
+		}
+		if got, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`); err != nil || got != "0" {
+			t.Errorf("SYNC without user: %s %v", got, err)
 		}
 		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "ops", Role: "/TROTTO/SYNC_OPERATOR", Tenant: "ACME"}, kernel.RoleOptions{}); err != nil {
 			t.Fatal(err)
 		}
 		ops := kernel.ExecOptions{Tenant: "ACME", User: model.Some("ops")}
+		// A sales channel goes with its company: the operator gives C5 its
+		// partner ID with the action and adds the channel below it.
+		r := result(t, mustCallAs(t, k, ops, "/TROTTO/COMPANY_SYNC", "CONNECT", `"C5"`, `"fashion"`))
+		if len(r["FAILURES"]) != 0 || count(t, k, "/TROTTO/COMPANY_CHANNELS") != 1 {
+			t.Errorf("CONNECT: %v", r)
+		}
+		// A company on OTTO stays in a country of the marketplace.
+		if _, err := call(k, boss, S, "MOVE", `"C5"`, `"FR"`); err == nil || !strings.Contains(err.Error(), "C5 is on OTTO, which has no marketplace in FR") {
+			t.Errorf("MOVE to FR: %v", err)
+		}
 		sync := func(want string) {
 			t.Helper()
 			if got, err := call(k, ops, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`); err != nil || got != want {
 				t.Errorf("SYNC = %s, %v; want %s", got, err, want)
 			}
 		}
-		count := func() (int, string) {
+		audited := func() (int, string) {
 			var n int
 			var text *string
 			if err := k.DB().QueryRowContext(ctx, `SELECT COUNT(*), MIN("TEXT") FROM "/TRBASE/AUDIT_LOG"`).Scan(&n, &text); err != nil {
@@ -145,12 +163,12 @@ func TestExampleCode(t *testing.T) {
 			}
 			return
 		}
-		sync("3")
+		sync("1")
 		if got := mustCall(t, k, "ACME", S, "FIND", `"C1"`); !strings.Contains(got, `"/TROTTO/OTTO_ID":"OTTO-C1"`) {
 			t.Errorf("FIND C1 after SYNC = %s", got)
 		}
 		sync("0")
-		if n, text := count(); n != 2 || text != "Synced 0 companies for DE" {
+		if n, text := audited(); n != 3 || text != "Synced 0 companies for DE" {
 			t.Errorf("audit log: %d %q", n, text)
 		}
 	})

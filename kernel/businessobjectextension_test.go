@@ -218,7 +218,7 @@ func TestBusinessObjectExtensionCompiler(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{writePackage(t, user("TRBZ", `, { "id": "TRBX" }`))}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		d, err := k.BusinessObject(ctx, "/TRBO/ORDER")
+		d, err := k.BusinessObject(ctx, "/TRBO/ORDER", kernel.BusinessObjectOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -230,6 +230,14 @@ func TestBusinessObjectExtensionCompiler(t *testing.T) {
 			if !uses[want] {
 				t.Errorf("use %q missing in %v", want, uses)
 			}
+		}
+		// The description merges the extension, or leaves it out.
+		if len(d.Extensions) != 1 || d.Extensions[0].Package != "TRBX" || len(d.Root.Children) != 3 || d.Root.Children[2].Origin != "TRBX" {
+			t.Errorf("merged description: %+v", d.BusinessObject)
+		}
+		base, err := k.BusinessObject(ctx, "/TRBO/ORDER", kernel.BusinessObjectOptions{Base: true})
+		if err != nil || len(base.Extensions) != 0 || len(base.Root.Children) != 2 || len(base.Root.Actions) != 2 {
+			t.Errorf("base description: %+v %v", base, err)
 		}
 	})
 }

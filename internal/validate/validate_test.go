@@ -176,6 +176,8 @@ func TestExtensionOfRepositoryTable(t *testing.T) {
 func TestExtensionOfTenantTableAllowed(t *testing.T) {
 	e := load(t)
 	e.otto.Extensions[0].Table = model.TenantTable
+	// The field moves away from the companies, which TROTTO extends.
+	delete(e.otto.BusinessObjectExtensions[0].Entities[0].Fields, "/TROTTO/OTTO_ID")
 	if err := Schema(e.schema(t), Options{}); err != nil {
 		t.Fatal(err)
 	}

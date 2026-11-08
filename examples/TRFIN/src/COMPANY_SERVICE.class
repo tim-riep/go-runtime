@@ -86,6 +86,29 @@ public class /TRFIN/COMPANY_SERVICE
     end
   end
 
+  # Moves a company to another country; the business object and its
+  # extensions check the country when the change is saved.
+  public static method MOVE(id: /TRFIN/COMPANY, country: /TRFIN/COUNTRY_CODE) raises /TRFIN/COMPANY_REJECTED
+    var rows: array of /TRFIN/COMPANIES = []
+    var row: /TRFIN/COMPANIES
+    row.COMPANY_ID = id
+    row.COUNTRY = country
+    rows.APPEND(row)
+    modify business object /TRFIN/COMPANY
+      update /TRFIN/COMPANIES fields (COUNTRY) from rows
+      result outcome
+    end
+    if outcome.FAILURES is not empty
+      rollback business objects
+      raise /TRFIN/COMPANY_REJECTED with id, REASON(outcome)
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+      raise /TRFIN/COMPANY_REJECTED with id, REASON(saved)
+    end
+  end
+
   # Blocks all active companies of a country and returns their number.
   public static method BLOCK_COUNTRY(country: /TRFIN/COUNTRY_CODE) returns INT8
     var keys: array of key of /TRFIN/COMPANIES = []

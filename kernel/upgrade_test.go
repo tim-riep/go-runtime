@@ -42,12 +42,25 @@ var usesExtensionPoints = map[string]bool{"/TRFIN/COMPANY_CHECKS": true, "/TRFIN
 // business objects cannot install: the behavior class and the classes
 // with entity statements or that call them.
 var usesBusinessObjects = map[string]bool{"/TRFIN/COMPANY_BEHAVIOR": true, "/TRFIN/COMPANY_SERVICE": true, "/TRFIN/COMPANY_INTAKE": true,
-	"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true, "/TROTTO/COMPANY_SYNC": true}
+	"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true, "/TROTTO/COMPANY_SYNC": true,
+	"/TROTTO/COMPANY_BEHAVIOR": true}
+
+// usesExtensions are the classes of the examples that kernels before
+// extensions of business objects cannot install.
+var usesExtensions = map[string]bool{"/TROTTO/COMPANY_SYNC": true, "/TROTTO/COMPANY_BEHAVIOR": true}
+
+// withoutBusinessObjectExtensions removes the extensions of business
+// objects of a package and the classes that use them.
+func withoutBusinessObjectExtensions(p *model.Package) {
+	p.BusinessObjectExtensions = nil
+	p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesExtensions[s.Name] })
+}
 
 // withoutBusinessObjects removes the business objects of a package and
 // the classes and HTTP services that use them.
 func withoutBusinessObjects(p *model.Package) {
 	p.BusinessObjects = nil
+	withoutBusinessObjectExtensions(p)
 	p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesBusinessObjects[s.Name] })
 	p.HTTPServices = slices.DeleteFunc(p.HTTPServices, func(h model.HTTPService) bool {
 		return slices.ContainsFunc(h.Handlers, func(r model.HTTPHandlerRef) bool { return usesBusinessObjects[r.Class] })
@@ -60,6 +73,11 @@ func withData(t *testing.T, k *kernel.Kernel) {
 	pkgs := examples(t)
 	if k.TargetVersion() < 5 {
 		pkgs = legacyExamples(t)
+	}
+	if k.TargetVersion() < 19 { // before extensions of business objects
+		for _, p := range pkgs {
+			withoutBusinessObjectExtensions(p)
+		}
 	}
 	if k.TargetVersion() < 18 { // before business objects
 		for _, p := range pkgs {

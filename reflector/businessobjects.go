@@ -101,10 +101,24 @@ type EntityAction struct {
 	Activity model.Optional[string] `json:"activity"`
 }
 
-// BusinessObject returns the definition of a business object, or
-// rterr.NotFound.
+// BusinessObject returns the definition of a business object with all
+// its installed extensions merged in, or rterr.NotFound.
 func (r *Reflector) BusinessObject(name string) (*BusinessObject, error) {
-	b := r.s.MergedBusinessObject(name, nil)
+	return r.businessObject(name, false)
+}
+
+// BaseBusinessObject returns the definition of a business object without
+// its extensions, or rterr.NotFound.
+func (r *Reflector) BaseBusinessObject(name string) (*BusinessObject, error) {
+	return r.businessObject(name, true)
+}
+
+func (r *Reflector) businessObject(name string, base bool) (*BusinessObject, error) {
+	var include func(model.PackageID) bool
+	if base {
+		include = func(model.PackageID) bool { return false }
+	}
+	b := r.s.MergedBusinessObject(name, include)
 	if b == nil {
 		return nil, &rterr.NotFound{Kind: "business object", Name: name}
 	}
@@ -200,12 +214,20 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 	return out, nil
 }
 
-// BusinessObjects returns the business objects of a package, or of all
-// packages for "", ordered by name.
-func (r *Reflector) BusinessObjects(pkg model.PackageID) []*BusinessObject {
+// BusinessObjectFilter selects business objects by package and data
+// class; an empty field selects all.
+type BusinessObjectFilter struct {
+	Package   model.PackageID
+	DataClass model.DataClass
+}
+
+// BusinessObjects returns the business objects the filter selects with
+// their extensions, ordered by name.
+func (r *Reflector) BusinessObjects(f BusinessObjectFilter) []*BusinessObject {
 	out := []*BusinessObject{}
 	for _, name := range r.s.BusinessObjectNames() {
-		if pkg != "" && r.s.BusinessObjects[name].Owner != pkg {
+		b := r.s.BusinessObjects[name]
+		if f.Package != "" && b.Owner != f.Package || f.DataClass != "" && b.DataClass != f.DataClass {
 			continue
 		}
 		if b, err := r.BusinessObject(name); err == nil {

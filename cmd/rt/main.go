@@ -148,11 +148,13 @@ Commands:
   extension-point show <name>
                            show an extension point with its implementations, their activation
                            globally and per tenant, and the code that runs it
-  business-object list [package]
-                           list the business objects of a package or of all packages
-  business-object show <name>
-                           show a business object with its entities, fields, behavior,
-                           authorization and the code that works on it
+  business-object list [package] [--data-class C]
+                           list the business objects of a package or of all packages,
+                           optionally of a data class
+  business-object show <name> [--base]
+                           show a business object with its extensions, entities, fields,
+                           behavior, authorization and the code that works on it; the
+                           package of every part that an extension adds is in parentheses
   implementation activate|deactivate <name> [--tenant T]
                            activate or deactivate an implementation of an extension point,
                            globally or in a tenant, whose setting wins over the global one
@@ -214,6 +216,8 @@ type cli struct {
 	from, to, date string
 	admin          string
 	check          bool
+	dataClass      string
+	base           bool
 	minutes        int
 	maxEntries     int
 	allowBranch    bool
@@ -257,6 +261,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.admin, "admin", "", "init: create this first user with all authorizations in --tenant; the password is read from standard input")
 	c.fs.StringVar(&c.date, "date", "", "user authorizations: the day, YYYY-MM-DD (default today)")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
+	c.fs.StringVar(&c.dataClass, "data-class", "", "business-object list: only business objects of a data class: application, configuration or runtimeConfiguration")
+	c.fs.BoolVar(&c.base, "base", false, "business-object show: without the extensions of other packages")
 	c.fs.IntVar(&c.minutes, "minutes", 30, "trace authorizations start: how long the trace runs")
 	c.fs.IntVar(&c.maxEntries, "max", 10_000, "trace authorizations start: the most checks it records")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")

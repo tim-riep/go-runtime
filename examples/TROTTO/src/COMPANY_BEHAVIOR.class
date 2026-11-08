@@ -1,0 +1,51 @@
+# The behavior that TROTTO adds to the business object /TRFIN/COMPANY:
+# new companies in a country of the marketplace get their partner ID when
+# they are saved, a company with a partner ID stays in such a country, and
+# the action /TROTTO/SYNC gives companies created before TROTTO their ID.
+public class /TROTTO/COMPANY_BEHAVIOR
+
+  public method RESERVE_ID(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRFIN/COMPANY in local mode
+      /TRFIN/COMPANIES fields (COUNTRY) keys keys
+    end
+    var ids: array of key of /TRFIN/COMPANIES = []
+    for company in companies
+      if /TROTTO/ID_RULES.MARKET(company.COUNTRY default "")
+        var key: key of /TRFIN/COMPANIES
+        key.COMPANY_ID = company.COMPANY_ID
+        ids.APPEND(key)
+      end
+    end
+    SET_IDS(ids)
+  end
+
+  public method CHECK_MARKET(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRFIN/COMPANY in local mode
+      /TRFIN/COMPANIES fields (COUNTRY, /TROTTO/OTTO_ID) keys keys
+    end
+    for i, company in companies
+      var country = company.COUNTRY default ""
+      if company./TROTTO/OTTO_ID is not null and not /TROTTO/ID_RULES.MARKET(country)
+        response.FIELD_ERROR(i, "COUNTRY", "{company.COMPANY_ID} is on OTTO, which has no marketplace in {country}")
+      end
+    end
+  end
+
+  public method SYNC(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    SET_IDS(keys)
+  end
+
+  private method SET_IDS(keys: array of key of /TRFIN/COMPANIES)
+    var rows: array of /TRFIN/COMPANIES = []
+    for key in keys
+      var row: /TRFIN/COMPANIES
+      row.COMPANY_ID = key.COMPANY_ID
+      row./TROTTO/OTTO_ID = /TROTTO/ID_RULES.BUILD(key.COMPANY_ID)
+      rows.APPEND(row)
+    end
+    modify business object /TRFIN/COMPANY in local mode
+      update /TRFIN/COMPANIES fields (/TROTTO/OTTO_ID) from rows
+    end
+  end
+
+end

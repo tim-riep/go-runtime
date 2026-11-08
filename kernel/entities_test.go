@@ -25,6 +25,7 @@ import (
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
 )
@@ -1054,7 +1055,7 @@ func TestBusinessObjectDescription(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", orderRoot)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		d, err := k.BusinessObject(ctx, "/TRBO/ORDER")
+		d, err := k.BusinessObject(ctx, "/TRBO/ORDER", kernel.BusinessObjectOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1086,11 +1087,11 @@ func TestBusinessObjectDescription(t *testing.T) {
 		if !kinds["business-object"] || !kinds["entity"] || !kinds["action"] {
 			t.Errorf("uses: %+v", d.CodeUses)
 		}
-		list, err := k.BusinessObjects(ctx, "TRBO")
+		list, err := k.BusinessObjects(ctx, reflector.BusinessObjectFilter{Package: "TRBO"})
 		if err != nil || len(list) != 1 {
 			t.Errorf("list: %v, %v", list, err)
 		}
-		if _, err := k.BusinessObjects(ctx, "NOPE"); err == nil {
+		if _, err := k.BusinessObjects(ctx, reflector.BusinessObjectFilter{Package: "NOPE"}); err == nil {
 			t.Error("list of a package that is not installed")
 		}
 	})

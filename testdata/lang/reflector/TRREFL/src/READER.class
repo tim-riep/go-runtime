@@ -30,7 +30,7 @@ public class /TRREFL/READER
   # An object of a package that TRREFL does not require, named with a
   # literal: it is looked up when the code runs.
   public static method OTTO() returns STRING raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND
-    return /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TROTTO/SYNC").PACKAGE_ID
+    return /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TROTTO/MARKETPLACE").PACKAGE_ID
   end
 
 end

@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/tim-riep/go-runtime/model"
@@ -31,14 +32,24 @@ type BusinessObjectDetail struct {
 	CodeUses []CodeUse `json:"codeUses"`
 }
 
-// BusinessObject returns the description of a business object, or
-// rterr.NotFound.
-func (k *Kernel) BusinessObject(ctx context.Context, name string) (*BusinessObjectDetail, error) {
+// BusinessObjectOptions tell how to describe a business object.
+type BusinessObjectOptions struct {
+	// Base leaves out the extensions of other packages.
+	Base bool
+}
+
+// BusinessObject returns the description of a business object with its
+// installed extensions, or without them, or rterr.NotFound.
+func (k *Kernel) BusinessObject(ctx context.Context, name string, opts BusinessObjectOptions) (*BusinessObjectDetail, error) {
 	r, err := k.Reflector(ctx)
 	if err != nil {
 		return nil, err
 	}
-	b, err := r.BusinessObject(name)
+	get := r.BusinessObject
+	if opts.Base {
+		get = r.BaseBusinessObject
+	}
+	b, err := get(name)
 	if err != nil {
 		return nil, err
 	}
@@ -66,17 +77,20 @@ func (k *Kernel) BusinessObject(ctx context.Context, name string) (*BusinessObje
 	return d, nil
 }
 
-// BusinessObjects returns the business objects of a package, or of all
-// packages for "", ordered by name.
-func (k *Kernel) BusinessObjects(ctx context.Context, pkg model.PackageID) ([]*reflector.BusinessObject, error) {
+// BusinessObjects returns the business objects of a package and a data
+// class, or of all for empty fields, ordered by name.
+func (k *Kernel) BusinessObjects(ctx context.Context, f reflector.BusinessObjectFilter) ([]*reflector.BusinessObject, error) {
 	r, err := k.Reflector(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if pkg != "" {
-		if s, _ := k.Schema(ctx); s != nil && s.Packages[pkg] == nil {
-			return nil, &rterr.NotInstalled{Package: string(pkg)}
+	if f.Package != "" {
+		if s, _ := k.Schema(ctx); s != nil && s.Packages[f.Package] == nil {
+			return nil, &rterr.NotInstalled{Package: string(f.Package)}
 		}
 	}
-	return r.BusinessObjects(pkg), nil
+	if f.DataClass != "" && f.DataClass != model.Application && f.DataClass != model.Configuration && f.DataClass != model.RuntimeConfiguration {
+		return nil, &rterr.InvalidArgument{Argument: "data class", Message: fmt.Sprintf("the data class is application, configuration or runtimeConfiguration, not %q", f.DataClass)}
+	}
+	return r.BusinessObjects(f), nil
 }

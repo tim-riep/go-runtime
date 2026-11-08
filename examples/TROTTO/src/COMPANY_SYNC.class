@@ -1,31 +1,22 @@
-# Gives the companies of a country a partner ID on OTTO through the
-# business object /TRFIN/COMPANY and writes a line to the audit log in a
-# session of its own, which stays even if the sync is rolled back. The user needs the authorization to run the exchange
-# for the country.
+# Gives the companies of a country that have no partner ID on OTTO one
+# through the action /TROTTO/SYNC of the business object /TRFIN/COMPANY,
+# which checks the authorization of the user for the country, and writes a
+# line to the audit log in a session of its own, which stays even if the
+# sync is rolled back.
 public class /TROTTO/COMPANY_SYNC
 
-  public static method SYNC(country: /TRFIN/COUNTRY_CODE) returns INT4
-    check authorization /TROTTO/SYNC
-      COUNTRY = country
-      ACTIVITY = EXECUTE
-    end
+  public static method SYNC(country: /TRFIN/COUNTRY_CODE) returns INT8
     var audit = open session
-    var rows: array of /TRFIN/COMPANIES = []
+    var keys: array of key of /TRFIN/COMPANIES = []
     for company in select from /TRFIN/COMPANIES where COUNTRY = country and /TROTTO/OTTO_ID is null
-      company./TROTTO/OTTO_ID = /TROTTO/ID_RULES.BUILD(company.COMPANY_ID)
-      rows.APPEND(company)
+      var key: key of /TRFIN/COMPANIES
+      key.COMPANY_ID = company.COMPANY_ID
+      keys.APPEND(key)
     end
     modify business object /TRFIN/COMPANY
-      update /TRFIN/COMPANIES fields (/TROTTO/OTTO_ID) from rows
-      result outcome
+      execute /TRFIN/COMPANIES./TROTTO/SYNC keys keys into synced
     end
-    var count = 0
-    for row in rows
-      count = count + 1
-    end
-    for failure in outcome.FAILURES
-      count = count - 1
-    end
+    var count = synced.LENGTH()
 
     var entry: /TRBASE/AUDIT_LOG
     entry.LOG_ID = UUID.RANDOM()
@@ -38,6 +29,31 @@ public class /TROTTO/COMPANY_SYNC
       return 0
     end
     return count
+  end
+
+  # Connects a company to OTTO through a sales channel: it gets its
+  # partner ID if it has none and the channel below it.
+  public static method CONNECT(id: /TRFIN/COMPANY, channel: STRING) returns /TRBASE/ENTITY_RESULT
+    var companies: array of key of /TRFIN/COMPANIES = []
+    var key: key of /TRFIN/COMPANIES
+    key.COMPANY_ID = id
+    companies.APPEND(key)
+    var channels: array of /TROTTO/COMPANY_CHANNELS = []
+    var row: /TROTTO/COMPANY_CHANNELS
+    row.COMPANY_ID = id
+    row.CHANNEL = channel
+    channels.APPEND(row)
+    modify business object /TRFIN/COMPANY
+      execute /TRFIN/COMPANIES./TROTTO/SYNC keys companies
+      create /TROTTO/COMPANY_CHANNELS by parent fields (CHANNEL) from channels
+      result outcome
+    end
+    if outcome.FAILURES is not empty
+      rollback business objects
+      return outcome
+    end
+    commit business objects result saved
+    return saved
   end
 
 end

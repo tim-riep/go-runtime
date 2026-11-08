@@ -49,7 +49,14 @@ func TestCLI(t *testing.T) {
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "implementation 1: /TROTTO/COMPANY_CHECKS (package TROTTO, class /TROTTO/COMPANY_CHECKS, order 100)"},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, `COUNTRY: "DE" "AT"`},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "used by TRFIN src/COMPANY_BEHAVIOR.class:"},
-				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    application    /TRFIN/COMPANIES  3"},
+				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    application    /TRFIN/COMPANIES  4         /TRFIN/COMPANY_BEHAVIOR  TROTTO"},
+				{[]string{"business-object", "list", "--data-class", "configuration"}, exitOK, "/TRFIN/COUNTRY"},
+				{[]string{"business-object", "list", "--data-class", "nope"}, exitError, "the data class is application, configuration or runtimeConfiguration"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "extended by TROTTO, behavior class /TROTTO/COMPANY_BEHAVIOR"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "determination /TROTTO/RESERVE_ID on save (create)  (TROTTO)"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "authorization /TROTTO/MARKETPLACE  (TROTTO)"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "numbering uuid  (TROTTO)"},
+				{[]string{"business-object", "show", "/TRFIN/COMPANY", "--json"}, exitOK, `"origin": "TROTTO"`},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "entity /TRFIN/CONTACTS  key (CONTACT_ID)  operations create, update, delete  numbering uuid"},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "field CHANGED_AT  TIMESTAMP"},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "action BLOCK  instance  parameter /TRFIN/BLOCK_REASON  result self  modifies true  activity UPDATE"},
@@ -79,8 +86,8 @@ func TestCLI(t *testing.T) {
 				{[]string{"show", "/TRFIN/COMPANY"}, exitError, "names a data-element and an authorization-object"},
 				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "activity EXPORT: Export"},
 				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "COUNTRY     /TRBASE/COUNTRY"},
-				{[]string{"show", "--json", "authorization-object:/TROTTO/SYNC"}, exitOK, `"code": "SEND"`},
-				{[]string{"authorization-objects", "list", "TROTTO"}, exitOK, "/TROTTO/SYNC  TROTTO   Connection to OTTO  COUNTRY, ACTIVITY"},
+				{[]string{"show", "--json", "authorization-object:/TROTTO/MARKETPLACE"}, exitOK, `"code": "SEND"`},
+				{[]string{"authorization-objects", "list", "TROTTO"}, exitOK, "OTTO marketplace  COUNTRY, ACTIVITY"},
 				{[]string{"authorization-objects", "list", "NOPE"}, exitError, "NOPE"},
 				{[]string{"activities", "list", "--lang", "de"}, exitOK, "APPROVE     Genehmigen"},
 				{[]string{"activities", "list"}, exitOK, "ADMINISTER  Administer"},
@@ -218,7 +225,7 @@ func TestDisasm(t *testing.T) {
 	}
 	out.Reset()
 	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; select /TRFIN/COMPANIES") ||
-		!strings.Contains(out.String(), "ENTITY 17") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
+		!strings.Contains(out.String(), "ENTITY 21") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
 		t.Errorf("database statement: %d %s", code, out.String())
 	}
 	errOut.Reset()

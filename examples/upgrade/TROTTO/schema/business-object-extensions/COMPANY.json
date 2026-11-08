@@ -1,0 +1,16 @@
+{
+  "businessObject": "/TRFIN/COMPANY",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "fields": {
+        "/TROTTO/OTTO_ID": { "readOnly": true }
+      }
+    },
+    "/TROTTO/COMPANY_CHANNELS": {
+      "parent": "/TRFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid"
+    }
+  }
+}

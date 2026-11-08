@@ -81,7 +81,7 @@ func TestClerk(t *testing.T) {
 		check{company("C1", "DE", "DELETE"), false},
 		check{map[string]string{"COMPANY_ID": "C1", "COUNTRY": "DE"}, false}, // a field without value
 	)
-	expect(t, e, "/TROTTO/SYNC", check{map[string]string{"COUNTRY": "DE", "ACTIVITY": "EXECUTE"}, false})
+	expect(t, e, "/TROTTO/MARKETPLACE", check{map[string]string{"COUNTRY": "DE", "ACTIVITY": "EXECUTE"}, false})
 	if len(e.Objects) != 1 || e.Objects["/TRFIN/COMPANY"].Grants[0].Origin.Role != "/TRFIN/COMPANY_CLERK" || e.All {
 		t.Errorf("grants: %+v", e.Objects)
 	}
@@ -94,10 +94,10 @@ func TestPrefixAndComposite(t *testing.T) {
 	s.Roles["/LOCAL/OPS"] = &model.Role{Name: "/LOCAL/OPS", Owner: model.Local, Composite: true, Roles: []string{"/TRFIN/COMPANY_CLERK", "/TROTTO/SYNC_OPERATOR"}}
 	e := authorization.Resolve(s, "anna", "ACME", day("2026-11-08"), false, []authorization.Assignment{open("a1", "/LOCAL/OPS")})
 	sync := func(country, activity string) map[string]string { return map[string]string{"COUNTRY": country, "ACTIVITY": activity} }
-	expect(t, e, "/TROTTO/SYNC", check{sync("DK", "IMPORT"), true}, check{sync("D", "EXECUTE"), true}, check{sync("", "EXECUTE"), false},
+	expect(t, e, "/TROTTO/MARKETPLACE", check{sync("DK", "IMPORT"), true}, check{sync("D", "EXECUTE"), true}, check{sync("", "EXECUTE"), false},
 		check{sync("CH", "EXECUTE"), true}, check{sync("FR", "EXECUTE"), false}, check{sync("DE", "SEND"), false})
 	expect(t, e, "/TRFIN/COMPANY", check{company("C1", "DE", "UPDATE"), true})
-	if o := e.Objects["/TROTTO/SYNC"].Grants[0].Origin; o.Role != "/TROTTO/SYNC_OPERATOR" || o.Composite != model.Some("/LOCAL/OPS") || o.Assignment != "a1" {
+	if o := e.Objects["/TROTTO/MARKETPLACE"].Grants[0].Origin; o.Role != "/TROTTO/SYNC_OPERATOR" || o.Composite != model.Some("/LOCAL/OPS") || o.Assignment != "a1" {
 		t.Errorf("origin: %+v", o)
 	}
 }
@@ -189,7 +189,7 @@ func TestCheck(t *testing.T) {
 		{"empty company", authorization.Check{Object: "/TRFIN/COMPANY", Values: company("", "DE", "READ")}, true},
 		{"missing field", authorization.Check{Object: "/TRFIN/COMPANY", Values: read}, false},
 		{"other activity", authorization.Check{Object: "/TRFIN/COMPANY", Values: company("C1", "DE", "DELETE")}, false},
-		{"other object", authorization.Check{Object: "/TROTTO/SYNC", Values: read}, false},
+		{"other object", authorization.Check{Object: "/TROTTO/MARKETPLACE", Values: read}, false},
 	} {
 		if got := e.Check(c.check); got != c.want {
 			t.Errorf("%s: %v, want %v", c.name, got, c.want)
@@ -208,7 +208,7 @@ func TestCheck(t *testing.T) {
 	if !full.Check(authorization.Check{Object: "/LATER/OBJECT"}) {
 		t.Error("all authorizations")
 	}
-	if g := e.Grants("/TRFIN/COMPANY"); len(g) != 1 || g[0].Origin.Role != "/TRFIN/COMPANY_CLERK" || e.Grants("/TROTTO/SYNC") != nil {
+	if g := e.Grants("/TRFIN/COMPANY"); len(g) != 1 || g[0].Origin.Role != "/TRFIN/COMPANY_CLERK" || e.Grants("/TROTTO/MARKETPLACE") != nil {
 		t.Errorf("grants: %+v", g)
 	}
 }

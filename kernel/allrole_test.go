@@ -342,7 +342,7 @@ func TestAllAuthorizationsLater(t *testing.T) {
 		}
 		values := map[string]string{"COMPANY_ID": "C1", "COUNTRY": "DE", "ACTIVITY": "APPROVE"}
 		e, err := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now())
-		if err != nil || !e.Allows("/TRFIN/COMPANY", values) || !e.Allows("/TROTTO/SYNC", map[string]string{"COUNTRY": "FR", "ACTIVITY": "SEND"}) {
+		if err != nil || !e.Allows("/TRFIN/COMPANY", values) || !e.Allows("/TROTTO/MARKETPLACE", map[string]string{"COUNTRY": "FR", "ACTIVITY": "SEND"}) {
 			t.Fatalf("objects installed after the assignment: %+v %v", e, err)
 		}
 		if _, err := k.Upgrade(ctx, finWithField(t, "1.1.0", true), kernel.Options{}); err != nil {

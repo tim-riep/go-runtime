@@ -130,6 +130,6 @@ func TestDataElementTypeCompatibility(t *testing.T) {
 		t.Fatalf("consistent change rejected: %v", err)
 	}
 	e = load(t)
-	e.otto.Tables[0].Fields[0].DataElement = model.Some("/TRBASE/NAME") // /TROTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRFIN/COMPANIES CHAR(10)
+	tableOf(e.otto, "/TROTTO/OTTO_CONNECTIONS").Fields[0].DataElement = model.Some("/TRBASE/NAME") // /TROTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRFIN/COMPANIES CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(80)")
 }

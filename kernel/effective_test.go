@@ -131,7 +131,7 @@ func TestAllAuthorizationsSignIn(t *testing.T) {
 			t.Fatal(err)
 		}
 		e, err := k.EffectiveAuthorizations(ctx, "anna", "ACME", time.Now())
-		if err != nil || !e.All || !e.Allows("/TROTTO/SYNC", nil) {
+		if err != nil || !e.All || !e.Allows("/TROTTO/MARKETPLACE", nil) {
 			t.Fatalf("all authorizations: %+v %v", e, err)
 		}
 		if e, _ := k.EffectiveAuthorizations(ctx, "anna", "BETA", time.Now()); e.All {

@@ -149,7 +149,7 @@ func TestRoleRules(t *testing.T) {
 	}{
 		{"namespace", []model.Role{role("/TRFIN/MINE")}, rterr.CodeName, "must start with the namespace /TRS/"},
 		{"unknown object", []model.Role{role("/TRS/X", model.Authorization{Object: "/TRS/NOPE"})}, rterr.CodeRole, "authorization object /TRS/NOPE does not exist"},
-		{"object not required", []model.Role{role("/TRS/X", model.Authorization{Object: "/TROTTO/SYNC"})}, rterr.CodeNotVisible, "/TROTTO/SYNC belongs to TROTTO, which TRS does not require"},
+		{"object not required", []model.Role{role("/TRS/X", model.Authorization{Object: "/TROTTO/MARKETPLACE"})}, rterr.CodeNotVisible, "/TROTTO/MARKETPLACE belongs to TROTTO, which TRS does not require"},
 		{"composite in composite", []model.Role{role("/TRS/A"), composite("/TRS/B", "/TRS/A"), composite("/TRS/C", "/TRS/B")}, rterr.CodeRole, "/TRS/B is a composite role"},
 		{"all authorizations", []model.Role{composite("/TRS/B", model.AllAuthorizationsRole)}, rterr.CodeReservedObject, "is no member of composite roles"},
 		{"unknown member", []model.Role{composite("/TRS/B", "/TRS/NOPE")}, rterr.CodeRole, "role /TRS/NOPE does not exist"},

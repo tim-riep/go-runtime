@@ -6,7 +6,7 @@
   },
   "authorizations": [
     {
-      "object": "/TROTTO/SYNC",
+      "object": "/TROTTO/MARKETPLACE",
       "fields": {
         "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
         "ACTIVITY": [{ "value": "EXECUTE" }, { "value": "IMPORT" }]

@@ -1,0 +1,32 @@
+{
+  "businessObject": "/TRFIN/COMPANY",
+  "behaviorClass": "/TROTTO/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "fields": {
+        "/TROTTO/OTTO_ID": { "readOnly": true }
+      },
+      "determinations": [
+        { "name": "/TROTTO/RESERVE_ID", "when": "save", "on": ["create"] }
+      ],
+      "validations": [
+        { "name": "/TROTTO/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }
+      ],
+      "actions": [
+        {
+          "name": "/TROTTO/SYNC",
+          "instance": true,
+          "result": "self",
+          "activity": "EXECUTE",
+          "authorization": { "object": "/TROTTO/MARKETPLACE", "fields": { "COUNTRY": "COUNTRY" } }
+        }
+      ]
+    },
+    "/TROTTO/COMPANY_CHANNELS": {
+      "parent": "/TRFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid"
+    }
+  }
+}

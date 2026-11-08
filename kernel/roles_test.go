@@ -154,7 +154,7 @@ func TestRoleLifecycle(t *testing.T) {
 		}
 		importRole(t, k, `{ "name": "/LOCAL/OPERATIONS", "texts": { "en": { "label": "Operations" } }, "roles": ["/LOCAL/CLERK", "/TRFIN/COMPANY_CLERK", "/TROTTO/SYNC_OPERATOR"] }`)
 		importRole(t, k, `{ "name": "/LOCAL/OTTO", "texts": { "en": { "label": "OTTO" } }, "authorizations": [
-			{ "object": "/TROTTO/SYNC", "fields": { "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } },
+			{ "object": "/TROTTO/MARKETPLACE", "fields": { "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } },
 			{ "object": "/TRFIN/STATUS_SCOPE", "fields": { "STATUS": [{ "value": "ACTIVE" }], "COUNTRY": [{ "pattern": "*" }] } }] }`)
 		if err := roles.Create(ctx, &model.Role{Name: "/LOCAL/NESTED", Texts: map[string]model.Label{"en": {Label: "x"}}, Composite: true, Roles: []string{"/LOCAL/OPERATIONS"}},
 			kernel.RoleOptions{}); err == nil || !strings.Contains(err.Error(), "/LOCAL/OPERATIONS is a composite role") {

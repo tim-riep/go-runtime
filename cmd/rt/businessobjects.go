@@ -28,7 +28,7 @@ import (
 // businessObject runs the commands on business objects.
 func (c *cli) businessObject(ctx context.Context, k *kernel.Kernel, args []string) int {
 	usage := func() int {
-		fmt.Fprintln(c.stderr, "usage: rt business-object list [package] | show <name>")
+		fmt.Fprintln(c.stderr, "usage: rt business-object list [package] [--data-class C] | show <name> [--base]")
 		return exitUsage
 	}
 	switch {
@@ -37,7 +37,7 @@ func (c *cli) businessObject(ctx context.Context, k *kernel.Kernel, args []strin
 		if len(args) == 2 {
 			pkg = model.PackageID(args[1])
 		}
-		list, err := k.BusinessObjects(ctx, pkg)
+		list, err := k.BusinessObjects(ctx, reflector.BusinessObjectFilter{Package: pkg, DataClass: model.DataClass(c.dataClass)})
 		if err != nil {
 			return c.fail(err)
 		}
@@ -46,15 +46,23 @@ func (c *cli) businessObject(ctx context.Context, k *kernel.Kernel, args []strin
 			return exitOK
 		}
 		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tPACKAGE\tDATA CLASS\tROOT\tENTITIES\tBEHAVIOR\tDESCRIPTION")
+		fmt.Fprintln(w, "NAME\tPACKAGE\tDATA CLASS\tROOT\tENTITIES\tBEHAVIOR\tEXTENDED BY\tDESCRIPTION")
 		for _, b := range list {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\t%s\n", b.Name, b.Package, b.DataClass, b.Root.Table, countEntities(b.Root), b.BehaviorClass.Or("-"),
-				reflector.In(b.Description, c.lang).Or(""))
+			var by []model.PackageID
+			for _, x := range b.Extensions {
+				by = append(by, x.Package)
+			}
+			ext := joinIDs(by)
+			if ext == "" {
+				ext = "-"
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", b.Name, b.Package, b.DataClass, b.Root.Table, countEntities(b.Root), b.BehaviorClass.Or("-"),
+				ext, reflector.In(b.Description, c.lang).Or(""))
 		}
 		w.Flush()
 		return exitOK
 	case len(args) == 2 && args[0] == "show":
-		d, err := k.BusinessObject(ctx, args[1])
+		d, err := k.BusinessObject(ctx, args[1], kernel.BusinessObjectOptions{Base: c.base})
 		if err != nil {
 			return c.fail(err)
 		}
@@ -82,7 +90,10 @@ func (c *cli) printBusinessObject(d *kernel.BusinessObjectDetail) {
 	fmt.Fprintf(out, "  description: %s\n", reflector.In(d.Description, c.lang).Or("-"))
 	fmt.Fprintf(out, "  data class: %s\n", d.DataClass)
 	fmt.Fprintf(out, "  behavior class: %s\n", d.BehaviorClass.Or("-"))
-	c.printEntity(d.Root, "  ")
+	for _, x := range d.Extensions {
+		fmt.Fprintf(out, "  extended by %s, behavior class %s\n", x.Package, x.BehaviorClass.Or("-"))
+	}
+	c.printEntity(d.Root, "  ", d.Package)
 	if len(d.CodeUses) == 0 {
 		fmt.Fprintln(out, "  not used by code")
 	}
@@ -95,13 +106,22 @@ func (c *cli) printBusinessObject(d *kernel.BusinessObjectDetail) {
 	}
 }
 
-func (c *cli) printEntity(e *reflector.Entity, indent string) {
+// from names the package of a part that an extension adds.
+func from(origin, owner model.PackageID) string {
+	if origin == "" || origin == owner {
+		return ""
+	}
+	return "  (" + string(origin) + ")"
+}
+
+func (c *cli) printEntity(e *reflector.Entity, indent string, owner model.PackageID) {
 	out := c.stdout
 	ops := make([]string, len(e.Operations))
 	for i, op := range e.Operations {
 		ops[i] = string(op)
 	}
-	fmt.Fprintf(out, "%sentity %s  key (%s)  operations %s  numbering %s\n", indent, e.Table, strings.Join(e.Key, ", "), strings.Join(ops, ", "), e.Numbering)
+	fmt.Fprintf(out, "%sentity %s  key (%s)  operations %s  numbering %s%s\n", indent, e.Table, strings.Join(e.Key, ", "), strings.Join(ops, ", "), e.Numbering,
+		from(e.Origin, owner))
 	in := indent + "  "
 	if p := e.ParentKey; p != nil {
 		var pairs []string
@@ -133,21 +153,29 @@ func (c *cli) printEntity(e *reflector.Entity, indent string) {
 				label = t.Medium
 			}
 		}
-		fmt.Fprintf(out, "%sfield %s  %s  %s  %s\n", in, f.Name, typ, label, strings.Join(props, ", "))
+		by := ""
+		if len(f.PropertiesBy) > 0 {
+			by = "  (" + joinIDs(f.PropertiesBy) + ")"
+		}
+		fmt.Fprintf(out, "%sfield %s  %s  %s  %s%s\n", in, f.Name, typ, label, strings.Join(props, ", "), by)
 	}
 	for _, d := range e.Determinations {
-		fmt.Fprintf(out, "%sdetermination %s on %s%s\n", in, d.Name, d.When, trigger(d.Trigger))
+		fmt.Fprintf(out, "%sdetermination %s on %s%s%s\n", in, d.Name, d.When, trigger(d.Trigger), from(d.Origin, owner))
 	}
 	for _, v := range e.Validations {
-		fmt.Fprintf(out, "%svalidation %s%s\n", in, v.Name, trigger(v.Trigger))
+		fmt.Fprintf(out, "%svalidation %s%s%s\n", in, v.Name, trigger(v.Trigger), from(v.Origin, owner))
 	}
 	for _, a := range e.Actions {
 		kind := "instance"
 		if !a.Instance {
 			kind = "static"
 		}
-		fmt.Fprintf(out, "%saction %s  %s  parameter %s  result %s  modifies %v  activity %s\n", in, a.Name, kind, a.Parameter.Or("-"),
-			a.Result.Or("-"), a.Modifies, a.Activity.Or("-"))
+		object := ""
+		if au := a.Authorization; au != nil {
+			object = "  authorization " + au.Object
+		}
+		fmt.Fprintf(out, "%saction %s  %s  parameter %s  result %s  modifies %v  activity %s%s%s\n", in, a.Name, kind, a.Parameter.Or("-"),
+			a.Result.Or("-"), a.Modifies, a.Activity.Or("-"), object, from(a.Origin, owner))
 	}
 	switch src, _ := e.AuthorizationSource.Get(); src {
 	case model.AuthorizationInherited:
@@ -158,7 +186,7 @@ func (c *cli) printEntity(e *reflector.Entity, indent string) {
 		fmt.Fprintf(out, "%sauthorization %s\n", in, e.Authorization.Object)
 	}
 	for _, ch := range e.Children {
-		c.printEntity(ch, in)
+		c.printEntity(ch, in, owner)
 	}
 }
 

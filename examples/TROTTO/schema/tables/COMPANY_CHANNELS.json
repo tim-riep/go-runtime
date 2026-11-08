@@ -1,0 +1,37 @@
+{
+  "name": "/TROTTO/COMPANY_CHANNELS",
+  "description": "Sales channels of a company on the OTTO marketplace",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "CHANNEL_ID",
+      "domain": "/TRBASE/GUID"
+    },
+    {
+      "name": "COMPANY_ID",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "CHANNEL",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "CHANNEL_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}
