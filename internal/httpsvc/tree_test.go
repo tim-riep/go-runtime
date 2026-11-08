@@ -65,7 +65,7 @@ func TestMatch(t *testing.T) {
 	if n := tree.Node("/trfin/companies/export"); n == nil || !n.Implicit() || len(n.Handlers()) != 0 {
 		t.Errorf("implicit node: %+v", n)
 	}
-	if !slices.Equal(tree.Paths(), []string{"/trbase", "/trbase/ping", "/trfin", "/trfin/companies", "/trfin/companies/export", "/trfin/companies/export/csv"}) {
+	if !slices.Equal(tree.Paths(), []string{"/rt", "/rt/odata", "/trbase", "/trbase/ping", "/trfin", "/trfin/companies", "/trfin/companies/export", "/trfin/companies/export/csv"}) {
 		t.Errorf("paths: %v", tree.Paths())
 	}
 }

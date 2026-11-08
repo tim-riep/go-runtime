@@ -16,13 +16,16 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/reflector"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // service runs the commands on services.
@@ -156,4 +159,55 @@ func yesNo(b bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+// nodeFlags are the flags of rt http configure; empty ones keep the
+// setting.
+type nodeFlags struct {
+	authentication, tenantSources, languageSources                      string
+	maxBody, maxResponse, timeout, budget, maxPageSize, metadataTimeout string
+	reset                                                               bool
+}
+
+func (n *nodeFlags) register(fs *flag.FlagSet) {
+	fs.StringVar(&n.authentication, "authentication", "", "http configure: the methods of sign-in, basic and token, separated by commas")
+	fs.StringVar(&n.tenantSources, "tenant-sources", "", "http configure: where the tenant comes from: header, query, user")
+	fs.StringVar(&n.languageSources, "language-sources", "", "http configure: where the language comes from: query, header, user")
+	fs.StringVar(&n.maxBody, "max-body-size", "", "http configure: the largest body of a request in bytes")
+	fs.StringVar(&n.maxResponse, "max-response-size", "", "http configure: the largest response in bytes")
+	fs.StringVar(&n.timeout, "timeout", "", "http configure: the time limit of a request in seconds")
+	fs.StringVar(&n.budget, "budget", "", "http configure: the instruction budget of a request")
+	fs.StringVar(&n.maxPageSize, "max-page-size", "", "http configure: the most entities a page of OData has")
+	fs.StringVar(&n.metadataTimeout, "metadata-timeout", "", "http configure: the time limit of extensions of the metadata of OData in seconds")
+	fs.BoolVar(&n.reset, "reset", false, "http configure: return to the defaults before applying the other settings")
+}
+
+// change returns the change the flags describe.
+func (n *nodeFlags) change() (kernel.KernelNodeChange, error) {
+	c := kernel.KernelNodeChange{Reset: n.reset}
+	lists := []struct {
+		flag string
+		to   *model.Optional[[]string]
+	}{{n.authentication, &c.Authentication}, {n.tenantSources, &c.TenantSources}, {n.languageSources, &c.LanguageSources}}
+	for _, l := range lists {
+		if l.flag != "" {
+			*l.to = model.Some(strings.Split(l.flag, ","))
+		}
+	}
+	numbers := []struct {
+		name, flag string
+		to         *model.Optional[int64]
+	}{{"max-body-size", n.maxBody, &c.MaxBodySize}, {"max-response-size", n.maxResponse, &c.MaxResponseSize}, {"timeout", n.timeout, &c.TimeoutSeconds},
+		{"budget", n.budget, &c.Budget}, {"max-page-size", n.maxPageSize, &c.MaxPageSize}, {"metadata-timeout", n.metadataTimeout, &c.MetadataTimeoutSeconds}}
+	for _, x := range numbers {
+		if x.flag == "" {
+			continue
+		}
+		v, err := strconv.ParseInt(x.flag, 10, 64)
+		if err != nil {
+			return c, &rterr.InvalidArgument{Argument: "--" + x.name, Message: "not a number: " + x.flag}
+		}
+		*x.to = model.Some(v)
+	}
+	return c, nil
 }

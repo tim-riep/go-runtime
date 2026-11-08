@@ -155,6 +155,11 @@ Commands:
                            show a business object with its extensions, entities, fields,
                            behavior, authorization and the code that works on it; the
                            package of every part that an extension adds is in parentheses
+  http configure <path> [--authentication basic,token] [--tenant-sources header,query,user]
+       [--language-sources query,header,user] [--max-body-size N] [--max-response-size N]
+       [--timeout S] [--budget N] [--max-page-size N] [--metadata-timeout S] [--reset]
+                           change the settings of a service node of the kernel such as
+                           /rt/odata; nodes of packages take theirs from the package
   service list [package]   list the services of a package or of all packages with their path
                            and activation
   service show <name>      show a service with its entity sets, the public names of fields,
@@ -224,6 +229,7 @@ type cli struct {
 	check          bool
 	dataClass      string
 	base           bool
+	node           nodeFlags
 	minutes        int
 	maxEntries     int
 	allowBranch    bool
@@ -269,6 +275,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	c.fs.StringVar(&c.dataClass, "data-class", "", "business-object list: only business objects of a data class: application, configuration or runtimeConfiguration")
 	c.fs.BoolVar(&c.base, "base", false, "business-object show: without the extensions of other packages")
+	c.node.register(c.fs)
 	c.fs.IntVar(&c.minutes, "minutes", 30, "trace authorizations start: how long the trace runs")
 	c.fs.IntVar(&c.maxEntries, "max", 10_000, "trace authorizations start: the most checks it records")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")
@@ -1305,7 +1312,7 @@ func (c *cli) effects(ctx context.Context, k *kernel.Kernel) int {
 // http manages the service nodes.
 func (c *cli) http(ctx context.Context, k *kernel.Kernel, args []string) int {
 	usage := func() int {
-		fmt.Fprintln(c.stderr, "usage: rt http list [package] | show <path> | activate <path> | deactivate <path>")
+		fmt.Fprintln(c.stderr, "usage: rt http list [package] | show <path> | activate <path> | deactivate <path> | configure <path of a node of the kernel> [settings]")
 		return exitUsage
 	}
 	if len(args) == 0 {
@@ -1341,6 +1348,16 @@ func (c *cli) http(ctx context.Context, k *kernel.Kernel, args []string) int {
 		}
 		w.Flush()
 		return exitOK
+	case args[0] == "configure" && len(args) == 2:
+		change, err := c.node.change()
+		if err != nil {
+			return c.fail(err)
+		}
+		if err := k.ConfigureHTTPService(ctx, args[1], change, cliUser); err != nil {
+			return c.fail(err)
+		}
+		fmt.Fprintf(c.stdout, "Settings of %s changed.\n", args[1])
+		return exitOK
 	case args[0] == "show" && len(args) == 2:
 		n, err := k.HTTPService(ctx, args[1])
 		if err != nil {
@@ -1363,6 +1380,9 @@ func (c *cli) http(ctx context.Context, k *kernel.Kernel, args []string) int {
 		fmt.Fprintf(c.stdout, "  authentication: %s, anonymous: %v, anonymous tenant: %s\n", strings.Join(s.Authentication, ", "), s.Anonymous, s.AnonymousTenant.Or("-"))
 		fmt.Fprintf(c.stdout, "  tenant from: %s, language from: %s\n", strings.Join(s.TenantSources, ", "), strings.Join(s.LanguageSources, ", "))
 		fmt.Fprintf(c.stdout, "  max body: %d bytes, max response: %d bytes, timeout: %s, budget: %d\n", s.MaxBodySize, s.MaxResponseSize, s.Timeout, s.Budget)
+		if o := n.OData; o != nil {
+			fmt.Fprintf(c.stdout, "  max page size: %d, timeout of the metadata: %s\n", o.MaxPageSize, o.MetadataTimeout)
+		}
 		for i, h := range n.Handlers {
 			fmt.Fprintf(c.stdout, "  handler %d: %s", i+1, h.Class)
 			for _, p := range h.Parameters {

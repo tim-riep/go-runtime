@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/SERVICE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Service",
+      "medium": "Service",
+      "long": "Name of the service",
+      "heading": "Service"
+    },
+    "de": {
+      "short": "Dienst",
+      "medium": "Dienst",
+      "long": "Name des Dienstes",
+      "heading": "Dienst"
+    }
+  }
+}

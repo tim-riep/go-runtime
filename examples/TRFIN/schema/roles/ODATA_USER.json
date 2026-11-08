@@ -1,0 +1,25 @@
+{
+  "name": "/TRFIN/ODATA_USER",
+  "texts": {
+    "en": { "label": "OData of companies", "description": "Starts the service of companies below /rt/odata; what a request may read or change comes from the other roles" },
+    "de": { "label": "OData der Firmen", "description": "Startet den Dienst der Firmen unter /rt/odata; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [{ "value": "RT" }],
+        "SERVICE_PATH": [{ "value": "/rt/odata" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [{ "value": "TRFIN" }],
+        "SERVICE_NAME": [{ "value": "/TRFIN/COMPANY_SERVICE" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }]
+      }
+    }
+  ]
+}

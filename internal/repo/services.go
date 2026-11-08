@@ -235,3 +235,56 @@ func (r *Repo) ReplaceServiceStates(ctx context.Context, q dialect.Querier, stat
 	}
 	return nil
 }
+
+// TKernelNodeSettings holds the settings of the service nodes of the
+// kernel.
+const TKernelNodeSettings = model.KernelNamespace + "KERNEL_NODE_SETTINGS"
+
+// KernelNodeSettings are the settings of a service node of the kernel
+// that operators changed; absent values take the defaults.
+type KernelNodeSettings struct {
+	Path     string
+	Settings model.HTTPSettings
+	// MaxPageSize and MetadataTimeoutSeconds apply to the node of OData.
+	MaxPageSize            model.Optional[int64]
+	MetadataTimeoutSeconds model.Optional[int64]
+	ChangedAt              time.Time
+	ChangedBy              model.Optional[string]
+}
+
+// KernelNodeSettings reads the settings of the service nodes of the
+// kernel by path.
+func (r *Repo) KernelNodeSettings(ctx context.Context, q dialect.Querier) (map[string]KernelNodeSettings, error) {
+	out := map[string]KernelNodeSettings{}
+	if !r.has(TKernelNodeSettings, "") {
+		return out, nil
+	}
+	rows, err := r.selectRows(ctx, q, TKernelNodeSettings, []string{"SERVICE_PATH", "AUTHENTICATION", "TENANT_SOURCES", "LANGUAGE_SOURCES", "MAX_BODY_SIZE",
+		"MAX_RESPONSE_SIZE", "TIMEOUT_SECONDS", "BUDGET", "MAX_PAGE_SIZE", "METADATA_TIMEOUT_SECONDS", "CHANGED_AT", "CHANGED_BY"}, "SERVICE_PATH")
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range rows {
+		k := KernelNodeSettings{Path: str(x["SERVICE_PATH"]), Settings: model.HTTPSettings{Authentication: list(x["AUTHENTICATION"]),
+			TenantSources: list(x["TENANT_SOURCES"]), LanguageSources: list(x["LANGUAGE_SOURCES"]), MaxBodySize: optInt64(x["MAX_BODY_SIZE"]),
+			MaxResponseSize: optInt64(x["MAX_RESPONSE_SIZE"]), TimeoutSeconds: optInt64(x["TIMEOUT_SECONDS"]), Budget: optInt64(x["BUDGET"])},
+			MaxPageSize: optInt64(x["MAX_PAGE_SIZE"]), MetadataTimeoutSeconds: optInt64(x["METADATA_TIMEOUT_SECONDS"]), ChangedAt: tm(x["CHANGED_AT"]),
+			ChangedBy: opt(x["CHANGED_BY"])}
+		out[k.Path] = k
+	}
+	return out, nil
+}
+
+// WriteKernelNodeSettings replaces the settings of a service node of the
+// kernel.
+func (r *Repo) WriteKernelNodeSettings(ctx context.Context, q dialect.Querier, k KernelNodeSettings) error {
+	if _, err := q.ExecContext(ctx, "DELETE FROM "+r.d.QuoteIdent(TKernelNodeSettings)+" WHERE "+r.d.QuoteIdent("SERVICE_PATH")+" = "+r.d.Placeholder(1), k.Path); err != nil {
+		return err
+	}
+	set := k.Settings
+	return r.insert(ctx, q, TKernelNodeSettings, row{"SERVICE_PATH": k.Path, "AUTHENTICATION": listValue(set.Authentication),
+		"TENANT_SOURCES": listValue(set.TenantSources), "LANGUAGE_SOURCES": listValue(set.LanguageSources), "MAX_BODY_SIZE": optValue(set.MaxBodySize),
+		"MAX_RESPONSE_SIZE": optValue(set.MaxResponseSize), "TIMEOUT_SECONDS": optValue(set.TimeoutSeconds), "BUDGET": optValue(set.Budget),
+		"MAX_PAGE_SIZE": optValue(k.MaxPageSize), "METADATA_TIMEOUT_SECONDS": optValue(k.MetadataTimeoutSeconds), "CHANGED_AT": k.ChangedAt,
+		"CHANGED_BY": val(k.ChangedBy)})
+}

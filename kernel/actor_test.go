@@ -79,7 +79,7 @@ func TestActorChecks(t *testing.T) {
 		if list, err := roles.Assignments(ctx, "", ""); err != nil || len(list) != 1 || list[0].ID != a.ID {
 			t.Errorf("assignments: %+v %v", list, err)
 		}
-		if list, err := roles.List(ctx); err != nil || len(list) != 3 || list[0].Name != "/TRFIN/COMPANY_ADMIN" {
+		if list, err := roles.List(ctx); err != nil || len(list) != 4 || list[0].Name != "/TRFIN/COMPANY_ADMIN" {
 			t.Errorf("roles: %+v %v", list, err)
 		}
 		_, err = roles.Get(ctx, "/LOCAL/USER_DESK")

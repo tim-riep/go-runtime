@@ -80,14 +80,36 @@ type Tree struct {
 	nodes map[string]*Node // by full path
 }
 
+// ODataHandler is the class of the handler of the kernel that serves all
+// services over OData; the kernel runs it in Go.
+const ODataHandler = model.KernelNamespace + "ODATA_HANDLER"
+
+// KernelNodes are the service nodes of the kernel below /rt. No package
+// owns them, so they cannot be uninstalled; they are active after
+// initialization. Their settings are maintained during operation, and
+// they never allow anonymous access.
+var KernelNodes = []*model.HTTPService{{
+	Path: "odata", Owner: model.Kernel, File: "-",
+	Texts: map[string]model.Label{
+		model.DefaultLanguage: {Label: "OData", Description: model.Some("Services of all packages over OData")},
+		"de":                  {Label: "OData", Description: model.Some("Dienste aller Pakete über OData")},
+	},
+	Handlers: []model.HTTPHandlerRef{{Class: ODataHandler}},
+	Settings: model.HTTPSettings{Anonymous: model.Some(false)},
+}}
+
 // Build builds the tree of the service nodes of a schema. Every installed
-// package has a root node, also without service nodes.
+// package has a root node, also without service nodes, and the kernel has
+// the root /rt with its own nodes.
 func Build(s *model.Schema) *Tree {
 	t := &Tree{roots: map[string]*Node{}, nodes: map[string]*Node{}}
-	for _, id := range s.PackageIDs() {
+	for _, id := range append([]model.PackageID{model.Kernel}, s.PackageIDs()...) {
 		root := &Node{Path: model.HTTPPackagePath(id), Package: id, Children: map[string]*Node{}}
 		t.roots[strings.TrimPrefix(root.Path, "/")] = root
 		t.nodes[root.Path] = root
+	}
+	for _, svc := range KernelNodes {
+		t.ensure(model.Kernel, svc.FullPath()).Service = svc
 	}
 	paths := make([]string, 0, len(s.HTTPServices))
 	for p := range s.HTTPServices {
@@ -131,42 +153,47 @@ func (t *Tree) ensure(owner model.PackageID, path string) *Node {
 func resolve(n *Node, inherited Settings) {
 	s := inherited
 	if n.Service != nil {
-		own := n.Service.Settings
-		if v, ok := own.Authentication.Get(); ok {
-			s.Authentication = v
-		}
-		if v, ok := own.Anonymous.Get(); ok {
-			s.Anonymous = v
-		}
-		if own.AnonymousTenant.Valid() {
-			s.AnonymousTenant = own.AnonymousTenant
-		}
-		if v, ok := own.TenantSources.Get(); ok {
-			s.TenantSources = v
-		}
-		if v, ok := own.LanguageSources.Get(); ok {
-			s.LanguageSources = v
-		}
-		if v, ok := own.MaxBodySize.Get(); ok {
-			s.MaxBodySize = v
-		}
-		if v, ok := own.MaxResponseSize.Get(); ok {
-			s.MaxResponseSize = v
-		}
-		if v, ok := own.TimeoutSeconds.Get(); ok {
-			s.Timeout = time.Duration(v) * time.Second
-		}
-		if v, ok := own.Budget.Get(); ok {
-			s.Budget = v
-		}
-		if own.Authorization.Set {
-			s.Authorization = own.Authorization.Check
-		}
+		s = Override(s, n.Service.Settings)
 	}
 	n.Settings = s
 	for _, c := range n.Children {
 		resolve(c, s)
 	}
+}
+
+// Override returns settings with the values that own sets.
+func Override(s Settings, own model.HTTPSettings) Settings {
+	if v, ok := own.Authentication.Get(); ok {
+		s.Authentication = v
+	}
+	if v, ok := own.Anonymous.Get(); ok {
+		s.Anonymous = v
+	}
+	if own.AnonymousTenant.Valid() {
+		s.AnonymousTenant = own.AnonymousTenant
+	}
+	if v, ok := own.TenantSources.Get(); ok {
+		s.TenantSources = v
+	}
+	if v, ok := own.LanguageSources.Get(); ok {
+		s.LanguageSources = v
+	}
+	if v, ok := own.MaxBodySize.Get(); ok {
+		s.MaxBodySize = v
+	}
+	if v, ok := own.MaxResponseSize.Get(); ok {
+		s.MaxResponseSize = v
+	}
+	if v, ok := own.TimeoutSeconds.Get(); ok {
+		s.Timeout = time.Duration(v) * time.Second
+	}
+	if v, ok := own.Budget.Get(); ok {
+		s.Budget = v
+	}
+	if own.Authorization.Set {
+		s.Authorization = own.Authorization.Check
+	}
+	return s
 }
 
 // Node returns the node of a full path, or nil.
@@ -256,13 +283,17 @@ func Deactivate(n *Node, states map[string]State) map[string]State {
 }
 
 // Sync returns the states for the nodes of a tree: existing states stay,
-// new nodes are new, and states of nodes that no longer exist are gone.
+// new nodes of packages are new, new nodes of the kernel active, and
+// states of nodes that no longer exist are gone.
 func Sync(t *Tree, states map[string]State) map[string]State {
 	out := map[string]State{}
-	for p := range t.nodes {
-		if s, ok := states[p]; ok {
+	for p, n := range t.nodes {
+		switch s, ok := states[p]; {
+		case ok:
 			out[p] = s
-		} else {
+		case n.Package == model.Kernel:
+			out[p] = StateActive
+		default:
 			out[p] = StateNew
 		}
 	}

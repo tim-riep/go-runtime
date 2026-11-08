@@ -1,0 +1,29 @@
+{
+  "name": "/TRBASE/ODATA_SERVICE",
+  "texts": {
+    "en": {
+      "label": "OData services",
+      "description": "Starting services below /rt/odata, by package and service"
+    },
+    "de": {
+      "label": "OData-Dienste",
+      "description": "Dienste unter /rt/odata starten, nach Paket und Dienst"
+    }
+  },
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID"
+    },
+    {
+      "name": "SERVICE_NAME",
+      "dataElement": "/TRBASE/SERVICE_NAME"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "EXECUTE"
+  ]
+}

@@ -26,6 +26,7 @@ import (
 	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/internal/auth"
 	"github.com/tim-riep/go-runtime/internal/httpsvc"
+	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/kernelpkg/natives"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
@@ -37,6 +38,10 @@ import (
 type httpState struct {
 	n      int64
 	states map[string]httpsvc.State
+	// services are the active services; kernel the settings operators
+	// gave the service nodes of the kernel.
+	services map[string]bool
+	kernel   map[string]repo.KernelNodeSettings
 }
 
 // HTTPHandler returns the http.Handler of the http services of the kernel.
@@ -53,21 +58,47 @@ func (g *generation) treeOf() *httpsvc.Tree {
 	return g.tree
 }
 
-func (k *Kernel) activation(ctx context.Context) (map[string]httpsvc.State, error) {
+// activation returns the activation of service nodes and services and the
+// settings of the nodes of the kernel, cached until the next change.
+func (k *Kernel) activation(ctx context.Context) (*httpState, error) {
 	n, err := k.repo.HTTPGeneration(ctx, k.db)
 	if err != nil {
 		return nil, err
 	}
 	if s := k.httpStates.Load(); s != nil && s.n == n {
-		return s.states, nil
+		return s, nil
 	}
 	stored, err := k.repo.HTTPStates(ctx, k.db)
 	if err != nil {
 		return nil, err
 	}
-	s := &httpState{n: n, states: states(stored)}
+	svcs, err := k.repo.ServiceStates(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	kernel, err := k.repo.KernelNodeSettings(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	s := &httpState{n: n, states: states(stored), services: map[string]bool{}, kernel: kernel}
+	for name, st := range svcs {
+		s.services[name] = st.Active
+	}
 	k.httpStates.Store(s)
-	return s.states, nil
+	return s, nil
+}
+
+// settingsOf returns the settings of a node: for nodes of the kernel with
+// the changes of operators, never anonymous.
+func (s *httpState) settingsOf(n *httpsvc.Node) httpsvc.Settings {
+	set := n.Settings
+	if n.Package == model.Kernel {
+		if ks, ok := s.kernel[n.Path]; ok {
+			set = httpsvc.Override(set, ks.Settings)
+		}
+		set.Anonymous, set.AnonymousTenant = false, model.None[string]()
+	}
+	return set
 }
 
 // accessEntry is the line of the access log of a request.
@@ -122,12 +153,12 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	if node != nil {
 		lang = httpsvc.Language(r, node.Settings, nil, langs)
 	}
-	if node == nil || !httpsvc.Reachable(node, st) || len(node.Handlers()) == 0 {
+	if node == nil || !httpsvc.Reachable(node, st.states) || len(node.Handlers()) == 0 {
 		fail(http.StatusNotFound, httpsvc.CodeNotFound)
 		return
 	}
 	entry.node = node.Path
-	set := node.Settings
+	set := st.settingsOf(node)
 
 	user, err := k.Authenticate(ctx, r, set.Authentication)
 	if err != nil && !errors.Is(err, auth.ErrInvalid) {
@@ -173,6 +204,11 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if node.Package == model.Kernel {
+		entry.handler = node.Handlers()[0].Class
+		k.serveKernelNode(w, r, &kernelRequest{g: g, st: st, node: node, rest: rest, set: set, user: user, tenant: tenant, lang: lang, entry: entry})
+		return
+	}
 	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, Package: node.Package, MaxBody: set.MaxBodySize}
 	resp := natives.NewHTTPResponse(set.MaxResponseSize)
 	handled := false

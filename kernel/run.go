@@ -213,6 +213,10 @@ type generation struct {
 	// when an execution changes them.
 	behaviors     *behaviorRegistry
 	behaviorsOnce sync.Once
+	// odata are the models of the services, built when a request needs
+	// them.
+	odata     *odataModels
+	odataOnce sync.Once
 }
 
 // generation returns the code of the current generation. An execution
