@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
@@ -153,5 +154,48 @@ func TestMigrateByteOrder(t *testing.T) {
 		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("data lost: %v", v)
 		}
+	})
+}
+
+// TestMigrateKeepsCode migrates a database with code of kernel and example
+// packages from version 14: the migration compiles all packages again, so
+// that every native method is declared and the code runs.
+func TestMigrateKeepsCode(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		k.SetTargetVersion(14)
+		withData(t, k)
+		programs := func() int { t.Helper(); return count(t, k, "/RT/BYTECODE") }
+		before := programs()
+		if before < 3 {
+			t.Fatalf("%d programs before the migration", before)
+		}
+
+		// The kernel packages stay as they are, so that no upgrade of
+		// theirs compiles the code again.
+		k.MigrateKeepingKernelPackages(kernelschema.Latest())
+		p, err := k.Init(ctx, kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if change(p, plan.CompilePackage, "TRFIN") == nil || !p.Executed {
+			t.Fatal("nothing migrated")
+		}
+		if n := programs(); n != before {
+			t.Errorf("%d programs after the migration, %d before", n, before)
+		}
+		natives, err := k.Natives(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, n := range natives {
+			if !n.Declared {
+				t.Errorf("%s is not declared after the migration", n.Key)
+			}
+		}
+		if got := mustCall(t, k, tenantA, "/TRFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme GmbH"`) {
+			t.Errorf("code after the migration: %s", got)
+		}
+		consistent(t, k)
 	})
 }

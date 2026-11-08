@@ -416,25 +416,33 @@ func (k *Kernel) recompileOutdated(ctx context.Context) error {
 		return nil
 	}
 	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
-		s, err := k.repo.Load(ctx, tx)
-		if err != nil {
-			return err
-		}
-		// Old code cannot be decoded; everything is compiled from the sources.
-		if err := k.repo.ReplaceCode(ctx, tx, s.PackageIDs(), nil); err != nil {
-			return err
-		}
-		reasons := map[model.PackageID]string{}
-		for id := range s.Sources {
-			reasons[id] = "bytecode format changed"
-		}
-		now := k.timestamp()
-		c, _, err := k.compileSet(ctx, tx, s, reasons, now)
-		if err != nil {
-			return err
-		}
-		return k.saveCode(ctx, tx, c, now)
+		_, err := k.recompileAll(ctx, tx, "bytecode format changed")
+		return err
 	})
+}
+
+// recompileAll compiles all installed packages from their stored sources
+// and stores their code in a new generation: when old code cannot be
+// decoded, and after a kernel migration, which rewrites the repository
+// without the code. It returns the steps of compilation.
+func (k *Kernel) recompileAll(ctx context.Context, q dialect.Querier, reason string) ([]plan.Change, error) {
+	s, err := k.repo.Load(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	if err := k.repo.ReplaceCode(ctx, q, s.PackageIDs(), nil); err != nil {
+		return nil, err
+	}
+	reasons := map[model.PackageID]string{}
+	for id := range s.Sources {
+		reasons[id] = reason
+	}
+	now := k.timestamp()
+	c, changes, err := k.compileSet(ctx, q, s, reasons, now)
+	if err != nil {
+		return nil, err
+	}
+	return changes, k.saveCode(ctx, q, c, now)
 }
 
 // codeReferences returns what the code of a package uses and includes.

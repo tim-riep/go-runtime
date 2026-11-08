@@ -373,6 +373,14 @@ func (k *Kernel) Init(ctx context.Context, opts Options) (*plan.Plan, error) {
 				return err
 			}
 		}
+		// The repository was rewritten without the code of the packages.
+		if version > 0 && k.repo.HasCode() {
+			changes, err := k.recompileAll(ctx, q, fmt.Sprintf("kernel migrated to version %d", latest))
+			if err != nil {
+				return fmt.Errorf("migration to kernel version %d: %w", latest, err)
+			}
+			p.Changes = append(p.Changes, changes...)
+		}
 		executed = true
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}

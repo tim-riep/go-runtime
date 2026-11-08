@@ -56,6 +56,14 @@ func (k *Kernel) SetTargetVersion(v int) {
 	}
 }
 
+// MigrateKeepingKernelPackages makes the kernel work with version v and
+// keeps its kernel packages as they are, so that a migration upgrades none
+// of them.
+func (k *Kernel) MigrateKeepingKernelPackages(v int) {
+	k.target = v
+	k.repo = k.repo.At(v)
+}
+
 // fullKernelPkgs are the kernel packages of kernels that work with a
 // version before 16.
 var (
