@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
+	"time"
 )
 
 // Code classifies a validation problem.
@@ -558,4 +559,34 @@ func (e *UnsafeArchive) Error() string {
 		return fmt.Sprintf("archive %s is rejected: %s", e.Archive, e.Reason)
 	}
 	return fmt.Sprintf("archive %s is rejected: entry %q %s", e.Archive, e.Entry, e.Reason)
+}
+
+// RateLimited reports that a package source refuses requests until Reset.
+type RateLimited struct {
+	Host  string
+	Reset time.Time
+}
+
+func (e *RateLimited) Error() string {
+	return fmt.Sprintf("the rate limit of %s is reached until %s; set a token (RT_GITHUB_TOKEN) for a higher limit", e.Host, e.Reset.UTC().Format(time.RFC3339))
+}
+
+// SourceError reports a failed request to a package source. It names the
+// method, the path and the status, never credentials.
+type SourceError struct {
+	Method string
+	URL    string // without query
+	Status int    // 0 for network errors
+	Detail string
+}
+
+func (e *SourceError) Error() string {
+	if e.Status == 0 {
+		return fmt.Sprintf("%s %s failed: %s", e.Method, e.URL, e.Detail)
+	}
+	s := fmt.Sprintf("%s %s answered %d", e.Method, e.URL, e.Status)
+	if e.Detail != "" {
+		s += ": " + e.Detail
+	}
+	return s
 }

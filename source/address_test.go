@@ -114,3 +114,25 @@ func TestChoose(t *testing.T) {
 		t.Error("conflicting constraints")
 	}
 }
+
+// TestCache keeps archives by their SHA-256 and ignores changed files.
+func TestCache(t *testing.T) {
+	c := source.Cache{Dir: t.TempDir()}
+	sha, err := c.Put([]byte("archive"))
+	if err != nil || sha != source.SHA256([]byte("archive")) {
+		t.Fatal(sha, err)
+	}
+	if b, ok := c.Get(sha); !ok || string(b) != "archive" {
+		t.Error("get")
+	}
+	if _, ok := c.Get(strings.Repeat("0", 64)); ok {
+		t.Error("unknown hash")
+	}
+	if _, ok := c.Get("../x"); ok {
+		t.Error("path")
+	}
+	if !source.Allowed(source.Address{Host: "github.com", Owner: "tim-riep", Repo: "trfin"}, []string{"acme", "tim-riep/trfin"}) ||
+		source.Allowed(source.Address{Host: "github.com", Owner: "evil", Repo: "trfin"}, []string{"tim-riep"}) {
+		t.Error("allowed")
+	}
+}
