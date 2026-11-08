@@ -16,6 +16,7 @@ package repo
 
 import (
 	"context"
+	"time"
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/model"
@@ -170,4 +171,160 @@ func (r *Repo) ReplaceRole(ctx context.Context, q dialect.Querier, role *model.R
 		return err
 	}
 	return r.writeRole(ctx, q, role)
+}
+
+// RoleAssignment is a role assigned to a user in a tenant.
+type RoleAssignment struct {
+	ID        string                    `json:"id"`
+	Tenant    string                    `json:"tenant"`
+	User      string                    `json:"user"`
+	Role      string                    `json:"role"`
+	ValidFrom model.Optional[time.Time] `json:"validFrom"` // first day, None for open
+	ValidTo   model.Optional[time.Time] `json:"validTo"`   // last day, None for open
+	CreatedAt time.Time                 `json:"createdAt"`
+	CreatedBy string                    `json:"createdBy"`
+}
+
+// AssignmentFilter selects role assignments; empty fields select all.
+type AssignmentFilter struct {
+	ID, Tenant, User, Role string
+}
+
+func optDay(v any) model.Optional[time.Time] {
+	if t, ok := v.(time.Time); ok {
+		return model.Some(t.UTC())
+	}
+	return model.None[time.Time]()
+}
+
+func dayValue(d model.Optional[time.Time]) any {
+	if t, ok := d.Get(); ok {
+		return t
+	}
+	return nil
+}
+
+// RoleAssignments returns the role assignments that match the filter,
+// ordered by tenant, user, role and the start of validity.
+func (r *Repo) RoleAssignments(ctx context.Context, q dialect.Querier, f AssignmentFilter) ([]RoleAssignment, error) {
+	filter := row{}
+	for col, v := range map[string]string{"ASSIGNMENT_ID": f.ID, model.TenantField: f.Tenant, "USER_NAME": f.User, "ROLE_NAME": f.Role} {
+		if v != "" {
+			filter[col] = v
+		}
+	}
+	rows, err := r.selectWhere(ctx, q, TRoleAssignments, []string{model.TenantField, "ASSIGNMENT_ID", "USER_NAME", "ROLE_NAME", "VALID_FROM", "VALID_TO",
+		"CREATED_AT", "CREATED_BY"}, filter, model.TenantField, "USER_NAME", "ROLE_NAME", "VALID_FROM", "CREATED_AT")
+	if err != nil {
+		return nil, err
+	}
+	out := []RoleAssignment{}
+	for _, x := range rows {
+		out = append(out, RoleAssignment{ID: str(x["ASSIGNMENT_ID"]), Tenant: str(x[model.TenantField]), User: str(x["USER_NAME"]), Role: str(x["ROLE_NAME"]),
+			ValidFrom: optDay(x["VALID_FROM"]), ValidTo: optDay(x["VALID_TO"]), CreatedAt: tm(x["CREATED_AT"]), CreatedBy: str(x["CREATED_BY"])})
+	}
+	return out, nil
+}
+
+// InsertRoleAssignment stores a role assignment.
+func (r *Repo) InsertRoleAssignment(ctx context.Context, q dialect.Querier, a RoleAssignment) error {
+	return r.insert(ctx, q, TRoleAssignments, row{model.TenantField: a.Tenant, "ASSIGNMENT_ID": a.ID, "USER_NAME": a.User, "ROLE_NAME": a.Role,
+		"VALID_FROM": dayValue(a.ValidFrom), "VALID_TO": dayValue(a.ValidTo), "CREATED_AT": a.CreatedAt, "CREATED_BY": a.CreatedBy})
+}
+
+// DeleteRoleAssignment removes a role assignment.
+func (r *Repo) DeleteRoleAssignment(ctx context.Context, q dialect.Querier, a RoleAssignment) error {
+	return r.deleteWhere(ctx, q, TRoleAssignments, row{model.TenantField: a.Tenant, "ASSIGNMENT_ID": a.ID})
+}
+
+// RoleChange is an entry of the history of roles and role assignments.
+type RoleChange struct {
+	ID         string                 `json:"id"`
+	ChangedAt  time.Time              `json:"changedAt"`
+	ChangedBy  string                 `json:"changedBy"`
+	Kind       string                 `json:"kind"`
+	Role       model.Optional[string] `json:"role"`
+	Tenant     model.Optional[string] `json:"tenant"`
+	User       model.Optional[string] `json:"user"`
+	Assignment model.Optional[string] `json:"assignment"`
+	OldState   model.Optional[string] `json:"oldState"` // JSON
+	NewState   model.Optional[string] `json:"newState"` // JSON
+}
+
+// InsertRoleChange adds an entry to the history. Entries are never
+// changed or deleted.
+func (r *Repo) InsertRoleChange(ctx context.Context, q dialect.Querier, c RoleChange) error {
+	if c.ID == "" {
+		c.ID = NewID()
+	}
+	return r.insert(ctx, q, TRoleHistory, row{"CHANGE_ID": c.ID, "CHANGED_AT": c.ChangedAt, "CHANGED_BY": c.ChangedBy, "CHANGE_KIND": c.Kind,
+		"ROLE_NAME": val(c.Role), "TENANT": val(c.Tenant), "USER_NAME": val(c.User), "ASSIGNMENT_ID": val(c.Assignment),
+		"OLD_STATE": val(c.OldState), "NEW_STATE": val(c.NewState)})
+}
+
+// RoleChanges returns the history of a role, of a user, or all for "",
+// ordered by time.
+func (r *Repo) RoleChanges(ctx context.Context, q dialect.Querier, role, user string) ([]RoleChange, error) {
+	filter := row{}
+	if role != "" {
+		filter["ROLE_NAME"] = role
+	}
+	if user != "" {
+		filter["USER_NAME"] = user
+	}
+	rows, err := r.selectWhere(ctx, q, TRoleHistory, []string{"CHANGE_ID", "CHANGED_AT", "CHANGED_BY", "CHANGE_KIND", "ROLE_NAME", "TENANT", "USER_NAME",
+		"ASSIGNMENT_ID", "OLD_STATE", "NEW_STATE"}, filter, "CHANGED_AT", "CHANGE_ID")
+	if err != nil {
+		return nil, err
+	}
+	out := []RoleChange{}
+	for _, x := range rows {
+		out = append(out, RoleChange{ID: str(x["CHANGE_ID"]), ChangedAt: tm(x["CHANGED_AT"]), ChangedBy: str(x["CHANGED_BY"]), Kind: str(x["CHANGE_KIND"]),
+			Role: opt(x["ROLE_NAME"]), Tenant: opt(x["TENANT"]), User: opt(x["USER_NAME"]), Assignment: opt(x["ASSIGNMENT_ID"]),
+			OldState: opt(x["OLD_STATE"]), NewState: opt(x["NEW_STATE"])})
+	}
+	return out, nil
+}
+
+// HasRoles reports a kernel version with roles.
+func (r *Repo) HasRoles() bool { return r.has(TRoleAssignments, "") }
+
+// AuthGeneration returns the counter of changes that affect effective
+// authorizations.
+func (r *Repo) AuthGeneration(ctx context.Context, q dialect.Querier) (int64, error) {
+	rows, err := r.selectRows(ctx, q, TAuthGeneration, []string{"GENERATION"})
+	if err != nil || len(rows) == 0 {
+		return 0, err
+	}
+	n, _ := rows[0]["GENERATION"].(int64)
+	return n, nil
+}
+
+// NextAuthGeneration increases the counter of changes that affect
+// effective authorizations.
+func (r *Repo) NextAuthGeneration(ctx context.Context, q dialect.Querier, at time.Time) error {
+	if !r.HasRoles() {
+		return nil
+	}
+	g, err := r.AuthGeneration(ctx, q)
+	if err != nil {
+		return err
+	}
+	if g == 0 {
+		return r.insert(ctx, q, TAuthGeneration, row{"ID": int64(1), "GENERATION": int64(1), "CHANGED_AT": at})
+	}
+	// Increased in SQL, so that concurrent transactions never write the
+	// same value: PostgreSQL makes the second wait for the first.
+	gen, stamp := r.d.QuoteIdent("GENERATION"), r.d.QuoteIdent("CHANGED_AT")
+	d, err := r.domain(TAuthGeneration, "CHANGED_AT")
+	if err != nil {
+		return err
+	}
+	ts, err := r.d.Encode(d, at)
+	if err != nil {
+		return err
+	}
+	_, err = q.ExecContext(ctx, "UPDATE "+r.d.QuoteIdent(TAuthGeneration)+" SET "+gen+" = "+gen+" + 1, "+stamp+" = "+r.d.Placeholder(1)+
+		" WHERE "+r.d.QuoteIdent("ID")+" = 1", ts)
+	return err
 }

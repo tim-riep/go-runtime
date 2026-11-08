@@ -903,15 +903,39 @@ func (r *Repo) ReadLog(ctx context.Context, q dialect.Querier) ([]*LogEntry, err
 	return out, nil
 }
 
-// NewID returns a version 7 UUID: time-ordered and random.
+// idClock makes the IDs of one process strictly increasing: within a
+// millisecond, the 12 bits after the version count up.
+var idClock struct {
+	sync.Mutex
+	ms  uint64
+	seq uint16
+}
+
+// NewID returns a version 7 UUID: time-ordered and random. IDs made by one
+// process are strictly increasing, also within a millisecond.
 func NewID() string {
 	var b [16]byte
 	_, _ = rand.Read(b[:])
+	idClock.Lock()
 	ms := uint64(time.Now().UnixMilli())
+	if ms <= idClock.ms {
+		ms = idClock.ms
+		idClock.seq++
+		if idClock.seq > 0xfff {
+			ms++
+			idClock.seq = 0
+		}
+	} else {
+		idClock.seq = 0
+	}
+	idClock.ms = ms
+	seq := idClock.seq
+	idClock.Unlock()
 	for i := 0; i < 6; i++ {
 		b[i] = byte(ms >> (40 - 8*i))
 	}
-	b[6] = b[6]&0x0f | 0x70
+	b[6] = 0x70 | byte(seq>>8)
+	b[7] = byte(seq)
 	b[8] = b[8]&0x3f | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

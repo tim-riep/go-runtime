@@ -200,6 +200,7 @@ func (k *Kernel) Uninstall(ctx context.Context, id model.PackageID, opts Options
 				return nil, &rterr.ConfirmationRequired{Operation: "uninstall", Object: "package " + string(id)}
 			}
 			want := cur.Clone()
+			want.DetachLocalRoles(id)
 			want.RemovePackage(id)
 			return want, nil
 		},

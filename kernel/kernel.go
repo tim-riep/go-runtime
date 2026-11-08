@@ -436,11 +436,16 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err != nil {
 			return err
 		}
+		roleNotes, err := k.checkRoles(ctx, q, o.op, cur, want)
+		if err != nil {
+			return err
+		}
 		p, err := planner.Build(k.d, o.op, cur, want, o.packages(cur))
 		if err != nil {
 			return err
 		}
 		p.Changes = append(p.Changes, compileChanges...)
+		p.Changes = append(p.Changes, roleNotes...)
 		result = p
 		if o.check != nil {
 			if err := o.check(p); err != nil {
@@ -460,6 +465,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 			return err
 		}
 		if err := k.syncHTTPStates(ctx, q, want); err != nil {
+			return err
+		}
+		if err := k.afterRoles(ctx, q, cur, want, started); err != nil {
 			return err
 		}
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())

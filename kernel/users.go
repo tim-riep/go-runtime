@@ -132,7 +132,11 @@ func (u *Users) change(ctx context.Context, name string, fn func(user *User) err
 		if err := fn(user); err != nil {
 			return err
 		}
-		return k.repo.UpdateUser(ctx, q, user)
+		if err := k.repo.UpdateUser(ctx, q, user); err != nil {
+			return err
+		}
+		// The status decides about effective authorizations.
+		return k.repo.NextAuthGeneration(ctx, q, k.timestamp())
 	})
 }
 
@@ -180,9 +184,14 @@ func (u *Users) AddTenant(ctx context.Context, name, tenant string) error {
 }
 
 // RemoveTenant takes a tenant from a user; if it was the default tenant,
-// the user has none afterwards.
-func (u *Users) RemoveTenant(ctx context.Context, name, tenant string) error {
+// the user has none afterwards. The role assignments of the user in the
+// tenant are removed and recorded with opts.By.
+func (u *Users) RemoveTenant(ctx context.Context, name, tenant string, opts ...RoleOptions) error {
 	k := u.k
+	by := RoleOptions{}.by()
+	if len(opts) > 0 {
+		by = opts[0].by()
+	}
 	return k.userTx(ctx, func(q dialect.Querier) error {
 		user, err := k.user(ctx, q, name)
 		if err != nil {
@@ -196,6 +205,10 @@ func (u *Users) RemoveTenant(ctx context.Context, name, tenant string) error {
 			if err := k.repo.UpdateUser(ctx, q, user); err != nil {
 				return err
 			}
+		}
+		// The roles of the user in the tenant go with it.
+		if err := k.removeTenantAssignments(ctx, q, tenant, name, by); err != nil {
+			return err
 		}
 		return k.repo.RemoveUserTenant(ctx, q, name, tenant)
 	})
@@ -287,11 +300,16 @@ func (s authStore) Failed(ctx context.Context, name string) error {
 		}
 		u.FailedLogins++
 		slog.Warn("failed login", "user", name, "failed", u.FailedLogins)
-		if u.FailedLogins >= k.maxFailedLogins {
+		locked := false
+		if u.FailedLogins >= k.maxFailedLogins && u.Status != "locked" {
 			u.Status, u.LockedAt = "locked", model.Some(k.timestamp())
+			locked = true
 			slog.Warn("user locked after failed logins", "user", name, "failed", u.FailedLogins)
 		}
-		return k.repo.UpdateUser(ctx, q, u)
+		if err := k.repo.UpdateUser(ctx, q, u); err != nil || !locked {
+			return err
+		}
+		return k.repo.NextAuthGeneration(ctx, q, k.timestamp())
 	})
 }
 

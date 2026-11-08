@@ -322,3 +322,30 @@ func cloneRole(r *Role) *Role {
 
 // CloneRole returns a deep copy of a role.
 func CloneRole(r *Role) *Role { return cloneRole(r) }
+
+// DetachLocalRoles removes from the local roles what refers to package id,
+// before the package is uninstalled: authorizations on its authorization
+// objects and members that are its roles. A composite role without
+// members left is removed.
+func (s *Schema) DetachLocalRoles(id PackageID) {
+	for _, name := range s.RoleNames() {
+		r := s.Roles[name]
+		if r.Owner != Local {
+			continue
+		}
+		r.Authorizations = slices.DeleteFunc(r.Authorizations, func(a Authorization) bool {
+			o := s.AuthorizationObjects[a.Object]
+			return o != nil && o.Owner == id
+		})
+		if !r.Composite {
+			continue
+		}
+		r.Roles = slices.DeleteFunc(r.Roles, func(m string) bool {
+			mr := s.Roles[m]
+			return mr != nil && mr.Owner == id
+		})
+		if len(r.Roles) == 0 {
+			delete(s.Roles, name)
+		}
+	}
+}

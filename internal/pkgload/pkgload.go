@@ -308,6 +308,11 @@ func (l *loader) readDoc(file, schemaName string, v any) bool {
 		l.fail(code, l.loc(file), "cannot read file: %v", err)
 		return false
 	}
+	return l.decodeDoc(file, data, schemaName, v)
+}
+
+// decodeDoc validates a document against its JSON Schema and decodes it.
+func (l *loader) decodeDoc(file string, data []byte, schemaName string, v any) bool {
 	inst, err := jsonschema.UnmarshalJSON(bytes.NewReader(data))
 	if err != nil {
 		l.fail(rterr.CodeSyntax, l.loc(file), "invalid JSON: %v", err)

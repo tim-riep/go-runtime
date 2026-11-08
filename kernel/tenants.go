@@ -97,7 +97,11 @@ func (t *Tenants) Delete(ctx context.Context, id string, opts Options) (*plan.Pl
 		if !opts.Confirm {
 			return &rterr.ConfirmationRequired{Operation: "deletion", Object: "tenant " + id}
 		}
-		// Users lose the tenant before it goes.
+		// Users lose the tenant before it goes; the plan deletes the role
+		// assignments, which are recorded first.
+		if err := k.removeTenantAssignments(ctx, q, id, "", operationBy); err != nil {
+			return err
+		}
 		if err := k.repo.ForgetTenant(ctx, q, id); err != nil {
 			return err
 		}

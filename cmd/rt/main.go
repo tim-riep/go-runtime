@@ -99,6 +99,24 @@ Commands:
                            create an API token; it is shown only once
   token list [user]        list API tokens without their secrets
   token revoke <id>        delete an API token
+  role list [--package P] [--incomplete]
+                           list package roles and local roles
+  role show <role>         show a role with its authorizations, their origin and problems
+  role create|update|import <file.json>
+                           create, replace or create-or-replace a local role (/LOCAL/<NAME>)
+  role delete <role>       delete a local role; one in use needs --yes
+  role export <role> [-o file]
+                           write a role in the format of role files
+  role assign <user> <role> --tenant T [--from D] [--to D]
+                           assign a role to a user in a tenant, valid from and to a day
+  role unassign <assignment>
+                           remove a role assignment
+  role history [role] [--user U]
+                           show the changes of local roles and role assignments
+  user roles <user> [--tenant T]
+                           show the role assignments of a user
+  user authorizations <user> --tenant T [--date D]
+                           show the effective authorizations of a user with their origin
   authorization-objects list [package]
                            list the authorization objects of a package or of all packages
   activities list          list the activities of the kernel (--lang for the texts)
@@ -150,6 +168,10 @@ type cli struct {
 	output         string
 	maxAssetSize   int64
 	maxAssetRead   int64
+	pkg            string
+	incomplete     bool
+	userFilter     string
+	from, to, date string
 	check          bool
 	serve          server.Config
 }
@@ -173,7 +195,13 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.goPackage, "go-package", "", "gen natives: the Go package of the generated file")
 	c.fs.StringVar(&c.label, "label", "", "token create: the label of the token")
 	c.fs.StringVar(&c.expires, "expires", "", "token create: the day the token expires, YYYY-MM-DD")
-	c.fs.StringVar(&c.output, "o", "", "file to write an asset to, - for standard output")
+	c.fs.StringVar(&c.output, "o", "", "file to write an asset or a role to, - for standard output")
+	c.fs.StringVar(&c.pkg, "package", "", "role list: only the roles of a package, LOCAL for local roles")
+	c.fs.BoolVar(&c.incomplete, "incomplete", false, "role list: only roles with authorizations that grant nothing")
+	c.fs.StringVar(&c.userFilter, "user", "", "role history: only the changes of a user")
+	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD")
+	c.fs.StringVar(&c.to, "to", "", "role assign: last day of validity, YYYY-MM-DD")
+	c.fs.StringVar(&c.date, "date", "", "user authorizations: the day, YYYY-MM-DD (default today)")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")
 	c.fs.StringVar(&c.serve.TLSCert, "tls-cert", "", "serve: PEM file of the TLS certificate")
@@ -356,6 +384,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.http(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
+	case "role":
+		return c.role(ctx, k, args)
 	case "activities":
 		return c.activities(ctx, k, args)
 	case "serve":
@@ -1367,7 +1397,8 @@ func (c *cli) readSecret() (string, error) {
 func (c *cli) user(ctx context.Context, k *kernel.Kernel, args []string) int {
 	us := k.Users()
 	usage := func() int {
-		fmt.Fprintln(c.stderr, "usage: rt user create <name> [--tenant T] [--lang L] | list | lock <name> | unlock <name> | passwd <name> | tenant add|remove <name> <tenant>")
+		fmt.Fprintln(c.stderr, "usage: rt user create <name> [--tenant T] [--lang L] | list | lock <name> | unlock <name> | passwd <name> | tenant add|remove <name> <tenant> | "+
+			"roles <name> [--tenant T] | authorizations <name> --tenant T [--date D]")
 		return exitUsage
 	}
 	if len(args) == 0 {
@@ -1427,7 +1458,11 @@ func (c *cli) user(ctx context.Context, k *kernel.Kernel, args []string) int {
 	case args[0] == "tenant" && len(args) == 4 && args[1] == "add":
 		return done(us.AddTenant(ctx, args[2], args[3]), "User %s may work in tenant %s.", args[2], args[3])
 	case args[0] == "tenant" && len(args) == 4 && args[1] == "remove":
-		return done(us.RemoveTenant(ctx, args[2], args[3]), "User %s no longer works in tenant %s.", args[2], args[3])
+		return done(us.RemoveTenant(ctx, args[2], args[3], c.roleOpts()), "User %s no longer works in tenant %s.", args[2], args[3])
+	case args[0] == "roles" && len(args) == 2:
+		return c.userRoles(ctx, k, args[1])
+	case args[0] == "authorizations" && len(args) == 2:
+		return c.userAuthorizations(ctx, k, args[1])
 	}
 	return usage()
 }

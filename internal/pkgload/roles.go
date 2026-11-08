@@ -66,3 +66,15 @@ func RoleOf(d *roleDoc, owner model.PackageID, file string, loc rterr.Location) 
 	}
 	return r
 }
+
+// ParseRole reads a local role in the format of role files, checked
+// against the JSON Schema of roles; file names the source in errors.
+func ParseRole(data []byte, file string) (*model.Role, error) {
+	l := &loader{id: model.LocalPackageID}
+	var d roleDoc
+	if !l.decodeDoc(file, data, schemas.Role, &d) {
+		return nil, l.errs.Err()
+	}
+	r := RoleOf(&d, model.Local, "", l.loc(file))
+	return &r, nil
+}
