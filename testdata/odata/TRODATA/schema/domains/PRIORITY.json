@@ -1,0 +1,3 @@
+{ "name": "/TRODATA/PRIORITY", "type": "INT4", "values": [
+  { "value": 1, "name": "LOW", "description": "Low" },
+  { "value": 2, "name": "HIGH", "description": "High" } ] }

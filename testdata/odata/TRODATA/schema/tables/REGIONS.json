@@ -1,0 +1,6 @@
+{ "name": "/TRODATA/REGIONS", "description": "Sales regions", "tenantSpecific": false, "dataClass": "configuration",
+  "fields": [
+    { "name": "REGION_ID", "dataElement": "/TRODATA/REGION" },
+    { "name": "NAME", "dataElement": "/TRODATA/NAME", "notNull": true }
+  ],
+  "primaryKey": ["REGION_ID"] }

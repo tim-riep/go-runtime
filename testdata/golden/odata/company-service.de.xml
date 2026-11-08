@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Namespace="Org.OData.Core.V1" Alias="Core"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.xml">
+    <edmx:Include Namespace="Org.OData.Validation.V1" Alias="Validation"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+    <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="Capabilities"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="../../$vocabularies/RT.Fields.xml">
+    <edmx:Include Namespace="RT.Fields" Alias="RT"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="TRFIN" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <EntityType Name="TRFIN_COMPANIES">
+        <Key>
+          <PropertyRef Name="COMPANY_ID"/>
+        </Key>
+        <Property Name="COMPANY_ID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="NAME" Type="Edm.String" Nullable="false" MaxLength="80"/>
+        <Property Name="STREET" Type="Edm.String" MaxLength="60"/>
+        <Property Name="POSTAL_CODE" Type="Edm.String" MaxLength="10"/>
+        <Property Name="CITY" Type="Edm.String" MaxLength="40"/>
+        <Property Name="COUNTRY" Type="Edm.String" MaxLength="2"/>
+        <Property Name="TROTTO_PICKUP_POINT" Type="Edm.String" MaxLength="20"/>
+        <Property Name="STATUS" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="CAPITAL" Type="Edm.Decimal" Precision="15" Scale="2"/>
+        <Property Name="FOUNDED_ON" Type="Edm.Date"/>
+        <Property Name="CREATED_BY" Type="Edm.String" MaxLength="80"/>
+        <Property Name="CREATED_AT" Type="Edm.DateTimeOffset" Precision="6"/>
+        <Property Name="CHANGED_BY" Type="Edm.String" MaxLength="80"/>
+        <Property Name="CHANGED_AT" Type="Edm.DateTimeOffset" Precision="6"/>
+        <Property Name="TROTTO_OTTO_ID" Type="Edm.String" MaxLength="20"/>
+        <NavigationProperty Name="Contacts" Type="Collection(TRFIN.TRFIN_CONTACTS)" Partner="Companies"/>
+        <NavigationProperty Name="TROTTO_COMPANY_CHANNELS" Type="Collection(TRFIN.TROTTO_COMPANY_CHANNELS)" ContainsTarget="true"/>
+        <NavigationProperty Name="Country" Type="TRFIN.TRFIN_COUNTRIES">
+          <ReferentialConstraint Property="COUNTRY" ReferencedProperty="COUNTRY_CODE"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="TRFIN_CONTACTS">
+        <Key>
+          <PropertyRef Name="CONTACT_ID"/>
+        </Key>
+        <Property Name="CONTACT_ID" Type="Edm.Guid" Nullable="false"/>
+        <Property Name="COMPANY_ID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="NAME" Type="Edm.String" MaxLength="80"/>
+        <Property Name="EMAIL" Type="Edm.String"/>
+        <NavigationProperty Name="Companies" Type="TRFIN.TRFIN_COMPANIES" Nullable="false" Partner="Contacts">
+          <ReferentialConstraint Property="COMPANY_ID" ReferencedProperty="COMPANY_ID"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="TRFIN_COUNTRIES">
+        <Key>
+          <PropertyRef Name="COUNTRY_CODE"/>
+        </Key>
+        <Property Name="COUNTRY_CODE" Type="Edm.String" Nullable="false" MaxLength="2"/>
+        <Property Name="NAME" Type="Edm.String" Nullable="false" MaxLength="80"/>
+        <Property Name="CURRENCY" Type="Edm.String" MaxLength="3"/>
+      </EntityType>
+      <EntityType Name="TRFIN_EXCHANGE_RATES">
+        <Key>
+          <PropertyRef Name="FROM_CURRENCY"/>
+          <PropertyRef Name="TO_CURRENCY"/>
+          <PropertyRef Name="VALID_FROM"/>
+        </Key>
+        <Property Name="FROM_CURRENCY" Type="Edm.String" Nullable="false" MaxLength="3"/>
+        <Property Name="TO_CURRENCY" Type="Edm.String" Nullable="false" MaxLength="3"/>
+        <Property Name="VALID_FROM" Type="Edm.Date" Nullable="false"/>
+        <Property Name="RATE" Type="Edm.Decimal" Nullable="false" Precision="15" Scale="6"/>
+      </EntityType>
+      <EntityType Name="TROTTO_COMPANY_CHANNELS">
+        <Key>
+          <PropertyRef Name="CHANNEL_ID"/>
+        </Key>
+        <Property Name="CHANNEL_ID" Type="Edm.Guid" Nullable="false"/>
+        <Property Name="COMPANY_ID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="CHANNEL" Type="Edm.String" Nullable="false"/>
+      </EntityType>
+      <Action Name="BLOCK" IsBound="true" EntitySetPath="_it">
+        <Parameter Name="_it" Type="TRFIN.TRFIN_COMPANIES" Nullable="false"/>
+        <Parameter Name="TEXT" Type="Edm.String"/>
+        <ReturnType Type="TRFIN.TRFIN_COMPANIES" Nullable="false"/>
+      </Action>
+      <Action Name="TROTTO_SYNC" IsBound="true" EntitySetPath="_it">
+        <Parameter Name="_it" Type="TRFIN.TRFIN_COMPANIES" Nullable="false"/>
+        <ReturnType Type="TRFIN.TRFIN_COMPANIES" Nullable="false"/>
+      </Action>
+      <EntityContainer Name="Container">
+        <EntitySet Name="Companies" EntityType="TRFIN.TRFIN_COMPANIES">
+          <NavigationPropertyBinding Path="Contacts" Target="Contacts"/>
+          <NavigationPropertyBinding Path="Country" Target="Countries"/>
+        </EntitySet>
+        <EntitySet Name="Contacts" EntityType="TRFIN.TRFIN_CONTACTS">
+          <NavigationPropertyBinding Path="Companies" Target="Companies"/>
+        </EntitySet>
+        <EntitySet Name="Countries" EntityType="TRFIN.TRFIN_COUNTRIES"/>
+        <EntitySet Name="ExchangeRates" EntityType="TRFIN.TRFIN_EXCHANGE_RATES"/>
+      </EntityContainer>
+      <Annotations Target="TRFIN.Container">
+        <Annotation Term="Core.Description" String="Firmen"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/COMPANY_ID">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="Core.LongDescription" String="Firmennummer"/>
+        <Annotation Term="RT.ShortLabel" String="Firma"/>
+        <Annotation Term="RT.MediumLabel" String="Firma"/>
+        <Annotation Term="RT.LongLabel" String="Firmennummer"/>
+        <Annotation Term="RT.Heading" String="Firma"/>
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Bezeichnung"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Bezeichnung"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+        <Annotation Term="RT.Mandatory" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/STREET">
+        <Annotation Term="Core.Description" String="Straße"/>
+        <Annotation Term="Core.LongDescription" String="Straße und Hausnummer"/>
+        <Annotation Term="RT.ShortLabel" String="Straße"/>
+        <Annotation Term="RT.MediumLabel" String="Straße"/>
+        <Annotation Term="RT.LongLabel" String="Straße und Hausnummer"/>
+        <Annotation Term="RT.Heading" String="Straße"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/POSTAL_CODE">
+        <Annotation Term="Core.Description" String="Postleitzahl"/>
+        <Annotation Term="Core.LongDescription" String="Postleitzahl"/>
+        <Annotation Term="RT.ShortLabel" String="PLZ"/>
+        <Annotation Term="RT.MediumLabel" String="Postleitzahl"/>
+        <Annotation Term="RT.LongLabel" String="Postleitzahl"/>
+        <Annotation Term="RT.Heading" String="PLZ"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/CITY">
+        <Annotation Term="Core.Description" String="Ort"/>
+        <Annotation Term="Core.LongDescription" String="Ort"/>
+        <Annotation Term="RT.ShortLabel" String="Ort"/>
+        <Annotation Term="RT.MediumLabel" String="Ort"/>
+        <Annotation Term="RT.LongLabel" String="Ort"/>
+        <Annotation Term="RT.Heading" String="Ort"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/COUNTRY">
+        <Annotation Term="Core.Description" String="Land"/>
+        <Annotation Term="Core.LongDescription" String="Code nach ISO 3166-1 alpha-2"/>
+        <Annotation Term="RT.ShortLabel" String="Land"/>
+        <Annotation Term="RT.MediumLabel" String="Land"/>
+        <Annotation Term="RT.LongLabel" String="Länderschlüssel"/>
+        <Annotation Term="RT.Heading" String="Land"/>
+        <Annotation Term="RT.ValueList">
+          <Record>
+            <PropertyValue Property="EntitySet" String="Countries"/>
+            <PropertyValue Property="Parameters">
+              <Collection>
+                <Record>
+                  <PropertyValue Property="LocalProperty" PropertyPath="COUNTRY"/>
+                  <PropertyValue Property="ValueListProperty" String="COUNTRY_CODE"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/TROTTO_PICKUP_POINT">
+        <Annotation Term="Core.Description" String="Abholstation"/>
+        <Annotation Term="Core.LongDescription" String="Abholstation des Marktplatzes"/>
+        <Annotation Term="RT.ShortLabel" String="Abholung"/>
+        <Annotation Term="RT.MediumLabel" String="Abholstation"/>
+        <Annotation Term="RT.LongLabel" String="Abholstation des Marktplatzes"/>
+        <Annotation Term="RT.Heading" String="Abholung"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/STATUS">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Validation.AllowedValues">
+          <Collection>
+            <Record>
+              <PropertyValue Property="Value" String="ACTIVE"/>
+              <Annotation Term="Core.Description" String="Active"/>
+            </Record>
+            <Record>
+              <PropertyValue Property="Value" String="BLOCKED"/>
+              <Annotation Term="Core.Description" String="Blocked for postings"/>
+            </Record>
+            <Record>
+              <PropertyValue Property="Value" String="CLOSED"/>
+              <Annotation Term="Core.Description" String="Closed"/>
+            </Record>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/CREATED_BY">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/CREATED_AT">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/CHANGED_BY">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/CHANGED_AT">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES/TROTTO_OTTO_ID">
+        <Annotation Term="Core.Description" String="OTTO-Partner"/>
+        <Annotation Term="Core.LongDescription" String="Partner-ID bei OTTO"/>
+        <Annotation Term="RT.ShortLabel" String="Partner"/>
+        <Annotation Term="RT.MediumLabel" String="OTTO-Partner"/>
+        <Annotation Term="RT.LongLabel" String="Partner-ID bei OTTO"/>
+        <Annotation Term="RT.Heading" String="OTTO-Partner"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COMPANIES">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="RT.DataClass" String="application"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_CONTACTS/CONTACT_ID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_CONTACTS/COMPANY_ID">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="Core.LongDescription" String="Firmennummer"/>
+        <Annotation Term="RT.ShortLabel" String="Firma"/>
+        <Annotation Term="RT.MediumLabel" String="Firma"/>
+        <Annotation Term="RT.LongLabel" String="Firmennummer"/>
+        <Annotation Term="RT.Heading" String="Firma"/>
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_CONTACTS/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Bezeichnung"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Bezeichnung"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+        <Annotation Term="RT.Mandatory" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_CONTACTS">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="RT.DataClass" String="application"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COUNTRIES/COUNTRY_CODE">
+        <Annotation Term="Core.Description" String="Land"/>
+        <Annotation Term="Core.LongDescription" String="Code nach ISO 3166-1 alpha-2"/>
+        <Annotation Term="RT.ShortLabel" String="Land"/>
+        <Annotation Term="RT.MediumLabel" String="Land"/>
+        <Annotation Term="RT.LongLabel" String="Länderschlüssel"/>
+        <Annotation Term="RT.Heading" String="Land"/>
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COUNTRIES/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Bezeichnung"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Bezeichnung"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+        <Annotation Term="RT.Mandatory" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COUNTRIES/CURRENCY">
+        <Annotation Term="Core.Description" String="Währung"/>
+        <Annotation Term="Core.LongDescription" String="Code nach ISO 4217"/>
+        <Annotation Term="RT.ShortLabel" String="Währung"/>
+        <Annotation Term="RT.MediumLabel" String="Währung"/>
+        <Annotation Term="RT.LongLabel" String="Währungsschlüssel"/>
+        <Annotation Term="RT.Heading" String="Währung"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_COUNTRIES">
+        <Annotation Term="Core.Description" String="Land"/>
+        <Annotation Term="RT.DataClass" String="configuration"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TRFIN_EXCHANGE_RATES">
+        <Annotation Term="Core.Description" String="Exchange rates, maintained during operation"/>
+        <Annotation Term="RT.DataClass" String="runtimeConfiguration"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TROTTO_COMPANY_CHANNELS/CHANNEL_ID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TROTTO_COMPANY_CHANNELS/COMPANY_ID">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="Core.LongDescription" String="Firmennummer"/>
+        <Annotation Term="RT.ShortLabel" String="Firma"/>
+        <Annotation Term="RT.MediumLabel" String="Firma"/>
+        <Annotation Term="RT.LongLabel" String="Firmennummer"/>
+        <Annotation Term="RT.Heading" String="Firma"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRFIN.TROTTO_COMPANY_CHANNELS">
+        <Annotation Term="Core.Description" String="Firma"/>
+        <Annotation Term="RT.DataClass" String="application"/>
+      </Annotations>
+      <Annotations Target="TRFIN.Container/Companies">
+        <Annotation Term="Core.OptimisticConcurrency">
+          <Collection>
+            <PropertyPath>CHANGED_AT</PropertyPath>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="true"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record>
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record>
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="TROTTO_COMPANY_CHANNELS"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record>
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="UpdateRestrictions">
+                    <Record>
+                      <PropertyValue Property="Updatable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeleteRestrictions">
+                    <Record>
+                      <PropertyValue Property="Deletable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.Container/Contacts">
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="true"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.Container/Countries">
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="false"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.Container/ExchangeRates">
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="false"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

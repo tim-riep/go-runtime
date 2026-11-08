@@ -1,0 +1,23 @@
+{ "name": "/TRODATA/ITEMS", "description": "Items", "tenantSpecific": true, "dataClass": "application",
+  "fields": [
+    { "name": "ITEM_ID", "domain": "/TRODATA/CODE" },
+    { "name": "NAME", "dataElement": "/TRODATA/NAME" },
+    { "name": "STATUS", "domain": "/TRODATA/STATUS", "default": "NEW", "notNull": true },
+    { "name": "PRIORITY", "domain": "/TRODATA/PRIORITY" },
+    { "name": "REGION", "dataElement": "/TRODATA/REGION", "notNull": true },
+    { "name": "AMOUNT", "domain": "/TRODATA/AMOUNT" },
+    { "name": "QUANTITY", "domain": "/TRODATA/QUANTITY" },
+    { "name": "NOTE", "domain": "/TRODATA/NOTE" },
+    { "name": "ACTIVE", "domain": "/TRODATA/FLAG" },
+    { "name": "DUE_ON", "domain": "/TRODATA/DAY" },
+    { "name": "DONE_AT", "domain": "/TRODATA/MOMENT" },
+    { "name": "REFERENCE", "domain": "/TRODATA/ID" },
+    { "name": "DATA", "domain": "/TRODATA/DATA" },
+    { "name": "VERSION", "domain": "/TRODATA/QUANTITY" },
+    { "name": "CREATED_AT", "domain": "/TRODATA/MOMENT" },
+    { "name": "CHANGED_BY", "domain": "/TRODATA/USER" }
+  ],
+  "primaryKey": ["ITEM_ID"],
+  "foreignKeys": [
+    { "name": "REGION", "table": "/TRODATA/REGIONS", "fields": [{ "field": "REGION", "references": "REGION_ID" }] }
+  ] }

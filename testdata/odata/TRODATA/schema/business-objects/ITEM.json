@@ -1,0 +1,35 @@
+{
+  "name": "/TRODATA/ITEM",
+  "description": { "en": "Item", "de": "Artikel" },
+  "root": "/TRODATA/ITEMS",
+  "behaviorClass": "/TRODATA/ITEM_BEHAVIOR",
+  "entities": {
+    "/TRODATA/ITEMS": {
+      "operations": ["create", "update", "delete"],
+      "fields": {
+        "NAME": { "mandatory": true },
+        "STATUS": { "readOnly": true },
+        "REGION": { "readOnlyOnUpdate": true }
+      },
+      "administrative": { "createdAt": "CREATED_AT", "changedBy": "CHANGED_BY" },
+      "etag": "VERSION",
+      "determinations": [ { "name": "GREET", "when": "modify", "on": ["create"] } ],
+      "validations": [ { "name": "CHECK_NAME", "on": ["create", "update"], "fields": ["NAME"] } ],
+      "actions": [
+        { "name": "CLOSE", "parameter": "/TRODATA/CLOSE_REASON", "result": "self" },
+        { "name": "STATS", "instance": false, "result": "/TRODATA/STATS", "modifies": false }
+      ],
+      "authorization": {
+        "object": "/TRODATA/ITEM",
+        "fields": { "REGION": "REGION" },
+        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "CLOSE": "UPDATE", "STATS": "EXECUTE" }
+      }
+    },
+    "/TRODATA/PARTS": {
+      "parent": "/TRODATA/ITEMS",
+      "foreignKey": "ITEM",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid"
+    }
+  }
+}

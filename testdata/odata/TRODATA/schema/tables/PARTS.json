@@ -1,0 +1,11 @@
+{ "name": "/TRODATA/PARTS", "description": "Parts of items", "tenantSpecific": true, "dataClass": "application",
+  "fields": [
+    { "name": "PART_ID", "domain": "/TRODATA/ID" },
+    { "name": "ITEM_ID", "domain": "/TRODATA/CODE", "notNull": true },
+    { "name": "NAME", "dataElement": "/TRODATA/NAME" },
+    { "name": "COUNT", "domain": "/TRODATA/COUNT" }
+  ],
+  "primaryKey": ["PART_ID"],
+  "foreignKeys": [
+    { "name": "ITEM", "table": "/TRODATA/ITEMS", "fields": [{ "field": "ITEM_ID", "references": "ITEM_ID" }] }
+  ] }

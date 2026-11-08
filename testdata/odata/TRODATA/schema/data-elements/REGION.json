@@ -1,0 +1,3 @@
+{ "name": "/TRODATA/REGION", "domain": "/TRODATA/REGION", "texts": {
+  "en": { "short": "Region", "medium": "Region", "long": "Sales region", "heading": "Region" },
+  "de": { "short": "Region", "medium": "Region", "long": "Verkaufsregion", "heading": "Region" } } }

@@ -1,0 +1,459 @@
+{
+  "$Version": "4.01",
+  "$EntityContainer": "TRODATA.Container",
+  "$Reference": {
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Core.V1",
+          "$Alias": "Core"
+        }
+      ]
+    },
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Validation.V1",
+          "$Alias": "Validation"
+        }
+      ]
+    },
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Capabilities.V1",
+          "$Alias": "Capabilities"
+        }
+      ]
+    },
+    "../../$vocabularies/RT.Fields.xml": {
+      "$Include": [
+        {
+          "$Namespace": "RT.Fields",
+          "$Alias": "RT"
+        }
+      ]
+    }
+  },
+  "TRODATA": {
+    "TRODATA_ITEMS": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "ITEM_ID"
+      ],
+      "ITEM_ID": {
+        "$MaxLength": 10
+      },
+      "NAME": {
+        "$Nullable": true,
+        "$MaxLength": 40
+      },
+      "STATUS": {
+        "$MaxLength": 8
+      },
+      "PRIORITY": {
+        "$Type": "Edm.Int32",
+        "$Nullable": true
+      },
+      "REGION": {
+        "$MaxLength": 8
+      },
+      "AMOUNT": {
+        "$Type": "Edm.Decimal",
+        "$Nullable": true,
+        "$Precision": 15,
+        "$Scale": 2
+      },
+      "QUANTITY": {
+        "$Type": "Edm.Int64",
+        "$Nullable": true
+      },
+      "NOTE": {
+        "$Nullable": true
+      },
+      "ACTIVE": {
+        "$Type": "Edm.Boolean",
+        "$Nullable": true
+      },
+      "DUE_ON": {
+        "$Type": "Edm.Date",
+        "$Nullable": true
+      },
+      "DONE_AT": {
+        "$Type": "Edm.DateTimeOffset",
+        "$Nullable": true,
+        "$Precision": 6
+      },
+      "REFERENCE": {
+        "$Type": "Edm.Guid",
+        "$Nullable": true
+      },
+      "DATA": {
+        "$Type": "Edm.Binary",
+        "$Nullable": true
+      },
+      "VERSION": {
+        "$Type": "Edm.Int64",
+        "$Nullable": true
+      },
+      "CREATED_AT": {
+        "$Type": "Edm.DateTimeOffset",
+        "$Nullable": true,
+        "$Precision": 6
+      },
+      "CHANGED_BY": {
+        "$Nullable": true,
+        "$MaxLength": 80
+      },
+      "Parts": {
+        "$Kind": "NavigationProperty",
+        "$Collection": true,
+        "$Type": "TRODATA.TRODATA_PARTS",
+        "$Partner": "Items"
+      },
+      "Regions": {
+        "$Kind": "NavigationProperty",
+        "$Type": "TRODATA.TRODATA_REGIONS",
+        "$ReferentialConstraint": {
+          "REGION": "REGION_ID"
+        }
+      }
+    },
+    "TRODATA_PARTS": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "PART_ID"
+      ],
+      "PART_ID": {
+        "$Type": "Edm.Guid"
+      },
+      "ITEM_ID": {
+        "$MaxLength": 10
+      },
+      "NAME": {
+        "$Nullable": true,
+        "$MaxLength": 40
+      },
+      "COUNT": {
+        "$Type": "Edm.Int32",
+        "$Nullable": true
+      },
+      "Items": {
+        "$Kind": "NavigationProperty",
+        "$Type": "TRODATA.TRODATA_ITEMS",
+        "$Partner": "Parts",
+        "$ReferentialConstraint": {
+          "ITEM_ID": "ITEM_ID"
+        }
+      }
+    },
+    "TRODATA_REGIONS": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "REGION_ID"
+      ],
+      "REGION_ID": {
+        "$MaxLength": 8
+      },
+      "NAME": {
+        "$MaxLength": 40
+      }
+    },
+    "TRODATA_STATS": {
+      "$Kind": "ComplexType",
+      "ITEMS": {
+        "$Type": "Edm.Int32"
+      },
+      "TOTAL": {
+        "$Type": "Edm.Decimal",
+        "$Nullable": true,
+        "$Precision": 15,
+        "$Scale": 2
+      }
+    },
+    "CLOSE": [
+      {
+        "$Kind": "Action",
+        "$IsBound": true,
+        "$EntitySetPath": "_it",
+        "$Parameter": [
+          {
+            "$Name": "_it",
+            "$Type": "TRODATA.TRODATA_ITEMS"
+          },
+          {
+            "$Name": "TEXT",
+            "$Nullable": true
+          }
+        ],
+        "$ReturnType": {
+          "$Type": "TRODATA.TRODATA_ITEMS"
+        }
+      }
+    ],
+    "STATS": [
+      {
+        "$Kind": "Action",
+        "$ReturnType": {
+          "$Type": "TRODATA.TRODATA_STATS"
+        }
+      }
+    ],
+    "Container": {
+      "$Kind": "EntityContainer",
+      "Items": {
+        "$Collection": true,
+        "$Type": "TRODATA.TRODATA_ITEMS",
+        "$NavigationPropertyBinding": {
+          "Parts": "Parts",
+          "Regions": "Regions"
+        }
+      },
+      "Parts": {
+        "$Collection": true,
+        "$Type": "TRODATA.TRODATA_PARTS",
+        "$NavigationPropertyBinding": {
+          "Items": "Items"
+        }
+      },
+      "Regions": {
+        "$Collection": true,
+        "$Type": "TRODATA.TRODATA_REGIONS"
+      },
+      "STATS": {
+        "$Action": "TRODATA.STATS"
+      }
+    },
+    "$Annotations": {
+      "TRODATA.Container": {
+        "@Core.Description": "Items"
+      },
+      "TRODATA.TRODATA_ITEMS/ITEM_ID": {
+        "@Core.Immutable": true
+      },
+      "TRODATA.TRODATA_ITEMS/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name of the item",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name of the item",
+        "@RT.Heading": "Name",
+        "@RT.Mandatory": true
+      },
+      "TRODATA.TRODATA_ITEMS/STATUS": {
+        "@Core.Computed": true,
+        "@Validation.AllowedValues": [
+          {
+            "Value": "NEW",
+            "@Core.Description": "New"
+          },
+          {
+            "Value": "CLOSED",
+            "@Core.Description": "Closed"
+          }
+        ]
+      },
+      "TRODATA.TRODATA_ITEMS/PRIORITY": {
+        "@Validation.AllowedValues": [
+          {
+            "Value": 1,
+            "@Core.Description": "Low"
+          },
+          {
+            "Value": 2,
+            "@Core.Description": "High"
+          }
+        ]
+      },
+      "TRODATA.TRODATA_ITEMS/REGION": {
+        "@Core.Description": "Region",
+        "@Core.LongDescription": "Sales region",
+        "@RT.ShortLabel": "Region",
+        "@RT.MediumLabel": "Region",
+        "@RT.LongLabel": "Sales region",
+        "@RT.Heading": "Region",
+        "@Core.Immutable": true,
+        "@RT.ValueList": {
+          "EntitySet": "Regions",
+          "Parameters": [
+            {
+              "LocalProperty": {
+                "$PropertyPath": "REGION"
+              },
+              "ValueListProperty": "REGION_ID"
+            }
+          ]
+        }
+      },
+      "TRODATA.TRODATA_ITEMS/VERSION": {
+        "@Core.Computed": true
+      },
+      "TRODATA.TRODATA_ITEMS/CREATED_AT": {
+        "@Core.Computed": true
+      },
+      "TRODATA.TRODATA_ITEMS/CHANGED_BY": {
+        "@Core.Computed": true
+      },
+      "TRODATA.TRODATA_ITEMS": {
+        "@Core.Description": "Item",
+        "@RT.DataClass": "application"
+      },
+      "TRODATA.TRODATA_PARTS/PART_ID": {
+        "@Core.Computed": true
+      },
+      "TRODATA.TRODATA_PARTS/ITEM_ID": {
+        "@Core.Immutable": true
+      },
+      "TRODATA.TRODATA_PARTS/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name of the item",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name of the item",
+        "@RT.Heading": "Name"
+      },
+      "TRODATA.TRODATA_PARTS": {
+        "@Core.Description": "Item",
+        "@RT.DataClass": "application"
+      },
+      "TRODATA.TRODATA_REGIONS/REGION_ID": {
+        "@Core.Description": "Region",
+        "@Core.LongDescription": "Sales region",
+        "@RT.ShortLabel": "Region",
+        "@RT.MediumLabel": "Region",
+        "@RT.LongLabel": "Sales region",
+        "@RT.Heading": "Region"
+      },
+      "TRODATA.TRODATA_REGIONS/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name of the item",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name of the item",
+        "@RT.Heading": "Name"
+      },
+      "TRODATA.TRODATA_REGIONS": {
+        "@Core.Description": "Sales regions",
+        "@RT.DataClass": "configuration"
+      },
+      "TRODATA.Container/Items": {
+        "@Core.OptimisticConcurrency": [
+          {
+            "$PropertyPath": "VERSION"
+          }
+        ],
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": true
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": true
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": true
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": [
+            {
+              "$PropertyPath": "DATA"
+            }
+          ]
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": [
+            {
+              "$PropertyPath": "DATA"
+            }
+          ]
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": true,
+          "ContentIDSupported": false
+        }
+      },
+      "TRODATA.Container/Parts": {
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": true
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": true
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": true
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": true,
+          "ContentIDSupported": false
+        }
+      },
+      "TRODATA.Container/Regions": {
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": false
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": false
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": false
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": false,
+          "ContentIDSupported": false
+        }
+      }
+    }
+  }
+}

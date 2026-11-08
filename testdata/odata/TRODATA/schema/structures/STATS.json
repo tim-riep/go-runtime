@@ -1,0 +1,5 @@
+{ "name": "/TRODATA/STATS", "texts": { "en": { "label": "Statistics of items" } },
+  "components": [
+    { "name": "ITEMS", "domain": "/TRODATA/COUNT", "notNull": true },
+    { "name": "TOTAL", "domain": "/TRODATA/AMOUNT" }
+  ] }

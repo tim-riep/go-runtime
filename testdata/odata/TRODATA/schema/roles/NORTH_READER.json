@@ -1,0 +1,4 @@
+{ "name": "/TRODATA/NORTH_READER", "texts": { "en": { "label": "Reader of items in the north" } }, "authorizations": [
+  { "object": "/TRBASE/HTTP_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "RT" }], "SERVICE_PATH": [{ "value": "/rt/odata" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+  { "object": "/TRBASE/ODATA_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "TRODATA" }], "SERVICE_NAME": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+  { "object": "/TRODATA/ITEM", "fields": { "REGION": [{ "value": "NORTH" }], "ACTIVITY": [{ "value": "READ" }] } } ] }

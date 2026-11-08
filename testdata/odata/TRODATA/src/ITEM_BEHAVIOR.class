@@ -1,0 +1,59 @@
+# The behavior of the business object /TRODATA/ITEM: new items get a
+# warning, names BAD are rejected, CLOSE closes items and STATS counts
+# them.
+public class /TRODATA/ITEM_BEHAVIOR
+
+  # Warns about new items without a priority.
+  public method GREET(keys: array of key of /TRODATA/ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    var items = read business object /TRODATA/ITEM in local mode
+      /TRODATA/ITEMS fields all keys keys
+    end
+    for i, item in items
+      if item.PRIORITY is null
+        response.MESSAGE(i, /TRBASE/MESSAGE_SEVERITY.WARNING, "the item {item.ITEM_ID} has no priority")
+      end
+    end
+  end
+
+  # Rejects the name BAD.
+  public method CHECK_NAME(keys: array of key of /TRODATA/ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    var items = read business object /TRODATA/ITEM in local mode
+      /TRODATA/ITEMS fields all keys keys
+    end
+    for i, item in items
+      if (item.NAME default "") = "BAD"
+        response.FIELD_ERROR(i, "NAME", "the name BAD is not allowed")
+      end
+    end
+  end
+
+  # Closes items.
+  public method CLOSE(keys: array of key of /TRODATA/ITEMS, parameter: /TRODATA/CLOSE_REASON, response: /TRBASE/ENTITY_RESPONSE)
+    var rows: array of /TRODATA/ITEMS = []
+    for key in keys
+      var row: /TRODATA/ITEMS
+      row.ITEM_ID = key.ITEM_ID
+      row.STATUS = /TRODATA/STATUS.CLOSED
+      row.NOTE = parameter.TEXT
+      rows.APPEND(row)
+    end
+    modify business object /TRODATA/ITEM in local mode
+      update /TRODATA/ITEMS fields (STATUS, NOTE) from rows
+    end
+  end
+
+  # Counts the items and sums their amounts.
+  public method STATS(response: /TRBASE/ENTITY_RESPONSE) returns /TRODATA/STATS
+    var stats: /TRODATA/STATS
+    var total: /TRODATA/AMOUNT = 0
+    var count: /TRODATA/COUNT = 0
+    for item in select from /TRODATA/ITEMS
+      total = total + (item.AMOUNT default 0)
+      count = count + 1
+    end
+    stats.ITEMS = count
+    stats.TOTAL = total
+    return stats
+  end
+
+end

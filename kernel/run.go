@@ -217,6 +217,9 @@ type generation struct {
 	// them.
 	odata     *odataModels
 	odataOnce sync.Once
+	// metadata are the metadata documents of the services.
+	metadata     *metadataCache
+	metadataOnce sync.Once
 }
 
 // generation returns the code of the current generation. An execution

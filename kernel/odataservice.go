@@ -15,6 +15,7 @@
 package kernel
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/tim-riep/go-runtime/internal/odata"
@@ -41,7 +42,15 @@ func (k *Kernel) serveService(w http.ResponseWriter, r *http.Request, sr *servic
 			return
 		}
 		sr.writeJSON(w, r, http.StatusOK, odata.ServiceDocument(sr.m, sr.base))
+	case "$metadata":
+		k.serveMetadata(w, r, sr)
 	default:
 		sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, sr.resource))
 	}
+}
+
+// internal answers with an internal error and logs it.
+func (kr *kernelRequest) internal(w http.ResponseWriter, what string, err error) {
+	slog.Error(what, "node", kr.node.Path, "user", kr.entry.user, "tenant", kr.entry.tenant, "error", err)
+	kr.fail(w, odata.Errorf(http.StatusInternalServerError, odata.CodeInternal))
 }

@@ -1,0 +1,9 @@
+{
+  "name": "/TRODATA/ITEMS",
+  "description": { "en": "Items", "de": "Artikel" },
+  "entitySets": {
+    "Items": { "businessObject": "/TRODATA/ITEM", "entity": "/TRODATA/ITEMS" },
+    "Parts": { "businessObject": "/TRODATA/ITEM", "entity": "/TRODATA/PARTS" },
+    "Regions": { "table": "/TRODATA/REGIONS" }
+  }
+}

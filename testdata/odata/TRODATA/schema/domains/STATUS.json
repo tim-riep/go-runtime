@@ -1,0 +1,3 @@
+{ "name": "/TRODATA/STATUS", "type": "CHAR", "length": 8, "values": [
+  { "value": "NEW", "name": "NEW", "description": "New" },
+  { "value": "CLOSED", "name": "CLOSED", "description": "Closed" } ] }

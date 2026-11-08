@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Namespace="Org.OData.Core.V1" Alias="Core"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="RT.Fields" Alias="RT" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Core.Description" String="Terms of go-runtime for field labels, mandatory fields, value lists and data classes"/>
+      <Annotation Term="Core.LongDescription" String="The kernel derives these annotations from data elements, business objects and foreign keys, so that generic user interfaces can show and check entities without code of their own."/>
+      <Term Name="ShortLabel" Type="Edm.String" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="Short label of the field, at most 10 characters"/>
+      </Term>
+      <Term Name="MediumLabel" Type="Edm.String" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="Medium label of the field, at most 20 characters"/>
+      </Term>
+      <Term Name="LongLabel" Type="Edm.String" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="Long label of the field, at most 40 characters"/>
+      </Term>
+      <Term Name="Heading" Type="Edm.String" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="Column heading of the field, at most 40 characters"/>
+      </Term>
+      <Term Name="Mandatory" Type="Core.Tag" DefaultValue="true" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="The field needs a value when the instance is saved: not null, and for text not the empty string"/>
+      </Term>
+      <Term Name="ValueList" Type="RT.Fields.ValueListType" AppliesTo="Property">
+        <Annotation Term="Core.Description" String="An entity set of the service whose entities give the values of the field, along a foreign key"/>
+      </Term>
+      <ComplexType Name="ValueListType">
+        <Property Name="EntitySet" Type="Edm.String" Nullable="false">
+          <Annotation Term="Core.Description" String="The entity set with the values"/>
+        </Property>
+        <Property Name="Parameters" Type="Collection(RT.Fields.ValueListParameter)" Nullable="false">
+          <Annotation Term="Core.Description" String="The properties of the annotated entity and of the entity set that correspond"/>
+        </Property>
+      </ComplexType>
+      <ComplexType Name="ValueListParameter">
+        <Property Name="LocalProperty" Type="Edm.PropertyPath" Nullable="false"/>
+        <Property Name="ValueListProperty" Type="Edm.String" Nullable="false"/>
+      </ComplexType>
+      <Term Name="DataClass" Type="Edm.String" AppliesTo="EntityType">
+        <Annotation Term="Core.Description" String="The data class of the entity: application, configuration or runtimeConfiguration"/>
+      </Term>
+      <Term Name="Origin" Type="Edm.String">
+        <Annotation Term="Core.Description" String="The package whose behavior or extension reported a message or added an annotation"/>
+      </Term>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

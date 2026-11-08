@@ -1,0 +1,69 @@
+{
+  "$Version": "4.01",
+  "$Reference": {
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.json": {
+      "$Include": [{ "$Namespace": "Org.OData.Core.V1", "$Alias": "Core" }]
+    }
+  },
+  "RT.Fields": {
+    "$Alias": "RT",
+    "@Core.Description": "Terms of go-runtime for field labels, mandatory fields, value lists and data classes",
+    "@Core.LongDescription": "The kernel derives these annotations from data elements, business objects and foreign keys, so that generic user interfaces can show and check entities without code of their own.",
+    "ShortLabel": {
+      "$Kind": "Term",
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "Short label of the field, at most 10 characters"
+    },
+    "MediumLabel": {
+      "$Kind": "Term",
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "Medium label of the field, at most 20 characters"
+    },
+    "LongLabel": {
+      "$Kind": "Term",
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "Long label of the field, at most 40 characters"
+    },
+    "Heading": {
+      "$Kind": "Term",
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "Column heading of the field, at most 40 characters"
+    },
+    "Mandatory": {
+      "$Kind": "Term",
+      "$Type": "Core.Tag",
+      "$DefaultValue": true,
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "The field needs a value when the instance is saved: not null, and for text not the empty string"
+    },
+    "ValueList": {
+      "$Kind": "Term",
+      "$Type": "RT.Fields.ValueListType",
+      "$AppliesTo": ["Property"],
+      "@Core.Description": "An entity set of the service whose entities give the values of the field, along a foreign key"
+    },
+    "ValueListType": {
+      "$Kind": "ComplexType",
+      "EntitySet": { "@Core.Description": "The entity set with the values" },
+      "Parameters": {
+        "$Collection": true,
+        "$Type": "RT.Fields.ValueListParameter",
+        "@Core.Description": "The properties of the annotated entity and of the entity set that correspond"
+      }
+    },
+    "ValueListParameter": {
+      "$Kind": "ComplexType",
+      "LocalProperty": { "$Type": "Edm.PropertyPath" },
+      "ValueListProperty": {}
+    },
+    "DataClass": {
+      "$Kind": "Term",
+      "$AppliesTo": ["EntityType"],
+      "@Core.Description": "The data class of the entity: application, configuration or runtimeConfiguration"
+    },
+    "Origin": {
+      "$Kind": "Term",
+      "@Core.Description": "The package whose behavior or extension reported a message or added an annotation"
+    }
+  }
+}

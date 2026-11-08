@@ -1,0 +1,7 @@
+{
+  "id": "TRODATA",
+  "version": "1.0.0",
+  "description": "Items with all types, behavior and a service for the tests of OData",
+  "requires": [{ "id": "TRBASE", "version": ">=1.0.0" }],
+  "languageVersion": 1
+}

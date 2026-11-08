@@ -164,6 +164,8 @@ Commands:
                            and activation
   service show <name>      show a service with its entity sets, the public names of fields,
                            navigations and actions, and the operations it offers
+  service metadata <name> [--lang L] [--format xml|json] [--without-extensions]
+                           print the metadata document of a service as clients get it
   service activate|deactivate <name>
                            serve a service below /rt/odata or stop serving it
   implementation activate|deactivate <name> [--tenant T]
@@ -203,41 +205,43 @@ Flags (anywhere on the command line):
 `
 
 type cli struct {
-	stdout, stderr io.Writer
-	fs             *flag.FlagSet
-	db             string
-	asJSON         bool
-	dryRun         bool
-	allowDestr     bool
-	yes            bool
-	description    string
-	name           string
-	lang           string
-	tenantID       string
-	goPackage      string
-	label          string
-	expires        string
-	set            map[string]bool // flags given on the command line
-	output         string
-	maxAssetSize   int64
-	maxAssetRead   int64
-	pkg            string
-	incomplete     bool
-	userFilter     string
-	from, to, date string
-	admin          string
-	check          bool
-	dataClass      string
-	base           bool
-	node           nodeFlags
-	minutes        int
-	maxEntries     int
-	allowBranch    bool
-	allowRetag     bool
-	upgradeDeps    bool
-	expectSHA      string
-	lockFile       string
-	serve          server.Config
+	stdout, stderr    io.Writer
+	fs                *flag.FlagSet
+	db                string
+	asJSON            bool
+	dryRun            bool
+	allowDestr        bool
+	yes               bool
+	description       string
+	name              string
+	lang              string
+	tenantID          string
+	goPackage         string
+	label             string
+	expires           string
+	set               map[string]bool // flags given on the command line
+	output            string
+	maxAssetSize      int64
+	maxAssetRead      int64
+	pkg               string
+	incomplete        bool
+	userFilter        string
+	from, to, date    string
+	admin             string
+	check             bool
+	dataClass         string
+	base              bool
+	node              nodeFlags
+	format            string
+	withoutExtensions bool
+	minutes           int
+	maxEntries        int
+	allowBranch       bool
+	allowRetag        bool
+	upgradeDeps       bool
+	expectSHA         string
+	lockFile          string
+	serve             server.Config
 }
 
 func main() {
@@ -276,6 +280,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.dataClass, "data-class", "", "business-object list: only business objects of a data class: application, configuration or runtimeConfiguration")
 	c.fs.BoolVar(&c.base, "base", false, "business-object show: without the extensions of other packages")
 	c.node.register(c.fs)
+	c.fs.StringVar(&c.format, "format", "", "service metadata: xml (the default) or json")
+	c.fs.BoolVar(&c.withoutExtensions, "without-extensions", false, "service metadata: without the implementations of /TRBASE/ODATA_METADATA")
 	c.fs.IntVar(&c.minutes, "minutes", 30, "trace authorizations start: how long the trace runs")
 	c.fs.IntVar(&c.maxEntries, "max", 10_000, "trace authorizations start: the most checks it records")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")

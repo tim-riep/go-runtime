@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Namespace="Org.OData.Core.V1" Alias="Core"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.xml">
+    <edmx:Include Namespace="Org.OData.Validation.V1" Alias="Validation"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+    <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="Capabilities"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="../../$vocabularies/RT.Fields.xml">
+    <edmx:Include Namespace="RT.Fields" Alias="RT"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="TRODATA" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <EntityType Name="TRODATA_ITEMS">
+        <Key>
+          <PropertyRef Name="ITEM_ID"/>
+        </Key>
+        <Property Name="ITEM_ID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="NAME" Type="Edm.String" MaxLength="40"/>
+        <Property Name="STATUS" Type="Edm.String" Nullable="false" MaxLength="8"/>
+        <Property Name="PRIORITY" Type="Edm.Int32"/>
+        <Property Name="REGION" Type="Edm.String" Nullable="false" MaxLength="8"/>
+        <Property Name="AMOUNT" Type="Edm.Decimal" Precision="15" Scale="2"/>
+        <Property Name="QUANTITY" Type="Edm.Int64"/>
+        <Property Name="NOTE" Type="Edm.String"/>
+        <Property Name="ACTIVE" Type="Edm.Boolean"/>
+        <Property Name="DUE_ON" Type="Edm.Date"/>
+        <Property Name="DONE_AT" Type="Edm.DateTimeOffset" Precision="6"/>
+        <Property Name="REFERENCE" Type="Edm.Guid"/>
+        <Property Name="DATA" Type="Edm.Binary"/>
+        <Property Name="VERSION" Type="Edm.Int64"/>
+        <Property Name="CREATED_AT" Type="Edm.DateTimeOffset" Precision="6"/>
+        <Property Name="CHANGED_BY" Type="Edm.String" MaxLength="80"/>
+        <NavigationProperty Name="Parts" Type="Collection(TRODATA.TRODATA_PARTS)" Partner="Items"/>
+        <NavigationProperty Name="Regions" Type="TRODATA.TRODATA_REGIONS" Nullable="false">
+          <ReferentialConstraint Property="REGION" ReferencedProperty="REGION_ID"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="TRODATA_PARTS">
+        <Key>
+          <PropertyRef Name="PART_ID"/>
+        </Key>
+        <Property Name="PART_ID" Type="Edm.Guid" Nullable="false"/>
+        <Property Name="ITEM_ID" Type="Edm.String" Nullable="false" MaxLength="10"/>
+        <Property Name="NAME" Type="Edm.String" MaxLength="40"/>
+        <Property Name="COUNT" Type="Edm.Int32"/>
+        <NavigationProperty Name="Items" Type="TRODATA.TRODATA_ITEMS" Nullable="false" Partner="Parts">
+          <ReferentialConstraint Property="ITEM_ID" ReferencedProperty="ITEM_ID"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="TRODATA_REGIONS">
+        <Key>
+          <PropertyRef Name="REGION_ID"/>
+        </Key>
+        <Property Name="REGION_ID" Type="Edm.String" Nullable="false" MaxLength="8"/>
+        <Property Name="NAME" Type="Edm.String" Nullable="false" MaxLength="40"/>
+      </EntityType>
+      <ComplexType Name="TRODATA_STATS">
+        <Property Name="ITEMS" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="TOTAL" Type="Edm.Decimal" Precision="15" Scale="2"/>
+      </ComplexType>
+      <Action Name="CLOSE" IsBound="true" EntitySetPath="_it">
+        <Parameter Name="_it" Type="TRODATA.TRODATA_ITEMS" Nullable="false"/>
+        <Parameter Name="TEXT" Type="Edm.String"/>
+        <ReturnType Type="TRODATA.TRODATA_ITEMS" Nullable="false"/>
+      </Action>
+      <Action Name="STATS">
+        <ReturnType Type="TRODATA.TRODATA_STATS" Nullable="false"/>
+      </Action>
+      <EntityContainer Name="Container">
+        <EntitySet Name="Items" EntityType="TRODATA.TRODATA_ITEMS">
+          <NavigationPropertyBinding Path="Parts" Target="Parts"/>
+          <NavigationPropertyBinding Path="Regions" Target="Regions"/>
+        </EntitySet>
+        <EntitySet Name="Parts" EntityType="TRODATA.TRODATA_PARTS">
+          <NavigationPropertyBinding Path="Items" Target="Items"/>
+        </EntitySet>
+        <EntitySet Name="Regions" EntityType="TRODATA.TRODATA_REGIONS"/>
+        <ActionImport Name="STATS" Action="TRODATA.STATS"/>
+      </EntityContainer>
+      <Annotations Target="TRODATA.Container">
+        <Annotation Term="Core.Description" String="Items"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/ITEM_ID">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Name of the item"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Name of the item"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+        <Annotation Term="RT.Mandatory" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/STATUS">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Validation.AllowedValues">
+          <Collection>
+            <Record>
+              <PropertyValue Property="Value" String="NEW"/>
+              <Annotation Term="Core.Description" String="New"/>
+            </Record>
+            <Record>
+              <PropertyValue Property="Value" String="CLOSED"/>
+              <Annotation Term="Core.Description" String="Closed"/>
+            </Record>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/PRIORITY">
+        <Annotation Term="Validation.AllowedValues">
+          <Collection>
+            <Record>
+              <PropertyValue Property="Value" Int="1"/>
+              <Annotation Term="Core.Description" String="Low"/>
+            </Record>
+            <Record>
+              <PropertyValue Property="Value" Int="2"/>
+              <Annotation Term="Core.Description" String="High"/>
+            </Record>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/REGION">
+        <Annotation Term="Core.Description" String="Region"/>
+        <Annotation Term="Core.LongDescription" String="Sales region"/>
+        <Annotation Term="RT.ShortLabel" String="Region"/>
+        <Annotation Term="RT.MediumLabel" String="Region"/>
+        <Annotation Term="RT.LongLabel" String="Sales region"/>
+        <Annotation Term="RT.Heading" String="Region"/>
+        <Annotation Term="Core.Immutable" Bool="true"/>
+        <Annotation Term="RT.ValueList">
+          <Record>
+            <PropertyValue Property="EntitySet" String="Regions"/>
+            <PropertyValue Property="Parameters">
+              <Collection>
+                <Record>
+                  <PropertyValue Property="LocalProperty" PropertyPath="REGION"/>
+                  <PropertyValue Property="ValueListProperty" String="REGION_ID"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/VERSION">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/CREATED_AT">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS/CHANGED_BY">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_ITEMS">
+        <Annotation Term="Core.Description" String="Item"/>
+        <Annotation Term="RT.DataClass" String="application"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_PARTS/PART_ID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_PARTS/ITEM_ID">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_PARTS/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Name of the item"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Name of the item"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_PARTS">
+        <Annotation Term="Core.Description" String="Item"/>
+        <Annotation Term="RT.DataClass" String="application"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_REGIONS/REGION_ID">
+        <Annotation Term="Core.Description" String="Region"/>
+        <Annotation Term="Core.LongDescription" String="Sales region"/>
+        <Annotation Term="RT.ShortLabel" String="Region"/>
+        <Annotation Term="RT.MediumLabel" String="Region"/>
+        <Annotation Term="RT.LongLabel" String="Sales region"/>
+        <Annotation Term="RT.Heading" String="Region"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_REGIONS/NAME">
+        <Annotation Term="Core.Description" String="Name"/>
+        <Annotation Term="Core.LongDescription" String="Name of the item"/>
+        <Annotation Term="RT.ShortLabel" String="Name"/>
+        <Annotation Term="RT.MediumLabel" String="Name"/>
+        <Annotation Term="RT.LongLabel" String="Name of the item"/>
+        <Annotation Term="RT.Heading" String="Name"/>
+      </Annotations>
+      <Annotations Target="TRODATA.TRODATA_REGIONS">
+        <Annotation Term="Core.Description" String="Sales regions"/>
+        <Annotation Term="RT.DataClass" String="configuration"/>
+      </Annotations>
+      <Annotations Target="TRODATA.Container/Items">
+        <Annotation Term="Core.OptimisticConcurrency">
+          <Collection>
+            <PropertyPath>VERSION</PropertyPath>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection>
+                <PropertyPath>DATA</PropertyPath>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection>
+                <PropertyPath>DATA</PropertyPath>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="true"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRODATA.Container/Parts">
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="true"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="TRODATA.Container/Regions">
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record>
+            <PropertyValue Property="Updatable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record>
+            <PropertyValue Property="Deletable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.FilterRestrictions">
+          <Record>
+            <PropertyValue Property="Filterable" Bool="true"/>
+            <PropertyValue Property="NonFilterableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SortRestrictions">
+          <Record>
+            <PropertyValue Property="Sortable" Bool="true"/>
+            <PropertyValue Property="NonSortableProperties">
+              <Collection/>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.TopSupported" Bool="true"/>
+        <Annotation Term="Capabilities.SkipSupported" Bool="true"/>
+        <Annotation Term="Capabilities.CountRestrictions">
+          <Record>
+            <PropertyValue Property="Countable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.ExpandRestrictions">
+          <Record>
+            <PropertyValue Property="Expandable" Bool="true"/>
+            <PropertyValue Property="MaxLevels" Int="1"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record>
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepInsertSupport">
+          <Record>
+            <PropertyValue Property="Supported" Bool="false"/>
+            <PropertyValue Property="ContentIDSupported" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

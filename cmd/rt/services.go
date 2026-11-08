@@ -31,7 +31,7 @@ import (
 // service runs the commands on services.
 func (c *cli) service(ctx context.Context, k *kernel.Kernel, args []string) int {
 	usage := func() int {
-		fmt.Fprintln(c.stderr, "usage: rt service list [package] | show <name> | activate <name> | deactivate <name>")
+		fmt.Fprintln(c.stderr, "usage: rt service list [package] | show <name> | activate <name> | deactivate <name> | metadata <name> [--lang L] [--format xml|json] [--without-extensions]")
 		return exitUsage
 	}
 	switch {
@@ -66,6 +66,17 @@ func (c *cli) service(ctx context.Context, k *kernel.Kernel, args []string) int 
 			return exitOK
 		}
 		c.printService(d)
+		return exitOK
+	case len(args) == 2 && args[0] == "metadata":
+		lang := c.lang
+		if lang == "" {
+			lang = model.DefaultLanguage
+		}
+		doc, err := k.ServiceMetadata(ctx, args[1], kernel.ServiceMetadataOptions{Language: lang, Format: c.format, WithoutExtensions: c.withoutExtensions})
+		if err != nil {
+			return c.fail(err)
+		}
+		c.stdout.Write(doc)
 		return exitOK
 	case len(args) == 2 && (args[0] == "activate" || args[0] == "deactivate"):
 		change := k.ActivateService

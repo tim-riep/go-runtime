@@ -1,0 +1,5 @@
+{ "name": "/TRODATA/EDITOR", "texts": { "en": { "label": "Editor of items" } }, "authorizations": [
+  { "object": "/TRBASE/HTTP_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "RT" }], "SERVICE_PATH": [{ "value": "/rt/odata" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+  { "object": "/TRBASE/ODATA_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "TRODATA" }], "SERVICE_NAME": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+  { "object": "/TRBASE/CONFIGURATION", "fields": { "BUSINESS_OBJECT": [{ "pattern": "/TRODATA/*" }], "DATA_CLASS": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } },
+  { "object": "/TRODATA/ITEM", "fields": { "REGION": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } } ] }

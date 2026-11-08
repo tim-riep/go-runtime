@@ -98,6 +98,10 @@ func (k *Kernel) serveOData(w http.ResponseWriter, r *http.Request, kr *kernelRe
 		k.serveServiceList(w, r, kr)
 		return
 	}
+	if name, ok := strings.CutPrefix(kr.rest, odata.VocabulariesPath); ok {
+		k.serveVocabulary(w, r, kr, name)
+		return
+	}
 	segs := strings.SplitN(kr.rest, "/", 3)
 	if len(segs) < 2 {
 		kr.fail(w, odata.Errorf(http.StatusNotFound, odata.CodeNotFound, r.URL.Path))

@@ -1,0 +1,3 @@
+{ "name": "/TRODATA/NAME", "domain": "/TRODATA/NAME", "texts": {
+  "en": { "short": "Name", "medium": "Name", "long": "Name of the item", "heading": "Name" },
+  "de": { "short": "Name", "medium": "Bezeichnung", "long": "Bezeichnung des Artikels", "heading": "Bezeichnung" } } }

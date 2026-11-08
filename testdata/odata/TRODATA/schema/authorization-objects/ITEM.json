@@ -1,0 +1,3 @@
+{ "name": "/TRODATA/ITEM", "texts": { "en": { "label": "Items" } },
+  "fields": [ { "name": "REGION", "dataElement": "/TRODATA/REGION" }, { "name": "ACTIVITY" } ],
+  "activities": ["READ", "CREATE", "UPDATE", "DELETE", "EXECUTE"] }

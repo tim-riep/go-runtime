@@ -1,0 +1,2 @@
+{ "name": "/TRODATA/CLOSE_REASON", "texts": { "en": { "label": "Reason for closing" } },
+  "components": [ { "name": "TEXT", "domain": "/TRODATA/NOTE" } ] }
