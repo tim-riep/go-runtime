@@ -83,6 +83,11 @@ func TestOpen(t *testing.T) {
 	if err != nil || read(t, fsys, "manifest.json") != "otto" {
 		t.Fatalf("directory: %v", err)
 	}
+	keep, err := pkgzip.Open("repo.zip", archive(t, entry{name: "r-x/manifest.json", data: "m"}, entry{name: "r-x/README.md", data: "r"}, entry{name: "r-x/src/A.class", data: "a"}),
+		pkgzip.DefaultLimits, pkgzip.Options{StripTop: true, Keep: []string{"manifest.json", "src"}})
+	if _, rerr := fs.ReadFile(keep, "README.md"); err != nil || rerr == nil || read(t, keep, "src/A.class") != "a" {
+		t.Errorf("keep: %v %v", err, rerr)
+	}
 	if _, err := fs.ReadFile(fsys, "../TRFIN/manifest.json"); err == nil {
 		t.Error("left the directory")
 	}

@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 	"testing/fstest"
 
@@ -50,6 +51,9 @@ type Options struct {
 	// top-level directory is removed only when the root has no
 	// manifest.json.
 	StripTop bool
+	// Keep lists the entries at the root of the package that are taken,
+	// such as manifest.json and src; empty takes all.
+	Keep []string
 }
 
 // Open reads an archive into a file system with the package at its root.
@@ -130,6 +134,9 @@ func Open(name string, data []byte, l Limits, opts Options) (fs.FS, error) {
 	}
 	out := fstest.MapFS{}
 	for p, b := range files {
+		if top, _, _ := strings.Cut(p, "/"); len(opts.Keep) > 0 && !slices.Contains(opts.Keep, top) {
+			continue
+		}
 		out[p] = &fstest.MapFile{Data: b, Mode: 0o444}
 	}
 	return out, nil

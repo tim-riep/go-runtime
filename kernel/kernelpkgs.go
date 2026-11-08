@@ -50,6 +50,9 @@ type Config struct {
 	// 0 means DefaultMaxAssetRead. Streaming to an HTTP response has no
 	// limit.
 	MaxAssetRead int64
+	// Sources are the remote package sources, such as GitHub; without
+	// them only directories and ZIP files are installed.
+	Sources SourceConfig
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

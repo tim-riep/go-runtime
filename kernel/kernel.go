@@ -63,6 +63,16 @@ type Options struct {
 	// Confirm acknowledges that the operation deletes data. Uninstalling a
 	// package and deleting a tenant require it.
 	Confirm bool
+	// By names who makes the change in the origins of packages: a user, or
+	// "cli"; empty means "api".
+	By string
+}
+
+func (o Options) by() string {
+	if o.By == "" {
+		return "api"
+	}
+	return o.By
 }
 
 // Kernel manages packages in one database.
@@ -80,6 +90,8 @@ type Kernel struct {
 	code atomic.Pointer[generation]
 	// natives are the native methods of the kernel binary.
 	natives *native.Registry
+	// sources are the remote package sources.
+	sources SourceConfig
 	// kernelPkgs are the kernel packages in installation order.
 	kernelPkgs []*model.Package
 	// maxFailedLogins locks a user after this many failed logins.
@@ -184,7 +196,7 @@ func New(db *sql.DB, d dialect.Dialect) *Kernel {
 func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
 		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
-		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry),
+		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry), sources: cfg.Sources,
 		effective: newEffectiveCache()}
 	if k.maxAssetRead <= 0 {
 		k.maxAssetRead = DefaultMaxAssetRead
@@ -493,6 +505,9 @@ type operation struct {
 	packages func(cur *model.Schema) []plan.PackageChange
 	target   func(cur *model.Schema, now time.Time) (*model.Schema, error)
 	check    func(p *plan.Plan) error
+	// origins are written for packages installed or upgraded by the
+	// operation; the origins of removed packages are dropped.
+	origins func() []repo.Origin
 }
 
 // apply runs an operation. Without DryRun everything happens in one
@@ -555,6 +570,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 			return err
 		}
 		if err := k.afterRoles(ctx, q, cur, want, started); err != nil {
+			return err
+		}
+		if err := k.syncOrigins(ctx, q, want, o, started, opts); err != nil {
 			return err
 		}
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())

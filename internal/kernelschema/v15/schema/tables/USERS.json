@@ -1,0 +1,68 @@
+{
+  "name": "/RT/USERS",
+  "description": "Users who sign in to http services",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME"
+    },
+    {
+      "name": "STATUS",
+      "domain": "/RT/USER_STATUS",
+      "notNull": true
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "DEFAULT_TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "PASSWORD_HASH",
+      "domain": "/RT/PASSWORD_HASH"
+    },
+    {
+      "name": "FAILED_LOGINS",
+      "domain": "/RT/COUNT",
+      "notNull": true
+    },
+    {
+      "name": "LOCKED_AT",
+      "domain": "/RT/TIMESTAMP"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "USER_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    },
+    {
+      "name": "DEFAULT_TENANT",
+      "table": "/RT/TENANTS",
+      "fields": [
+        {
+          "field": "DEFAULT_TENANT",
+          "references": "TENANT"
+        }
+      ]
+    }
+  ]
+}

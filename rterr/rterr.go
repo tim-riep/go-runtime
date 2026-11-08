@@ -590,3 +590,12 @@ func (e *SourceError) Error() string {
 	}
 	return s
 }
+
+// IntegrityError reports a package archive that is not what was expected:
+// another hash than requested or recorded, or a tag that moved.
+type IntegrityError struct {
+	Address string
+	Detail  string
+}
+
+func (e *IntegrityError) Error() string { return fmt.Sprintf("%s: %s", e.Address, e.Detail) }

@@ -1,0 +1,64 @@
+{
+  "name": "/RT/AUTH_LAST_FAILED",
+  "description": "The last failed authorization check of a user in a tenant, with the grants of the user on the object at that time",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME"
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "FAILED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "CHECK_VALUES",
+      "domain": "/RT/CHECK_DATA",
+      "notNull": true,
+      "description": "Values by field, null for any"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Package of the code that made the check"
+    },
+    {
+      "name": "CLASS_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LINE_NO",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "KERNEL_FUNCTION",
+      "domain": "/RT/KERNEL_FUNCTION"
+    },
+    {
+      "name": "GRANTS",
+      "domain": "/RT/CHECK_DATA",
+      "notNull": true,
+      "description": "Effective grants of the user on the object"
+    }
+  ],
+  "primaryKey": [
+    "USER_NAME",
+    "TENANT"
+  ],
+  "foreignKeys": []
+}

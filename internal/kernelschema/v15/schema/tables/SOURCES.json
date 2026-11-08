@@ -1,0 +1,52 @@
+{
+  "name": "/RT/SOURCES",
+  "description": "Source files of packages, the only source for compiling their code",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH"
+    },
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/SOURCE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "TEXT",
+      "domain": "/RT/SOURCE_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "FILE_PATH"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

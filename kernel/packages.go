@@ -56,6 +56,9 @@ func (k *Kernel) Install(ctx context.Context, pkgs []*model.Package, opts Option
 		if err := k.rejectKernelPackage(p, "install"); err != nil {
 			return nil, err
 		}
+		if err := k.rejectKernelSources(p); err != nil {
+			return nil, err
+		}
 	}
 	return k.install(ctx, pkgs, opts)
 }
@@ -125,7 +128,8 @@ func (k *Kernel) install(ctx context.Context, pkgs []*model.Package, opts Option
 			}
 			return want, errs.Err()
 		},
-		check: rejectDestructive(subject, opts),
+		check:   rejectDestructive(subject, opts),
+		origins: localOrigins(pkgs...),
 	}, opts)
 }
 
@@ -135,6 +139,9 @@ func (k *Kernel) install(ctx context.Context, pkgs []*model.Package, opts Option
 // same version may be applied again.
 func (k *Kernel) Upgrade(ctx context.Context, pkg *model.Package, opts Options) (*plan.Plan, error) {
 	if err := k.rejectKernelPackage(pkg, "upgrade"); err != nil {
+		return nil, err
+	}
+	if err := k.rejectKernelSources(pkg); err != nil {
 		return nil, err
 	}
 	return k.upgrade(ctx, pkg, opts)
@@ -166,7 +173,8 @@ func (k *Kernel) upgrade(ctx context.Context, pkg *model.Package, opts Options) 
 			want.RemovePackage(id)
 			return want, want.AddPackage(pkg, info.InstalledAt, now)
 		},
-		check: rejectDestructive(string(id), opts),
+		check:   rejectDestructive(string(id), opts),
+		origins: localOrigins(pkg),
 	}, opts)
 }
 

@@ -357,13 +357,14 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 			InstalledAt: tm(p["INSTALLED_AT"]), UpdatedAt: tm(p["UPDATED_AT"]),
 		}
 	}
-	deps, err := r.selectRows(ctx, q, TPackageDeps, []string{"PACKAGE_ID", "REQUIRED_ID", "VERSION_CONSTRAINT"}, "PACKAGE_ID", "REQUIRED_ID")
+	deps, err := r.selectRows(ctx, q, TPackageDeps, []string{"PACKAGE_ID", "REQUIRED_ID", "VERSION_CONSTRAINT", "SOURCE"}, "PACKAGE_ID", "REQUIRED_ID")
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range deps {
 		if p := s.Packages[owner(d["PACKAGE_ID"])]; p != nil {
-			p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(str(d["REQUIRED_ID"])), Constraint: opt(d["VERSION_CONSTRAINT"])})
+			p.Manifest.Requires = append(p.Manifest.Requires, model.Dependency{ID: model.PackageID(str(d["REQUIRED_ID"])), Constraint: opt(d["VERSION_CONSTRAINT"]),
+				Source: opt(d["SOURCE"])})
 		}
 	}
 	caps, err := r.selectRows(ctx, q, TPackageCaps, []string{"PACKAGE_ID", "CAPABILITY"}, "PACKAGE_ID", "CAPABILITY")
@@ -711,7 +712,8 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	}
 	for _, id := range s.PackageIDs() {
 		for _, d := range s.Packages[id].Manifest.Requires {
-			if err := r.insert(ctx, q, TPackageDeps, row{"PACKAGE_ID": string(id), "REQUIRED_ID": string(d.ID), "VERSION_CONSTRAINT": val(d.Constraint)}); err != nil {
+			if err := r.insert(ctx, q, TPackageDeps, row{"PACKAGE_ID": string(id), "REQUIRED_ID": string(d.ID), "VERSION_CONSTRAINT": val(d.Constraint),
+				"SOURCE": val(d.Source)}); err != nil {
 				return err
 			}
 		}

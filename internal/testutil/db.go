@@ -80,3 +80,12 @@ func postgresSchema(t testing.TB, dsn string) Database {
 	}
 	return Database{Name: "postgres", DSN: s}
 }
+
+// Another returns a second empty database of the dialect of db.
+func Another(t testing.TB, db Database) Database {
+	t.Helper()
+	if db.Name == "postgres" {
+		return postgresSchema(t, os.Getenv(PostgresEnv))
+	}
+	return Database{Name: "sqlite", DSN: "sqlite:" + filepath.Join(t.TempDir(), "rt2.db")}
+}

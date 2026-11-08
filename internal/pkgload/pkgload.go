@@ -52,6 +52,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/schemas"
+	"github.com/tim-riep/go-runtime/source"
 )
 
 // Paths inside a package.
@@ -116,6 +117,7 @@ type manifestDoc struct {
 	Requires    []struct {
 		ID      string                 `json:"id"`
 		Version model.Optional[string] `json:"version"`
+		Source  model.Optional[string] `json:"source"`
 	} `json:"requires"`
 	LanguageVersion int      `json:"languageVersion"`
 	KernelPackage   bool     `json:"kernelPackage"`
@@ -216,8 +218,21 @@ func (l *loader) load() *model.Package {
 	if l.opts.Kernel {
 		pkg.Manifest.ID = model.Kernel
 	}
-	for _, r := range m.Requires {
-		pkg.Manifest.Requires = append(pkg.Manifest.Requires, model.Dependency{ID: model.PackageID(r.ID), Constraint: r.Version})
+	for i, r := range m.Requires {
+		dep := model.Dependency{ID: model.PackageID(r.ID), Constraint: r.Version}
+		if s, ok := r.Source.Get(); ok {
+			host, _, _ := strings.Cut(strings.TrimPrefix(s, "https://"), "/")
+			a, err := source.Parse(s, host)
+			switch {
+			case err != nil:
+				l.fail(rterr.CodeSchema, l.loc(ManifestFile).At(fmt.Sprintf("/requires/%d/source", i)), "%v", err)
+			case a.Spec.Kind != source.Latest:
+				l.fail(rterr.CodeSchema, l.loc(ManifestFile).At(fmt.Sprintf("/requires/%d/source", i)), "the source %s names a version; the version belongs in \"version\"", s)
+			default:
+				dep.Source = model.Some(a.Location())
+			}
+		}
+		pkg.Manifest.Requires = append(pkg.Manifest.Requires, dep)
 	}
 	l.checkLayout()
 
@@ -499,3 +514,7 @@ func (l *loader) extension(file string, doc *extensionDoc) model.Extension {
 	}
 	return e
 }
+
+// TopLevel are the entries a package has at its root; the archives of
+// repositories may have other files beside them, such as README.md.
+var TopLevel = []string{ManifestFile, SchemaDir, SourceDir, AssetsDir, TransformationsDir}

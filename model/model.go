@@ -341,6 +341,9 @@ type ExtensionKey struct {
 type Dependency struct {
 	ID         PackageID        `json:"id"`
 	Constraint Optional[string] `json:"version"` // None means any version
+	// Source is the address without version where the package can be
+	// installed from, e.g. github.com/tim-riep/trfin.
+	Source Optional[string] `json:"source"`
 }
 
 // Manifest describes a package.

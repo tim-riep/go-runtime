@@ -1,0 +1,6 @@
+{
+  "name": "/RT/PARAMETER_NAME",
+  "description": "Name of a parameter",
+  "type": "CHAR",
+  "length": 64
+}

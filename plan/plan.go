@@ -196,6 +196,39 @@ type PackageChange struct {
 	ID   string                 `json:"id"`
 	From model.Optional[string] `json:"from"` // None for installations
 	To   model.Optional[string] `json:"to"`   // None for removals
+	// Source tells where a package from a remote source comes from.
+	Source *PackageSource `json:"source,omitempty"`
+}
+
+// PackageSource is the origin of a package from a remote source.
+type PackageSource struct {
+	Kind      string `json:"kind"` // asset or archive
+	Address   string `json:"address"`
+	Requested string `json:"requested,omitempty"`
+	Tag       string `json:"tag,omitempty"`
+	Commit    string `json:"commit"`
+	Asset     string `json:"asset,omitempty"`
+	SHA256    string `json:"sha256"`
+	// Dependency names the package whose requirement brought it in.
+	Dependency string `json:"dependency,omitempty"`
+}
+
+func (s *PackageSource) String() string {
+	out := s.Address
+	if s.Tag != "" {
+		out += ", tag " + s.Tag
+	}
+	out += ", commit " + s.Commit
+	if s.Asset != "" {
+		out += ", asset " + s.Asset
+	} else {
+		out += ", source archive"
+	}
+	out += ", sha256 " + s.SHA256
+	if s.Dependency != "" {
+		out += ", required by " + s.Dependency
+	}
+	return out
 }
 
 // Plan is the complete description of an operation.
@@ -285,7 +318,21 @@ func (p *Plan) Text() string {
 	var sb strings.Builder
 	sb.WriteString("Plan: ")
 	sb.WriteString(p.Summary())
-	sb.WriteString("\n\nChanges:\n")
+	sources := false
+	for _, pc := range p.Packages {
+		if pc.Source != nil {
+			if !sources {
+				sb.WriteString("\n\nSources:\n")
+				sources = true
+			}
+			fmt.Fprintf(&sb, "  %s %s from %s\n", pc.ID, pc.To.Or(""), pc.Source)
+		}
+	}
+	if sources {
+		sb.WriteString("\nChanges:\n")
+	} else {
+		sb.WriteString("\n\nChanges:\n")
+	}
 	if len(p.Changes) == 0 {
 		sb.WriteString("  (none)\n")
 	}
