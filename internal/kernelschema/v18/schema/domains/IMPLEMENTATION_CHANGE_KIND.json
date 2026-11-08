@@ -1,0 +1,28 @@
+{
+  "name": "/RT/IMPLEMENTATION_CHANGE_KIND",
+  "description": "Kind of a change of the activation of implementations",
+  "type": "CHAR",
+  "length": 32,
+  "values": [
+    {
+      "value": "activate",
+      "description": "Activated, globally or in a tenant"
+    },
+    {
+      "value": "deactivate",
+      "description": "Deactivated, globally or in a tenant"
+    },
+    {
+      "value": "reset",
+      "description": "Setting of a tenant removed; the global activation applies"
+    },
+    {
+      "value": "installed",
+      "description": "Implementation installed, active"
+    },
+    {
+      "value": "removed",
+      "description": "Implementation removed with its activation"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "/RT/COMPONENT_ORIGIN",
+  "description": "Origin of a structure component",
+  "type": "CHAR",
+  "length": 9,
+  "values": [
+    {
+      "value": "STRUCTURE",
+      "description": "Declared by the structure"
+    },
+    {
+      "value": "EXTENSION",
+      "description": "Added by a structure extension"
+    }
+  ]
+}

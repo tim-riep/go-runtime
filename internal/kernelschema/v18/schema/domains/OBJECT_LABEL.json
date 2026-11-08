@@ -1,0 +1,6 @@
+{
+  "name": "/RT/OBJECT_LABEL",
+  "description": "Label of a structure or array type",
+  "type": "CHAR",
+  "length": 60
+}

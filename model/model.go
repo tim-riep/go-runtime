@@ -409,6 +409,7 @@ type Package struct {
 	Roles                []Role
 	ExtensionPoints      []ExtensionPoint
 	Implementations      []Implementation
+	BusinessObjects      []BusinessObject
 	Origin               string // where the package was loaded from
 }
 

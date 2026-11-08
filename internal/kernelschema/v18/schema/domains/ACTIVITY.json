@@ -1,0 +1,61 @@
+{
+  "name": "/RT/ACTIVITY",
+  "description": "Activity of an authorization object",
+  "type": "CHAR",
+  "length": 16,
+  "allowEmpty": false,
+  "values": [
+    {
+      "value": "READ",
+      "description": "Display and read data"
+    },
+    {
+      "value": "CREATE",
+      "description": "Create new data"
+    },
+    {
+      "value": "UPDATE",
+      "description": "Change existing data"
+    },
+    {
+      "value": "DELETE",
+      "description": "Delete data"
+    },
+    {
+      "value": "EXECUTE",
+      "description": "Start a processing, evaluation or action"
+    },
+    {
+      "value": "APPROVE",
+      "description": "Approve or release"
+    },
+    {
+      "value": "REJECT",
+      "description": "Reject"
+    },
+    {
+      "value": "CANCEL",
+      "description": "Cancel or reverse a posted or completed transaction"
+    },
+    {
+      "value": "IMPORT",
+      "description": "Take over data from files or other systems"
+    },
+    {
+      "value": "EXPORT",
+      "description": "Download data or output it as a file"
+    },
+    {
+      "value": "PRINT",
+      "description": "Output and print"
+    },
+    {
+      "value": "SEND",
+      "description": "Transmit to third parties, e.g. by e-mail or interface"
+    },
+    {
+      "value": "ADMINISTER",
+      "description": "Maintain settings and administrative functions"
+    }
+  ]
+}

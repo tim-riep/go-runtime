@@ -1,0 +1,20 @@
+{
+  "name": "/RT/BEHAVIOR_KIND",
+  "description": "Kind of a method of a behavior class",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "determination",
+      "description": "Determination"
+    },
+    {
+      "value": "validation",
+      "description": "Validation"
+    },
+    {
+      "value": "action",
+      "description": "Action"
+    }
+  ]
+}

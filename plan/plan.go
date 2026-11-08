@@ -103,6 +103,10 @@ const (
 	DropImplementation   ChangeKind = "drop-implementation"
 	AlterImplementation  ChangeKind = "alter-implementation"
 
+	CreateBusinessObject ChangeKind = "create-business-object"
+	DropBusinessObject   ChangeKind = "drop-business-object"
+	AlterBusinessObject  ChangeKind = "alter-business-object"
+
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
 	AlterAssetRepository ChangeKind = "alter-asset-repository"
@@ -130,7 +134,8 @@ func (k ChangeKind) Physical() bool {
 		AddAsset, ReplaceAsset, DropAsset, AlterAsset, AddAssetVariant, ReplaceAssetVariant, DropAssetVariant,
 		CreateAuthorizationObject, DropAuthorizationObject, AlterAuthorizationObject,
 		CreateRole, DropRole, AlterRole, IncompleteAuthorization,
-		CreateExtensionPoint, DropExtensionPoint, AlterExtensionPoint, CreateImplementation, DropImplementation, AlterImplementation:
+		CreateExtensionPoint, DropExtensionPoint, AlterExtensionPoint, CreateImplementation, DropImplementation, AlterImplementation,
+		CreateBusinessObject, DropBusinessObject, AlterBusinessObject:
 		return false
 	}
 	return true

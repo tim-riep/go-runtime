@@ -1,0 +1,47 @@
+{
+  "name": "/RT/ARRAY_TYPES",
+  "description": "Array types",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ARRAY_TYPE",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "ROW_KIND",
+      "domain": "/RT/TYPE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "ROW_TYPE",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KEY_UNIQUE",
+      "domain": "/RT/FLAG",
+      "description": "Whether the key is unique, empty for arrays without key"
+    }
+  ],
+  "primaryKey": [
+    "ARRAY_TYPE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

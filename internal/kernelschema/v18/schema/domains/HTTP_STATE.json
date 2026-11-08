@@ -1,0 +1,20 @@
+{
+  "name": "/RT/HTTP_STATE",
+  "description": "Activation state of a service node",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "new",
+      "description": "Shipped and never activated"
+    },
+    {
+      "value": "active",
+      "description": "Active"
+    },
+    {
+      "value": "inactive",
+      "description": "Deactivated"
+    }
+  ]
+}

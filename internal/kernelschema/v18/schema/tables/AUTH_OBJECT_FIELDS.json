@@ -1,0 +1,45 @@
+{
+  "name": "/RT/AUTH_OBJECT_FIELDS",
+  "description": "Fields of authorization objects in their order; ACTIVITY has neither data element nor domain",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "DATA_ELEMENT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "DOMAIN_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    }
+  ],
+  "primaryKey": [
+    "OBJECT_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "OBJECT",
+      "table": "/RT/AUTH_OBJECTS",
+      "fields": [
+        {
+          "field": "OBJECT_NAME",
+          "references": "OBJECT_NAME"
+        }
+      ]
+    }
+  ]
+}

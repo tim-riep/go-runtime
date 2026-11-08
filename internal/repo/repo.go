@@ -548,6 +548,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadExtensionPoints(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadBusinessObjects(ctx, q, s); err != nil {
+		return nil, err
+	}
 	if err := r.loadSources(ctx, q, s); err != nil {
 		return nil, err
 	}
@@ -670,7 +673,8 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
+var deleteOrder = []string{TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
+	TBusinessObjectTexts, TBusinessObjects, TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
 	TExtensionPointTexts, TExtensionPoints, TRoleAuthValues, TRoleAuthorizations, TCompositeRoles, TRoleTexts, TRoles, TAuthObjectActivities, TAuthObjectFields, TAuthObjectTexts, TAuthObjects, THTTPHandlerParams, THTTPHandlers, THTTPServiceTexts, THTTPAuthFields, THTTPServices, TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageCaps, TPackageDeps, TPackages}
@@ -805,6 +809,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		return err
 	}
 	if err := r.writeExtensionPoints(ctx, q, s); err != nil {
+		return err
+	}
+	if err := r.writeBusinessObjects(ctx, q, s); err != nil {
 		return err
 	}
 	if err := r.writeSources(ctx, q, s); err != nil {

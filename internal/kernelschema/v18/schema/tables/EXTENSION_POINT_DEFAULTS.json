@@ -1,0 +1,57 @@
+{
+  "name": "/RT/EXTENSION_POINT_DEFAULTS",
+  "description": "Default values of filter fields for implementations that do not name them",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "VALUE_NO",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "VALUE_KIND",
+      "domain": "/RT/VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "LOW",
+      "domain": "/RT/AUTH_VALUE",
+      "notNull": true,
+      "description": "The value, the lower bound or the pattern"
+    },
+    {
+      "name": "HIGH",
+      "domain": "/RT/AUTH_VALUE",
+      "description": "The upper bound of a range"
+    }
+  ],
+  "primaryKey": [
+    "POINT_NAME",
+    "POSITION",
+    "VALUE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "FILTER",
+      "table": "/RT/EXTENSION_POINT_FILTERS",
+      "fields": [
+        {
+          "field": "POINT_NAME",
+          "references": "POINT_NAME"
+        },
+        {
+          "field": "POSITION",
+          "references": "POSITION"
+        }
+      ]
+    }
+  ]
+}

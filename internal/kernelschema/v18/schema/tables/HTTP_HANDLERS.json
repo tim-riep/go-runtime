@@ -1,0 +1,37 @@
+{
+  "name": "/RT/HTTP_HANDLERS",
+  "description": "Handler classes of service nodes in the order they run",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "CLASS_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/HTTP_SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_PATH",
+          "references": "SERVICE_PATH"
+        }
+      ]
+    }
+  ]
+}

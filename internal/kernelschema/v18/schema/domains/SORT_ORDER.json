@@ -1,0 +1,5 @@
+{
+  "name": "/RT/SORT_ORDER",
+  "description": "Place in an order; equal places are ordered by further keys",
+  "type": "INT4"
+}

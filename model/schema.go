@@ -53,6 +53,8 @@ type Schema struct {
 	ExtensionPoints map[string]*ExtensionPoint
 	// Implementations are the implementations of extension points by name.
 	Implementations map[string]*Implementation
+	// BusinessObjects are the business objects by name.
+	BusinessObjects map[string]*BusinessObject
 }
 
 // NewSchema returns an empty schema.
@@ -76,6 +78,7 @@ func NewSchema() *Schema {
 		Roles:                map[string]*Role{},
 		ExtensionPoints:      map[string]*ExtensionPoint{},
 		Implementations:      map[string]*Implementation{},
+		BusinessObjects:      map[string]*BusinessObject{},
 	}
 }
 
@@ -99,6 +102,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.Implementations {
 		c.Implementations[k] = cloneImplementation(v)
+	}
+	for k, v := range s.BusinessObjects {
+		c.BusinessObjects[k] = cloneBusinessObject(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -337,6 +343,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Implementations[impl.Name] = impl
 	}
+	for i := range p.BusinessObjects {
+		b := cloneBusinessObject(&p.BusinessObjects[i])
+		b.Owner = id
+		if old, ok := s.BusinessObjects[b.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "business object", Name: b.Name, Owner: string(old.Owner), Package: string(id), Location: b.Src})
+			continue
+		}
+		s.BusinessObjects[b.Name] = b
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -431,6 +446,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, b := range s.BusinessObjects {
+		if _, ok := b.Description[code]; ok {
+			delete(b.Description, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -485,6 +506,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, i := range s.Implementations {
 		if i.Owner == id {
 			delete(s.Implementations, name)
+		}
+	}
+	for name, b := range s.BusinessObjects {
+		if b.Owner == id {
+			delete(s.BusinessObjects, name)
 		}
 	}
 	for name, d := range s.Domains {

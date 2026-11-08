@@ -45,4 +45,5 @@ const (
 	Role                = "role.schema.json"
 	ExtensionPoint      = "extension-point.schema.json"
 	Implementation      = "extension-implementation.schema.json"
+	BusinessObject      = "business-object.schema.json"
 )
