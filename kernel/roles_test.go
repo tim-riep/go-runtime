@@ -45,7 +45,8 @@ func importRole(t *testing.T, k *kernel.Kernel, js string) {
 }
 
 // finWithField returns TRFIN in a new version whose /TRFIN/COMPANY has the
-// field REGION; with roles, its roles grant it.
+// field REGION, which its checks in code leave out; with roles, its roles
+// grant it.
 func finWithField(t *testing.T, version string, roles bool) *model.Package {
 	t.Helper()
 	dir := testutil.CopyExample(t, "TRFIN")
@@ -56,6 +57,7 @@ func finWithField(t *testing.T, version string, roles bool) *model.Package {
 	}
 	data = []byte(strings.Replace(string(data), `{ "name": "ACTIVITY" }`, `{ "name": "ACTIVITY" }, { "name": "REGION", "dataElement": "/TRBASE/NAME" }`, 1))
 	testutil.WriteFile(t, dir, "schema/authorization-objects/COMPANY.json", data)
+	regionInChecks(t, dir)
 	if roles {
 		for _, f := range []string{"COMPANY_CLERK", "COMPANY_ADMIN"} {
 			p := filepath.Join(dir, "schema", "roles", f+".json")
@@ -70,6 +72,27 @@ func finWithField(t *testing.T, version string, roles bool) *model.Package {
 	p := testutil.LoadDir(t, dir)
 	p.Manifest.Version = version
 	return p
+}
+
+// regionInChecks adds REGION = any to the checks of /TRFIN/COMPANY in the
+// sources of TRFIN in dir.
+func regionInChecks(t *testing.T, dir string) {
+	t.Helper()
+	for _, f := range []string{"COMPANY_API.class", "COMPANY_INTAKE.class"} {
+		b, err := os.ReadFile(filepath.Join(dir, "src", f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(string(b), "\n")
+		var out []string
+		for _, l := range lines {
+			if trimmed := strings.TrimLeft(l, " "); strings.HasPrefix(trimmed, "ACTIVITY = ") {
+				out = append(out, l[:len(l)-len(trimmed)]+"REGION = any")
+			}
+			out = append(out, l)
+		}
+		testutil.WriteFile(t, dir, "src/"+f, []byte(strings.Join(out, "\n")))
+	}
 }
 
 // TestRoleLifecycle installs package roles, maintains local roles and

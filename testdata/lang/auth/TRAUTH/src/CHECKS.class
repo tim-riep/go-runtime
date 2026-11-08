@@ -34,4 +34,9 @@ public class /TRAUTH/CHECKS
     end
   end
 
+  # Tries to grant itself all authorizations outside of a test.
+  public static method GRANT_ALL()
+    /TRBASE/TEST_AUTHORIZATIONS.GRANT_ALL()
+  end
+
 end

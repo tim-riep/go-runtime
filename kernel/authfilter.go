@@ -36,9 +36,9 @@ func (sb *sqlBuilder) authFilter(f *bytecode.AuthFilter, params []any) (string, 
 	e := sb.auth
 	switch {
 	case e == nil || e.Locked:
-		return "(1 = 0)", nil
+		return sb.used(f, params, "(1 = 0)"), nil
 	case e.All:
-		return "(1 = 1)", nil
+		return sb.used(f, params, "(1 = 1)"), nil
 	}
 	// Placeholders are bound in the order of the text: the arguments of a
 	// grant that is left out are dropped again.
@@ -72,8 +72,28 @@ func (sb *sqlBuilder) authFilter(f *bytecode.AuthFilter, params []any) (string, 
 	default:
 		out = "(" + strings.Join(grants, " OR ") + ")"
 	}
+	return sb.used(f, params, out), nil
+}
+
+// used logs a filter and keeps it for the trace.
+func (sb *sqlBuilder) used(f *bytecode.AuthFilter, params []any, out string) string {
 	slog.Debug("authorization filter", "object", f.Object, "table", sb.table.Name, "condition", out)
-	return out, nil
+	use := filterUse{check: authorization.Check{Object: f.Object, Values: map[string]string{}}, columns: map[string]string{}, condition: out}
+	for _, ff := range f.Fields {
+		switch {
+		case ff.Param >= 0:
+			use.check.Values[ff.Name] = filterText(params[ff.Param])
+		case ff.Column != "":
+			use.columns[ff.Name] = ff.Column
+		default:
+			if use.check.Any == nil {
+				use.check.Any = map[string]bool{}
+			}
+			use.check.Any[ff.Name] = true
+		}
+	}
+	sb.filters = append(sb.filters, use)
+	return out
 }
 
 // grantCondition returns the conditions of a grant on the columns, joined

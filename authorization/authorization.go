@@ -76,7 +76,20 @@ type Effective struct {
 	// NotEffective are the authorizations of assigned roles that do not
 	// fit their authorization objects and grant nothing.
 	NotEffective []NotEffective `json:"notEffective"`
+	// Trace is set while an authorization trace records the checks of the
+	// user in the tenant.
+	Trace *Trace `json:"trace,omitempty"`
 }
+
+// Trace is a running authorization trace: checks are recorded until
+// Until, at most MaxEntries of them.
+type Trace struct {
+	Until      time.Time `json:"until"`
+	MaxEntries int       `json:"maxEntries"`
+}
+
+// Tracing reports whether the checks of the user are recorded at t.
+func (e *Effective) Tracing(t time.Time) bool { return e != nil && e.Trace != nil && t.Before(e.Trace.Until) }
 
 // ObjectGrants are the grants on one authorization object; one matching
 // grant allows a check.

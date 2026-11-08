@@ -66,6 +66,13 @@ func (k *Kernel) EffectiveAuthorizations(ctx context.Context, user, tenant strin
 	k.effectiveComputed.Add(1)
 	e := authorization.Resolve(s, user, tenant, date.UTC(), u.Status == "locked", assignments)
 	e.Generation = gen
+	tr, err := k.repo.AuthTraceOf(ctx, k.db, user)
+	if err != nil {
+		return nil, err
+	}
+	if tr != nil && (!tr.Tenant.Valid() || tr.Tenant.Or("") == tenant) {
+		e.Trace = &authorization.Trace{Until: tr.Until, MaxEntries: tr.MaxEntries}
+	}
 	k.effective.put(key, e)
 	return e, nil
 }

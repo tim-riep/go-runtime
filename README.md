@@ -613,6 +613,55 @@ tenant and day until `/RT/AUTH_GENERATION` changes, which every relevant change 
 its transaction; every call reads the counter, so that kernels on the same database see the
 changes of each other at once.
 
+### Authorization checks
+
+Code checks authorizations with `check authorization` and `authorized`, also as filter in
+`where` conditions (see the [language guide](docs/language.md)); native methods with
+`native.Context.Authorize`; the kernel checks service nodes and, with an actor, the
+administration. An execution reads the effective authorizations of its user once, every
+check after that runs in memory (`go test -bench Check ./authorization ./kernel`: about
+0.1 µs per check). An execution without user fails every check; `rt run --user anna`
+runs as a user, who must work in the tenant, and an unhandled `/RT/NOT_AUTHORIZED` ends
+`rt run` with exit code 7 and shows the values of the check.
+
+The kernel keeps the **last failed check** of every user and tenant in
+`/RT/AUTH_LAST_FAILED`: the object, the values (`null` for `any`), where the check was made
+(class, method and line of code, or the function of the kernel) and the grants of the user
+on the object at that time. It is written after the execution ended, so a rollback keeps
+it. Failed `authorized` expressions and filters are expected and not kept, and neither are
+checks without user.
+
+```bash
+rt user last-failed-check anna --tenant ACME
+```
+
+An **authorization trace** records the checks of a user, in one tenant or in all, for a
+time (default 30 minutes) and up to a number of entries (default 10 000): every check with
+its result and place, every filter with the SQL condition the kernel made and the number of
+rows the statement read or changed. A trace that is off costs nothing: whether one runs is
+part of the cached effective authorizations.
+
+```bash
+rt trace authorizations start anna --tenant ACME --minutes 10
+rt trace authorizations show anna
+rt trace authorizations stop anna
+```
+
+Test methods set their own authorizations with `/TRBASE/TEST_AUTHORIZATIONS`, whatever
+roles their user has; every test method starts without authorizations, and outside of
+`rt test` the methods fail:
+
+```
+/TRBASE/TEST_AUTHORIZATIONS.GRANT("/TRFIN/COMPANY", ["COMPANY_ID=*", "COUNTRY=D*", "ACTIVITY=UPDATE"])
+/TRBASE/TEST_AUTHORIZATIONS.GRANT_ROLE("/TRFIN/COMPANY_CLERK")
+/TRBASE/TEST_AUTHORIZATIONS.GRANT_ALL()
+/TRBASE/TEST_AUTHORIZATIONS.CLEAR()
+```
+
+The examples check as well: `/TRFIN/COMPANY_API` lists the companies the user may read,
+`/TRFIN/COMPANY_INTAKE` creates only companies the user may create, and
+`/TROTTO/COMPANY_SYNC` needs `EXECUTE` on `/TROTTO/SYNC` for the country.
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -960,7 +1009,7 @@ rt build examples/TRORDER
 rt disasm examples/TRORDER /TRORDER/ORDER_RATING
 rt install examples/TRORDER
 rt tenant create ACME
-rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME
+rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME --user anna
 rt run TRFIN /TRFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]' --tenant ACME
 rt test TRORDER
 rt test examples/TRORDER
@@ -973,6 +1022,8 @@ rt token list anna
 rt show authorization-object:/TRFIN/COMPANY
 rt authorization-objects list TRFIN
 rt activities list --lang de
+rt user last-failed-check anna --tenant ACME
+rt trace authorizations start anna --tenant ACME
 rt init --admin root --tenant ACME < password.txt
 rt role list --incomplete
 rt role show /TRFIN/COMPANY_CLERK
@@ -1036,9 +1087,7 @@ loader already works on `fs.FS`), joins and aggregates other than `count` in cod
 reading and writing data through settings, display properties of fields, translation packages
 for objects of other packages, export or protection of configuration by data class, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression and image processing,
-includes in extensions, authorization checks in code and kernel (the administration is
-open to everyone who may use the command line until then), derived roles with organizational
-levels, suggested values per application, start page contents of roles, groups of users and
+includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
 external role sources.
 
 ## License

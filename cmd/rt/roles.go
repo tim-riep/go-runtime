@@ -370,18 +370,7 @@ func (c *cli) userAuthorizations(ctx context.Context, k *kernel.Kernel, user str
 				b, _ := g.Fields[f].MarshalJSON()
 				var entries []model.ValueEntry
 				_ = json.Unmarshal(b, &entries)
-				var vals []string
-				for _, en := range entries {
-					switch en.Kind {
-					case model.ValueRange:
-						vals = append(vals, fmt.Sprintf("%q..%q", en.Low, en.High))
-					case model.ValuePattern:
-						vals = append(vals, en.Low)
-					default:
-						vals = append(vals, fmt.Sprintf("%q", en.Low))
-					}
-				}
-				fmt.Fprintf(c.stdout, "      %-12s %s\n", f, strings.Join(vals, " "))
+				fmt.Fprintf(c.stdout, "      %-12s %s\n", f, entriesText(entries))
 			}
 		}
 	}
@@ -505,4 +494,20 @@ func (c *cli) printHolders(holders []kernel.AllAuthorizationsHolder, warnings []
 	for _, x := range warnings {
 		fmt.Fprintln(c.stdout, "warning: "+x)
 	}
+}
+
+// entriesText shows the entries of a field: "DE", "PL".."SK", D* and *.
+func entriesText(entries []model.ValueEntry) string {
+	var vals []string
+	for _, en := range entries {
+		switch en.Kind {
+		case model.ValueRange:
+			vals = append(vals, fmt.Sprintf("%q..%q", en.Low, en.High))
+		case model.ValuePattern:
+			vals = append(vals, en.Low)
+		default:
+			vals = append(vals, fmt.Sprintf("%q", en.Low))
+		}
+	}
+	return strings.Join(vals, " ")
 }

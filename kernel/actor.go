@@ -68,10 +68,13 @@ func (k *Kernel) authorizeActor(ctx context.Context, a *Actor, object, activity 
 	for f, v := range values {
 		c.Values[f] = v
 	}
-	if e.Check(c) {
+	ok := e.Check(c)
+	if !ok || e.Tracing(k.now()) {
+		k.rememberFailedCheck(ctx, e, a.User, a.Tenant, c, ok, function)
+	}
+	if ok {
 		return nil
 	}
-	k.rememberFailedCheck(ctx, a.User, a.Tenant, c, function)
 	return &rterr.NotAuthorized{User: a.User, Object: object, Activity: activity}
 }
 

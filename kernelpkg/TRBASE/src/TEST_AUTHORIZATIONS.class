@@ -1,0 +1,21 @@
+# Sets the authorizations of a test method, whatever roles its user has:
+# the checks of the code use these instead. The methods work only in test
+# methods that rt test runs, and every test method starts without
+# authorizations.
+public class /TRBASE/TEST_AUTHORIZATIONS
+
+  # All authorizations, like the role /RT/ALL_AUTHORIZATIONS.
+  public static method GRANT_ALL() executed by kernel
+
+  # The authorizations of a role.
+  public static method GRANT_ROLE(role: STRING) executed by kernel
+
+  # An authorization on an object, with an entry FIELD=VALUE for every
+  # field: a value, * for all values, a prefix such as COUNTRY=D* or a range
+  # such as COUNTRY=A..C; several entries of a field add up.
+  public static method GRANT(object: STRING, entries: array of STRING) executed by kernel
+
+  # Removes the authorizations of the test method.
+  public static method CLEAR() executed by kernel
+
+end

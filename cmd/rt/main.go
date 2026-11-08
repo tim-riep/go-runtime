@@ -121,6 +121,15 @@ Commands:
                            show the role assignments of a user
   user authorizations <user> --tenant T [--date D]
                            show the effective authorizations of a user with their origin
+  user last-failed-check <user> --tenant T
+                           show the last failed authorization check of a user in a tenant,
+                           where it was made and the user's grants on the object
+  trace authorizations start <user> [--tenant T] [--minutes 30] [--max 10000]
+                           record the authorization checks of a user, in one tenant or all
+  trace authorizations stop <user>
+                           stop recording; the entries stay until the next start
+  trace authorizations show <user> [--tenant T]
+                           show the recorded checks with their result and place
   authorization-objects list [package]
                            list the authorization objects of a package or of all packages
   activities list          list the activities of the kernel (--lang for the texts)
@@ -178,6 +187,8 @@ type cli struct {
 	from, to, date string
 	admin          string
 	check          bool
+	minutes        int
+	maxEntries     int
 	serve          server.Config
 }
 
@@ -209,6 +220,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.admin, "admin", "", "init: create this first user with all authorizations in --tenant; the password is read from standard input")
 	c.fs.StringVar(&c.date, "date", "", "user authorizations: the day, YYYY-MM-DD (default today)")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
+	c.fs.IntVar(&c.minutes, "minutes", 30, "trace authorizations start: how long the trace runs")
+	c.fs.IntVar(&c.maxEntries, "max", 10_000, "trace authorizations start: the most checks it records")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")
 	c.fs.StringVar(&c.serve.TLSCert, "tls-cert", "", "serve: PEM file of the TLS certificate")
 	c.fs.StringVar(&c.serve.TLSKey, "tls-key", "", "serve: PEM file of the TLS key")
@@ -409,6 +422,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return exitOK
 	case "user":
 		return c.user(ctx, k, args)
+	case "trace":
+		return c.trace(ctx, k, args)
 	case "token":
 		return c.token(ctx, k, args)
 	case "effects":
@@ -1497,6 +1512,8 @@ func (c *cli) user(ctx context.Context, k *kernel.Kernel, args []string) int {
 		return c.userRoles(ctx, k, args[1])
 	case args[0] == "authorizations" && len(args) == 2:
 		return c.userAuthorizations(ctx, k, args[1])
+	case args[0] == "last-failed-check" && len(args) == 2:
+		return c.lastFailedCheck(ctx, k, args[1])
 	}
 	return usage()
 }

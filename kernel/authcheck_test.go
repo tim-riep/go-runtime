@@ -146,6 +146,7 @@ func TestCheckStatements(t *testing.T) {
 				"texts":{"en":{"label":"Company master data"},"de":{"label":"Stammdaten Firma"}},
 				"fields":[{"name":"COMPANY_ID","dataElement":"/TRFIN/COMPANY"},{"name":"COUNTRY","dataElement":"/TRBASE/COUNTRY"},
 				{"name":"REGION","dataElement":"/TRBASE/NAME"},{"name":"ACTIVITY"}],"activities":["READ","CREATE","UPDATE","DELETE","EXPORT"]}`))
+			regionInChecks(t, dir)
 			up := testutil.LoadDir(t, dir)
 			up.Manifest.Version = "1.1.0"
 			_, err = k.Upgrade(context.Background(), up, kernel.Options{})

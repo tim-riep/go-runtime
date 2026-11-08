@@ -15,7 +15,6 @@
 package kernel
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/tim-riep/go-runtime/authorization"
@@ -68,6 +67,18 @@ func (x *execution) CheckAuthorization(c authorization.Check, at native.CheckLoc
 		return false, err
 	}
 	ok := e.Check(c)
+	// Only failed statements and traces are recorded, so that a check
+	// stays in memory.
+	failed := !ok && mode == native.CheckStatement
+	if user, has := x.opts.User.Get(); has && (failed || e.Trace != nil) {
+		r := checkRecord{user: user, tenant: x.tenant, at: x.k.now(), mode: mode, check: c, allowed: ok, site: at}
+		if failed {
+			x.failed = &r
+		}
+		if e.Tracing(r.at) {
+			x.traced = append(x.traced, r)
+		}
+	}
 	if !ok && mode == native.CheckStatement {
 		return false, x.notAuthorized(c)
 	}
@@ -80,7 +91,3 @@ func (x *execution) notAuthorized(c authorization.Check) *native.NotAuthorized {
 	return &native.NotAuthorized{Check: c, Text: notAuthorizedText(x.Language(), c.Object, x.opts.User.Valid())}
 }
 
-// rememberFailedCheck records the last failed check of a user in a
-// tenant; it is filled in with the diagnosis of failed checks.
-func (k *Kernel) rememberFailedCheck(ctx context.Context, user, tenant string, c authorization.Check, function string) {
-}

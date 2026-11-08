@@ -40,6 +40,9 @@ func TestExampleCode(t *testing.T) {
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
+		if _, err := k.Users().Create(ctx, "ops", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
 		const S = "/TRFIN/COMPANY_SERVICE"
 		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
 		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
@@ -74,6 +77,20 @@ func TestExampleCode(t *testing.T) {
 			t.Errorf("IN_COUNTRY = %s", got)
 		}
 
+		// The sync needs EXECUTE on /TROTTO/SYNC for the country.
+		if _, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`); exceptionClass(err) != model.NotAuthorizedClass {
+			t.Errorf("SYNC without user: %v", err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "ops", Role: "/TROTTO/SYNC_OPERATOR", Tenant: "ACME"}, kernel.RoleOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		ops := kernel.ExecOptions{Tenant: "ACME", User: model.Some("ops")}
+		sync := func(want string) {
+			t.Helper()
+			if got, err := call(k, ops, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`); err != nil || got != want {
+				t.Errorf("SYNC = %s, %v; want %s", got, err, want)
+			}
+		}
 		count := func() (int, string) {
 			var n int
 			var text *string
@@ -88,7 +105,7 @@ func TestExampleCode(t *testing.T) {
 		if k.Dialect().Name() == "sqlite" {
 			// SQLite has one writing transaction at a time: the audit session
 			// cannot insert while the default session has updated companies.
-			_, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`)
+			_, err := call(k, ops, "/TROTTO/COMPANY_SYNC", "SYNC", `"DE"`)
 			if exceptionClass(err) != "/RT/SESSION_ERROR" {
 				t.Errorf("SYNC on SQLite: %v", err)
 			}
@@ -97,11 +114,11 @@ func TestExampleCode(t *testing.T) {
 			}
 			return
 		}
-		expectCall(t, k, "ACME", "/TROTTO/COMPANY_SYNC", "SYNC", "2", `"DE"`)
+		sync("2")
 		if got := mustCall(t, k, "ACME", S, "FIND", `"C1"`); !strings.Contains(got, `"/TROTTO/OTTO_ID":"OTTO-C1"`) {
 			t.Errorf("FIND C1 after SYNC = %s", got)
 		}
-		expectCall(t, k, "ACME", "/TROTTO/COMPANY_SYNC", "SYNC", "0", `"DE"`)
+		sync("0")
 		if n, text := count(); n != 2 || text != "Synced 0 companies for DE" {
 			t.Errorf("audit log: %d %q", n, text)
 		}

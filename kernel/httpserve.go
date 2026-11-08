@@ -28,6 +28,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/httpsvc"
 	"github.com/tim-riep/go-runtime/kernelpkg/natives"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/vm"
 )
 
@@ -299,7 +300,12 @@ func (k *Kernel) checkNode(ctx context.Context, node *httpsvc.Node, user, tenant
 		return false, err
 	}
 	for _, c := range nodeChecks(node) {
-		if !e.Check(c) {
+		ok := e.Check(c)
+		if !ok || e.Tracing(k.now()) {
+			k.recordKernelCheck(ctx, e, checkRecord{user: user, tenant: tenant, at: k.now(), mode: native.CheckStatement, check: c, allowed: ok,
+				site: native.CheckLocation{Kernel: "http " + node.Path}})
+		}
+		if !ok {
 			return false, nil
 		}
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/reflector"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/vm"
@@ -55,6 +56,12 @@ type execution struct {
 	// use; nil without user.
 	auth       *authorization.Effective
 	authLoaded bool
+	// failed is the last failed check of the execution, traced the checks
+	// a trace records; both are written when the execution ends.
+	failed *checkRecord
+	traced []checkRecord
+	// grants are the authorizations a test method granted itself.
+	grants *testGrants
 }
 
 // session is a database session: its own connection and a transaction
@@ -190,6 +197,20 @@ func (s *session) statement(p *bytecode.Program, q *bytecode.Query, args []any, 
 	return st, nil
 }
 
+// traceFilters records the authorization filters of a statement that a
+// trace of the user records, with the rows it read or changed.
+func (s *session) traceFilters(st *statement, rows model.Optional[int64]) {
+	x := s.x
+	user, ok := x.opts.User.Get()
+	if !ok || len(st.filters) == 0 || !x.auth.Tracing(x.k.now()) {
+		return
+	}
+	for _, f := range st.filters {
+		x.traced = append(x.traced, checkRecord{user: user, tenant: x.tenant, at: x.k.now(), mode: native.CheckFilter, check: f.check,
+			columns: f.columns, condition: f.condition, rows: rows})
+	}
+}
+
 func (s *session) Query(ctx context.Context, p *bytecode.Program, q *bytecode.Query, args []any, limit int64, stream bool) (vm.Rows, error) {
 	st, err := s.statement(p, q, args, limit)
 	if err != nil {
@@ -210,6 +231,7 @@ func (s *session) Query(ctx context.Context, p *bytecode.Program, q *bytecode.Qu
 		if err != nil {
 			return nil, err
 		}
+		s.traceFilters(st, model.None[int64]())
 		return &fetchRows{s: s, ctx: ctx, name: name, st: st}, nil
 	}
 	// The rows are read at once: the VM reads all of them anyway, and the
@@ -239,6 +261,7 @@ func (s *session) Query(ctx context.Context, p *bytecode.Program, q *bytecode.Qu
 	if err != nil {
 		return nil, err
 	}
+	s.traceFilters(st, model.Some(int64(len(buf.rows))))
 	return buf, nil
 }
 
@@ -286,6 +309,7 @@ func (s *session) Exec(ctx context.Context, p *bytecode.Program, q *bytecode.Que
 		return 0, err
 	}
 	s.written = true
+	s.traceFilters(st, model.Some(n))
 	return n, nil
 }
 

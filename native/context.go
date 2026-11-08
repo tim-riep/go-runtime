@@ -63,6 +63,21 @@ type Host interface {
 	// of mode CheckStatement returns a *NotAuthorized with a text in the
 	// language of the execution.
 	CheckAuthorization(c authorization.Check, at CheckLocation, mode CheckMode) (bool, error)
+	// GrantForTest changes the authorizations of a test method that rt
+	// test runs; elsewhere it fails.
+	GrantForTest(g TestGrant) error
+}
+
+// TestGrant changes the authorizations of a test method: Clear removes
+// them, All grants all, Role adds the authorizations of a role, Object adds
+// an authorization with the entries of its fields in the text form of role
+// files: a value, * for all values, a prefix such as D* or a range A..C.
+type TestGrant struct {
+	Clear  bool
+	All    bool
+	Role   string
+	Object string
+	Fields map[string][]string
 }
 
 // CheckLocation is where an authorization check is made: code of a
@@ -137,6 +152,8 @@ type Context struct {
 	// last.
 	Callers  []Caller
 	MaxInput int64 // largest input in bytes a method should accept
+	// Method is the native method called, /CLASS.METHOD.
+	Method string
 }
 
 // Reader returns the package whose rules apply to reading assets: that of
@@ -228,7 +245,7 @@ func (c *Context) Authorize(object string, values map[string]string, any ...stri
 	for _, f := range any {
 		check.Any[f] = true
 	}
-	at := CheckLocation{Kernel: c.Caller.Class + "." + c.Caller.Method}
+	at := CheckLocation{Kernel: c.Method}
 	ok, err := c.Host.CheckAuthorization(check, at, CheckStatement)
 	if err != nil || ok {
 		return err

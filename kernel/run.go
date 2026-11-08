@@ -182,6 +182,7 @@ func (x *execution) finish(failure error) error {
 		}
 		s.close()
 	}
+	x.flushDiagnosis()
 	return errors.Join(errs...)
 }
 

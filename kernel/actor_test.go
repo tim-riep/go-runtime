@@ -86,6 +86,9 @@ func TestActorChecks(t *testing.T) {
 		denied("get role", err, kernel.RoleAdminObject)
 		_, err = roles.Import(ctx, []byte(`{"name":"/LOCAL/X","texts":{"en":{"label":"X"}},"authorizations":[]}`), "x.json", kernel.RoleOptions{})
 		denied("import", err, kernel.RoleAdminObject)
+		if f, err := k.LastFailedCheck(ctx, "rita", "ACME"); err != nil || f.Object != kernel.RoleAdminObject || f.Site.Kernel.Or("") != "Roles.Import" {
+			t.Errorf("last failed: %+v %v", f, err)
+		}
 
 		// Without actor nothing is checked.
 		if err := k.Roles().Unassign(ctx, a.ID, kernel.RoleOptions{}); err != nil {

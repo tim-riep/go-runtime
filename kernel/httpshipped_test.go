@@ -107,6 +107,34 @@ func TestShippedHandlers(t *testing.T) {
 		if err := json.Unmarshal([]byte(a.body), &list); a.status != 200 || err != nil || len(list) != 1 || list[0]["COMPANY_ID"] != "C1" {
 			t.Fatalf("GET: %d %s", a.status, a.body)
 		}
+		// A clerk reads the companies of its countries and creates none:
+		// the request is rolled back.
+		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
+		if a := c.do("POST", "/trfin/companies", anna, `{"COMPANY_ID":"C2","NAME":"Bleu","COUNTRY":"FR","STATUS":"ACTIVE"}`); a.status != 201 {
+			t.Fatalf("POST FR: %d %s", a.status, a.body)
+		}
+		if _, err := k.Users().Create(ctx, "carl", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		for _, role := range []string{"/TRFIN/SERVICE_USER", "/TRFIN/COMPANY_CLERK"} {
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "carl", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		carl := basicAuth("carl", "secret")
+		if a := c.do("GET", "/trfin/companies", carl, ""); a.status != 200 || !strings.Contains(a.body, `"C1"`) || strings.Contains(a.body, `"C2"`) {
+			t.Errorf("GET as clerk: %d %s", a.status, a.body)
+		}
+		if a := c.do("POST", "/trfin/companies", carl, `{"COMPANY_ID":"C3","NAME":"Drei","COUNTRY":"DE","STATUS":"ACTIVE"}`); a.status != 403 ||
+			!strings.Contains(a.body, `"forbidden"`) {
+			t.Errorf("POST as clerk: %d %s", a.status, a.body)
+		}
+		if got := mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "FIND", `"C3"`); got != "null" {
+			t.Errorf("C3 was stored: %s", got)
+		}
+		if f, err := k.LastFailedCheck(ctx, "carl", "ACME"); err != nil || string(f.Values["ACTIVITY"]) != `"CREATE"` || f.Site.Class.Or("") != "/TRFIN/COMPANY_INTAKE" {
+			t.Errorf("last failed: %+v %v", f, err)
+		}
 		if err := k.Users().AddTenant(ctx, "anna", "BETA"); err != nil {
 			t.Fatal(err)
 		}

@@ -1,9 +1,14 @@
 # Gives the companies of a country a partner ID on OTTO and writes a line
 # to the audit log in a session of its own, which stays even if the sync
-# is rolled back.
+# is rolled back. The user needs the authorization to run the exchange
+# for the country.
 public class /TROTTO/COMPANY_SYNC
 
   public static method SYNC(country: /TRFIN/COUNTRY_CODE) returns INT4
+    check authorization /TROTTO/SYNC
+      COUNTRY = country
+      ACTIVITY = EXECUTE
+    end
     var audit = open session
     var count = 0
 

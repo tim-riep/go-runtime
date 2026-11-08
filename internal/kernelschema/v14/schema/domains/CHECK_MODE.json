@@ -1,0 +1,20 @@
+{
+  "name": "/RT/CHECK_MODE",
+  "description": "How an authorization check was made",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "check",
+      "description": "check authorization, a check of the kernel or a native method"
+    },
+    {
+      "value": "expression",
+      "description": "authorized as expression"
+    },
+    {
+      "value": "filter",
+      "description": "authorized in a where condition"
+    }
+  ]
+}

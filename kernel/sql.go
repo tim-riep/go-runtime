@@ -33,6 +33,14 @@ type statement struct {
 	args    []any
 	columns []string        // columns of the rows of select
 	domains []*model.Domain // their domains, for decoding
+	filters []filterUse     // authorization filters, for the trace
+}
+
+// filterUse is an authorization filter as the statement used it.
+type filterUse struct {
+	check     authorization.Check
+	columns   map[string]string
+	condition string
 }
 
 // sqlBuilder writes SQL with numbered placeholders.
@@ -43,7 +51,8 @@ type sqlBuilder struct {
 	table *model.Table
 	phys  *model.Physical
 	// auth are the effective authorizations for filters; nil without user.
-	auth *authorization.Effective
+	auth    *authorization.Effective
+	filters []filterUse
 }
 
 func (sb *sqlBuilder) q(name string) string { return sb.d.QuoteIdent(name) }
@@ -331,6 +340,6 @@ func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, auth
 	default:
 		return nil, fmt.Errorf("kernel: unknown statement %d", q.Kind)
 	}
-	st.text, st.args = sb.b.String(), sb.args
+	st.text, st.args, st.filters = sb.b.String(), sb.args, sb.filters
 	return st, nil
 }

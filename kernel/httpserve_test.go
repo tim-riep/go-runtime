@@ -259,6 +259,10 @@ func TestNodeChecks(t *testing.T) {
 			}
 		}
 		expect("carl", "/trhttp/version", 403)
+		if f, err := k.LastFailedCheck(ctx, "carl", "ACME"); err != nil || f.Object != kernel.HTTPServiceObject || f.Site.Kernel.Or("") != "http /trhttp/version" ||
+			string(f.Values["SERVICE_PATH"]) != `"/trhttp/version"` {
+			t.Errorf("last failed: %+v %v", f, err)
+		}
 		expect("bob", "/trhttp/version", 200)
 		expect("bob", "/trhttp/guarded", 403)
 		expect("bob", "/trhttp/guarded/inner", 403)
