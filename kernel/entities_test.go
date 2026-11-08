@@ -397,6 +397,13 @@ func TestEntityStatementRules(t *testing.T) {
 			{"unknown business object", "modify business object /TRBO/NOPE\nend\n", "business object /TRBO/NOPE does not exist"},
 			{"read of an unknown field", "var rows = read business object /TRBO/ORDER\n/TRBO/ORDERS fields (COLOR) keys keys\nend\n", "/TRBO/ORDERS has no field COLOR"},
 			{"projection", "var rows = read business object /TRBO/ORDER\n/TRBO/ORDERS fields (NAME) keys keys\nend\nvar note = rows[1].NOTE\n", "NOTE"},
+			{"unknown action", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.OPEN keys keys\nend\n", "/TRBO/ORDERS has no action OPEN; its actions are CLOSE, COUNT_OPEN"},
+			{"static action with keys", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.COUNT_OPEN keys keys\nend\n", "COUNT_OPEN is a static action and takes no keys"},
+			{"instance action without keys", "var p: /TRBO/REASON\nmodify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.CLOSE parameter p\nend\n", "CLOSE is an instance action and needs keys"},
+			{"missing parameter", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.CLOSE keys keys\nend\n", "CLOSE needs a parameter of type /TRBO/REASON"},
+			{"needless parameter", "var p: /TRBO/REASON\nmodify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.COUNT_OPEN parameter p\nend\n", "COUNT_OPEN takes no parameter"},
+			{"into without result", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.COUNT_OPEN into x\nend\n", "COUNT_OPEN has no result"},
+			{"result self", "var p: /TRBO/REASON\nmodify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.CLOSE keys keys parameter p into closed\nend\nvar n: INT8 = closed\n", "array of /TRBO/ORDERS"},
 		} {
 			files := boFiles("1.0.0", orderBO(orderRoot), orderBehavior)
 			src, errs := syntax.Format("BAD.class", head+c.body+"end\nend\n")
@@ -419,6 +426,9 @@ func TestEntityStatementRules(t *testing.T) {
 			{"change in a validation", strings.Replace(orderBehavior, "public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\n",
 				"public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\nmodify business object /TRBO/ORDER in local mode\ndelete /TRBO/ORDERS keys keys\nend\n", 1),
 				"CHECK_NAME is a validation, which must not change the transaction buffer"},
+			{"changing action in a validation", strings.Replace(orderBehavior, "public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\n",
+				"public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\nvar p: /TRBO/REASON\nmodify business object /TRBO/ORDER in local mode\nexecute /TRBO/ORDERS.CLOSE keys keys parameter p\nend\n", 1),
+				"CHECK_NAME is a validation, which must not run CLOSE, which changes instances"},
 		} {
 			_, err := k.Install(ctx, []*model.Package{writePackage(t, boFiles("1.0.0", orderBO(orderRoot), c.behavior))}, kernel.Options{})
 			var ce *rterr.CompileError
@@ -649,5 +659,160 @@ func TestDeterminations(t *testing.T) {
 			!strings.Contains(r["MESSAGES"][1]["TEXT"].(string), "/TRBO/ORDER_BEHAVIOR.CHECK_NAME: ") {
 			t.Errorf("runtime error: %v", r)
 		}
+	})
+}
+
+// actionRoot is the root entity of /TRBO/ORDER with actions.
+const actionRoot = `, "numbering": "external",
+	"fields": { "STATUS": { "readOnly": true }, "NOTE": { "readOnly": true } },
+	"actions": [
+		{ "name": "CLOSE", "parameter": "/TRBO/REASON", "result": "self" },
+		{ "name": "LABELS", "result": "/TRBO/REASON", "modifies": false },
+		{ "name": "COUNT_OPEN", "instance": false, "result": "/TRBO/REASON", "modifies": false },
+		{ "name": "PING", "instance": false } ]`
+
+// actionBehavior are the methods of /TRBO/ORDER_BEHAVIOR for actionRoot.
+const actionBehavior = `
+public method CLOSE(keys: array of key of /TRBO/ORDERS, parameter: /TRBO/REASON, response: /TRBASE/ENTITY_RESPONSE)
+  var rows = read business object /TRBO/ORDER in local mode
+    /TRBO/ORDERS fields all keys keys
+  end
+  var changed: array of /TRBO/ORDERS = []
+  for i, row in rows
+    if (row.STATUS default "") = "closed"
+      response.ERROR(i, "{row.ORDER_ID} is closed already")
+    else
+      var r = row
+      r.STATUS = "closed"
+      r.NOTE = parameter.TEXT
+      changed.APPEND(r)
+    end
+  end
+  modify business object /TRBO/ORDER in local mode
+    update /TRBO/ORDERS fields (STATUS, NOTE) from changed
+  end
+end
+
+public method LABELS(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE) returns array of /TRBO/REASON
+  var out: array of /TRBO/REASON = []
+  for key in keys
+    var r: /TRBO/REASON
+    r.TEXT = "order " + key.ORDER_ID
+    out.APPEND(r)
+  end
+  return out
+end
+
+public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE) returns /TRBO/REASON
+  var r: /TRBO/REASON
+  r.TEXT = "counted"
+  response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.SUCCESS, "done")
+  return r
+end
+
+public method PING(response: /TRBASE/ENTITY_RESPONSE)
+  var zero = 0
+  var x = 1 / zero
+end
+`
+
+// actionAPI is /TRBO/API for actionRoot.
+const actionAPI = `public class /TRBO/API
+
+public static method CREATE(id: STRING)
+  var orders: array of new of /TRBO/ORDERS = []
+  var o: new of /TRBO/ORDERS
+  o.ORDER_ID = id
+  o.NAME = id
+  orders.APPEND(o)
+  modify business object /TRBO/ORDER
+    create /TRBO/ORDERS fields (ORDER_ID, NAME) from orders
+  end
+  commit business objects
+end
+
+public static method CLOSE(ids: array of STRING, reason: STRING) returns STRING
+  var keys: array of key of /TRBO/ORDERS = []
+  for id in ids
+    var k: key of /TRBO/ORDERS
+    k.ORDER_ID = id
+    keys.APPEND(k)
+  end
+  var p: /TRBO/REASON
+  p.TEXT = reason
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.CLOSE keys keys parameter p into closed
+    result outcome
+  end
+  commit business objects
+  var out = "{closed.LENGTH()}"
+  for f in outcome.FAILURES
+    out = out + " {f.REASON}:{f.KEY default "none"}"
+  end
+  for row in closed
+    out = out + " " + row.ORDER_ID + "=" + (row.STATUS default "none") + "/" + (row.NOTE default "none")
+  end
+  return out
+end
+
+public static method LABELS(id: STRING) returns STRING
+  var keys: array of key of /TRBO/ORDERS = []
+  var k: key of /TRBO/ORDERS
+  k.ORDER_ID = id
+  keys.APPEND(k)
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.LABELS keys keys into labels
+  end
+  return labels[1].TEXT default "none"
+end
+
+public static method COUNT() returns STRING
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.COUNT_OPEN into counted
+    result outcome
+  end
+  return (counted.TEXT default "none") + " " + outcome.MESSAGES[1].TEXT
+end
+
+public static method PING() returns STRING
+  modify business object /TRBO/ORDER
+    execute /TRBO/ORDERS.PING
+    result outcome
+  end
+  return "{outcome.FAILURES[1].REASON} {outcome.FAILURES[1].OPERATION}"
+end
+
+end
+`
+
+// TestActions runs instance actions with parameter and result self or a
+// structure, and static actions, with failures of single instances.
+func TestActions(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		files := boFiles("1.0.0", orderBO(actionRoot), actionBehavior)
+		src, errs := syntax.Format("API.class", actionAPI)
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		files["src/API.class"] = src
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, files)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		const api = "/TRBO/API"
+		mustCall(t, k, "ACME", api, "CREATE", `"A1"`)
+		mustCall(t, k, "ACME", api, "CREATE", `"A2"`)
+		expectCall(t, k, "ACME", api, "CLOSE", `"1 NOT_FOUND:{\"ORDER_ID\":\"NOPE\"} A1=closed/done"`, `["A1","NOPE"]`, `"done"`)
+		// The action fails for the closed instance and closes the other.
+		expectCall(t, k, "ACME", api, "CLOSE", `"1 BEHAVIOR:{\"ORDER_ID\":\"A1\"} A2=closed/again"`, `["A1","A2"]`, `"again"`)
+		if got := mustCall(t, k, "ACME", api, "LABELS", `"A2"`); got != `"order A2"` {
+			t.Errorf("labels: %s", got)
+		}
+		expectCall(t, k, "ACME", api, "COUNT", `"counted done"`)
+		expectCall(t, k, "ACME", api, "PING", `"BEHAVIOR PING"`)
 	})
 }

@@ -59,39 +59,66 @@ func (b *entityBuffer) keyMap(in *instance) map[string]any {
 	return out
 }
 
+// behaviorCall is a call of a method of the behavior class.
+type behaviorCall struct {
+	bo     *model.BusinessObject
+	entity *model.Entity
+	method string
+	ins    []*instance
+	static bool   // static actions get no keys
+	param  any    // the parameter of an action in Go form
+	op     string // the operation in failures; the save operation when empty
+	reason string // the reason of instances the response fails
+}
+
 // call runs a method of the behavior class for instances and records what
-// the response says: failed instances with reason and the messages.
-// Runtime errors of the method fail all its instances.
-func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, bo *model.BusinessObject, method string, ins []*instance, reason string, r *result) (map[*instance]bool, error) {
-	keys := make([]map[string]any, len(ins))
-	for i, in := range ins {
-		keys[i] = b.keyMap(in)
+// the response says: failed instances with reason and the messages. A
+// runtime error of the method fails all its instances with reason
+// BEHAVIOR. It returns the result of the method in Go form.
+func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, c behaviorCall, r *result) (any, map[*instance]bool, error) {
+	var keys []map[string]any
+	if !c.static {
+		keys = make([]map[string]any, len(c.ins))
+		for i, in := range c.ins {
+			keys[i] = b.keyMap(in)
+		}
 	}
-	resp := native.NewEntityResponse(len(ins))
-	_, err := behavior.CallBehavior(ctx, bo.BehaviorClass, method, keys, nil, resp)
+	resp := native.NewEntityResponse(len(c.ins))
+	out, err := behavior.CallBehavior(ctx, c.bo.BehaviorClass, c.method, keys, c.param, resp)
 	failed := map[*instance]bool{}
 	var exc *vm.Exception
 	switch {
 	case errors.As(err, &exc):
-		for _, in := range ins {
+		for _, in := range c.ins {
 			failed[in] = true
-			r.fail(in.entity.Table, saveOperation(in), reasonBehavior, strPtr(in.key), in.link)
+			r.fail(in.entity.Table, c.operation(in), reasonBehavior, strPtr(in.key), in.link)
 		}
-		r.message("error", fmt.Sprintf("%s.%s: %s", bo.BehaviorClass, method, exc.Text), "", nil, nil)
-		return failed, nil
+		if c.static {
+			r.fail(c.entity.Table, c.op, reasonBehavior, nil, nil)
+		}
+		r.message("error", fmt.Sprintf("%s.%s: %s", c.bo.BehaviorClass, c.method, exc.Text), "", nil, nil)
+		return nil, failed, nil
 	case err != nil:
-		return nil, err
+		return nil, nil, err
 	}
-	b.respond(resp, ins, reason, r, failed)
-	return failed, nil
+	b.respond(resp, c, r, failed)
+	return out, failed, nil
+}
+
+func (c behaviorCall) operation(in *instance) string {
+	if c.op != "" {
+		return c.op
+	}
+	return saveOperation(in)
 }
 
 // respond records the failed instances and messages of a response.
-func (b *entityBuffer) respond(resp *native.EntityResponse, ins []*instance, reason string, r *result, failed map[*instance]bool) {
+func (b *entityBuffer) respond(resp *native.EntityResponse, c behaviorCall, r *result, failed map[*instance]bool) {
+	ins := c.ins
 	for _, pos := range slices.Sorted(maps.Keys(resp.Failed)) {
 		in := ins[pos-1]
 		failed[in] = true
-		r.fail(in.entity.Table, saveOperation(in), reason, strPtr(in.key), in.link)
+		r.fail(in.entity.Table, c.operation(in), c.reason, strPtr(in.key), in.link)
 	}
 	for _, m := range resp.Messages {
 		msg := vm.EntityMessage{Severity: m.Severity, Text: m.Text}
@@ -123,7 +150,8 @@ func (b *entityBuffer) determine(ctx context.Context, behavior vm.Behavior, when
 	for round := 0; ; round++ {
 		ran := false
 		for _, bo := range b.businessObjects(touched) {
-			for _, e := range bo.Entities {
+			for i := range bo.Entities {
+				e := &bo.Entities[i]
 				for _, d := range e.Determinations {
 					if d.When != when || b.running[bo.Name+"."+d.Name] {
 						continue
@@ -155,7 +183,7 @@ func (b *entityBuffer) determine(ctx context.Context, behavior vm.Behavior, when
 					}
 					key := bo.Name + "." + d.Name
 					b.running[key] = true
-					_, err := b.call(ctx, behavior, bo, d.Name, ins, reasonBehavior, r)
+					_, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: d.Name, ins: ins, reason: reasonBehavior}, r)
 					delete(b.running, key)
 					if err != nil {
 						return err
@@ -192,7 +220,8 @@ func (b *entityBuffer) validate(ctx context.Context, behavior vm.Behavior, r *re
 	}
 	changed := b.changedInstances()
 	for _, bo := range b.businessObjects(changed) {
-		for _, e := range bo.Entities {
+		for i := range bo.Entities {
+			e := &bo.Entities[i]
 			for _, v := range e.Validations {
 				var ins []*instance
 				for _, in := range changed {
@@ -203,7 +232,7 @@ func (b *entityBuffer) validate(ctx context.Context, behavior vm.Behavior, r *re
 				if len(ins) == 0 {
 					continue
 				}
-				if _, err := b.call(ctx, behavior, bo, v.Name, ins, reasonValidation, r); err != nil {
+				if _, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: v.Name, ins: ins, reason: reasonValidation}, r); err != nil {
 					return err
 				}
 			}
@@ -212,9 +241,82 @@ func (b *entityBuffer) validate(ctx context.Context, behavior vm.Behavior, r *re
 	return nil
 }
 
-// execute runs an action.
+// execute runs an action: an instance action for the instances of the
+// keys that exist and the caller may run it on, a static action once.
+// Changes of the action are statements in local mode, which run their own
+// determinations. The result is the method's or, for result self, the
+// instances after the action without those that failed.
 func (b *entityBuffer) execute(ctx context.Context, bo *model.BusinessObject, e *model.Entity, st vm.ModifyStep, req vm.ModifyRequest, r *result) (any, []*instance, error) {
-	return nil, nil, &native.RuntimeError{Class: "/RT/SESSION_ERROR", Text: "actions are not available yet"}
+	a := e.Action(st.Action)
+	if a == nil {
+		return nil, nil, fmt.Errorf("%s has no action %s", e.Table, st.Action)
+	}
+	if req.Behavior == nil {
+		return nil, nil, fmt.Errorf("action %s needs the behavior class of %s", a.Name, bo.Name)
+	}
+	c := behaviorCall{bo: bo, entity: e, method: a.Name, static: !a.Instance, param: st.Param, op: a.Name, reason: reasonBehavior}
+	if a.Instance {
+		seen := map[*instance]bool{}
+		for _, k := range st.Rows {
+			in, err := b.find(ctx, bo, e, k)
+			if err != nil {
+				return nil, nil, err
+			}
+			if in == nil || in.state == stateDeleted {
+				key, _ := b.keyOf(e.Table, k)
+				r.fail(e.Table, a.Name, reasonNotFound, strPtr(key), nil)
+				continue
+			}
+			if seen[in] {
+				continue
+			}
+			seen[in] = true
+			if ok, err := b.authorizeChange(ctx, req, bo, e, a.Name, in, nil); err != nil {
+				return nil, nil, err
+			} else if !ok {
+				r.fail(e.Table, a.Name, reasonNotAuthorized, strPtr(in.key), in.link)
+				continue
+			}
+			c.ins = append(c.ins, in)
+		}
+		if len(c.ins) == 0 {
+			return emptyResult(a), nil, nil
+		}
+	} else if ok, err := b.authorizeChange(ctx, req, bo, e, a.Name, nil, nil); err != nil {
+		return nil, nil, err
+	} else if !ok {
+		r.fail(e.Table, a.Name, reasonNotAuthorized, nil, nil)
+		return emptyResult(a), nil, nil
+	}
+	out, failed, err := b.call(ctx, req.Behavior, c, r)
+	if err != nil {
+		return nil, nil, err
+	}
+	res, ok := a.Result.Get()
+	switch {
+	case !ok:
+		return nil, nil, nil
+	case res == model.ResultSelf:
+		list := []any{}
+		for _, in := range c.ins {
+			if !failed[in] && in.state != stateDeleted {
+				list = append(list, mapsClone(in.values))
+			}
+		}
+		return list, nil, nil
+	case out == nil:
+		return emptyResult(a), nil, nil
+	}
+	return out, nil, nil
+}
+
+// emptyResult is the result of an action that did not run: no rows of an
+// instance action, null of a static one.
+func emptyResult(a *model.Action) any {
+	if a.Instance {
+		return []any{}
+	}
+	return nil
 }
 
 // authorize checks the authorization of an operation on new values.
