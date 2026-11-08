@@ -1,0 +1,90 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_METHODS",
+  "description": "Determinations, validations and actions of entities",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "METHOD_KIND",
+      "domain": "/RT/BEHAVIOR_KIND",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "RUNS_WHEN",
+      "domain": "/RT/BEHAVIOR_WHEN",
+      "description": "Determinations only"
+    },
+    {
+      "name": "ON_CREATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ON_UPDATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ON_DELETE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "IS_INSTANCE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "PARAMETER_TYPE",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "RESULT_TYPE",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "self or a structure; null for none"
+    },
+    {
+      "name": "MODIFIES",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "METHOD_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTITY",
+      "table": "/RT/BUSINESS_OBJECT_ENTITIES",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        },
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}

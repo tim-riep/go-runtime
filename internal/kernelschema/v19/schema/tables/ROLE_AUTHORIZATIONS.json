@@ -1,0 +1,37 @@
+{
+  "name": "/RT/ROLE_AUTHORIZATIONS",
+  "description": "Authorizations of single roles in their order",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ROLE_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ROLE",
+      "table": "/RT/ROLES",
+      "fields": [
+        {
+          "field": "ROLE_NAME",
+          "references": "ROLE_NAME"
+        }
+      ]
+    }
+  ]
+}

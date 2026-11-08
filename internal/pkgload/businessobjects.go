@@ -55,11 +55,12 @@ type entityDoc struct {
 }
 
 type businessObjectDoc struct {
-	Name          string                `json:"name"`
-	Description   map[string]string     `json:"description"`
-	Root          string                `json:"root"`
-	BehaviorClass string                `json:"behaviorClass"`
-	Entities      map[string]*entityDoc `json:"entities"`
+	Name          string                 `json:"name"`
+	Description   map[string]string      `json:"description"`
+	Root          string                 `json:"root"`
+	DataClass     string                 `json:"dataClass"`
+	BehaviorClass model.Optional[string] `json:"behaviorClass"`
+	Entities      map[string]*entityDoc  `json:"entities"`
 }
 
 // isGlobal reports a name with namespace, such as an extension field.
@@ -73,7 +74,7 @@ func init() {
 		Definitions: func(doc any) []NameRef { return ref(doc.(*businessObjectDoc).Name, "/name") },
 		References: func(doc any) []NameRef {
 			d := doc.(*businessObjectDoc)
-			out := append(ref(d.Root, "/root"), ref(d.BehaviorClass, "/behaviorClass")...)
+			out := append(ref(d.Root, "/root"), ref(d.BehaviorClass.Or(""), "/behaviorClass")...)
 			field := func(name, pointer string) {
 				if isGlobal(name) {
 					out = append(out, ref(name, pointer)...)
@@ -115,7 +116,10 @@ func init() {
 			d := doc.(*businessObjectDoc)
 			loc := l.loc(file)
 			b := model.BusinessObject{Name: d.Name, Owner: l.owner(), File: file, Description: d.Description, Root: d.Root,
-				BehaviorClass: d.BehaviorClass, Src: loc}
+				DataClass: model.DataClass(d.DataClass), BehaviorClass: d.BehaviorClass, Src: loc}
+			if b.DataClass == "" {
+				b.DataClass = model.Application
+			}
 			var entities []model.Entity
 			for table, e := range d.Entities {
 				en := model.Entity{Table: table, Parent: e.Parent, ForeignKey: e.ForeignKey, Operations: e.Operations,

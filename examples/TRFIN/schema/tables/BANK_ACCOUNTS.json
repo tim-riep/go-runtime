@@ -2,7 +2,7 @@
   "name": "/TRFIN/BANK_ACCOUNTS",
   "description": "Bank accounts of a company",
   "tenantSpecific": true,
-  "dataClass": "configuration",
+  "dataClass": "application",
   "fields": [
     {
       "name": "COMPANY_ID",

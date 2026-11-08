@@ -2,7 +2,7 @@
   "name": "/TRFIN/COMPANIES",
   "description": "Companies of a tenant",
   "tenantSpecific": true,
-  "dataClass": "configuration",
+  "dataClass": "application",
   "fields": [
     {
       "name": "COMPANY_ID",

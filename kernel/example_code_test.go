@@ -47,8 +47,8 @@ func TestExampleCode(t *testing.T) {
 		}
 		const S = "/TRFIN/COMPANY_SERVICE"
 		boss := companyAdmin(t, k, "ACME")
-		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, boss, S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, boss, S, "ADD_COUNTRY", `"DE"`, `"Germany"`)
 		if got := mustCallAs(t, k, boss, S, "CREATE", `"C1"`, `"Zeta"`, `"DE"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("CREATE without TROTTO = %s", got)
 		}
@@ -78,7 +78,7 @@ func TestExampleCode(t *testing.T) {
 		}
 		// Other countries are not checked by TROTTO, and a company without
 		// name in Germany is rejected.
-		mustCall(t, k, "ACME", S, "ADD_COUNTRY", `"FR"`, `"France"`)
+		mustCallAs(t, k, boss, S, "ADD_COUNTRY", `"FR"`, `"France"`)
 		if got := mustCallAs(t, k, boss, S, "CREATE", `"C3"`, `"Beta"`, `"FR"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("CREATE in FR = %s", got)
 		}

@@ -42,8 +42,20 @@ func (v *validator) businessObject(b *model.BusinessObject, owners map[string]st
 	}
 	v.objectName(b.Name, b.Owner, loc.At("/name"), obj)
 	v.descriptions(obj, loc, b.Description, b.Languages())
-	v.ownSource(b.BehaviorClass, model.SourceClass, "class", b.Owner, loc.At("/behaviorClass"), obj)
+	if class, ok := b.BehaviorClass.Get(); ok {
+		v.ownSource(class, model.SourceClass, "class", b.Owner, loc.At("/behaviorClass"), obj)
+	} else if b.HasBehavior() {
+		fail(loc, "it needs a behavior class for its determinations, validations and actions")
+	}
+	switch b.DataClass {
+	case model.Application, model.Configuration, model.RuntimeConfiguration:
+	default:
+		fail(loc.At("/dataClass"), "the data class is configuration or runtimeConfiguration, not %q", b.DataClass)
+	}
 	root := v.s.Tables[b.Root]
+	if re := b.Entity(b.Root); re != nil && re.Authorization == nil && b.DataClass == model.Application {
+		fail(re.Src, "the root %s needs an authorization; only business objects of configuration take /TRBASE/CONFIGURATION", b.Root)
+	}
 	if b.Entity(b.Root) == nil {
 		fail(loc.At("/root"), "the root %s is no entity; list it under entities", b.Root)
 	}
@@ -79,6 +91,8 @@ func (v *validator) businessObject(b *model.BusinessObject, owners map[string]st
 			continue
 		case t.DataClass == model.System:
 			fail(eloc, "table %s has the data class system, which business objects cannot have", e.Table)
+		case t.DataClass != b.DataClass:
+			fail(eloc, "table %s has the data class %s; business object %s has %s, which all its entities have", e.Table, t.DataClass, b.Name, b.DataClass)
 		case root != nil && t.TenantSpecific != root.TenantSpecific:
 			fail(eloc, "table %s is tenant-specific: %v, but the root %s: %v; all entities have the same tenant flag", e.Table, t.TenantSpecific, b.Root, root.TenantSpecific)
 		}

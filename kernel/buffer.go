@@ -412,6 +412,17 @@ func (r *result) fail(entity, op, reason string, key *string, link *string) {
 	r.Failures = append(r.Failures, vm.EntityFailure{Entity: entity, Operation: op, Key: key, Link: link, Reason: reason})
 }
 
+// origin sets the origin of the failures and messages from the given
+// positions on.
+func (r *result) origin(failures, messages int, pkg string) {
+	for i := failures; i < len(r.Failures); i++ {
+		r.Failures[i].Origin = strPtr(pkg)
+	}
+	for i := messages; i < len(r.Messages); i++ {
+		r.Messages[i].Origin = strPtr(pkg)
+	}
+}
+
 func (r *result) message(severity, text, entity string, key *string, field *string) {
 	m := vm.EntityMessage{Severity: severity, Text: text, Key: key, Field: field}
 	if entity != "" {

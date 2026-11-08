@@ -46,7 +46,7 @@ func boPackage() model.Package {
 	notes := table("/TRS/NOTES", true, []model.Field{domainField("NOTE_ID", "/TRBASE/GUID"), domainField("ORDER_ID", "/TRBASE/NAME")}, nil, "NOTE_ID")
 	notes.ForeignKeys = []model.ForeignKey{fk("ORDER", "/TRS/ORDERS", "ORDER_ID", "ORDER_ID")}
 	all := []model.EntityOperation{model.OperationCreate, model.OperationUpdate, model.OperationDelete}
-	b := model.BusinessObject{Name: "/TRS/ORDER", Description: enDescription, Root: "/TRS/ORDERS", BehaviorClass: "/TRS/ORDER_BEHAVIOR",
+	b := model.BusinessObject{Name: "/TRS/ORDER", Description: enDescription, Root: "/TRS/ORDERS", BehaviorClass: model.Some("/TRS/ORDER_BEHAVIOR"), DataClass: model.Application,
 		Entities: []model.Entity{
 			{Table: "/TRS/ORDERS", Operations: all, Numbering: model.NumberingExternal,
 				Fields:         map[string]model.FieldProperties{"NAME": {Mandatory: true}, "ORDER_ID": {ReadOnlyOnUpdate: true}},
@@ -78,6 +78,24 @@ func withBO(t *testing.T, change func(p *model.Package, b *model.BusinessObject)
 
 func TestBusinessObjectValid(t *testing.T) {
 	if err := Schema(withBO(t, func(*model.Package, *model.BusinessObject) {}), Options{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestBusinessObjectOfConfiguration accepts a business object of
+// configuration without behavior class and authorization.
+func TestBusinessObjectOfConfiguration(t *testing.T) {
+	s := withBO(t, func(p *model.Package, b *model.BusinessObject) {
+		b.DataClass, b.BehaviorClass = model.RuntimeConfiguration, model.None[string]()
+		for i := range p.Tables {
+			p.Tables[i].DataClass = model.RuntimeConfiguration
+		}
+		for i := range b.Entities {
+			e := &b.Entities[i]
+			e.Determinations, e.Validations, e.Actions, e.Authorization = nil, nil, nil, nil
+		}
+	})
+	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -166,8 +184,20 @@ func TestBusinessObjectRules(t *testing.T) {
 		}, "table /TRS/NOTES has a field LINK"},
 		{"root not listed", func(_ *model.Package, b *model.BusinessObject) { b.Root = "/TRS/ITEMS" },
 			"the root has no parent"},
-		{"behavior class missing", func(_ *model.Package, b *model.BusinessObject) { b.BehaviorClass = "/TRS/NOPE" },
+		{"behavior class missing", func(_ *model.Package, b *model.BusinessObject) { b.BehaviorClass = model.Some("/TRS/NOPE") },
 			"the class /TRS/NOPE does not exist in TRS"},
+		{"behavior without behavior class", func(_ *model.Package, b *model.BusinessObject) { b.BehaviorClass = model.None[string]() },
+			"it needs a behavior class for its determinations, validations and actions"},
+		{"entity of another data class", func(p *model.Package, _ *model.BusinessObject) { p.Tables[1].DataClass = model.Configuration },
+			"table /TRS/ITEMS has the data class configuration; business object /TRS/ORDER has application, which all its entities have"},
+		{"configuration with a table of application data", func(p *model.Package, b *model.BusinessObject) {
+			b.DataClass = model.Configuration
+			p.Tables[0].DataClass, p.Tables[1].DataClass = model.Configuration, model.Configuration
+		}, "table /TRS/NOTES has the data class application; business object /TRS/ORDER has configuration"},
+		{"unknown data class", func(_ *model.Package, b *model.BusinessObject) { b.DataClass = model.System },
+			"the data class is configuration or runtimeConfiguration"},
+		{"application data without authorization", func(_ *model.Package, b *model.BusinessObject) { entity(b, "/TRS/ORDERS").Authorization = nil },
+			"the root /TRS/ORDERS needs an authorization"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := withBO(t, c.change)

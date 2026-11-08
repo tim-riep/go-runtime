@@ -85,7 +85,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 			t.Fatalf("class changes must be notices: %+v", up.Changes)
 		}
 		s, _ = k.Schema(ctx)
-		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Configuration {
+		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Application {
 			t.Errorf("class after upgrade = %q", c)
 		}
 		consistent(t, k)

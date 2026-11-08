@@ -46,14 +46,17 @@ const (
 func (r *Repo) HasBusinessObjects() bool { return r.has(TBusinessObjects, "") }
 
 func (r *Repo) loadBusinessObjects(ctx context.Context, q dialect.Querier, s *model.Schema) error {
-	bos, err := r.selectRows(ctx, q, TBusinessObjects, []string{"BO_NAME", "PACKAGE_ID", "FILE_PATH", "ROOT_TABLE", "BEHAVIOR_CLASS"}, "BO_NAME")
+	bos, err := r.selectRows(ctx, q, TBusinessObjects, []string{"BO_NAME", "PACKAGE_ID", "FILE_PATH", "ROOT_TABLE", "BEHAVIOR_CLASS", "DATA_CLASS"}, "BO_NAME")
 	if err != nil {
 		return err
 	}
 	for _, x := range bos {
 		name := str(x["BO_NAME"])
 		s.BusinessObjects[name] = &model.BusinessObject{Name: name, Owner: owner(x["PACKAGE_ID"]), File: str(x["FILE_PATH"]), Description: map[string]string{},
-			Root: str(x["ROOT_TABLE"]), BehaviorClass: str(x["BEHAVIOR_CLASS"])}
+			Root: str(x["ROOT_TABLE"]), BehaviorClass: opt(x["BEHAVIOR_CLASS"]), DataClass: model.DataClass(str(x["DATA_CLASS"]))}
+		if s.BusinessObjects[name].DataClass == "" {
+			s.BusinessObjects[name].DataClass = model.Application
+		}
 	}
 	texts, err := r.selectRows(ctx, q, TBusinessObjectTexts, []string{"BO_NAME", "LANGUAGE", "DESCRIPTION"})
 	if err != nil {
@@ -167,7 +170,7 @@ func (r *Repo) writeBusinessObjects(ctx context.Context, q dialect.Querier, s *m
 	for _, name := range s.BusinessObjectNames() {
 		b := s.BusinessObjects[name]
 		if err := r.insert(ctx, q, TBusinessObjects, row{"BO_NAME": name, "PACKAGE_ID": ownerValue(b.Owner), "FILE_PATH": b.File, "ROOT_TABLE": b.Root,
-			"BEHAVIOR_CLASS": b.BehaviorClass}); err != nil {
+			"BEHAVIOR_CLASS": val(b.BehaviorClass), "DATA_CLASS": string(b.DataClass)}); err != nil {
 			return err
 		}
 		for _, lang := range b.Languages() {

@@ -1,0 +1,42 @@
+{
+  "name": "/RT/USER_TENANTS",
+  "description": "Tenants a user may work in",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME"
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    }
+  ],
+  "primaryKey": [
+    "USER_NAME",
+    "TENANT"
+  ],
+  "foreignKeys": [
+    {
+      "name": "USER",
+      "table": "/RT/USERS",
+      "fields": [
+        {
+          "field": "USER_NAME",
+          "references": "USER_NAME"
+        }
+      ]
+    },
+    {
+      "name": "TENANT",
+      "table": "/RT/TENANTS",
+      "fields": [
+        {
+          "field": "TENANT",
+          "references": "TENANT"
+        }
+      ]
+    }
+  ]
+}

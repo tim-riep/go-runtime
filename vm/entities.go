@@ -104,6 +104,9 @@ type EntityFailure struct {
 	Link      *string
 	Key       *string
 	Reason    string
+	// Origin is the package of the behavior that failed the instance;
+	// nil for failures of the kernel.
+	Origin *string
 }
 
 // EntityMessage is a message of an entity statement.
@@ -114,6 +117,9 @@ type EntityMessage struct {
 	Key      *string
 	Link     *string
 	Field    *string
+	// Origin is the package of the behavior that gave the message; nil
+	// for messages of the kernel.
+	Origin *string
 }
 
 // Failed reports whether the result has failures or error messages.
@@ -160,11 +166,11 @@ func (r *EntityResult) goValue() map[string]any {
 		created = append(created, map[string]any{"ENTITY": c.Entity, "LINK": str(c.Link), "KEY": c.Key})
 	}
 	for _, f := range r.Failures {
-		failures = append(failures, map[string]any{"ENTITY": f.Entity, "OPERATION": f.Operation, "LINK": str(f.Link), "KEY": str(f.Key), "REASON": f.Reason})
+		failures = append(failures, map[string]any{"ENTITY": f.Entity, "OPERATION": f.Operation, "LINK": str(f.Link), "KEY": str(f.Key), "REASON": f.Reason, "ORIGIN": str(f.Origin)})
 	}
 	for _, m := range r.Messages {
 		messages = append(messages, map[string]any{"SEVERITY": m.Severity, "TEXT": m.Text, "ENTITY": str(m.Entity), "KEY": str(m.Key),
-			"LINK": str(m.Link), "FIELD": str(m.Field), "MESSAGE": nil, "ARGUMENTS": []any{}})
+			"LINK": str(m.Link), "FIELD": str(m.Field), "MESSAGE": nil, "ARGUMENTS": []any{}, "ORIGIN": str(m.Origin)})
 	}
 	return map[string]any{"CREATED": created, "FAILURES": failures, "MESSAGES": messages}
 }

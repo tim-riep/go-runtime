@@ -76,12 +76,17 @@ const (
 // object with its behavior (schema/business-objects/*.json). Code changes
 // its tables only through entity statements.
 type BusinessObject struct {
-	Name          string            `json:"name"`
-	Owner         PackageID         `json:"owner"`
-	File          string            `json:"file"`
-	Description   map[string]string `json:"description"`
-	Root          string            `json:"root"`
-	BehaviorClass string            `json:"behaviorClass"`
+	Name        string            `json:"name"`
+	Owner       PackageID         `json:"owner"`
+	File        string            `json:"file"`
+	Description map[string]string `json:"description"`
+	Root        string            `json:"root"`
+	// DataClass is the data class of all entities: configuration or
+	// runtimeConfiguration, or application when the file gives none.
+	DataClass DataClass `json:"dataClass"`
+	// BehaviorClass is the class with the methods of determinations,
+	// validations and actions; none when there are none.
+	BehaviorClass Optional[string] `json:"behaviorClass"`
 	// Entities are the entities in the order of the tree: the root first,
 	// then the children of every entity by name, depth first.
 	Entities []Entity       `json:"entities"`
@@ -205,6 +210,17 @@ func (b *BusinessObject) Children(table string) []*Entity {
 	return out
 }
 
+// HasBehavior reports whether an entity has determinations, validations
+// or actions, which need a behavior class.
+func (b *BusinessObject) HasBehavior() bool {
+	for _, e := range b.Entities {
+		if len(e.Determinations)+len(e.Validations)+len(e.Actions) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // Languages returns the languages of the description in sorted order.
 func (b *BusinessObject) Languages() []string { return slices.Sorted(maps.Keys(b.Description)) }
 
@@ -298,4 +314,74 @@ func cloneBusinessObject(b *BusinessObject) *BusinessObject {
 		c.Entities[i] = e
 	}
 	return &c
+}
+
+// The authorization object that checks business objects of configuration
+// without an authorization of their own, with its fields.
+const (
+	ConfigurationObject         = "/TRBASE/CONFIGURATION"
+	ConfigurationBusinessObject = "BUSINESS_OBJECT"
+	ConfigurationDataClass      = "DATA_CLASS"
+)
+
+// AuthorizationSource tells where the authorization of an entity comes
+// from.
+type AuthorizationSource string
+
+// Sources of authorizations of entities.
+const (
+	// AuthorizationOwn: the entity has an authorization of its own.
+	AuthorizationOwn AuthorizationSource = "own"
+	// AuthorizationInherited: a dependent entity takes the authorization
+	// of the nearest parent entity that has one of its own.
+	AuthorizationInherited AuthorizationSource = "inherited"
+	// AuthorizationConfiguration: a business object of configuration
+	// without an authorization of its own is checked with
+	// ConfigurationObject.
+	AuthorizationConfiguration AuthorizationSource = "configuration"
+)
+
+// ResolvedAuthorization is the authorization that checks an entity.
+type ResolvedAuthorization struct {
+	Authorization *EntityAuthorization
+	Source        AuthorizationSource
+	// Holder is the entity whose instances give the values of the
+	// fields: the entity itself, or for an inherited authorization the
+	// parent entity that has it.
+	Holder *Entity
+	// Constants are values of fields of the object that do not come from
+	// instances, such as the name of the business object.
+	Constants map[string]string
+}
+
+// AuthorizationOf returns the authorization of an entity: its own, that
+// of its nearest parent entity with one, or for business objects of
+// configuration the configuration object. ok is false when the entity has
+// none, which validation rejects for business objects of application
+// data.
+func (b *BusinessObject) AuthorizationOf(e *Entity) (ResolvedAuthorization, bool) {
+	for h := e; h != nil; {
+		if h.Authorization != nil {
+			src := AuthorizationOwn
+			if h != e {
+				src = AuthorizationInherited
+			}
+			return ResolvedAuthorization{Authorization: h.Authorization, Source: src, Holder: h}, true
+		}
+		p, ok := h.Parent.Get()
+		if !ok {
+			break
+		}
+		h = b.Entity(p)
+	}
+	if b.DataClass != Configuration && b.DataClass != RuntimeConfiguration {
+		return ResolvedAuthorization{}, false
+	}
+	au := &EntityAuthorization{Object: ConfigurationObject, Fields: map[string]string{}, Activities: map[string]string{
+		ReadActivityKey: "READ", string(OperationCreate): "CREATE", string(OperationUpdate): "UPDATE", string(OperationDelete): "DELETE"}}
+	for _, a := range e.Actions {
+		au.Activities[a.Name] = "UPDATE"
+	}
+	return ResolvedAuthorization{Authorization: au, Source: AuthorizationConfiguration, Holder: e,
+		Constants: map[string]string{ConfigurationBusinessObject: b.Name, ConfigurationDataClass: string(b.DataClass)}}, true
 }

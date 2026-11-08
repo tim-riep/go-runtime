@@ -313,6 +313,29 @@ func companyAdmin(t *testing.T, k *kernel.Kernel, tenant string) kernel.ExecOpti
 	return kernel.ExecOptions{Tenant: tenant, User: model.Some("boss")}
 }
 
+// allAuthorized creates a user of a tenant with the role with all
+// authorizations and returns the options to run code as that user.
+func allAuthorized(t *testing.T, k *kernel.Kernel, tenant, user string) kernel.ExecOptions {
+	t.Helper()
+	ctx := context.Background()
+	if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some(tenant)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: user, Role: model.AllAuthorizationsRole, Tenant: tenant},
+		kernel.RoleOptions{By: "test", AllAuthorizations: true}); err != nil {
+		t.Fatal(err)
+	}
+	return kernel.ExecOptions{Tenant: tenant, User: model.Some(user)}
+}
+
+// expectCallAs runs a method with options and compares its result.
+func expectCallAs(t *testing.T, k *kernel.Kernel, opts kernel.ExecOptions, class, method, want string, args ...string) {
+	t.Helper()
+	if got := mustCallAs(t, k, opts, class, method, args...); got != want {
+		t.Errorf("%s.%s(%s) = %s, want %s", class, method, strings.Join(args, ", "), got, want)
+	}
+}
+
 // mustCallAs runs a method with options and fails the test on an error.
 func mustCallAs(t *testing.T, k *kernel.Kernel, opts kernel.ExecOptions, class, method string, args ...string) string {
 	t.Helper()

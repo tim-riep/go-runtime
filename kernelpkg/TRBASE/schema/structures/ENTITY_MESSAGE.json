@@ -45,6 +45,10 @@
       "name": "ARGUMENTS",
       "arrayType": "/TRBASE/MESSAGE_ARGUMENT_ARRAY",
       "notNull": true
+    },
+    {
+      "name": "ORIGIN",
+      "dataElement": "/TRBASE/PACKAGE_ID"
     }
   ]
 }

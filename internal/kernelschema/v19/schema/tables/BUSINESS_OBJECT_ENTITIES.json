@@ -1,0 +1,92 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_ENTITIES",
+  "description": "Entities of business objects with their behavior",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "PARENT_TABLE",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "The parent entity; null for the root"
+    },
+    {
+      "name": "FK_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "The foreign key to the parent"
+    },
+    {
+      "name": "NUMBERING",
+      "domain": "/RT/NUMBERING",
+      "notNull": true
+    },
+    {
+      "name": "CAN_CREATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CAN_UPDATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CAN_DELETE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "ETAG_FIELD",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "AUTH_OBJECT",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "null: the entity takes the authorization of the root or has none"
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "TABLE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "table": "/RT/BUSINESS_OBJECTS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        }
+      ]
+    }
+  ]
+}

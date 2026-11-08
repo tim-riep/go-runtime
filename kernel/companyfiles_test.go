@@ -115,9 +115,9 @@ func TestCompanyFiles(t *testing.T) {
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
-		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
 		boss := companyAdmin(t, k, "ACME")
+		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
 		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme GmbH"`, `"DE"`)
 		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "CREATE", `"C2"`, `"Bleu SA"`, `"FR"`)
 

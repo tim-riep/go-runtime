@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/DATA_CLASS",
+  "domain": "/TRBASE/DATA_CLASS",
+  "texts": {
+    "en": {
+      "short": "Data class",
+      "medium": "Data class",
+      "long": "Data class",
+      "heading": "Data class"
+    },
+    "de": {
+      "short": "Klasse",
+      "medium": "Datenklasse",
+      "long": "Datenklasse",
+      "heading": "Datenklasse"
+    }
+  }
+}

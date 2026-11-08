@@ -48,7 +48,10 @@ func businessObjects(cur, want *model.Schema) []plan.Change {
 			note(true, "root %s -> %s", c.Root, w.Root)
 		}
 		if c.BehaviorClass != w.BehaviorClass {
-			note(false, "behavior class %s -> %s", c.BehaviorClass, w.BehaviorClass)
+			note(false, "behavior class %s -> %s", c.BehaviorClass.Or("none"), w.BehaviorClass.Or("none"))
+		}
+		if c.DataClass != w.DataClass {
+			note(false, "data class %s -> %s", c.DataClass, w.DataClass)
 		}
 		for _, ce := range c.Entities {
 			we := w.Entity(ce.Table)

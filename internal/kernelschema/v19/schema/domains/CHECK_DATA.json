@@ -1,0 +1,5 @@
+{
+  "name": "/RT/CHECK_DATA",
+  "description": "Values of a check or grants of a user as JSON",
+  "type": "STRING"
+}

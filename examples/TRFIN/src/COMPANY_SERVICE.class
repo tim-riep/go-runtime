@@ -1,14 +1,20 @@
 # Reads and writes the companies of the tenant of the execution.
 public class /TRFIN/COMPANY_SERVICE
 
-  # Countries are shared by all tenants.
+  # Countries are configuration shared by all tenants, maintained through
+  # the business object /TRFIN/COUNTRY with the authorization for
+  # configuration of TRBASE.
   public static method ADD_COUNTRY(code: /TRFIN/COUNTRY_CODE, name: STRING)
     var existing = select count from /TRFIN/COUNTRIES where COUNTRY_CODE = code
     if existing = 0
+      var countries: array of /TRFIN/COUNTRIES = []
       var country: /TRFIN/COUNTRIES
       country.COUNTRY_CODE = code
       country.NAME = name
-      insert country
+      countries.APPEND(country)
+      modify business object /TRFIN/COUNTRY
+        create /TRFIN/COUNTRIES fields (COUNTRY_CODE, NAME) from countries
+      end
     end
   end
 

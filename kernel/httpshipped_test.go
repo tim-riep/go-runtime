@@ -94,7 +94,7 @@ func TestShippedHandlers(t *testing.T) {
 		}
 
 		// Companies: POST creates, GET lists the companies of the tenant.
-		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
 		a = c.do("POST", "/trfin/companies", anna, `{"COMPANY_ID":"C1","NAME":"Acme","COUNTRY":"DE","STATUS":"ACTIVE"}`)
 		if a.status != 201 || !strings.Contains(a.body, `"NAME":"Acme"`) {
 			t.Fatalf("POST: %d %s", a.status, a.body)
@@ -109,7 +109,7 @@ func TestShippedHandlers(t *testing.T) {
 		}
 		// A clerk reads the companies of its countries and creates none:
 		// the request is rolled back.
-		mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
+		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
 		if a := c.do("POST", "/trfin/companies", anna, `{"COMPANY_ID":"C2","NAME":"Bleu","COUNTRY":"FR","STATUS":"ACTIVE"}`); a.status != 201 {
 			t.Fatalf("POST FR: %d %s", a.status, a.body)
 		}

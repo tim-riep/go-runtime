@@ -1,0 +1,32 @@
+{
+  "name": "/TRBASE/CONFIGURATION",
+  "texts": {
+    "en": {
+      "label": "Configuration maintenance",
+      "description": "Maintaining business objects of configuration without an authorization of their own"
+    },
+    "de": {
+      "label": "Konfigurationspflege",
+      "description": "Business Objects der Konfiguration ohne eigene Berechtigung pflegen"
+    }
+  },
+  "fields": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "dataElement": "/TRBASE/BUSINESS_OBJECT_NAME"
+    },
+    {
+      "name": "DATA_CLASS",
+      "dataElement": "/TRBASE/DATA_CLASS"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

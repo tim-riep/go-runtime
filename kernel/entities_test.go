@@ -265,14 +265,14 @@ func TestEntityStatements(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", strings.TrimSuffix(orderRoot, orderAuthorization))}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{boPackage(t, "1.0.0", orderRoot)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
 		const api = "/TRBO/API"
-		user := kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}
+		user := allAuthorized(t, k, "ACME", "anna")
 		out, err := call(k, user, api, "CREATE", `"A1"`, `"Alpha"`, "null")
 		if err != nil {
 			t.Fatal(err)
@@ -293,75 +293,75 @@ func TestEntityStatements(t *testing.T) {
 			t.Error("no time of the change")
 		}
 		// The key exists, a parent that does not exist fails.
-		r = result(t, mustCall(t, k, "ACME", api, "CREATE", `"A1"`, `"Again"`, "null"))
+		r = result(t, mustCallAs(t, k, user, api, "CREATE", `"A1"`, `"Again"`, "null"))
 		if len(r["FAILURES"]) != 3 || r["FAILURES"][0]["REASON"] != "ALREADY_EXISTS" || r["FAILURES"][1]["REASON"] != "PARENT_NOT_FOUND" {
 			t.Errorf("duplicate: %v", r)
 		}
-		r = result(t, mustCall(t, k, "ACME", api, "ADD_ITEM", `"NOPE"`, "2"))
+		r = result(t, mustCallAs(t, k, user, api, "ADD_ITEM", `"NOPE"`, "2"))
 		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "PARENT_NOT_FOUND" || r["FAILURES"][0]["ENTITY"] != "/TRBO/ITEMS" {
 			t.Errorf("missing parent: %v", r)
 		}
-		mustCall(t, k, "ACME", api, "ADD_ITEM", `"A1"`, "2")
+		mustCallAs(t, k, user, api, "ADD_ITEM", `"A1"`, "2")
 
 		// Only the given fields change; null and "" are different values.
-		mustCall(t, k, "ACME", api, "SET_NOTE", `"A1"`, `""`)
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":""`) || !strings.Contains(got, `"NAME":"Alpha"`) {
+		mustCallAs(t, k, user, api, "SET_NOTE", `"A1"`, `""`)
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":""`) || !strings.Contains(got, `"NAME":"Alpha"`) {
 			t.Errorf("after an empty note: %s", got)
 		}
-		mustCall(t, k, "ACME", api, "SET_NOTE", `"A1"`, "null")
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":null`) {
+		mustCallAs(t, k, user, api, "SET_NOTE", `"A1"`, "null")
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":null`) {
 			t.Errorf("after a null note: %s", got)
 		}
-		expectCall(t, k, "ACME", api, "NAMES", `"1 0 1 Alpha"`, `"A1"`)
-		expectCall(t, k, "ACME", api, "NAMES", `"0 1 0"`, `"NOPE"`)
+		expectCallAs(t, k, user, api, "NAMES", `"1 0 1 Alpha"`, `"A1"`)
+		expectCallAs(t, k, user, api, "NAMES", `"0 1 0"`, `"NOPE"`)
 
 		// A mandatory field without value fails the save; nothing is
 		// written.
-		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `""`))
+		r = result(t, mustCallAs(t, k, user, api, "RENAME", `"A1"`, `""`))
 		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "MANDATORY" || !strings.Contains(r["MESSAGES"][0]["TEXT"].(string), "NAME of /TRBO/ORDERS needs a value") {
 			t.Errorf("mandatory: %v", r)
 		}
-		_, err = call(k, kernel.ExecOptions{Tenant: "ACME"}, api, "FAIL_SAVE", `"A1"`)
+		_, err = call(k, user, api, "FAIL_SAVE", `"A1"`)
 		var exc *vm.Exception
 		if !errors.As(err, &exc) || exc.Class != "/RT/SAVE_FAILED" {
 			t.Errorf("save without result: %v", err)
 		}
 
 		// commit of the default session with changes in the buffer.
-		_, err = call(k, kernel.ExecOptions{Tenant: "ACME"}, api, "COMMIT_PENDING", `"A1"`)
+		_, err = call(k, user, api, "COMMIT_PENDING", `"A1"`)
 		if !errors.As(err, &exc) || exc.Class != "/RT/SESSION_ERROR" || !strings.Contains(exc.Text, "use commit business objects") {
 			t.Errorf("commit with changes: %v", err)
 		}
 		// rollback business objects drops the changes.
-		expectCall(t, k, "ACME", api, "DISCARD", `"none"`, `"A1"`)
+		expectCallAs(t, k, user, api, "DISCARD", `"none"`, `"A1"`)
 
 		// The end of the execution saves, or drops with rollback.
-		mustCall(t, k, "ACME", api, "LEAVE_PENDING", `"A1"`)
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"left"`) {
+		mustCallAs(t, k, user, api, "LEAVE_PENDING", `"A1"`)
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"left"`) {
 			t.Errorf("saved at the end: %s", got)
 		}
-		if _, err := call(k, kernel.ExecOptions{Tenant: "ACME", End: kernel.RollbackUnlessCommitted}, api, "STAGE_NOTE", `"A1"`, `"dropped"`); err != nil {
+		if _, err := call(k, kernel.ExecOptions{Tenant: "ACME", User: user.User, End: kernel.RollbackUnlessCommitted}, api, "STAGE_NOTE", `"A1"`, `"dropped"`); err != nil {
 			t.Fatal(err)
 		}
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"left"`) {
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"left"`) {
 			t.Errorf("dropped at the end: %s", got)
 		}
-		_, err = call(k, kernel.ExecOptions{Tenant: "ACME"}, api, "LEAVE_EMPTY_NAME", `"A1"`)
+		_, err = call(k, user, api, "LEAVE_EMPTY_NAME", `"A1"`)
 		var ns *rterr.BusinessObjectsNotSaved
 		if !errors.As(err, &ns) || !strings.Contains(err.Error(), "MANDATORY") {
 			t.Errorf("failed save at the end: %v", err)
 		}
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Alpha"`) {
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Alpha"`) {
 			t.Errorf("after the failed save: %s", got)
 		}
 
 		// An ETag conflict: another execution changes the instance after
 		// this one read it.
-		err = k.Execute(ctx, kernel.ExecOptions{Tenant: "ACME"}, func(ctx context.Context, m *vm.Machine) error {
+		err = k.Execute(ctx, user, func(ctx context.Context, m *vm.Machine) error {
 			if _, err := m.CallJSON(ctx, api, "STAGE_NOTE", []json.RawMessage{json.RawMessage(`"A1"`), json.RawMessage(`"mine"`)}); err != nil {
 				return err
 			}
-			if _, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, api, "SET_NOTE", `"A1"`, `"theirs"`); err != nil {
+			if _, err := call(k, user, api, "SET_NOTE", `"A1"`, `"theirs"`); err != nil {
 				return err
 			}
 			out, err := m.CallJSON(ctx, api, "SAVE", nil)
@@ -376,12 +376,12 @@ func TestEntityStatements(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"theirs"`) {
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NOTE":"theirs"`) {
 			t.Errorf("after the conflict: %s", got)
 		}
 
 		// Delete removes the dependent instances.
-		r = result(t, mustCall(t, k, "ACME", api, "REMOVE", `"A1"`))
+		r = result(t, mustCallAs(t, k, user, api, "REMOVE", `"A1"`))
 		if len(r["FAILURES"]) != 0 {
 			t.Fatalf("remove: %v", r)
 		}
@@ -390,7 +390,7 @@ func TestEntityStatements(t *testing.T) {
 				t.Errorf("%s has %d rows", table, n)
 			}
 		}
-		r = result(t, mustCall(t, k, "ACME", api, "REMOVE", `"A1"`))
+		r = result(t, mustCallAs(t, k, user, api, "REMOVE", `"A1"`))
 		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "NOT_FOUND" {
 			t.Errorf("remove again: %v", r)
 		}
@@ -480,7 +480,9 @@ const determinationRoot = `, "numbering": "external",
 		{ "name": "SET_STATUS", "when": "modify", "on": ["create"] },
 		{ "name": "MARK_NAME", "when": "modify", "on": ["create", "update"], "fields": ["NAME"] },
 		{ "name": "STAMP_NOTE", "when": "save", "on": ["create", "update"] } ],
-	"validations": [{ "name": "CHECK_NAME", "on": ["create", "update"], "fields": ["NAME"] }]`
+	"validations": [{ "name": "CHECK_NAME", "on": ["create", "update"], "fields": ["NAME"] }],
+	"authorization": { "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": "NAME" },
+		"activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE" } }`
 
 // determinationBehavior are the methods of /TRBO/ORDER_BEHAVIOR for
 // determinationRoot. MARK_NAME changes the field that triggers it.
@@ -651,43 +653,44 @@ func TestDeterminations(t *testing.T) {
 			t.Fatal(err)
 		}
 		const api = "/TRBO/API"
+		user := allAuthorized(t, k, "ACME", "anna")
 		// On modify: SET_STATUS for the creation and MARK_NAME once for the
 		// name, although it changes the name itself; STAMP_NOTE waits for
 		// the save.
-		expectCall(t, k, "ACME", api, "STAGE", `"Alpha! new none"`, `"A1"`, `"Alpha"`)
+		expectCallAs(t, k, user, api, "STAGE", `"Alpha! new none"`, `"A1"`, `"Alpha"`)
 
-		r := result(t, mustCall(t, k, "ACME", api, "CREATE", `"A1"`, `"Alpha"`))
-		if len(r["FAILURES"]) != 0 || len(r["MESSAGES"]) != 1 || r["MESSAGES"][0]["TEXT"] != "stamped 1" {
+		r := result(t, mustCallAs(t, k, user, api, "CREATE", `"A1"`, `"Alpha"`))
+		if len(r["FAILURES"]) != 0 || len(r["MESSAGES"]) != 1 || r["MESSAGES"][0]["TEXT"] != "stamped 1" || r["MESSAGES"][0]["ORIGIN"] != "TRBO" {
 			t.Fatalf("create: %v", r)
 		}
-		got := mustCall(t, k, "ACME", api, "READ", `"A1"`)
+		got := mustCallAs(t, k, user, api, "READ", `"A1"`)
 		if !strings.Contains(got, `"NAME":"Alpha!"`) || !strings.Contains(got, `"STATUS":"new"`) || !strings.Contains(got, `"NOTE":"saved Alpha! new"`) {
 			t.Errorf("after create: %s", got)
 		}
-		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"Beta"`))
+		r = result(t, mustCallAs(t, k, user, api, "RENAME", `"A1"`, `"Beta"`))
 		if len(r["FAILURES"]) != 0 {
 			t.Fatalf("rename: %v", r)
 		}
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) || !strings.Contains(got, `"NOTE":"saved Beta! new"`) {
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) || !strings.Contains(got, `"NOTE":"saved Beta! new"`) {
 			t.Errorf("after rename: %s", got)
 		}
 
 		// A validation fails the save and keeps the buffer: a later change
 		// in the same execution saves it.
-		expectCall(t, k, "ACME", api, "KEEP_FAILED", `"1 VALIDATION NAME 0 yankee!"`, `"X1"`)
+		expectCallAs(t, k, user, api, "KEEP_FAILED", `"1 VALIDATION NAME 0 yankee!"`, `"X1"`)
 
 		// A rename the validation rejects leaves the database as it was.
-		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"xenon"`))
+		r = result(t, mustCallAs(t, k, user, api, "RENAME", `"A1"`, `"xenon"`))
 		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "VALIDATION" || r["MESSAGES"][1]["FIELD"] != "NAME" ||
 			r["MESSAGES"][1]["KEY"] != `{"ORDER_ID":"A1"}` {
 			t.Errorf("rejected rename: %v", r)
 		}
-		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) {
+		if got := mustCallAs(t, k, user, api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) {
 			t.Errorf("after the rejected rename: %s", got)
 		}
 
 		// A runtime error in a behavior method fails its instances.
-		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"boom"`))
+		r = result(t, mustCallAs(t, k, user, api, "RENAME", `"A1"`, `"boom"`))
 		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "BEHAVIOR" ||
 			!strings.Contains(r["MESSAGES"][1]["TEXT"].(string), "/TRBO/ORDER_BEHAVIOR.CHECK_NAME: ") {
 			t.Errorf("runtime error: %v", r)
@@ -702,7 +705,10 @@ const actionRoot = `, "numbering": "external",
 		{ "name": "CLOSE", "parameter": "/TRBO/REASON", "result": "self" },
 		{ "name": "LABELS", "result": "/TRBO/REASON", "modifies": false },
 		{ "name": "COUNT_OPEN", "instance": false, "result": "/TRBO/REASON", "modifies": false },
-		{ "name": "PING", "instance": false } ]`
+		{ "name": "PING", "instance": false } ],
+	"authorization": { "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": "NAME" },
+		"activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE",
+			"CLOSE": "UPDATE", "LABELS": "READ", "COUNT_OPEN": "READ", "PING": "READ" } }`
 
 // actionBehavior are the methods of /TRBO/ORDER_BEHAVIOR for actionRoot.
 const actionBehavior = `
@@ -837,16 +843,17 @@ func TestActions(t *testing.T) {
 			t.Fatal(err)
 		}
 		const api = "/TRBO/API"
-		mustCall(t, k, "ACME", api, "CREATE", `"A1"`)
-		mustCall(t, k, "ACME", api, "CREATE", `"A2"`)
-		expectCall(t, k, "ACME", api, "CLOSE", `"1 NOT_FOUND:{\"ORDER_ID\":\"NOPE\"} A1=closed/done"`, `["A1","NOPE"]`, `"done"`)
+		user := allAuthorized(t, k, "ACME", "anna")
+		mustCallAs(t, k, user, api, "CREATE", `"A1"`)
+		mustCallAs(t, k, user, api, "CREATE", `"A2"`)
+		expectCallAs(t, k, user, api, "CLOSE", `"1 NOT_FOUND:{\"ORDER_ID\":\"NOPE\"} A1=closed/done"`, `["A1","NOPE"]`, `"done"`)
 		// The action fails for the closed instance and closes the other.
-		expectCall(t, k, "ACME", api, "CLOSE", `"1 BEHAVIOR:{\"ORDER_ID\":\"A1\"} A2=closed/again"`, `["A1","A2"]`, `"again"`)
-		if got := mustCall(t, k, "ACME", api, "LABELS", `"A2"`); got != `"order A2"` {
+		expectCallAs(t, k, user, api, "CLOSE", `"1 BEHAVIOR:{\"ORDER_ID\":\"A1\"} A2=closed/again"`, `["A1","A2"]`, `"again"`)
+		if got := mustCallAs(t, k, user, api, "LABELS", `"A2"`); got != `"order A2"` {
 			t.Errorf("labels: %s", got)
 		}
-		expectCall(t, k, "ACME", api, "COUNT", `"counted done"`)
-		expectCall(t, k, "ACME", api, "PING", `"BEHAVIOR PING"`)
+		expectCallAs(t, k, user, api, "COUNT", `"counted done"`)
+		expectCallAs(t, k, user, api, "PING", `"BEHAVIOR PING"`)
 	})
 }
 
@@ -1027,7 +1034,7 @@ func TestTableBecomesEntity(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{writePackage(t, files)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		next := boFiles("1.1.0", orderBO(strings.TrimSuffix(orderRoot, orderAuthorization)), orderBehavior)
+		next := boFiles("1.1.0", orderBO(orderRoot), orderBehavior)
 		next["src/WRITER.class"] = src
 		_, err := k.Upgrade(ctx, writePackage(t, next), kernel.Options{})
 		var ce *rterr.CompileError
@@ -1065,7 +1072,7 @@ func TestBusinessObjectDescription(t *testing.T) {
 			t.Errorf("fields: %v", fields)
 		}
 		items := root.Children[0]
-		if items.ParentKey == nil || items.ParentKey.Parent != "/TRBO/ORDERS" || !items.Inherited || items.Authorization == nil ||
+		if items.ParentKey == nil || items.ParentKey.Parent != "/TRBO/ORDERS" || items.AuthorizationSource != model.Some(model.AuthorizationInherited) || items.Authorization == nil ||
 			len(root.Actions) != 2 || root.Actions[0].Activity.Or("") != "UPDATE" {
 			t.Errorf("items: %+v, actions %+v", items, root.Actions)
 		}

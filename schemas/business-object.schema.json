@@ -9,7 +9,6 @@
     "name",
     "description",
     "root",
-    "behaviorClass",
     "entities"
   ],
   "$defs": {
@@ -76,9 +75,16 @@
       "$ref": "common.schema.json#/$defs/objectName",
       "description": "The table of the root entity, a table of the package."
     },
+    "dataClass": {
+      "description": "configuration or runtimeConfiguration for a business object that maintains configuration. Without it, the business object holds application data. All entities have the data class of the business object.",
+      "enum": [
+        "configuration",
+        "runtimeConfiguration"
+      ]
+    },
     "behaviorClass": {
       "$ref": "common.schema.json#/$defs/objectName",
-      "description": "A class of the package with the methods of determinations, validations and actions."
+      "description": "A class of the package with the methods of determinations, validations and actions. Business objects without them need none."
     },
     "entities": {
       "description": "The behavior of every entity by table: the root and dependent tables of the package.",

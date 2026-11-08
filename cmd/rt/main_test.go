@@ -49,7 +49,7 @@ func TestCLI(t *testing.T) {
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "implementation 1: /TROTTO/COMPANY_CHECKS (package TROTTO, class /TROTTO/COMPANY_CHECKS, order 100)"},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, `COUNTRY: "DE" "AT"`},
 				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "used by TRFIN src/COMPANY_BEHAVIOR.class:"},
-				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    /TRFIN/COMPANIES  3"},
+				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    application    /TRFIN/COMPANIES  3"},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "entity /TRFIN/CONTACTS  key (CONTACT_ID)  operations create, update, delete  numbering uuid"},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "field CHANGED_AT  TIMESTAMP"},
 				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "action BLOCK  instance  parameter /TRFIN/BLOCK_REASON  result self  modifies true  activity UPDATE"},
@@ -218,7 +218,7 @@ func TestDisasm(t *testing.T) {
 	}
 	out.Reset()
 	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; select /TRFIN/COMPANIES") ||
-		!strings.Contains(out.String(), "ENTITY 16") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
+		!strings.Contains(out.String(), "ENTITY 17") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
 		t.Errorf("database statement: %d %s", code, out.String())
 	}
 	errOut.Reset()
@@ -340,7 +340,7 @@ func TestRoleCommands(t *testing.T) {
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, "expression  /TRFIN/COMPANY  denied"},
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, `ACTIVITY="READ" COMPANY_ID=any COUNTRY="FR"`},
 				{[]string{"trace", "authorizations", "stop", "anna"}, exitOK, "Trace of anna stopped."},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `["DE", "Germany"]`, "--tenant", "ACME"}, exitOK, "null"},
+				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `["DE", "Germany"]`, "--tenant", "ACME", "--user", "root"}, exitOK, "null"},
 				// The business object /TRFIN/COMPANY checks the creation; anna
 				// may only update companies.
 				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "anna"}, exitError, "NOT_AUTHORIZED"},

@@ -33,6 +33,10 @@
       "name": "REASON",
       "dataElement": "/TRBASE/FAILURE_REASON",
       "notNull": true
+    },
+    {
+      "name": "ORIGIN",
+      "dataElement": "/TRBASE/PACKAGE_ID"
     }
   ]
 }

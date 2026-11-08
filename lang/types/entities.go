@@ -65,7 +65,7 @@ func (c *checker) behaviorOf(k *Class) *model.BusinessObject {
 		return nil
 	}
 	for _, name := range c.cfg.Schema.BusinessObjectNames() {
-		if b := c.cfg.Schema.BusinessObjects[name]; b.BehaviorClass == k.Name {
+		if b := c.cfg.Schema.BusinessObjects[name]; b.BehaviorClass == model.Some(k.Name) {
 			return b
 		}
 	}
@@ -103,8 +103,12 @@ func (c *checker) businessObjectOf(f *fnCtx, n syntax.Name, local bool) *model.B
 	if !c.visibleNamespace(n) {
 		return nil
 	}
-	if local && (f.class == nil || f.class.Name != b.BehaviorClass) {
-		c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in the behavior class %s of %s", b.BehaviorClass, b.Name)
+	if local && (f.class == nil || b.BehaviorClass != model.Some(f.class.Name)) {
+		if class, ok := b.BehaviorClass.Get(); ok {
+			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in the behavior class %s of %s", class, b.Name)
+		} else {
+			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in a behavior class; %s has none", b.Name)
+		}
 	}
 	c.use(n.Pos, "business-object", b.Name, "")
 	return b

@@ -29,9 +29,12 @@ type BusinessObject struct {
 	Name          string          `json:"name"`
 	Package       model.PackageID `json:"package"`
 	// Description holds the description by language.
-	Description   map[string]string `json:"description"`
-	BehaviorClass string            `json:"behaviorClass"`
-	Root          *Entity           `json:"root"`
+	Description map[string]string `json:"description"`
+	// DataClass is application, configuration or runtimeConfiguration.
+	DataClass model.DataClass `json:"dataClass"`
+	// BehaviorClass is null for a business object without behavior.
+	BehaviorClass model.Optional[string] `json:"behaviorClass"`
+	Root          *Entity                `json:"root"`
 	// Languages are the languages of the texts.
 	Languages []string `json:"languages"`
 }
@@ -49,11 +52,15 @@ type Entity struct {
 	Determinations []model.Determination   `json:"determinations"`
 	Validations    []model.Validation      `json:"validations"`
 	Actions        []EntityAction          `json:"actions"`
-	// Authorization is that of the entity; Inherited tells that a
-	// dependent entity takes the one of the root.
-	Authorization *model.EntityAuthorization `json:"authorization"`
-	Inherited     bool                       `json:"inherited"`
-	Children      []*Entity                  `json:"children"`
+	// Authorization is the authorization that checks the entity, null
+	// for none. AuthorizationSource tells whether it is the entity's own,
+	// inherited from AuthorizationHolder, a parent entity, or the
+	// configuration object with the values of AuthorizationConstants.
+	Authorization          *model.EntityAuthorization                `json:"authorization"`
+	AuthorizationSource    model.Optional[model.AuthorizationSource] `json:"authorizationSource"`
+	AuthorizationHolder    model.Optional[string]                    `json:"authorizationHolder"`
+	AuthorizationConstants map[string]string                         `json:"authorizationConstants"`
+	Children               []*Entity                                 `json:"children"`
 }
 
 // ParentKey is the foreign key of a dependent entity to its parent with
@@ -93,7 +100,7 @@ func (r *Reflector) BusinessObject(name string) (*BusinessObject, error) {
 		return nil, &rterr.NotFound{Kind: "business object", Name: name}
 	}
 	out := &BusinessObject{FormatVersion: FormatVersion, Name: b.Name, Package: b.Owner, Description: r.texts(b.Description),
-		BehaviorClass: b.BehaviorClass, Languages: r.langs}
+		DataClass: b.DataClass, BehaviorClass: b.BehaviorClass, Languages: r.langs}
 	entities := map[string]*Entity{}
 	for i := range b.Entities {
 		e := &b.Entities[i]
@@ -119,7 +126,7 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 	}
 	t := r.s.Tables[e.Table]
 	out := &Entity{Table: e.Table, Texts: map[string]Text{}, Operations: e.Operations, Numbering: e.Numbering, Fields: []EntityField{},
-		Determinations: e.Determinations, Validations: e.Validations, Actions: []EntityAction{}, Authorization: e.Authorization, Children: []*Entity{}}
+		Determinations: e.Determinations, Validations: e.Validations, Actions: []EntityAction{}, AuthorizationConstants: map[string]string{}, Children: []*Entity{}}
 	for l, tx := range d.Texts {
 		out.Texts[l] = Text{Label: tx.Label, Description: tx.Description}
 	}
@@ -132,11 +139,17 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 		fk := t.ForeignKey(e.ForeignKey.Or(""))
 		out.ParentKey = &ParentKey{Parent: p, ForeignKey: fk.Name, Fields: fk.Columns}
 	}
-	auth := e.Authorization
-	if auth == nil {
-		out.Inherited = b.Entity(b.Root).Authorization != nil && e.Table != b.Root
-		auth = b.Entity(b.Root).Authorization
-		out.Authorization = auth
+	var auth *model.EntityAuthorization
+	if ra, ok := b.AuthorizationOf(e); ok {
+		auth = ra.Authorization
+		out.Authorization, out.AuthorizationSource = auth, model.Some(ra.Source)
+		out.AuthorizationHolder = model.Some(ra.Holder.Table)
+		if ra.Constants != nil {
+			out.AuthorizationConstants = ra.Constants
+		}
+		if ra.Source == model.AuthorizationInherited {
+			auth = nil
+		}
 	}
 	admin := map[string]string{}
 	for kind, f := range map[string]model.Optional[string]{"createdBy": e.Administrative.CreatedBy, "createdAt": e.Administrative.CreatedAt,
@@ -158,6 +171,10 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 		ra := EntityAction{Action: a}
 		if auth != nil {
 			if act, ok := auth.Activities[a.Name]; ok {
+				ra.Activity = model.Some(act)
+			}
+		} else if out.Authorization != nil {
+			if act, ok := out.Authorization.Activities[string(model.OperationUpdate)]; ok {
 				ra.Activity = model.Some(act)
 			}
 		}

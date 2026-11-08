@@ -1,0 +1,56 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_FIELDS",
+  "description": "Static properties of fields of entities",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "READ_ONLY",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "READ_ONLY_ON_UPDATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "MANDATORY",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "TABLE_NAME",
+    "FIELD_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTITY",
+      "table": "/RT/BUSINESS_OBJECT_ENTITIES",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        },
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/DATA_CLASS",
+  "description": "Data class of a table or business object",
+  "type": "CHAR",
+  "length": 20,
+  "values": [
+    {
+      "value": "application",
+      "name": "APPLICATION",
+      "description": "Application data"
+    },
+    {
+      "value": "configuration",
+      "name": "CONFIGURATION",
+      "description": "Configuration"
+    },
+    {
+      "value": "runtimeConfiguration",
+      "name": "RUNTIME_CONFIGURATION",
+      "description": "Configuration maintained at runtime"
+    }
+  ]
+}

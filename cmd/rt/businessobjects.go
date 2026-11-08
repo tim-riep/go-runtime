@@ -46,9 +46,9 @@ func (c *cli) businessObject(ctx context.Context, k *kernel.Kernel, args []strin
 			return exitOK
 		}
 		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tPACKAGE\tROOT\tENTITIES\tBEHAVIOR\tDESCRIPTION")
+		fmt.Fprintln(w, "NAME\tPACKAGE\tDATA CLASS\tROOT\tENTITIES\tBEHAVIOR\tDESCRIPTION")
 		for _, b := range list {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\n", b.Name, b.Package, b.Root.Table, countEntities(b.Root), b.BehaviorClass,
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\t%s\n", b.Name, b.Package, b.DataClass, b.Root.Table, countEntities(b.Root), b.BehaviorClass.Or("-"),
 				reflector.In(b.Description, c.lang).Or(""))
 		}
 		w.Flush()
@@ -80,7 +80,8 @@ func (c *cli) printBusinessObject(d *kernel.BusinessObjectDetail) {
 	out := c.stdout
 	fmt.Fprintf(out, "Business object %s (package %s)\n", d.Name, d.Package)
 	fmt.Fprintf(out, "  description: %s\n", reflector.In(d.Description, c.lang).Or("-"))
-	fmt.Fprintf(out, "  behavior class: %s\n", d.BehaviorClass)
+	fmt.Fprintf(out, "  data class: %s\n", d.DataClass)
+	fmt.Fprintf(out, "  behavior class: %s\n", d.BehaviorClass.Or("-"))
 	c.printEntity(d.Root, "  ")
 	if len(d.CodeUses) == 0 {
 		fmt.Fprintln(out, "  not used by code")
@@ -148,10 +149,12 @@ func (c *cli) printEntity(e *reflector.Entity, indent string) {
 		fmt.Fprintf(out, "%saction %s  %s  parameter %s  result %s  modifies %v  activity %s\n", in, a.Name, kind, a.Parameter.Or("-"),
 			a.Result.Or("-"), a.Modifies, a.Activity.Or("-"))
 	}
-	switch {
-	case e.Authorization != nil && e.Inherited:
-		fmt.Fprintf(out, "%sauthorization of the root: %s\n", in, e.Authorization.Object)
-	case e.Authorization != nil:
+	switch src, _ := e.AuthorizationSource.Get(); src {
+	case model.AuthorizationInherited:
+		fmt.Fprintf(out, "%sauthorization of %s: %s\n", in, e.AuthorizationHolder.Or("-"), e.Authorization.Object)
+	case model.AuthorizationConfiguration:
+		fmt.Fprintf(out, "%sauthorization for configuration: %s\n", in, e.Authorization.Object)
+	case model.AuthorizationOwn:
 		fmt.Fprintf(out, "%sauthorization %s\n", in, e.Authorization.Object)
 	}
 	for _, ch := range e.Children {

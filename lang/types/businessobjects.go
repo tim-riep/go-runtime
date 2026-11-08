@@ -112,7 +112,8 @@ func (c *checker) behaviorClasses() {
 	}
 	for _, name := range c.cfg.Schema.BusinessObjectNames() {
 		b := c.cfg.Schema.BusinessObjects[name]
-		if b.Owner != c.cfg.Package {
+		class, ok := b.BehaviorClass.Get()
+		if b.Owner != c.cfg.Package || !ok {
 			continue
 		}
 		fail := func(format string, args ...any) {
@@ -122,34 +123,34 @@ func (c *checker) behaviorClasses() {
 			fail("business objects need TRBASE for %s; add it to the requirements", EntityResponseClass)
 			continue
 		}
-		k := c.classes[b.BehaviorClass]
+		k := c.classes[class]
 		switch {
 		case k == nil:
-			fail("%s is not a class", b.BehaviorClass)
+			fail("%s is not a class", class)
 			continue
 		case k.External:
-			fail("%s belongs to another package", b.BehaviorClass)
+			fail("%s belongs to another package", class)
 			continue
 		case k.IsInterface() || k.Test || k.Native:
-			fail("%s is no plain class; the kernel creates it", b.BehaviorClass)
+			fail("%s is no plain class; the kernel creates it", class)
 			continue
 		}
 		for x := k; x != nil; x = x.Base {
 			if x.Ctor != nil {
 				if len(x.Ctor.Sig.Params) > 0 || x.Ctor.Visibility != syntax.Public || len(x.Ctor.Sig.Raises) > 0 {
-					fail("%s needs a public constructor without parameters that raises nothing", b.BehaviorClass)
+					fail("%s needs a public constructor without parameters that raises nothing", class)
 				}
 				break
 			}
 		}
-		c.useIn(b.File, "class", b.BehaviorClass)
+		c.useIn(b.File, "class", class)
 		for _, want := range c.behaviorMethods(b) {
 			m, ok := k.Member(want.Name).(*Method)
 			switch {
 			case !ok:
-				fail("%s needs the method %s for %s", b.BehaviorClass, want, want.Entity)
+				fail("%s needs the method %s for %s", class, want, want.Entity)
 			case m.Static || m.Visibility != syntax.Public || !sameParams(m.Sig, want.Sig):
-				fail("%s does not match: %s needs the method %s for %s", m, b.BehaviorClass, want, want.Entity)
+				fail("%s does not match: %s needs the method %s for %s", m, class, want, want.Entity)
 			default:
 				for _, r := range m.Sig.Raises {
 					if !r.IsRuntimeError() {

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/COUNTRY",
+  "description": { "en": "Country", "de": "Land" },
+  "dataClass": "configuration",
+  "root": "/TRFIN/COUNTRIES",
+  "entities": {
+    "/TRFIN/COUNTRIES": {
+      "operations": ["create", "update", "delete"],
+      "fields": {
+        "NAME": { "mandatory": true }
+      }
+    }
+  }
+}

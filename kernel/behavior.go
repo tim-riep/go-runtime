@@ -72,6 +72,9 @@ type behaviorCall struct {
 	param  any    // the parameter of an action in Go form
 	op     string // the operation in failures; the save operation when empty
 	reason string // the reason of instances the response fails
+	// origin is the package of the behavior; the owner of the business
+	// object when empty.
+	origin model.PackageID
 }
 
 // call runs a method of the behavior class for instances and records what
@@ -86,8 +89,17 @@ func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, c behavio
 			keys[i] = b.keyMap(in)
 		}
 	}
+	origin := c.origin
+	if origin == "" {
+		origin = c.bo.Owner
+	}
+	defer r.origin(len(r.Failures), len(r.Messages), string(origin))
 	resp := native.NewEntityResponse(len(c.ins))
-	out, err := behavior.CallBehavior(ctx, c.bo.BehaviorClass, c.method, keys, c.param, resp)
+	class, ok := c.bo.BehaviorClass.Get()
+	if !ok {
+		return nil, nil, fmt.Errorf("%s has no behavior class for %s", c.bo.Name, c.method)
+	}
+	out, err := behavior.CallBehavior(ctx, class, c.method, keys, c.param, resp)
 	failed := map[*instance]bool{}
 	var exc *vm.Exception
 	switch {
@@ -99,7 +111,7 @@ func (b *entityBuffer) call(ctx context.Context, behavior vm.Behavior, c behavio
 		if c.static {
 			r.fail(c.entity.Table, c.op, reasonBehavior, nil, nil)
 		}
-		r.message("error", fmt.Sprintf("%s.%s: %s", c.bo.BehaviorClass, c.method, exc.Text), "", nil, nil)
+		r.message("error", fmt.Sprintf("%s.%s: %s", class, c.method, exc.Text), "", nil, nil)
 		return nil, failed, nil
 	case err != nil:
 		return nil, nil, err
@@ -368,27 +380,28 @@ func (b *entityBuffer) authorizeChange(ctx context.Context, req vm.ModifyRequest
 // check checks the authorization of an entity for an operation, read or
 // an action (key) with the values of an instance; values nil checks a
 // static action for any values. A dependent entity without authorization
-// of its own is checked with the authorization and values of the root
-// instance: read with the activity for read, everything else with the
-// activity for update of the root. Entities without authorization pass.
+// of its own is checked with the authorization and values of the nearest
+// parent instance whose entity has one: read with the activity for read,
+// everything else with the activity for update of that entity. Business
+// objects of configuration without an authorization are checked with
+// the configuration object.
 func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *model.Entity, key string, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
-	au := e.Authorization
-	table := e.Table
-	if au == nil {
-		root := bo.Entity(bo.Root)
-		if au = root.Authorization; au == nil {
-			return true, nil
-		}
+	ra, ok := bo.AuthorizationOf(e)
+	if !ok {
+		return true, nil
+	}
+	au, table := ra.Authorization, e.Table
+	if ra.Source == model.AuthorizationInherited {
 		if key != model.ReadActivityKey {
 			key = string(model.OperationUpdate)
 		}
 		if values != nil {
 			var err error
-			if values, err = b.rootValues(ctx, bo, e, values, parent); err != nil || values == nil {
+			if values, err = b.holderValues(ctx, bo, e, ra.Holder, values, parent); err != nil || values == nil {
 				return false, err
 			}
 		}
-		table = root.Table
+		table = ra.Holder.Table
 	}
 	c := authorization.Check{Object: au.Object, Values: map[string]string{}}
 	if len(au.Activities) > 0 {
@@ -398,6 +411,7 @@ func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *m
 		}
 		c.Values[model.ActivityField] = act
 	}
+	maps.Copy(c.Values, ra.Constants)
 	for of, ef := range au.Fields {
 		if values == nil {
 			if c.Any == nil {
@@ -411,11 +425,11 @@ func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *m
 	return b.x.CheckAuthorization(c, at, native.CheckEntity)
 }
 
-// rootValues returns the values of the root instance of an instance of a
-// dependent entity, found through the foreign keys; nil when a parent
-// does not exist.
-func (b *entityBuffer) rootValues(ctx context.Context, bo *model.BusinessObject, e *model.Entity, values map[string]any, parent *instance) (map[string]any, error) {
-	for {
+// holderValues returns the values of the instance of the holder entity
+// above an instance of a dependent entity, found through the foreign
+// keys; nil when a parent does not exist.
+func (b *entityBuffer) holderValues(ctx context.Context, bo *model.BusinessObject, e, holder *model.Entity, values map[string]any, parent *instance) (map[string]any, error) {
+	for e != holder {
 		p, ok := e.Parent.Get()
 		if !ok {
 			return values, nil
@@ -433,6 +447,7 @@ func (b *entityBuffer) rootValues(ctx context.Context, bo *model.BusinessObject,
 		}
 		e, values, parent = pe, parent.values, nil
 	}
+	return values, nil
 }
 
 // checkText returns a value of the Go form as the text of an
