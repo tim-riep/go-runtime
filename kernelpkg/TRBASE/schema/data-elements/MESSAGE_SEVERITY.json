@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/MESSAGE_SEVERITY",
+  "domain": "/TRBASE/MESSAGE_SEVERITY",
+  "texts": {
+    "en": {
+      "short": "Severity",
+      "medium": "Severity",
+      "long": "Severity of the message",
+      "heading": "Severity"
+    },
+    "de": {
+      "short": "Schwere",
+      "medium": "Schwere",
+      "long": "Schwere der Meldung",
+      "heading": "Schwere"
+    }
+  }
+}

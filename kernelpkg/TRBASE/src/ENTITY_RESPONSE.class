@@ -1,0 +1,21 @@
+# What a method of a behavior class answers: it marks instances as failed
+# and adds messages. Instances are named by their position in the keys
+# the method got, starting at 1, as in for i, key in keys.
+public class /TRBASE/ENTITY_RESPONSE executed by kernel
+
+  # The instance failed; the operation or the save fails for it.
+  public method FAIL(position: INT4) executed by kernel
+
+  # The instance failed, with an error message.
+  public method ERROR(position: INT4, text: STRING) executed by kernel
+
+  # The instance failed, with an error message about a field.
+  public method FIELD_ERROR(position: INT4, field: STRING, text: STRING) executed by kernel
+
+  # A message about an instance; an error marks it as failed.
+  public method MESSAGE(position: INT4, severity: /TRBASE/MESSAGE_SEVERITY, text: STRING) executed by kernel
+
+  # A message about no instance.
+  public method GLOBAL_MESSAGE(severity: /TRBASE/MESSAGE_SEVERITY, text: STRING) executed by kernel
+
+end

@@ -155,3 +155,22 @@ func TestExtensionPointSingle(t *testing.T) {
 	expectOK(t, points(runChecks, `"use":"multiple"`, `"use":"single"`, "returns /TRT/ORDER_INFO\nend\n", "returns /TRT/ORDER_INFO\nmethod SCORE() returns INT4\nend\n",
 		"order.NOTE = \"{COUNT}\"\nreturn order\nend\n", "order.NOTE = \"{COUNT}\"\nreturn order\nend\npublic method SCORE() returns INT4\nreturn COUNT\nend\n"))
 }
+
+// TestKeyOf derives the key fields of a table; new of needs an entity of
+// a business object.
+func TestKeyOf(t *testing.T) {
+	expectOK(t, class(`
+public static method KEY(order: /TRT/ORDERS) returns key of /TRT/ORDERS
+  var key: key of /TRT/ORDERS
+  key.ID = order.ID
+  var keys: array of key of /TRT/ORDERS = [key]
+  if keys[1] = key
+    return keys[1]
+  end
+  return key
+end
+`))
+	expectError(t, class("public static method KEY(key: key of /TRT/ORDERS) returns DEC(15,2)\n  return key.AMOUNT\nend\n"), "unknown", "AMOUNT")
+	expectError(t, class("public static method KEY(key: key of /TRT/ORDER_INFO)\nend\n"), "unknown", "table /TRT/ORDER_INFO does not exist; key of needs a table")
+	expectError(t, class("public static method ROW(row: new of /TRT/ORDERS)\nend\n"), "business-object", "/TRT/ORDERS is no entity of a business object")
+}

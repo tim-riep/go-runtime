@@ -72,6 +72,18 @@ const orderRoot = `, "numbering": "external",
 	"authorization": { "object": "/TRBASE/USER_ADMIN", "fields": { "USER_NAME": "NAME" },
 		"activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "CLOSE": "UPDATE", "COUNT_OPEN": "READ" } }`
 
+// orderBehavior are the methods of /TRBO/ORDER_BEHAVIOR for orderRoot.
+const orderBehavior = `
+public method SET_STATUS(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+end
+public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+end
+public method CLOSE(keys: array of key of /TRBO/ORDERS, parameter: /TRBO/REASON, response: /TRBASE/ENTITY_RESPONSE)
+end
+public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE)
+end
+`
+
 // boFiles are the files of TRBO with the business object and a behavior
 // class with the given members.
 func boFiles(version, bo, members string) map[string]string {
@@ -96,7 +108,7 @@ func TestBusinessObjectRepository(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		p, err := k.Install(ctx, []*model.Package{writePackage(t, boFiles("1.0.0", orderBO(orderRoot), ""))}, kernel.Options{})
+		p, err := k.Install(ctx, []*model.Package{writePackage(t, boFiles("1.0.0", orderBO(orderRoot), orderBehavior))}, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -113,7 +125,7 @@ func TestBusinessObjectRepository(t *testing.T) {
 			t.Fatalf("read back: %+v", b)
 		}
 		// The definition reads back as it was loaded.
-		loaded := writePackage(t, boFiles("1.0.0", orderBO(orderRoot), "")).BusinessObjects[0]
+		loaded := writePackage(t, boFiles("1.0.0", orderBO(orderRoot), orderBehavior)).BusinessObjects[0]
 		for i := range loaded.Entities {
 			got, _ := json.Marshal(b.Entities[i])
 			want, _ := json.Marshal(loaded.Entities[i])
@@ -129,7 +141,7 @@ func TestBusinessObjectRepository(t *testing.T) {
 		grown := strings.Replace(orderRoot, `"STATUS": { "readOnly": true }`, `"STATUS": { "readOnly": true }, "NOTE": { "readOnly": true }`, 1)
 		grown = strings.Replace(grown, `{ "name": "COUNT_OPEN"`, `{ "name": "REOPEN" }, { "name": "COUNT_OPEN"`, 1)
 		grown = strings.Replace(grown, `"COUNT_OPEN": "READ"`, `"COUNT_OPEN": "READ", "REOPEN": "UPDATE"`, 1)
-		p, err = k.Upgrade(ctx, writePackage(t, boFiles("1.1.0", orderBO(grown), "")), kernel.Options{})
+		p, err = k.Upgrade(ctx, writePackage(t, boFiles("1.1.0", orderBO(grown), orderBehavior+"public method REOPEN(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\nend\n")), kernel.Options{})
 		if err != nil || !strings.Contains(planText(p), "alter-business-object /TRBO/ORDER (entity /TRBO/ORDERS: behavior)") {
 			t.Fatalf("allowed upgrade: %v\n%s", err, planText(p))
 		}
@@ -137,7 +149,7 @@ func TestBusinessObjectRepository(t *testing.T) {
 			{"numbering", strings.Replace(orderBO(grown), `"/TRBO/NOTES": { "parent": "/TRBO/ORDERS", "foreignKey": "ORDER", "operations": ["create", "delete"], "numbering": "uuid" }`,
 				`"/TRBO/NOTES": { "parent": "/TRBO/ORDERS", "foreignKey": "ORDER", "operations": ["create", "delete"] }`, 1), "entity /TRBO/NOTES: numbering uuid -> external"},
 		} {
-			_, err := k.Upgrade(ctx, writePackage(t, boFiles("1.2.0", c.bo, "")), kernel.Options{})
+			_, err := k.Upgrade(ctx, writePackage(t, boFiles("1.2.0", c.bo, orderBehavior+"public method REOPEN(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\nend\n")), kernel.Options{})
 			var dc *rterr.DestructiveChange
 			if !errors.As(err, &dc) || !strings.Contains(err.Error(), c.want) {
 				t.Errorf("%s: %v", c.name, err)
@@ -155,5 +167,32 @@ func TestBusinessObjectRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 		consistent(t, k)
+	})
+}
+
+// TestBehaviorClassSignatures rejects a behavior class that misses a
+// method or has one with another signature, naming the expected one.
+func TestBehaviorClassSignatures(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		for _, c := range []struct{ name, members, want string }{
+			{"missing", strings.Replace(orderBehavior, "public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE)\nend\n", "", 1),
+				"/TRBO/ORDER_BEHAVIOR needs the method public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE) for /TRBO/ORDERS"},
+			{"wrong parameter", strings.Replace(orderBehavior, "parameter: /TRBO/REASON", "parameter: STRING", 1),
+				"does not match: /TRBO/ORDER_BEHAVIOR needs the method public method CLOSE(keys: array of key of /TRBO/ORDERS, parameter: /TRBO/REASON, response: /TRBASE/ENTITY_RESPONSE)"},
+			{"static", strings.Replace(orderBehavior, "public method CHECK_NAME", "public static method CHECK_NAME", 1),
+				"needs the method public method CHECK_NAME"},
+			{"checked exception", strings.Replace(orderBehavior, "public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE)",
+				"public method COUNT_OPEN(response: /TRBASE/ENTITY_RESPONSE) raises /TRBASE/EXTENSION_POINT_NOT_FOUND", 1),
+				"raises /TRBASE/EXTENSION_POINT_NOT_FOUND; methods of behavior classes raise no checked exceptions"},
+			{"constructor", "public constructor(n: INT4)\nend\n" + orderBehavior, "needs a public constructor without parameters"},
+		} {
+			_, err := k.Install(ctx, []*model.Package{writePackage(t, boFiles("1.0.0", orderBO(orderRoot), c.members))}, kernel.Options{})
+			var ce *rterr.CompileError
+			if !errors.As(err, &ce) || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("%s: %v", c.name, err)
+			}
+		}
 	})
 }

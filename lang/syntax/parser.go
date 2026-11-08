@@ -548,6 +548,14 @@ func (p *parser) typ() *Type {
 		p.next()
 		p.next()
 		t.Kind, t.Name = ExtensionPointType, p.global().Name
+	case (p.isWord("key") || p.isKw("new")) && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == KEYWORD && p.toks[p.i+1].Text == "of":
+		t.Kind = KeyOfType
+		if p.isKw("new") {
+			t.Kind = NewOfType
+		}
+		p.next()
+		p.next()
+		t.Name = p.global().Name
 	case p.isKw("array"):
 		p.next()
 		p.expectKw("of")

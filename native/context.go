@@ -349,3 +349,28 @@ type InputTooLarge struct {
 func (e *InputTooLarge) Error() string {
 	return fmt.Sprintf("%s has %d bytes, more than the limit of %d", e.What, e.Size, e.Max)
 }
+
+// EntityResponse is the value of /TRBASE/ENTITY_RESPONSE, which the
+// kernel passes to the methods of a behavior class: the methods mark
+// instances as failed and add messages, by the position of the instance
+// in the keys they got, starting at 1.
+type EntityResponse struct {
+	// Count is the number of keys the method got.
+	Count    int
+	Failed   map[int]bool
+	Messages []EntityMessage
+}
+
+// EntityMessage is a message of a behavior method. Position is 0 for a
+// message that concerns no instance.
+type EntityMessage struct {
+	Position int
+	Severity string // error, warning, information or success
+	Text     string
+	Field    model.Optional[string]
+}
+
+// NewEntityResponse returns a response for count keys.
+func NewEntityResponse(count int) *EntityResponse {
+	return &EntityResponse{Count: count, Failed: map[int]bool{}}
+}

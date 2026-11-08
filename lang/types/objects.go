@@ -335,6 +335,7 @@ const (
 	CodeCapability     = "capability"
 	CodeHandler        = "handler"
 	CodeExtensionPoint = "extension-point"
+	CodeBusinessObject = "business-object"
 	CodeAsset          = "asset"
 	CodeAuthorization  = "authorization"
 	CodeConstant       = "constant"

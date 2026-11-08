@@ -593,6 +593,10 @@ func (p *printer) typ(t *Type) {
 		p.w(t.Name)
 	case ExtensionPointType:
 		p.w("extension point " + t.Name)
+	case KeyOfType:
+		p.w("key of " + t.Name)
+	case NewOfType:
+		p.w("new of " + t.Name)
 	case ArrayType:
 		p.w("array of ")
 		p.typ(t.Elem)

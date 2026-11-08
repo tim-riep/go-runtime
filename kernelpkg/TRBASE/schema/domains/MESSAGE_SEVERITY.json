@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/MESSAGE_SEVERITY",
+  "description": "Severity of a message",
+  "type": "CHAR",
+  "length": 12,
+  "values": [
+    {
+      "value": "error",
+      "name": "ERROR",
+      "description": "Error"
+    },
+    {
+      "value": "warning",
+      "name": "WARNING",
+      "description": "Warning"
+    },
+    {
+      "value": "information",
+      "name": "INFORMATION",
+      "description": "Information"
+    },
+    {
+      "value": "success",
+      "name": "SUCCESS",
+      "description": "Success"
+    }
+  ]
+}

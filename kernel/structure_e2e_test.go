@@ -99,7 +99,7 @@ func TestStructureExamples(t *testing.T) {
 
 		// A new component becomes a column of every table that includes the
 		// address, directly or through the companies.
-		region := trbase(t, "1.6.0", func(st *model.Structure) {
+		region := trbase(t, "50.0.0", func(st *model.Structure) {
 			st.Elements = append(st.Elements, model.Element{Component: &model.Component{Name: "REGION",
 				Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/NAME"}}})
 		})
@@ -119,7 +119,7 @@ func TestStructureExamples(t *testing.T) {
 		consistent(t, k)
 
 		// A removed component is destructive in every including table.
-		noPostal := trbase(t, "1.7.0", func(st *model.Structure) {
+		noPostal := trbase(t, "50.1.0", func(st *model.Structure) {
 			st.Elements = append(st.Elements, model.Element{Component: &model.Component{Name: "REGION",
 				Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/NAME"}}})
 			st.Elements = append(st.Elements[:1], st.Elements[2:]...) // without POSTAL_CODE

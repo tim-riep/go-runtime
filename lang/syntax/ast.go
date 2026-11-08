@@ -240,6 +240,8 @@ const (
 	MapType
 	FuncType
 	ExtensionPointType // extension point GLOBAL: the value of an extension point
+	KeyOfType          // key of GLOBAL: the key fields of a table
+	NewOfType          // new of GLOBAL: the fields of a table and the links of new instances
 )
 
 // Type is a type expression.

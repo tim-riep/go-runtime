@@ -259,6 +259,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 	c.httpHandlers()
 	c.extensionPointDefinitions()
 	c.implementations()
+	c.behaviorClasses()
 	for _, k := range c.sorted() {
 		if !k.External {
 			c.bodies(k)
@@ -586,6 +587,20 @@ func (c *checker) typeOf(t *syntax.Type) Type {
 		elem := c.resolveType(t.Elem)
 		c.noSession(elem, t.Elem.Pos, "a map")
 		return &Map{Key: key, Elem: elem}
+	case syntax.KeyOfType, syntax.NewOfType:
+		n := syntax.Name{Pos: t.Pos, Name: t.Name}
+		c.checkGlobalName(n)
+		if !c.visibleNamespace(n) {
+			return TypInvalid
+		}
+		if t.Kind == syntax.KeyOfType {
+			out = c.schema.keyOf(t.Name, t.Pos)
+		} else {
+			out = c.schema.newOf(t.Name, t.Pos)
+		}
+		if out == nil {
+			return TypInvalid
+		}
 	case syntax.ExtensionPointType:
 		if t.Optional {
 			c.errorf(t.Pos, CodeType, "the value of an extension point is never null; write extension point %s without ?", t.Name)

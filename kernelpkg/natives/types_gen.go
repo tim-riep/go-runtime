@@ -50,6 +50,17 @@ const (
 	ExtensionUseMultiple ExtensionUse = "multiple"
 )
 
+// MessageSeverity is the enum /TRBASE/MESSAGE_SEVERITY.
+type MessageSeverity string
+
+// Fixed values of /TRBASE/MESSAGE_SEVERITY.
+const (
+	MessageSeverityError       MessageSeverity = "error"
+	MessageSeverityWarning     MessageSeverity = "warning"
+	MessageSeverityInformation MessageSeverity = "information"
+	MessageSeveritySuccess     MessageSeverity = "success"
+)
+
 // ValueKind is the enum /TRBASE/VALUE_KIND.
 type ValueKind string
 

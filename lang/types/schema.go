@@ -205,3 +205,51 @@ func (st *schemaTypes) arrayType(name string, pos syntax.Pos) *Array {
 	}
 	return a
 }
+
+// keyOf returns key of TABLE: a struct of the key fields of a table in
+// the order of the key, without the tenant field.
+func (st *schemaTypes) keyOf(table string, pos syntax.Pos) Type {
+	name := "key of " + table
+	if s, ok := st.structs[name]; ok {
+		return s
+	}
+	if _, ok := st.s.Tables[table]; !ok {
+		st.c.errorf(pos, CodeUnknown, "table %s does not exist; key of needs a table", table)
+		return nil
+	}
+	t := st.structType(table, pos)
+	s := &Struct{Name: name, Key: slices.Clone(t.Key)}
+	for _, k := range t.Key {
+		if f := t.Field(k); f != nil {
+			s.Fields = append(s.Fields, &Field{Name: f.Name, Type: f.Type, Default: f.Default})
+		}
+	}
+	st.structs[name] = s
+	return s
+}
+
+// newOf returns new of TABLE for the rows that create instances of an
+// entity: the fields of the table, LINK, which names a new instance, and
+// for dependent entities PARENT_LINK, which names its new parent.
+func (st *schemaTypes) newOf(table string, pos syntax.Pos) Type {
+	name := "new of " + table
+	if s, ok := st.structs[name]; ok {
+		return s
+	}
+	_, e := st.s.BusinessObjectOf(table)
+	if e == nil {
+		st.c.errorf(pos, CodeBusinessObject, "%s is no entity of a business object; new of needs one", table)
+		return nil
+	}
+	t := st.structType(table, pos)
+	s := &Struct{Name: name}
+	for _, f := range t.Fields {
+		s.Fields = append(s.Fields, &Field{Name: f.Name, Type: f.Type, Default: f.Default})
+	}
+	s.Fields = append(s.Fields, &Field{Name: model.LinkField, Type: Opt(TypString)})
+	if e.Parent.Valid() {
+		s.Fields = append(s.Fields, &Field{Name: model.ParentLinkField, Type: Opt(TypString)})
+	}
+	st.structs[name] = s
+	return s
+}
