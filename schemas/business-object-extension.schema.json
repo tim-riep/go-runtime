@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/business-object-extension.schema.json",
+  "title": "Business object extension",
+  "description": "An extension of a business object of another package (schema/business-object-extensions/<name of the business object without namespace>.json): properties of fields of the package, determinations, validations and actions on the entities and dependent entities of tables of the package, with a behavior class of the package.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "businessObject",
+    "entities"
+  ],
+  "$defs": {
+    "operations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "create",
+          "update",
+          "delete"
+        ]
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "on"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "A name in the namespace of the package; the method of the behavior class has the name without namespace."
+        },
+        "when": {
+          "description": "Determinations only: modify runs at the end of the entity statement, save in the save sequence.",
+          "enum": [
+            "modify",
+            "save"
+          ]
+        },
+        "on": {
+          "$ref": "#/$defs/operations",
+          "minItems": 1,
+          "description": "The operations that trigger it."
+        },
+        "fields": {
+          "description": "For update: the fields whose change triggers it; without, every change does.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fieldName"
+          }
+        }
+      }
+    },
+    "fieldName": {
+      "type": "string",
+      "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "extensible": {
+      "description": "The kinds of extensions other packages may make; without, all, and an empty list allows none.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "fieldProperties",
+          "determinations",
+          "validations",
+          "actions",
+          "entities"
+        ]
+      }
+    }
+  },
+  "properties": {
+    "businessObject": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "The business object of another package that the package extends."
+    },
+    "behaviorClass": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "A class of the package with the methods of the determinations, validations and actions of the extension. Extensions without them need none."
+    },
+    "entities": {
+      "description": "Entities of the business object or of extensions of required packages that the package extends, and dependent entities of tables of the package with their parent.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/objectName"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parent": {
+            "$ref": "common.schema.json#/$defs/objectName",
+            "description": "Dependent entities: the parent entity."
+          },
+          "foreignKey": {
+            "$ref": "common.schema.json#/$defs/localName",
+            "description": "Dependent entities: the foreign key of the table to the parent, which covers its whole key."
+          },
+          "operations": {
+            "$ref": "#/$defs/operations"
+          },
+          "numbering": {
+            "description": "external: the caller gives the key; uuid: the kernel gives the single key field of type UUID a new value. Default external.",
+            "enum": [
+              "external",
+              "uuid"
+            ]
+          },
+          "fields": {
+            "description": "Static properties of fields.",
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/$defs/fieldName"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "readOnly": {
+                  "type": "boolean"
+                },
+                "readOnlyOnUpdate": {
+                  "type": "boolean"
+                },
+                "mandatory": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "administrative": {
+            "description": "Fields that the kernel fills when it saves an instance.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "createdBy": {
+                "$ref": "#/$defs/fieldName"
+              },
+              "createdAt": {
+                "$ref": "#/$defs/fieldName"
+              },
+              "changedBy": {
+                "$ref": "#/$defs/fieldName"
+              },
+              "changedAt": {
+                "$ref": "#/$defs/fieldName"
+              }
+            }
+          },
+          "etag": {
+            "$ref": "#/$defs/fieldName",
+            "description": "A field that the kernel sets anew with every saved change, to detect changes since an instance was read."
+          },
+          "determinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/trigger",
+              "required": [
+                "when"
+              ]
+            }
+          },
+          "validations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/trigger",
+              "not": {
+                "required": [
+                  "when"
+                ]
+              }
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "$ref": "common.schema.json#/$defs/objectName",
+                  "description": "A name in the namespace of the package; the method of the behavior class has the name without namespace."
+                },
+                "instance": {
+                  "description": "Whether the action runs on instances given by their keys. Default true.",
+                  "type": "boolean"
+                },
+                "parameter": {
+                  "$ref": "common.schema.json#/$defs/objectName",
+                  "description": "A structure the action takes."
+                },
+                "result": {
+                  "description": "self for the instances the action ran on, or a structure.",
+                  "type": "string",
+                  "pattern": "^(self|(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*)$"
+                },
+                "modifies": {
+                  "description": "Whether the action changes instances. Default true.",
+                  "type": "boolean"
+                },
+                "activity": {
+                  "description": "The activity of the authorization object that checks the action.",
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                },
+                "authorization": {
+                  "description": "An authorization object of the package that checks the action instead of the authorization of the entity.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "object"
+                  ],
+                  "properties": {
+                    "object": {
+                      "$ref": "common.schema.json#/$defs/objectName"
+                    },
+                    "fields": {
+                      "description": "Fields of the authorization object with the fields of the entity that give their values.",
+                      "type": "object",
+                      "propertyNames": {
+                        "pattern": "^[A-Z][A-Z0-9_]*$"
+                      },
+                      "additionalProperties": {
+                        "$ref": "#/$defs/fieldName"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "authorization": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "object",
+              "activities"
+            ],
+            "properties": {
+              "object": {
+                "$ref": "common.schema.json#/$defs/objectName"
+              },
+              "fields": {
+                "description": "Fields of the authorization object with the fields of the entity that give their values.",
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/fieldName"
+                }
+              },
+              "activities": {
+                "description": "The activity for read, every operation and every action.",
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                }
+              }
+            }
+          },
+          "extensible": {
+            "$ref": "#/$defs/extensible",
+            "description": "Narrows the kinds of extensions of the business object for this entity: a subset of its list."
+          }
+        }
+      }
+    }
+  }
+}

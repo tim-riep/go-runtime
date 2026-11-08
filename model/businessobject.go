@@ -87,10 +87,16 @@ type BusinessObject struct {
 	// BehaviorClass is the class with the methods of determinations,
 	// validations and actions; none when there are none.
 	BehaviorClass Optional[string] `json:"behaviorClass"`
+	// Extensible lists the kinds of extensions other packages may make;
+	// none allows all, an empty list none.
+	Extensible Optional[[]ExtensionKind] `json:"extensible"`
 	// Entities are the entities in the order of the tree: the root first,
 	// then the children of every entity by name, depth first.
-	Entities []Entity       `json:"entities"`
-	Src      rterr.Location `json:"-"`
+	Entities []Entity `json:"entities"`
+	// Extensions are the extensions merged in by
+	// Schema.MergedBusinessObject; empty in the definition.
+	Extensions []ExtensionRef `json:"extensions,omitempty"`
+	Src        rterr.Location `json:"-"`
 }
 
 // Entity is a table of a business object with its behavior.
@@ -111,7 +117,16 @@ type Entity struct {
 	// Authorization is nil for a dependent entity that takes the
 	// authorization of the root.
 	Authorization *EntityAuthorization `json:"authorization"`
-	Src           rterr.Location       `json:"-"`
+	// Extensible narrows the kinds of extensions of the business object
+	// for this entity; none takes those of the business object.
+	Extensible Optional[[]ExtensionKind] `json:"extensible"`
+	// Origin is the package the entity comes from in a merged business
+	// object: the owner or an extending package; empty in definitions.
+	Origin PackageID `json:"origin,omitempty"`
+	// FieldOrigins lists for fields the extending packages that set their
+	// properties in a merged business object.
+	FieldOrigins map[string][]PackageID `json:"fieldOrigins,omitempty"`
+	Src          rterr.Location         `json:"-"`
 }
 
 // FieldProperties are the static properties of a field of an entity.
@@ -155,6 +170,8 @@ type Determination struct {
 	Name string `json:"name"`
 	When When   `json:"when"`
 	Trigger
+	// Origin is the package of the behavior in a merged business object.
+	Origin PackageID `json:"origin,omitempty"`
 }
 
 // Validation is a method of the behavior class that checks instances in
@@ -162,6 +179,8 @@ type Determination struct {
 type Validation struct {
 	Name string `json:"name"`
 	Trigger
+	// Origin is the package of the behavior in a merged business object.
+	Origin PackageID `json:"origin,omitempty"`
 }
 
 // Action is a method of the behavior class that code runs with execute.
@@ -176,6 +195,21 @@ type Action struct {
 	Result Optional[string] `json:"result"`
 	// Modifies tells that the action changes instances.
 	Modifies bool `json:"modifies"`
+	// Activity and Authorization are those of actions of extensions:
+	// the activity, checked with the authorization of the entity, or with
+	// an authorization object of the extending package when given.
+	Activity      Optional[string]     `json:"activity"`
+	Authorization *ActionAuthorization `json:"authorization,omitempty"`
+	// Origin is the package of the behavior in a merged business object.
+	Origin PackageID `json:"origin,omitempty"`
+}
+
+// ActionAuthorization is an authorization object of an extending package
+// that checks an action, with the fields of the entity that give the
+// values of its fields.
+type ActionAuthorization struct {
+	Object string            `json:"object"`
+	Fields map[string]string `json:"fields"`
 }
 
 // EntityAuthorization checks the instances of an entity with an
@@ -251,12 +285,20 @@ func (e *Entity) Administered(field string) bool {
 func (s *Schema) BusinessObjectNames() []string { return slices.Sorted(maps.Keys(s.BusinessObjects)) }
 
 // BusinessObjectOf returns the business object a table belongs to and
-// its entity, or nil.
+// its entity, or nil. For a dependent entity of an extension it returns
+// the business object it extends and the entity of the extension.
 func (s *Schema) BusinessObjectOf(table string) (*BusinessObject, *Entity) {
 	for _, name := range s.BusinessObjectNames() {
 		b := s.BusinessObjects[name]
 		if e := b.Entity(table); e != nil {
 			return b, e
+		}
+	}
+	for _, x := range s.SortedBusinessObjectExtensions() {
+		if x.Owns(table) {
+			if b := s.BusinessObjects[x.BusinessObject]; b != nil {
+				return b, x.Entity(table)
+			}
 		}
 	}
 	return nil, nil
@@ -299,19 +341,13 @@ func SortEntities(root string, entities []Entity) []Entity {
 func cloneBusinessObject(b *BusinessObject) *BusinessObject {
 	c := *b
 	c.Description = maps.Clone(b.Description)
+	if l, ok := b.Extensible.Get(); ok {
+		c.Extensible = Some(slices.Clone(l))
+	}
+	c.Extensions = slices.Clone(b.Extensions)
 	c.Entities = make([]Entity, len(b.Entities))
 	for i, e := range b.Entities {
-		e.Operations = slices.Clone(e.Operations)
-		e.Fields = maps.Clone(e.Fields)
-		e.Determinations = slices.Clone(e.Determinations)
-		e.Validations = slices.Clone(e.Validations)
-		e.Actions = slices.Clone(e.Actions)
-		if e.Authorization != nil {
-			a := *e.Authorization
-			a.Fields, a.Activities = maps.Clone(a.Fields), maps.Clone(a.Activities)
-			e.Authorization = &a
-		}
-		c.Entities[i] = e
+		c.Entities[i] = cloneEntity(e)
 	}
 	return &c
 }

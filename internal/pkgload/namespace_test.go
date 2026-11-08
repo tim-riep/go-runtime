@@ -91,6 +91,23 @@ func TestExtensionNamesNeedNamespace(t *testing.T) {
 	expectViolation(t, fsys, "schema/extensions/COMPANIES.json", "/foreignKeys/0/fields/0/field", "EXT_ID")
 }
 
+// TestBusinessObjectExtensionNames requires the namespace of the package
+// for the determinations, validations and actions of an extension.
+func TestBusinessObjectExtensionNames(t *testing.T) {
+	fsys := validFS()
+	const f = "schema/business-object-extensions/ORDER.json"
+	fsys[f] = file(`{"businessObject":"/TRBASE/ORDER","behaviorClass":"/TRX/ORDER_BEHAVIOR","entities":{"/TRBASE/ORDERS":{
+		"determinations":[{"name":"FILL","when":"save","on":["create"]}],
+		"validations":[{"name":"/TRBASE/CHECK","on":["create"]}],
+		"actions":[{"name":"/TRX/SYNC","activity":"EXECUTE"}]}}}`)
+	expectViolation(t, fsys, f, "/entities//TRBASE/ORDERS/validations/0/name", "/TRBASE/CHECK")
+	for _, v := range violations(t, fsys) {
+		if v.Name == "/TRX/SYNC" || v.Name == "/TRBASE/ORDER" {
+			t.Errorf("violation of a valid name: %+v", v)
+		}
+	}
+}
+
 func TestSeveralViolationsReportedTogether(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/domains/QTY.json"] = file(`{"name":"/TRBASE/QTY","type":"INT4"}`)
@@ -149,7 +166,8 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 			"class":"/TRX/C"}`},
 		"business object": {"schema/business-objects/X.json", `{"name":"/TRX/X","description":{"en":"X"},"root":"/TRZ/T",
 			"behaviorClass":"/TRX/B","entities":{"/TRZ/T":{}}}`},
-		"http service": {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
+		"business object extension": {"schema/business-object-extensions/X.json", `{"businessObject":"/TRZ/X","entities":{"/TRZ/T":{}}}`},
+		"http service":              {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
 		"setting extension": {"schema/setting-extensions/X.json", `{"setting":"/TRZ/X","tables":[{"table":"/TRX/ORDERS","parent":"/TRX/ORDERS",
 			"foreignKey":"X","operations":{"create":true,"update":true,"delete":true}}]}`},
 	}

@@ -410,7 +410,10 @@ type Package struct {
 	ExtensionPoints      []ExtensionPoint
 	Implementations      []Implementation
 	BusinessObjects      []BusinessObject
-	Origin               string // where the package was loaded from
+	// BusinessObjectExtensions are the extensions of business objects of
+	// other packages.
+	BusinessObjectExtensions []BusinessObjectExtension
+	Origin                   string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

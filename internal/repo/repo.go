@@ -673,8 +673,8 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
-	TBusinessObjectTexts, TBusinessObjects, TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
+var deleteOrder = []string{TBusinessObjectExtensible, TBusinessObjectActAuth, TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
+	TBusinessObjectExts, TBusinessObjectTexts, TBusinessObjects, TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
 	TExtensionPointTexts, TExtensionPoints, TRoleAuthValues, TRoleAuthorizations, TCompositeRoles, TRoleTexts, TRoles, TAuthObjectActivities, TAuthObjectFields, TAuthObjectTexts, TAuthObjects, THTTPHandlerParams, THTTPHandlers, THTTPServiceTexts, THTTPAuthFields, THTTPServices, TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, TSettingTables, TSettingExtensions, TSettingTexts, TSettings, TFKFields, TForeignKeys, TFields,
 	TDataElementTexts, TDataElements, TExtensions, TTables, TDomainValues, TDomains, TPackageCaps, TPackageDeps, TPackages}

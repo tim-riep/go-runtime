@@ -18,6 +18,11 @@
       "notNull": true
     },
     {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
       "name": "METHOD_KIND",
       "domain": "/RT/BEHAVIOR_KIND",
       "notNull": true
@@ -65,6 +70,14 @@
       "name": "MODIFIES",
       "domain": "/RT/FLAG",
       "notNull": true
+    },
+    {
+      "name": "ACTIVITY",
+      "domain": "/RT/ACTIVITY"
+    },
+    {
+      "name": "AUTH_OBJECT",
+      "domain": "/RT/OBJECT_NAME"
     }
   ],
   "primaryKey": [
@@ -83,6 +96,10 @@
         {
           "field": "TABLE_NAME",
           "references": "TABLE_NAME"
+        },
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
         }
       ]
     }

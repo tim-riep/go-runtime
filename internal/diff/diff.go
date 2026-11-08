@@ -46,6 +46,7 @@ func Diff(cur, want *model.Schema) []plan.Change {
 	out = append(out, roles(cur, want)...)
 	out = append(out, extensionPoints(cur, want)...)
 	out = append(out, businessObjects(cur, want)...)
+	out = append(out, businessObjectExtensions(cur, want)...)
 	out = append(out, tables(cur.Physical(), want.Physical())...)
 	return out
 }

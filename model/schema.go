@@ -55,30 +55,34 @@ type Schema struct {
 	Implementations map[string]*Implementation
 	// BusinessObjects are the business objects by name.
 	BusinessObjects map[string]*BusinessObject
+	// BusinessObjectExtensions are the extensions of business objects by
+	// extending package and business object.
+	BusinessObjectExtensions map[BusinessObjectExtensionKey]*BusinessObjectExtension
 }
 
 // NewSchema returns an empty schema.
 func NewSchema() *Schema {
 	return &Schema{
-		Packages:             map[PackageID]*PackageInfo{},
-		Domains:              map[string]*Domain{},
-		DataElements:         map[string]*DataElement{},
-		Tables:               map[string]*Table{},
-		Extensions:           map[ExtensionKey]*Extension{},
-		Settings:             map[string]*Setting{},
-		SettingExtensions:    map[SettingExtensionKey]*SettingExtension{},
-		AssetRepositories:    map[AssetRepositoryKey]*AssetRepository{},
-		Structures:           map[string]*Structure{},
-		ArrayTypes:           map[string]*ArrayType{},
-		StructureExtensions:  map[StructureExtensionKey]*StructureExtension{},
-		Sources:              map[PackageID][]Source{},
-		Transformations:      map[string]*Transformation{},
-		HTTPServices:         map[string]*HTTPService{},
-		AuthorizationObjects: map[string]*AuthorizationObject{},
-		Roles:                map[string]*Role{},
-		ExtensionPoints:      map[string]*ExtensionPoint{},
-		Implementations:      map[string]*Implementation{},
-		BusinessObjects:      map[string]*BusinessObject{},
+		Packages:                 map[PackageID]*PackageInfo{},
+		Domains:                  map[string]*Domain{},
+		DataElements:             map[string]*DataElement{},
+		Tables:                   map[string]*Table{},
+		Extensions:               map[ExtensionKey]*Extension{},
+		Settings:                 map[string]*Setting{},
+		SettingExtensions:        map[SettingExtensionKey]*SettingExtension{},
+		AssetRepositories:        map[AssetRepositoryKey]*AssetRepository{},
+		Structures:               map[string]*Structure{},
+		ArrayTypes:               map[string]*ArrayType{},
+		StructureExtensions:      map[StructureExtensionKey]*StructureExtension{},
+		Sources:                  map[PackageID][]Source{},
+		Transformations:          map[string]*Transformation{},
+		HTTPServices:             map[string]*HTTPService{},
+		AuthorizationObjects:     map[string]*AuthorizationObject{},
+		Roles:                    map[string]*Role{},
+		ExtensionPoints:          map[string]*ExtensionPoint{},
+		Implementations:          map[string]*Implementation{},
+		BusinessObjects:          map[string]*BusinessObject{},
+		BusinessObjectExtensions: map[BusinessObjectExtensionKey]*BusinessObjectExtension{},
 	}
 }
 
@@ -105,6 +109,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.BusinessObjects {
 		c.BusinessObjects[k] = cloneBusinessObject(v)
+	}
+	for k, v := range s.BusinessObjectExtensions {
+		c.BusinessObjectExtensions[k] = cloneBusinessObjectExtension(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -352,6 +359,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.BusinessObjects[b.Name] = b
 	}
+	for i := range p.BusinessObjectExtensions {
+		x := cloneBusinessObjectExtension(&p.BusinessObjectExtensions[i])
+		x.Package = id
+		if _, ok := s.BusinessObjectExtensions[x.Key()]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "business object extension", Name: x.BusinessObject, Owner: string(id), Package: string(id), Location: x.Src})
+			continue
+		}
+		s.BusinessObjectExtensions[x.Key()] = x
+	}
 	for i := range p.StructureExtensions {
 		e := p.StructureExtensions[i]
 		e.Package = id
@@ -511,6 +527,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, b := range s.BusinessObjects {
 		if b.Owner == id {
 			delete(s.BusinessObjects, name)
+		}
+	}
+	for k := range s.BusinessObjectExtensions {
+		if k.Package == id {
+			delete(s.BusinessObjectExtensions, k)
 		}
 	}
 	for name, d := range s.Domains {

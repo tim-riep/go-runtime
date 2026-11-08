@@ -1,6 +1,6 @@
 {
   "name": "/RT/BUSINESS_OBJECT_ENTITIES",
-  "description": "Entities of business objects with their behavior",
+  "description": "Entities of business objects and the entities that extensions add to or extend",
   "tenantSpecific": false,
   "dataClass": "system",
   "fields": [
@@ -11,6 +11,10 @@
     {
       "name": "TABLE_NAME",
       "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
     },
     {
       "name": "POSITION",
@@ -29,8 +33,7 @@
     },
     {
       "name": "NUMBERING",
-      "domain": "/RT/NUMBERING",
-      "notNull": true
+      "domain": "/RT/NUMBERING"
     },
     {
       "name": "CAN_CREATE",
@@ -71,11 +74,18 @@
       "name": "AUTH_OBJECT",
       "domain": "/RT/OBJECT_NAME",
       "description": "null: the entity takes the authorization of the root or has none"
+    },
+    {
+      "name": "EXTENSIBLE_LISTED",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "default": false
     }
   ],
   "primaryKey": [
     "BO_NAME",
-    "TABLE_NAME"
+    "TABLE_NAME",
+    "PACKAGE_ID"
   ],
   "foreignKeys": [
     {
@@ -85,6 +95,16 @@
         {
           "field": "BO_NAME",
           "references": "BO_NAME"
+        }
+      ]
+    },
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
         }
       ]
     }

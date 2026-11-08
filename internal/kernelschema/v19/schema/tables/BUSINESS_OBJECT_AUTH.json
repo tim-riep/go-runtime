@@ -13,6 +13,10 @@
       "domain": "/RT/OBJECT_NAME"
     },
     {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
       "name": "MAPPING_KIND",
       "domain": "/RT/AUTH_MAPPING_KIND"
     },
@@ -29,6 +33,7 @@
   "primaryKey": [
     "BO_NAME",
     "TABLE_NAME",
+    "PACKAGE_ID",
     "MAPPING_KIND",
     "MAPPING_NAME"
   ],
@@ -44,6 +49,10 @@
         {
           "field": "TABLE_NAME",
           "references": "TABLE_NAME"
+        },
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
         }
       ]
     }

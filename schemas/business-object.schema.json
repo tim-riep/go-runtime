@@ -62,6 +62,20 @@
       "type": "string",
       "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
       "maxLength": 63
+    },
+    "extensible": {
+      "description": "The kinds of extensions other packages may make; without, all, and an empty list allows none.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "fieldProperties",
+          "determinations",
+          "validations",
+          "actions",
+          "entities"
+        ]
+      }
     }
   },
   "properties": {
@@ -85,6 +99,9 @@
     "behaviorClass": {
       "$ref": "common.schema.json#/$defs/objectName",
       "description": "A class of the package with the methods of determinations, validations and actions. Business objects without them need none."
+    },
+    "extensible": {
+      "$ref": "#/$defs/extensible"
     },
     "entities": {
       "description": "The behavior of every entity by table: the root and dependent tables of the package.",
@@ -242,6 +259,10 @@
                 }
               }
             }
+          },
+          "extensible": {
+            "$ref": "#/$defs/extensible",
+            "description": "Narrows the kinds of extensions of the business object for this entity: a subset of its list."
           }
         }
       }

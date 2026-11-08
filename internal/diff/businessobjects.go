@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/model"
@@ -84,6 +85,45 @@ func businessObjects(cur, want *model.Schema) []plan.Change {
 	for _, name := range cur.BusinessObjectNames() {
 		if _, ok := want.BusinessObjects[name]; !ok {
 			out = append(out, plan.Change{Kind: plan.DropBusinessObject, Name: name, Destructive: true, Detail: "code that uses it does not compile any more"})
+		}
+	}
+	return out
+}
+
+// businessObjectExtensions compares the extensions of business objects.
+// Adding, changing and removing them is not destructive by itself; the
+// tables of their own entities follow the rules of tables. A field that
+// becomes mandatory gets a notice: rows without a value stay and are
+// checked when their instance is next saved.
+func businessObjectExtensions(cur, want *model.Schema) []plan.Change {
+	var out []plan.Change
+	for _, w := range want.SortedBusinessObjectExtensions() {
+		name := w.BusinessObject + " by " + string(w.Package)
+		c, ok := cur.BusinessObjectExtensions[w.Key()]
+		if !ok {
+			out = append(out, plan.Change{Kind: plan.AddBusinessObjectExtension, Name: name, Detail: fmt.Sprintf("%d entities", len(w.Entities))})
+		} else if !sameJSON(c, w) {
+			out = append(out, plan.Change{Kind: plan.AlterBusinessObjectExtension, Name: name, Detail: "behavior"})
+		}
+		for _, e := range w.Entities {
+			for _, f := range slices.Sorted(maps.Keys(e.Fields)) {
+				was := false
+				if c != nil {
+					if ce := c.Entity(e.Table); ce != nil {
+						was = ce.Fields[f].Mandatory
+					}
+				}
+				if e.Fields[f].Mandatory && !was && !e.Parent.Valid() {
+					out = append(out, plan.Change{Kind: plan.AlterBusinessObjectExtension, Name: name, Notice: true,
+						Detail: fmt.Sprintf("%s becomes mandatory: existing instances of %s without a value stay and are checked when they are next saved", f, e.Table)})
+				}
+			}
+		}
+	}
+	for _, c := range cur.SortedBusinessObjectExtensions() {
+		if _, ok := want.BusinessObjectExtensions[c.Key()]; !ok {
+			out = append(out, plan.Change{Kind: plan.DropBusinessObjectExtension, Name: c.BusinessObject + " by " + string(c.Package),
+				Detail: "code that uses its actions and entities does not compile any more"})
 		}
 	}
 	return out

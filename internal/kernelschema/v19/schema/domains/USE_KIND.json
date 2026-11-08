@@ -91,6 +91,10 @@
     {
       "value": "action",
       "description": "Action of an entity"
+    },
+    {
+      "value": "business-object-extension",
+      "description": "Extension of a business object"
     }
   ]
 }

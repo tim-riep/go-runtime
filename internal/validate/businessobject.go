@@ -32,6 +32,7 @@ func (v *validator) businessObjects() {
 	for _, name := range v.s.BusinessObjectNames() {
 		v.businessObject(v.s.BusinessObjects[name], owners)
 	}
+	v.businessObjectExtensions(owners)
 }
 
 func (v *validator) businessObject(b *model.BusinessObject, owners map[string]string) {
@@ -125,6 +126,15 @@ func (v *validator) businessObject(b *model.BusinessObject, owners map[string]st
 				fail(eloc.At("/foreignKey"), "the foreign key %s references %s, not the parent %s", fkName, fk.Target, parent)
 			case !coversKey(fk, v.s.Tables[parent]):
 				fail(eloc.At("/foreignKey"), "the foreign key %s does not cover the key of %s", fkName, parent)
+			}
+		}
+		if l, ok := e.Extensible.Get(); ok {
+			if all, ok := b.Extensible.Get(); ok {
+				for _, k := range l {
+					if !slices.Contains(all, k) {
+						fail(eloc.At("/extensible"), "%s allows no extensions with %s; an entity narrows what the business object allows", b.Name, k)
+					}
+				}
 			}
 		}
 		v.entityFields(b, e, t, fail)
