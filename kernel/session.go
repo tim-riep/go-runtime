@@ -175,7 +175,14 @@ func (x *execution) classify(err error) error {
 }
 
 func (s *session) statement(p *bytecode.Program, q *bytecode.Query, args []any, limit int64) (*statement, error) {
-	st, err := buildStatement(s.x.d, s.x.phys, s.x.tenant, p, q, args, limit)
+	var auth *authorization.Effective
+	if len(q.Auths) > 0 {
+		var err error
+		if auth, err = s.x.authorizations(); err != nil {
+			return nil, err
+		}
+	}
+	st, err := buildStatement(s.x.d, s.x.phys, s.x.tenant, auth, p, q, args, limit)
 	if err != nil {
 		return nil, err
 	}

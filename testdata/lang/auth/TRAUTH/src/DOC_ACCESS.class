@@ -1,0 +1,62 @@
+# Documents that the user may see, with authorized in where conditions.
+public class /TRAUTH/DOC_ACCESS
+
+  # Adds a document.
+  public static method ADD(id: INT8, code: STRING?, level: INT4?)
+    var doc: /TRAUTH/DOCS
+    doc.DOC_ID = id
+    doc.CODE = code
+    doc.LEVEL = level
+    insert doc
+  end
+
+  # The documents the user may read, by number.
+  public static method VISIBLE() returns array of INT8
+    var out = new array of INT8
+    for doc in select from /TRAUTH/DOCS where authorized /TRAUTH/DOC
+      CODE = CODE
+      LEVEL = LEVEL
+      ACTIVITY = READ
+    end
+      out.APPEND(doc.DOC_ID)
+    end
+    return out
+  end
+
+  # The number of documents the user may read of a level.
+  public static method COUNT_AT(level: INT4) returns INT8
+    return select count from /TRAUTH/DOCS where LEVEL = level and authorized /TRAUTH/DOC
+      CODE = CODE
+      LEVEL = level
+      ACTIVITY = READ
+    end
+  end
+
+  # The first documents the user may read or that have no code.
+  public static method FIRST(n: INT8) returns array of /TRAUTH/DOCS
+    return select from /TRAUTH/DOCS where CODE is null or authorized /TRAUTH/DOC
+      CODE = CODE
+      LEVEL = any
+      ACTIVITY = READ
+    end order by DOC_ID limit n
+  end
+
+  # Gives the documents the user may change a level.
+  public static method RAISE(level: INT4) returns INT8
+    return update /TRAUTH/DOCS set LEVEL = level where authorized /TRAUTH/DOC
+      CODE = CODE
+      LEVEL = LEVEL
+      ACTIVITY = UPDATE
+    end
+  end
+
+  # Deletes the documents the user may delete.
+  public static method REMOVE() returns INT8
+    return delete from /TRAUTH/DOCS where not (authorized /TRAUTH/DOC
+      CODE = any
+      LEVEL = any
+      ACTIVITY = DELETE
+    end)
+  end
+
+end

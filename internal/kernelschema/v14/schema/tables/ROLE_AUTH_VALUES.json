@@ -1,0 +1,62 @@
+{
+  "name": "/RT/ROLE_AUTH_VALUES",
+  "description": "Granted values, ranges and patterns per field of an authorization",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME"
+    },
+    {
+      "name": "VALUE_NO",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "VALUE_KIND",
+      "domain": "/RT/VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "LOW",
+      "domain": "/RT/AUTH_VALUE",
+      "notNull": true,
+      "description": "The value, the lower bound or the pattern"
+    },
+    {
+      "name": "HIGH",
+      "domain": "/RT/AUTH_VALUE",
+      "description": "The upper bound of a range"
+    }
+  ],
+  "primaryKey": [
+    "ROLE_NAME",
+    "POSITION",
+    "FIELD_NAME",
+    "VALUE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "AUTHORIZATION",
+      "table": "/RT/ROLE_AUTHORIZATIONS",
+      "fields": [
+        {
+          "field": "ROLE_NAME",
+          "references": "ROLE_NAME"
+        },
+        {
+          "field": "POSITION",
+          "references": "POSITION"
+        }
+      ]
+    }
+  ]
+}

@@ -188,8 +188,8 @@ its parent; labels have at most 60 characters.
 
 | Type | Meaning | PostgreSQL | SQLite (STRICT tables) |
 |---|---|---|---|
-| CHAR(n) | string with maximum length | VARCHAR(n) | TEXT, length check |
-| STRING | string without limit | TEXT | TEXT |
+| CHAR(n) | string with maximum length | VARCHAR(n) COLLATE "C" | TEXT, length check |
+| STRING | string without limit | TEXT COLLATE "C" | TEXT |
 | INT4, INT8 | integers | INTEGER, BIGINT | INTEGER, range check for INT4 |
 | DEC(p,s) | exact decimal, p ≤ 18 | NUMERIC(p,s) | INTEGER holding value × 10^s, range check |
 | DATE | calendar date | DATE | TEXT `YYYY-MM-DD`, format check |
@@ -353,6 +353,10 @@ validation, repository, database, Go API, JSON and CLI and never converts one in
   `null` on a `notNull` field is invalid.
 - CHAR(n) is `VARCHAR(n)` in PostgreSQL and a length check in SQLite: values are neither
   padded nor trimmed, trailing spaces are kept.
+- Text columns compare in byte order on both databases: PostgreSQL columns have the
+  collation `"C"`, as SQLite and Go compare. Comparisons, `order by`, indexes and
+  authorization filters therefore give the same result everywhere. Kernel version 14
+  changes the columns of existing databases.
 - In Go, values that may be absent are `model.Optional[T]`; defaults are `model.Default`. JSON
   writes `null` for absent values, `""` for the empty string, and leaves out a default only if
   there is none. The CLI shows `<null>` and quoted strings.

@@ -120,3 +120,38 @@ func TestMigrateFromVersion4(t *testing.T) {
 		consistent(t, k)
 	})
 }
+
+// TestMigrateByteOrder gives text columns of kernel and package tables
+// that compare by the default collation of a PostgreSQL database the byte
+// order when the kernel migrates to version 14.
+func TestMigrateByteOrder(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		k.SetTargetVersion(13)
+		withData(t, k)
+		if k.Dialect().Name() != "postgres" {
+			return
+		}
+		for _, s := range []string{
+			`ALTER TABLE "/TRFIN/COMPANIES" ALTER COLUMN "COMPANY_ID" TYPE VARCHAR(10) COLLATE "default", ALTER COLUMN "NAME" TYPE VARCHAR(80) COLLATE "default"`,
+			`ALTER TABLE "/RT/USERS" ALTER COLUMN "USER_NAME" TYPE VARCHAR(64) COLLATE "default"`,
+		} {
+			if _, err := k.DB().ExecContext(ctx, s); err != nil {
+				t.Fatal(err)
+			}
+		}
+		k.SetTargetVersion(kernelschema.Latest())
+		if _, err := k.Init(ctx, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		consistent(t, k)
+		var coll string
+		if err := k.DB().QueryRowContext(ctx, `SELECT collation_name FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = '/TRFIN/COMPANIES' AND column_name = 'COMPANY_ID'`).Scan(&coll); err != nil || coll != "C" {
+			t.Errorf("collation %q, %v", coll, err)
+		}
+		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+			t.Errorf("data lost: %v", v)
+		}
+	})
+}

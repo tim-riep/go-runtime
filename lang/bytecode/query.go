@@ -54,6 +54,8 @@ type Query struct {
 	Where int
 	Conds []Cond
 	Order []OrderKey
+	// Auths are the authorization filters of the condition.
+	Auths []AuthFilter
 	Limit bool // the limit is on the stack after the parameters
 	// Params are the types of the values of the code that the statement
 	// uses, in the order the code pushes them: the values of Sets, then
@@ -79,6 +81,7 @@ const (
 	CIn      // Field in the array Param
 	CIsNull  // Field is null
 	CIsEmpty // Field = ""
+	CAuth    // the authorization filter Auth
 )
 
 // Cond is a node of a condition.
@@ -88,6 +91,22 @@ type Cond struct {
 	Field string
 	Other string
 	Param int
+	Auth  int // CAuth
+}
+
+// AuthFilter is authorized in a where condition: the rows whose fields the
+// user is authorized for. A field of the object is checked against a
+// Column of the table or the parameter Param; with neither it is any.
+type AuthFilter struct {
+	Object string
+	Fields []AuthFilterField
+}
+
+// AuthFilterField is a field of an authorization filter.
+type AuthFilterField struct {
+	Name   string
+	Column string
+	Param  int // -1 without parameter
 }
 
 // OrderKey is a field of order by.

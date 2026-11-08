@@ -61,13 +61,20 @@ func (*Dialect) QuoteIdent(name string) string { return dialect.QuoteIdent(name)
 // Placeholder implements dialect.Dialect.
 func (*Dialect) Placeholder(n int) string { return "$" + strconv.Itoa(n) }
 
+// ByteOrder is the collation of text columns.
+const ByteOrder = `COLLATE "C"`
+
 // ColumnType implements dialect.Dialect.
+//
+// Text columns compare in byte order (collation "C") as Go and SQLite do,
+// so that comparisons, ranges, prefixes and order by agree with the
+// evaluation in memory.
 func (*Dialect) ColumnType(d *model.Domain) string {
 	switch d.Type {
 	case model.Char:
-		return fmt.Sprintf("VARCHAR(%d)", d.Length)
+		return fmt.Sprintf("VARCHAR(%d) %s", d.Length, ByteOrder)
 	case model.String:
-		return "TEXT"
+		return "TEXT " + ByteOrder
 	case model.Int4:
 		return "INTEGER"
 	case model.Int8:
@@ -421,4 +428,31 @@ func (*Dialect) ClassifyError(err error) error {
 		return err
 	}
 	return cv
+}
+
+// InValues implements dialect.Dialect with an array parameter.
+func (*Dialect) InValues(column string, integer bool, values []any, bind func(any) string) string {
+	if integer {
+		ints := make([]int64, len(values))
+		for i, v := range values {
+			ints[i], _ = v.(int64)
+		}
+		return dialect.QuoteIdent(column) + " = ANY(" + bind(ints) + "::bigint[])"
+	}
+	strs := make([]string, len(values))
+	for i, v := range values {
+		strs[i], _ = v.(string)
+	}
+	return dialect.QuoteIdent(column) + " = ANY(" + bind(strs) + "::text[])"
+}
+
+// HasPrefix implements dialect.Dialect with LIKE, which compares in byte
+// order on text columns.
+func (*Dialect) HasPrefix(column string, integer bool, prefix string, bind func(any) string) string {
+	col := dialect.QuoteIdent(column)
+	if integer {
+		col = "CAST(" + col + " AS TEXT)"
+	}
+	r := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return col + " LIKE " + bind(r.Replace(prefix)+"%") + ` ESCAPE '\'`
 }

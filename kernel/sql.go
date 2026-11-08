@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
@@ -41,6 +42,8 @@ type sqlBuilder struct {
 	args  []any
 	table *model.Table
 	phys  *model.Physical
+	// auth are the effective authorizations for filters; nil without user.
+	auth *authorization.Effective
 }
 
 func (sb *sqlBuilder) q(name string) string { return sb.d.QuoteIdent(name) }
@@ -130,6 +133,8 @@ func (sb *sqlBuilder) cond(q *bytecode.Query, i int, params []any) (string, erro
 			return "", err
 		}
 		return "NOT " + a, nil
+	case bytecode.CAuth:
+		return sb.authFilter(&q.Auths[c.Auth], params)
 	case bytecode.CIsNull:
 		return "(" + sb.q(c.Field) + " IS NULL)", nil
 	case bytecode.CIsEmpty:
@@ -192,7 +197,7 @@ type keyValue struct {
 
 // buildStatement translates a statement of code. args are the parameters
 // of the code, or the values of all fields for row statements.
-func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, p *bytecode.Program, q *bytecode.Query, args []any, limit int64) (*statement, error) {
+func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, auth *authorization.Effective, p *bytecode.Program, q *bytecode.Query, args []any, limit int64) (*statement, error) {
 	table := phys.Tables[q.Table]
 	if table == nil {
 		return nil, fmt.Errorf("kernel: table %s does not exist", q.Table)
@@ -200,7 +205,7 @@ func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, p *b
 	if table.TenantSpecific && tenant == "" {
 		return nil, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: fmt.Sprintf("the execution has no tenant, so it cannot access the table %s of tenants", q.Table)}
 	}
-	sb := &sqlBuilder{d: d, table: table, phys: phys}
+	sb := &sqlBuilder{d: d, table: table, phys: phys, auth: auth}
 	layout := &p.Layouts[p.Types[q.Row].Layout]
 	var columns []string
 	for _, f := range layout.Fields {

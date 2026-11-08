@@ -1,0 +1,12 @@
+{
+  "name": "/TRAUTH/DOCS",
+  "description": "Documents by code and level",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "DOC_ID", "domain": "/TRAUTH/DOC_ID" },
+    { "name": "CODE", "domain": "/TRAUTH/CODE" },
+    { "name": "LEVEL", "domain": "/TRAUTH/LEVEL" }
+  ],
+  "primaryKey": ["DOC_ID"]
+}

@@ -32,6 +32,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -497,4 +498,21 @@ func (*Dialect) ClassifyError(err error) error {
 		return err
 	}
 	return cv
+}
+
+// InValues implements dialect.Dialect with the values as a JSON array.
+func (*Dialect) InValues(column string, integer bool, values []any, bind func(any) string) string {
+	b, _ := json.Marshal(values)
+	return dialect.QuoteIdent(column) + " IN (SELECT value FROM json_each(" + bind(string(b)) + "))"
+}
+
+// HasPrefix implements dialect.Dialect with GLOB, which compares case
+// sensitively, unlike LIKE.
+func (*Dialect) HasPrefix(column string, integer bool, prefix string, bind func(any) string) string {
+	col := dialect.QuoteIdent(column)
+	if integer {
+		col = "CAST(" + col + " AS TEXT)"
+	}
+	r := strings.NewReplacer(`*`, `[*]`, `?`, `[?]`, `[`, `[[]`)
+	return col + " GLOB " + bind(r.Replace(prefix)+"*")
 }

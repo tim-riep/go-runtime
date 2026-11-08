@@ -621,3 +621,28 @@ end`))
 	expectError(t, check("ID = null\nCODE = any\nACTIVITY = READ"), "null-check", "null cannot be used here")
 	expectError(t, check("ID = id\nCODE = any\nACTIVITY = id"), "type", "the value of ACTIVITY is STRING")
 }
+
+// TestAuthorizationFilters checks authorized in where conditions: fields
+// of the table, values of the code and bare activities.
+func TestAuthorizationFilters(t *testing.T) {
+	expectOK(t, class(`public static method M(code: /TRT/CODE) returns INT8
+  var n = select count from /TRT/ORDERS where PAID = false and authorized /TRT/ORDER
+      ID = ID
+      CODE = code
+      ACTIVITY = READ
+    end
+  return n + (delete from /TRT/ORDERS where not authorized /TRT/ORDER
+      ID = any
+      CODE = any
+      ACTIVITY = UPDATE
+    end)
+end`))
+	filter := func(fields string) map[string]string {
+		return class("public static method M(id: STRING)\nvar x = select from /TRT/ORDERS where authorized /TRT/ORDER\n" + fields + "\nend\nend")
+	}
+	expectError(t, filter("ID = COLOR\nCODE = any\nACTIVITY = READ"), "unknown", "/TRT/ORDERS has no field COLOR")
+	expectError(t, filter("ID = AMOUNT\nCODE = any\nACTIVITY = READ"), "type", "checks STRING and integer fields, not /TRT/AMOUNT")
+	expectError(t, filter("ID = id\nCODE = PAID\nACTIVITY = READ"), "type", "checks STRING and integer fields")
+	expectError(t, filter("ID = ID\nCODE = any\nACTIVITY = APPROVE"), "authorization", "does not allow the activity APPROVE")
+	expectError(t, filter("ID = ID\nACTIVITY = READ"), "authorization", "needs the field CODE")
+}

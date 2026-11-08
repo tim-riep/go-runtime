@@ -383,7 +383,7 @@ func (c *checker) stmt(f *fnCtx, sc *scope, s syntax.Stmt, e env) bool {
 		t := c.expr(f, sc, s.Value, e, nil)
 		c.printable(s.Value, t)
 	case *syntax.AuthCheckStmt:
-		c.authCheck(f, sc, &s.AuthCheck, e)
+		c.authCheck(f, sc, &s.AuthCheck, nil, e)
 	case *syntax.IncludeStmt:
 		return c.includeStmt(f, sc, s, e)
 	case *syntax.DatabaseStmt:

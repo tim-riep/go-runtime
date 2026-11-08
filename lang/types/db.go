@@ -132,6 +132,9 @@ func (c *checker) where(f *fnCtx, sc *scope, st *Struct, x syntax.Expr, e env) {
 			c.comparison(f, sc, st, x, e)
 			return
 		}
+	case *syntax.AuthorizedExpr:
+		c.authCheck(f, sc, &x.AuthCheck, st, e)
+		return
 	case *syntax.IsExpr:
 		ft, ok := c.field(st, unparen(x.X))
 		if !ok {
@@ -144,7 +147,7 @@ func (c *checker) where(f *fnCtx, sc *scope, st *Struct, x syntax.Expr, e env) {
 		c.info.Types[x.X] = ft
 		return
 	}
-	c.errorf(x.Start(), CodeType, "a where condition compares fields of %s with =, <>, <, >, <=, >=, in, is null and is empty, joined by and, or and not", st.Name)
+	c.errorf(x.Start(), CodeType, "a where condition compares fields of %s with =, <>, <, >, <=, >=, in, is null and is empty, or checks them with authorized, joined by and, or and not", st.Name)
 }
 
 func unparen(x syntax.Expr) syntax.Expr {

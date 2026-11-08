@@ -74,6 +74,8 @@ func (q *query) cond(x syntax.Expr) int {
 	case *syntax.UnaryExpr:
 		k := q.cond(x.X)
 		return q.add(bytecode.Cond{Op: CNot, Kids: []int{k}, Param: -1})
+	case *syntax.AuthorizedExpr:
+		return q.authFilter(&x.AuthCheck)
 	case *syntax.IsExpr:
 		name, _ := q.fieldName(x.X)
 		op := CIsNull
@@ -116,6 +118,29 @@ func (q *query) cond(x syntax.Expr) int {
 	}
 	q.f.c.failf("unexpected condition %T", x)
 	return -1
+}
+
+// authFilter adds authorized in a where condition and pushes the values of
+// the fields that are not columns.
+func (q *query) authFilter(x *syntax.AuthCheck) int {
+	a := q.f.c.info.AuthChecks[x]
+	af := bytecode.AuthFilter{Object: a.Object}
+	for _, fd := range a.Fields {
+		ff := bytecode.AuthFilterField{Name: fd.Name, Column: fd.Column, Param: -1}
+		switch {
+		case fd.Any, fd.Column != "":
+		case fd.Activity != nil:
+			q.f.c.enum(fd.Activity)
+			q.f.emit(CONST_I, fd.ActivityIndex)
+			q.q.Params = append(q.q.Params, q.f.c.typeDesc(fd.Activity))
+			ff.Param = len(q.q.Params) - 1
+		default:
+			ff.Param = q.param(fd.Value)
+		}
+		af.Fields = append(af.Fields, ff)
+	}
+	q.q.Auths = append(q.q.Auths, af)
+	return q.add(bytecode.Cond{Op: CAuth, Param: -1, Auth: len(q.q.Auths) - 1})
 }
 
 func (q *query) where(x syntax.Expr) {

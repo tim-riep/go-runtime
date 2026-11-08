@@ -228,6 +228,17 @@ func Encode(p *Program) []byte {
 			w.str(c.Field)
 			w.str(c.Other)
 			w.int(c.Param)
+			w.int(c.Auth)
+		}
+		w.int(len(q.Auths))
+		for _, a := range q.Auths {
+			w.str(a.Object)
+			w.int(len(a.Fields))
+			for _, f := range a.Fields {
+				w.str(f.Name)
+				w.str(f.Column)
+				w.int(f.Param)
+			}
 		}
 		w.int(len(q.Order))
 		for _, o := range q.Order {
@@ -451,7 +462,15 @@ func Decode(b []byte) (*Program, error) {
 		q := Query{Kind: QueryKind(r.int()), Table: r.str(), Row: r.int(), Key: r.strs(), Sets: r.strs(), Where: r.int()}
 		q.Conds = make([]Cond, r.count())
 		for j := range q.Conds {
-			q.Conds[j] = Cond{Op: CondOp(r.int()), Kids: r.ints(), Field: r.str(), Other: r.str(), Param: r.int()}
+			q.Conds[j] = Cond{Op: CondOp(r.int()), Kids: r.ints(), Field: r.str(), Other: r.str(), Param: r.int(), Auth: r.int()}
+		}
+		q.Auths = make([]AuthFilter, r.count())
+		for j := range q.Auths {
+			a := AuthFilter{Object: r.str(), Fields: make([]AuthFilterField, r.count())}
+			for k := range a.Fields {
+				a.Fields[k] = AuthFilterField{Name: r.str(), Column: r.str(), Param: r.int()}
+			}
+			q.Auths[j] = a
 		}
 		q.Order = make([]OrderKey, r.count())
 		for j := range q.Order {
@@ -580,7 +599,12 @@ func (p *Program) Verify() error {
 			for _, k := range c.Kids {
 				ok = ok && in(k, len(q.Conds))
 			}
-			ok = ok && (c.Param == -1 || in(c.Param, len(q.Params)))
+			ok = ok && (c.Param == -1 || in(c.Param, len(q.Params))) && (c.Op != CAuth || in(c.Auth, len(q.Auths)))
+		}
+		for _, a := range q.Auths {
+			for _, f := range a.Fields {
+				ok = ok && (f.Param == -1 || in(f.Param, len(q.Params)))
+			}
 		}
 		for _, t := range q.Params {
 			ok = ok && in(t, len(p.Types))

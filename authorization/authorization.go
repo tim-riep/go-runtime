@@ -119,6 +119,13 @@ type Matcher struct {
 	integer  bool
 }
 
+// Integer reports whether the matcher compares integers: ranges by number,
+// values and prefixes by their decimal text.
+func (m *Matcher) Integer() bool { return m.integer }
+
+// Ints returns the bounds of a range of integers.
+func (r Range) Ints() (low, high int64) { return r.lowInt, r.highInt }
+
 // Range is a range of values, both bounds included.
 type Range struct {
 	Low, High       string

@@ -1,0 +1,10 @@
+{
+  "name": "/TRAUTH/DOC",
+  "texts": { "en": { "label": "Documents" } },
+  "fields": [
+    { "name": "CODE", "domain": "/TRAUTH/CODE" },
+    { "name": "LEVEL", "domain": "/TRAUTH/LEVEL" },
+    { "name": "ACTIVITY" }
+  ],
+  "activities": ["READ", "UPDATE", "DELETE"]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "/RT/EFFECT_FAILURES",
+  "description": "Effects of native methods that failed after the commit of their session; rt effects retry runs them again",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "EFFECT_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "FAILED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID",
+      "description": "Tenant of the execution that registered the effect"
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/EFFECT_KIND",
+      "notNull": true
+    },
+    {
+      "name": "PAYLOAD",
+      "domain": "/RT/EFFECT_PAYLOAD",
+      "notNull": true
+    },
+    {
+      "name": "ERROR_TEXT",
+      "domain": "/RT/EFFECT_ERROR",
+      "notNull": true,
+      "description": "The error of the last attempt"
+    },
+    {
+      "name": "ATTEMPTS",
+      "domain": "/RT/COUNT",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "EFFECT_ID"
+  ],
+  "foreignKeys": []
+}

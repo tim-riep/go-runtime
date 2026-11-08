@@ -24,11 +24,13 @@ import (
 )
 
 const tablesQuery = `
-SELECT c.relname, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull, pg_get_expr(ad.adbin, ad.adrelid)
+SELECT c.relname, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull, pg_get_expr(ad.adbin, ad.adrelid),
+  COALESCE(co.collname, '')
 FROM pg_catalog.pg_class c
 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
 LEFT JOIN pg_catalog.pg_attrdef ad ON ad.adrelid = a.attrelid AND ad.adnum = a.attnum
+LEFT JOIN pg_catalog.pg_collation co ON co.oid = a.attcollation
 WHERE n.nspname = current_schema() AND c.relkind IN ('r', 'p')
 ORDER BY c.relname, a.attnum`
 
@@ -60,10 +62,10 @@ func (d *Dialect) Introspect(ctx context.Context, q dialect.Querier) (*dialect.C
 		return nil, err
 	}
 	for rows.Next() {
-		var tname, col, typ string
+		var tname, col, typ, coll string
 		var notNull bool
 		var def sql.NullString
-		if err := rows.Scan(&tname, &col, &typ, &notNull, &def); err != nil {
+		if err := rows.Scan(&tname, &col, &typ, &notNull, &def, &coll); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -74,7 +76,11 @@ func (d *Dialect) Introspect(ctx context.Context, q dialect.Querier) (*dialect.C
 		case def.Valid:
 			kind = model.DefaultValue
 		}
-		table(tname).Columns[col] = dialect.CatalogColumn{Type: normalizeType(typ), NotNull: notNull, Default: kind}
+		typ = normalizeType(typ)
+		if coll != "" && coll != "default" {
+			typ += ` COLLATE "` + coll + `"`
+		}
+		table(tname).Columns[col] = dialect.CatalogColumn{Type: typ, NotNull: notNull, Default: kind}
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {

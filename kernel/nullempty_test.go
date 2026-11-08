@@ -71,10 +71,12 @@ func TestNullAndEmptyString(t *testing.T) {
 			t.Fatal(err)
 		}
 		ddl := dry.SQL()
+		// PostgreSQL gives text columns the byte order.
+		const text = `(TEXT|VARCHAR\(10\))( COLLATE "C")?`
 		for col, want := range map[string]string{
-			"D_NONE": `^\s*"D_NONE" (TEXT|VARCHAR\(10\)),$`, "D_NULL": `"D_NULL" (TEXT|VARCHAR\(10\)) DEFAULT NULL,`,
-			"D_EMPTY": `"D_EMPTY" (TEXT|VARCHAR\(10\)) DEFAULT '',`, "D_DOMAIN": `"D_DOMAIN" (TEXT|VARCHAR\(10\)) DEFAULT 'X',`,
-			"D_OVERRIDE": `"D_OVERRIDE" (TEXT|VARCHAR\(10\)) DEFAULT NULL,`, "REQ": `"REQ" TEXT NOT NULL DEFAULT '',`,
+			"D_NONE": `^\s*"D_NONE" ` + text + `,$`, "D_NULL": `"D_NULL" ` + text + ` DEFAULT NULL,`,
+			"D_EMPTY": `"D_EMPTY" ` + text + ` DEFAULT '',`, "D_DOMAIN": `"D_DOMAIN" ` + text + ` DEFAULT 'X',`,
+			"D_OVERRIDE": `"D_OVERRIDE" ` + text + ` DEFAULT NULL,`, "REQ": `"REQ" TEXT( COLLATE "C")? NOT NULL DEFAULT '',`,
 		} {
 			if !regexp.MustCompile(`(?m)` + want).MatchString(ddl) {
 				t.Errorf("column %s: no match for %s in\n%s", col, want, ddl)

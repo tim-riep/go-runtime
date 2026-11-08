@@ -89,6 +89,15 @@ type Dialect interface {
 	// ClassifyError converts constraint violations into
 	// *rterr.ConstraintViolation and returns other errors unchanged.
 	ClassifyError(err error) error
+
+	// InValues returns the condition that a column holds one of the
+	// values, all bound as one parameter with bind: strings, or int64 for
+	// integer columns.
+	InValues(column string, integer bool, values []any, bind func(any) string) string
+	// HasPrefix returns the condition that the text of a column starts with
+	// prefix, compared byte by byte; integer columns compare their decimal
+	// text.
+	HasPrefix(column string, integer bool, prefix string, bind func(any) string) string
 }
 
 // Catalog is the layout of the tables in a database, reduced to what the

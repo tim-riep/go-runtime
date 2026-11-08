@@ -41,10 +41,14 @@ type AuthCheckField struct {
 	// index of the constant.
 	Activity      *Enum
 	ActivityIndex int
+	// Column is the field of the table whose values a filter in a where
+	// condition checks.
+	Column string
 }
 
 // authCheck checks the object and the fields of an authorization check.
-func (c *checker) authCheck(f *fnCtx, sc *scope, x *syntax.AuthCheck, e env) {
+// In a where condition of the table st, upper-case names are its fields.
+func (c *checker) authCheck(f *fnCtx, sc *scope, x *syntax.AuthCheck, st *Struct, e env) {
 	info := &AuthCheck{Object: x.Object.Name}
 	c.info.AuthChecks[x] = info
 	c.checkGlobalName(x.Object)
@@ -80,7 +84,10 @@ func (c *checker) authCheck(f *fnCtx, sc *scope, x *syntax.AuthCheck, e env) {
 			}
 			seen[name] = true
 		}
-		if !af.Any {
+		switch {
+		case af.Any:
+		case st != nil && c.authColumn(st, def, af, &field):
+		default:
 			c.authValue(f, sc, obj, def, af, &field, e)
 		}
 		info.Fields = append(info.Fields, field)
@@ -93,6 +100,54 @@ func (c *checker) authCheck(f *fnCtx, sc *scope, x *syntax.AuthCheck, e env) {
 		}
 	}
 }
+
+// authColumn checks a field of the table as the value of a filter: its
+// values have the base type of the field, STRING or an integer. A bare
+// activity that is no field of the table is not a column.
+func (c *checker) authColumn(st *Struct, def model.AuthorizationField, af *syntax.AuthField, field *AuthCheckField) bool {
+	x := unparen(af.Value)
+	if !isFieldExpr(x) {
+		return false
+	}
+	if id, ok := x.(*syntax.Ident); ok && def.IsActivity() && st.Field(id.Name) == nil {
+		if en, ok := field.Type.(*Enum); ok && en.Index(id.Name) >= 0 {
+			return false
+		}
+	}
+	ct, _ := c.field(st, x)
+	if ct == TypInvalid || field.Type == TypInvalid {
+		return true
+	}
+	cb, fb := filterBase(ct), filterBase(field.Type)
+	switch {
+	case cb == nil:
+		c.errorf(x.Start(), CodeType, "authorized in a where condition checks STRING and integer fields, not %s", NonOpt(ct))
+	case fb == nil || cb.Kind != fb.Kind && !(isInteger(cb) && isInteger(fb)):
+		c.errorf(x.Start(), CodeType, "the field %s is %s, but %s of %s is %s", syntax.PrintExpr(x), NonOpt(ct), af.Name.Name, st.Name, field.Type)
+	}
+	if fr := c.info.Fields[x]; fr != nil {
+		field.Column = fr.Field
+	}
+	return true
+}
+
+// filterBase returns the base type of a field that a filter can check:
+// STRING, INT4 or INT8, also of enums.
+func filterBase(t Type) *Basic {
+	var b *Basic
+	switch x := NonOpt(t).(type) {
+	case *Enum:
+		b = x.Base
+	default:
+		b = BasicOf(x)
+	}
+	if b == nil || b.Kind != String && !isInteger(b) {
+		return nil
+	}
+	return b
+}
+
+func isInteger(b *Basic) bool { return b.Kind == Int4 || b.Kind == Int8 }
 
 // authFieldType returns the type of a field: the enum of the activities
 // for ACTIVITY, else the type of its data element or domain.

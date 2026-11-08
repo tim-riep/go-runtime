@@ -463,6 +463,28 @@ end
   `is [not] null` and `is [not] empty`, joined by `and`, `or` and `not`. As everywhere,
   a value that may be `null` cannot be compared; `NOTE is null` and `NOTE is empty` are
   different conditions. A field that is `null` satisfies no comparison.
+- `authorized` in `where` keeps the rows whose fields the user is authorized for (see
+  Authorization checks). Upper-case names are fields of the table, of `STRING` or integer
+  types; other values come from the code, and `any` leaves a field out:
+
+  ```
+  var companies = select from /TRFIN/COMPANIES where authorized /TRFIN/COMPANY
+    COMPANY_ID = COMPANY_ID
+    COUNTRY = COUNTRY
+    ACTIVITY = READ
+  end
+  ```
+
+  The kernel turns the roles of the user into SQL: values of the code are checked before
+  the statement runs, and grants that do not match them are left out; the entries of the
+  remaining grants become conditions on the columns, joined with `or`. Single values are
+  one parameter, an array in PostgreSQL and JSON in SQLite, so thousands of values are no
+  problem; ranges are `BETWEEN`, prefixes `LIKE` (PostgreSQL) or `GLOB` (SQLite) with the
+  special characters of the pattern escaped. Prefixes of integer fields compare the
+  decimal text of the column and use no index. A field that is `null` matches no entry,
+  not even `*`; without user nothing matches, with the role `/RT/ALL_AUTHORIZATIONS`
+  every row does. The result is the same as checking every row in memory. The condition
+  is logged at level debug ("authorization filter").
 - Errors of the database are runtime errors under `/RT/DATABASE_ERROR`, which code catches
   by naming them: `/RT/DUPLICATE_ROW`, `/RT/FOREIGN_KEY_VIOLATION`, `/RT/CHECK_VIOLATION`,
   `/RT/NOT_NULL_VIOLATION`, `/RT/ROW_NOT_FOUND`, `/RT/TOO_MANY_ROWS`, `/RT/LOCK_TIMEOUT`

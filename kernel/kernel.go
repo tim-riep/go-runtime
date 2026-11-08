@@ -29,7 +29,9 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -370,6 +372,50 @@ var migrationHooks = map[int]func(ctx context.Context, k *Kernel, q dialect.Quer
 		}
 		return k.repo.InsertLanguage(ctx, q, repo.Language{Code: model.DefaultLanguage, Name: "English"})
 	},
+	byteOrderVersion: alignTextColumns,
+}
+
+// byteOrderVersion is the kernel version from which text columns compare
+// in byte order.
+const byteOrderVersion = 14
+
+// alignTextColumns gives text columns the type the dialect expects, with
+// their collation, where only that differs: under PostgreSQL the columns
+// of all tables compare in byte order from kernel version 14.
+func alignTextColumns(ctx context.Context, k *Kernel, q dialect.Querier) error {
+	s, err := k.repo.Load(ctx, q)
+	if err != nil {
+		return err
+	}
+	phys := s.Physical()
+	want := k.d.Expected(phys)
+	have, err := k.d.Introspect(ctx, q)
+	if err != nil {
+		return err
+	}
+	for _, name := range slices.Sorted(maps.Keys(want.Tables)) {
+		ht := have.Tables[name]
+		if ht == nil {
+			continue
+		}
+		var alters []string
+		for _, f := range phys.Tables[name].Fields {
+			d := phys.Domain(&f)
+			if d == nil || d.Type != model.Char && d.Type != model.String {
+				continue
+			}
+			w, h := want.Tables[name].Columns[f.Name], ht.Columns[f.Name]
+			if h.Type != "" && h.Type != w.Type {
+				alters = append(alters, "ALTER COLUMN "+k.d.QuoteIdent(f.Name)+" TYPE "+w.Type)
+			}
+		}
+		if len(alters) > 0 {
+			if _, err := q.ExecContext(ctx, "ALTER TABLE "+k.d.QuoteIdent(name)+" "+strings.Join(alters, ", ")); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // validate checks the target schema of an operation against the languages
