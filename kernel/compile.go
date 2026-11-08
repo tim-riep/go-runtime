@@ -488,3 +488,31 @@ func hasHandlers(s *model.Schema, id model.PackageID) bool {
 	}
 	return false
 }
+
+// newGeneration starts a generation when an operation changes what
+// executions run without compiling code: implementations and extension
+// points, which the registry of a generation holds, and the code of
+// removed packages.
+func (k *Kernel) newGeneration(ctx context.Context, q dialect.Querier, c *compiled, cur, want *model.Schema, p *plan.Plan, now time.Time) error {
+	if !k.repo.HasCode() || c != nil && len(c.packages) > 0 {
+		return nil // saveCode started one
+	}
+	needed := false
+	for _, ch := range p.Changes {
+		switch ch.Kind {
+		case plan.CreateExtensionPoint, plan.DropExtensionPoint, plan.AlterExtensionPoint,
+			plan.CreateImplementation, plan.DropImplementation, plan.AlterImplementation:
+			needed = true
+		}
+	}
+	for id := range cur.Packages {
+		if _, ok := want.Packages[id]; !ok && len(cur.Sources[id]) > 0 {
+			needed = true
+		}
+	}
+	if !needed {
+		return nil
+	}
+	_, err := k.repo.NextGeneration(ctx, q, now)
+	return err
+}

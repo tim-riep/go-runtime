@@ -100,6 +100,8 @@ type Kernel struct {
 	maxFailedLogins int
 	// httpStates caches the activation of the service nodes.
 	httpStates atomic.Pointer[httpState]
+	// implementationStates caches the activation of implementations.
+	implementationStates atomic.Pointer[activationCache]
 	// maxAssetRead limits the size of an asset that code loads into the
 	// memory of an execution.
 	maxAssetRead int64
@@ -552,7 +554,7 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err != nil {
 			return err
 		}
-		act, err := k.loadActivation(ctx, q)
+		act, err := k.readActivation(ctx, q)
 		if err != nil {
 			return err
 		}
@@ -583,7 +585,13 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.saveCode(ctx, q, code, started); err != nil {
 			return err
 		}
+		if err := k.newGeneration(ctx, q, code, cur, want, p, started); err != nil {
+			return err
+		}
 		if err := k.syncHTTPStates(ctx, q, want); err != nil {
+			return err
+		}
+		if err := k.syncActivation(ctx, q, cur, want, started); err != nil {
 			return err
 		}
 		if err := k.afterRoles(ctx, q, cur, want, started); err != nil {

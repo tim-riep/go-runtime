@@ -15,13 +15,11 @@
 package kernel
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 
-	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/native"
 	"github.com/tim-riep/go-runtime/rterr"
@@ -97,11 +95,6 @@ func checkOverlaps(s *model.Schema, a *activation) error {
 		}
 	}
 	return errs.Err()
-}
-
-// loadActivation reads the activation of the implementations.
-func (k *Kernel) loadActivation(ctx context.Context, q dialect.Querier) (*activation, error) {
-	return &activation{}, nil
 }
 
 // extensionRegistry holds the extension points of a schema with their
@@ -217,7 +210,7 @@ func filterValuesText(p *model.ExtensionPoint, values map[string]string) string 
 // execution, read once.
 func (x *execution) loadActivation() (*activation, error) {
 	if x.activation == nil {
-		a, err := x.k.loadActivation(x.ctx, x.k.db)
+		a, err := x.k.cachedActivation(x.ctx)
 		if err != nil {
 			return nil, err
 		}

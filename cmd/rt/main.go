@@ -143,6 +143,13 @@ Commands:
   authorization-objects list [package]
                            list the authorization objects of a package or of all packages
   activities list          list the activities of the kernel (--lang for the texts)
+  implementation activate|deactivate <name> [--tenant T]
+                           activate or deactivate an implementation of an extension point,
+                           globally or in a tenant, whose setting wins over the global one
+  implementation reset <name> [--tenant T]
+                           remove the setting of a tenant, or the global one
+  implementation history [name]
+                           show the changes of the activation of implementations
   http list [package]      list the service nodes with their activation
   http show <path>         show a service node with its resolved settings and handlers
   http activate <path>     activate a service node and the never activated nodes below it
@@ -435,6 +442,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.natives(ctx, k)
 	case "http":
 		return c.http(ctx, k, args)
+	case "implementation":
+		return c.implementation(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
 	case "role":
