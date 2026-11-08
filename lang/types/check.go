@@ -130,6 +130,9 @@ type Info struct {
 	Transforms map[*syntax.TransformExpr]*Transform
 	// ExtensionPoints describes the extension point expressions.
 	ExtensionPoints map[*syntax.ExtensionPointExpr]*ExtensionExpr
+	// Entities describes the entity statements: modify and read business
+	// object, commit and rollback business objects.
+	Entities map[any]*EntityStatement
 	// AuthChecks describes check authorization and authorized.
 	AuthChecks map[*syntax.AuthCheck]*AuthCheck
 }
@@ -242,7 +245,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
 		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{},
 		Transforms: map[*syntax.TransformExpr]*Transform{}, AuthChecks: map[*syntax.AuthCheck]*AuthCheck{},
-		ExtensionPoints: map[*syntax.ExtensionPointExpr]*ExtensionExpr{}}
+		ExtensionPoints: map[*syntax.ExtensionPointExpr]*ExtensionExpr{}, Entities: map[any]*EntityStatement{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)
 	c.declareClasses()
 	c.hierarchy()

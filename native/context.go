@@ -350,6 +350,10 @@ func (e *InputTooLarge) Error() string {
 	return fmt.Sprintf("%s has %d bytes, more than the limit of %d", e.What, e.Size, e.Max)
 }
 
+// EntityResponseClass is the class of the response that methods of
+// behavior classes get.
+const EntityResponseClass = "/TRBASE/ENTITY_RESPONSE"
+
 // EntityResponse is the value of /TRBASE/ENTITY_RESPONSE, which the
 // kernel passes to the methods of a behavior class: the methods mark
 // instances as failed and add messages, by the position of the instance
@@ -374,3 +378,12 @@ type EntityMessage struct {
 func NewEntityResponse(count int) *EntityResponse {
 	return &EntityResponse{Count: count, Failed: map[int]bool{}}
 }
+
+// RuntimeError is an error of the kernel that code receives as runtime
+// error of a class under /RT/RUNTIME_ERROR, such as /RT/SESSION_ERROR.
+type RuntimeError struct {
+	Class string
+	Text  string
+}
+
+func (e *RuntimeError) Error() string { return e.Class + ": " + e.Text }

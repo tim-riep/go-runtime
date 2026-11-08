@@ -88,6 +88,10 @@ func Listing(p *Program, f *Func, imports func(slot int) *Program, source Source
 			if int(a[0]) < len(p.AuthChecks) {
 				return p.AuthChecks[a[0]].Object
 			}
+		case ENTITY:
+			if int(a[0]) < len(p.Entities) {
+				return "business object " + p.Entities[a[0]].BusinessObject
+			}
 		case EXT_GET, EXT_CALL, EXT_INFO:
 			if int(a[0]) < len(p.Extensions) {
 				return "extension point " + p.Extensions[a[0]].Name

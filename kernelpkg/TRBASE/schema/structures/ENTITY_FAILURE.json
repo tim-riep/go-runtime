@@ -1,0 +1,38 @@
+{
+  "name": "/TRBASE/ENTITY_FAILURE",
+  "texts": {
+    "en": {
+      "label": "Failed instance",
+      "description": "An instance an entity statement failed for"
+    },
+    "de": {
+      "label": "Fehlgeschlagene Instanz",
+      "description": "Eine Instanz, für die eine Anweisung fehlschlug"
+    }
+  },
+  "components": [
+    {
+      "name": "ENTITY",
+      "dataElement": "/TRBASE/ENTITY_NAME",
+      "notNull": true
+    },
+    {
+      "name": "OPERATION",
+      "dataElement": "/TRBASE/ENTITY_OPERATION",
+      "notNull": true
+    },
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK"
+    },
+    {
+      "name": "KEY",
+      "dataElement": "/TRBASE/ENTITY_KEY"
+    },
+    {
+      "name": "REASON",
+      "dataElement": "/TRBASE/FAILURE_REASON",
+      "notNull": true
+    }
+  ]
+}

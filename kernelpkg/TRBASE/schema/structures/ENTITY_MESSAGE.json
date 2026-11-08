@@ -1,0 +1,50 @@
+{
+  "name": "/TRBASE/ENTITY_MESSAGE",
+  "texts": {
+    "en": {
+      "label": "Message",
+      "description": "A message of an entity statement or a behavior method"
+    },
+    "de": {
+      "label": "Meldung",
+      "description": "Eine Meldung einer Anweisung oder Verhaltensmethode"
+    }
+  },
+  "components": [
+    {
+      "name": "SEVERITY",
+      "dataElement": "/TRBASE/MESSAGE_SEVERITY",
+      "notNull": true
+    },
+    {
+      "name": "TEXT",
+      "dataElement": "/TRBASE/MESSAGE_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY",
+      "dataElement": "/TRBASE/ENTITY_NAME"
+    },
+    {
+      "name": "KEY",
+      "dataElement": "/TRBASE/ENTITY_KEY"
+    },
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK"
+    },
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/FIELD_NAME"
+    },
+    {
+      "name": "MESSAGE",
+      "dataElement": "/TRBASE/MESSAGE_NAME"
+    },
+    {
+      "name": "ARGUMENTS",
+      "arrayType": "/TRBASE/MESSAGE_ARGUMENT_ARRAY",
+      "notNull": true
+    }
+  ]
+}

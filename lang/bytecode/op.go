@@ -175,6 +175,9 @@ const (
 	EXT_CALL // e method argc chain: call method of the interface on every selected implementation; argc includes the value; chain is the parameter that passes the result on, or ExtCallEach
 	EXT_INFO // e which: pop the value of extension point e and push IS_IMPLEMENTED (0) or COUNT (1)
 
+	// Business objects.
+	ENTITY // s: run entity statement s on the transaction buffer
+
 	opCount
 )
 
@@ -207,6 +210,7 @@ var opInfo = [opCount]struct {
 	DB_QUERY: {"DB_QUERY", 1}, DB_CURSOR: {"DB_CURSOR", 1}, DB_NEXT: {"DB_NEXT", 1}, DB_CLOSE: {"DB_CLOSE", 0}, DB_END: {"DB_END", 1}, DB_OPEN: {"DB_OPEN", 0},
 	XFORM: {"XFORM", 1}, AUTH_CHECK: {"AUTH_CHECK", 1},
 	EXT_GET: {"EXT_GET", 1}, EXT_CALL: {"EXT_CALL", 4}, EXT_INFO: {"EXT_INFO", 2},
+	ENTITY: {"ENTITY", 1},
 }
 
 func (o Op) String() string {

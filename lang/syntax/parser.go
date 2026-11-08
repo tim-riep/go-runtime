@@ -745,6 +745,9 @@ func (p *parser) stmt() Stmt {
 			s.Doc.Trailing = p.lineEnd()
 			return s
 		case "commit", "rollback":
+			if p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == IDENT && p.toks[p.i+1].Text == "business" {
+				return p.saveStmt(base)
+			}
 			s := &DatabaseStmt{StmtBase: base, Keyword: p.tok.Text}
 			p.next()
 			if p.tok.Kind != NEWLINE && p.tok.Kind != EOF {
@@ -774,6 +777,9 @@ func (p *parser) stmt() Stmt {
 			p.lineEnd()
 			return nil
 		}
+	}
+	if p.isWord("modify") && p.businessObject(1) {
+		return p.modifyStmt(base)
 	}
 	if p.isWord("check") && p.i+1 < len(p.toks) && p.toks[p.i+1].Kind == KEYWORD && p.toks[p.i+1].Text == "authorization" {
 		p.next()
@@ -1010,6 +1016,9 @@ func (p *parser) primary() Expr {
 	case IDENT:
 		if p.extensionPoint() {
 			return p.extensionPointExpr()
+		}
+		if p.isWord("read") && p.businessObject(1) {
+			return p.readExpr()
 		}
 		p.next()
 		return &Ident{Pos: t.Pos, Name: t.Text}
@@ -1531,5 +1540,186 @@ func (p *parser) deleteExpr() Expr {
 	e.Table = p.global()
 	e.Where = p.where()
 	e.Using = p.using()
+	return e
+}
+
+// businessObject reports the words business object, or business objects
+// with plural, from the token at offset on.
+func (p *parser) businessObject(offset int) bool {
+	i := p.i + offset
+	return i+1 < len(p.toks) && p.toks[i].Kind == IDENT && p.toks[i].Text == "business" &&
+		p.toks[i+1].Kind == IDENT && (p.toks[i+1].Text == "object" || p.toks[i+1].Text == "objects")
+}
+
+// words reads contextual words in order and reports whether all were
+// there.
+func (p *parser) words(ws ...string) bool {
+	for _, w := range ws {
+		if !p.isWord(w) && !p.isKw(w) {
+			p.errorf(p.tok.Pos, "expected %q, found %s", w, p.tok)
+			return false
+		}
+		p.next()
+	}
+	return true
+}
+
+// localMode reads in local mode if it follows.
+func (p *parser) localMode() bool {
+	if !p.isKw("in") {
+		return false
+	}
+	p.next()
+	return p.words("local", "mode")
+}
+
+// fieldList reads (FIELD, ...).
+func (p *parser) fieldList() []Ident {
+	var out []Ident
+	p.expectOp("(")
+	for p.tok.Kind != EOF && p.tok.Kind != NEWLINE && !p.isOp(")") {
+		out = append(out, p.memberName())
+		if !p.isOp(",") {
+			break
+		}
+		p.next()
+	}
+	p.expectOp(")")
+	return out
+}
+
+// resultLine reads result NAME on a line of its own, if it follows.
+func (p *parser) resultLine(doc *Comments) *Ident {
+	if !p.isWord("result") {
+		return nil
+	}
+	*doc = p.doc()
+	p.next()
+	id := p.ident()
+	doc.Trailing = p.lineEnd()
+	return &id
+}
+
+// modifyStmt reads modify business object NAME [in local mode], the
+// steps, an optional result line and end.
+func (p *parser) modifyStmt(base StmtBase) Stmt {
+	s := &ModifyStmt{StmtBase: base}
+	p.words("modify", "business", "object")
+	s.BusinessObject = p.global()
+	s.Local = p.localMode()
+	s.Doc.Trailing = p.lineEnd()
+	for p.tok.Kind != EOF && !p.isKw("end") {
+		start := p.i
+		if p.isWord("result") {
+			s.Result = p.resultLine(&s.ResultDoc)
+			continue
+		}
+		st := &ModifyStep{Doc: p.doc(), Pos: p.tok.Pos, Op: p.tok.Text}
+		switch {
+		case p.isWord("create"):
+			p.next()
+			st.Entity = p.global()
+			if p.isWord("by") {
+				p.next()
+				p.words("parent")
+				st.ByParent = true
+			}
+			p.words("fields")
+			st.Fields = p.fieldList()
+			p.words("from")
+			st.From = p.expr(0)
+		case p.isKw("update"):
+			p.next()
+			st.Entity = p.global()
+			p.words("fields")
+			st.Fields = p.fieldList()
+			p.words("from")
+			st.From = p.expr(0)
+		case p.isKw("delete"):
+			p.next()
+			st.Entity = p.global()
+			p.words("keys")
+			st.Keys = p.expr(0)
+		case p.isWord("execute"):
+			p.next()
+			st.Entity = p.global()
+			p.expectOp(".")
+			st.Action = p.ident()
+			if p.isWord("keys") {
+				p.next()
+				st.Keys = p.expr(0)
+			}
+			if p.isWord("parameter") {
+				p.next()
+				st.Param = p.expr(0)
+			}
+			if p.isKw("into") {
+				p.next()
+				id := p.ident()
+				st.Into = &id
+			}
+		default:
+			p.errorf(p.tok.Pos, "expected create, update, delete, execute, result or end, found %s", p.tok)
+		}
+		st.Doc.Trailing = p.lineEnd()
+		s.Steps = append(s.Steps, st)
+		if p.i == start {
+			p.next()
+		}
+	}
+	s.End = p.endLine()
+	return s
+}
+
+// saveStmt reads commit business objects [result NAME] or rollback
+// business objects.
+func (p *parser) saveStmt(base StmtBase) Stmt {
+	s := &SaveStmt{StmtBase: base, Rollback: p.isKw("rollback")}
+	p.next()
+	p.words("business", "objects")
+	if !s.Rollback && p.isWord("result") {
+		p.next()
+		id := p.ident()
+		s.Result = &id
+	}
+	s.Doc.Trailing = p.lineEnd()
+	return s
+}
+
+// readExpr reads read business object NAME [in local mode], the line of
+// the entity, an optional result line and end.
+func (p *parser) readExpr() Expr {
+	e := &ReadExpr{Pos: p.tok.Pos}
+	p.words("read", "business", "object")
+	e.BusinessObject = p.global()
+	e.Local = p.localMode()
+	if p.tok.Kind != NEWLINE {
+		p.errorf(p.tok.Pos, "expected the end of the line after the business object, found %s", p.tok)
+		return e
+	}
+	saved := p.pending
+	p.pending = nil
+	e.Head = p.lineEnd()
+	e.LineDoc = p.doc()
+	e.Entity = p.global()
+	if p.isWord("by") {
+		p.next()
+		p.words("parent")
+		e.ByParent = true
+	}
+	p.words("fields")
+	if p.isWord("all") {
+		p.next()
+		e.All = true
+	} else {
+		e.Fields = p.fieldList()
+	}
+	p.words("keys")
+	e.Keys = p.expr(0)
+	e.LineDoc.Trailing = p.lineEnd()
+	e.Result = p.resultLine(&e.ResultDoc)
+	e.End = p.closeLeading()
+	p.expectKw("end")
+	p.pending = saved
 	return e
 }

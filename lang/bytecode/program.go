@@ -19,7 +19,7 @@
 package bytecode
 
 // FormatVersion is the version of the binary encoding.
-const FormatVersion = 7
+const FormatVersion = 8
 
 // Ref is a direct reference to a class or function of a program or one of
 // its imports: the slot of the program (0 for the program itself, n for
@@ -63,7 +63,9 @@ type Program struct {
 	AuthChecks []AuthCheck
 	// Extensions are the extension points the code runs.
 	Extensions []Extension
-	Tests      bool // contains test classes
+	// Entities are the entity statements.
+	Entities []EntityStmt
+	Tests    bool // contains test classes
 }
 
 // File is a source file.
@@ -322,6 +324,42 @@ type Extension struct {
 	Name      string
 	Interface Ref
 	Fields    []AuthField
+}
+
+// EntityKind is the kind of an entity statement.
+type EntityKind int
+
+// Kinds of entity statements.
+const (
+	EntityModify EntityKind = iota
+	EntityRead
+	EntitySave
+	EntityDiscard
+)
+
+// EntityStmt is an entity statement on a business object. ENTITY pops the
+// value of every step that has Rows, then its parameter if it has Param,
+// in the order of the steps. Modify pushes the result of every step with
+// Into, then the result if Result >= 0; read pushes its rows, then the
+// result; save pushes the result, or raises /RT/SAVE_FAILED without.
+type EntityStmt struct {
+	Kind           EntityKind
+	BusinessObject string
+	Local          bool
+	Steps          []EntityStep
+	Result         int // TypeDesc of the result, -1 without
+}
+
+// EntityStep is a step of modify business object or the line of read.
+type EntityStep struct {
+	Op       string // create, update, delete, execute or read
+	Entity   string
+	ByParent bool
+	Fields   []string
+	Rows     int // TypeDesc of the array of rows or keys, -1 without
+	Action   string
+	Param    int // TypeDesc of the parameter, -1 without
+	Into     int // TypeDesc of the result of execute or of the rows of read, -1 without
 }
 
 // Modes of EXT_CALL.

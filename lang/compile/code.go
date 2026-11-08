@@ -251,6 +251,10 @@ func (f *fn) stmt(s syntax.Stmt) {
 		f.storeLocal(l, true)
 	case *syntax.RowStmt:
 		f.rowStmt(s)
+	case *syntax.ModifyStmt:
+		f.modifyStmt(s)
+	case *syntax.SaveStmt:
+		f.saveStmt(s)
 	case *syntax.DatabaseStmt:
 		f.sessionStmt(s)
 	case *syntax.AssignStmt:
@@ -878,6 +882,8 @@ func (f *fn) expr0(x syntax.Expr) {
 		f.authCheck(x.Pos, &x.AuthCheck, false)
 	case *syntax.ExtensionPointExpr:
 		f.extensionPoint(x)
+	case *syntax.ReadExpr:
+		f.readExpr(x)
 	default:
 		f.c.failf("cannot compile %T", x)
 	}

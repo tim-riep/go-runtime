@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/MESSAGE_ARGUMENT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Arguments of a message"
+    },
+    "de": {
+      "label": "Argumente einer Meldung"
+    }
+  },
+  "rowType": {
+    "dataElement": "/TRBASE/MESSAGE_ARGUMENT"
+  }
+}

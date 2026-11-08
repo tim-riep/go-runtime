@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ENTITY_FAILURE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Failed instances"
+    },
+    "de": {
+      "label": "Fehlgeschlagene Instanzen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ENTITY_FAILURE"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "/TRBASE/FAILURE_REASON",
+  "description": "Why an entity statement failed for an instance",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "NOT_AUTHORIZED",
+      "name": "NOT_AUTHORIZED",
+      "description": "The user lacks the authorization"
+    },
+    {
+      "value": "NOT_FOUND",
+      "name": "NOT_FOUND",
+      "description": "The instance does not exist"
+    },
+    {
+      "value": "ALREADY_EXISTS",
+      "name": "ALREADY_EXISTS",
+      "description": "An instance with the key exists"
+    },
+    {
+      "value": "PARENT_NOT_FOUND",
+      "name": "PARENT_NOT_FOUND",
+      "description": "The parent instance does not exist"
+    },
+    {
+      "value": "VALIDATION",
+      "name": "VALIDATION",
+      "description": "A validation failed"
+    },
+    {
+      "value": "MANDATORY",
+      "name": "MANDATORY",
+      "description": "A mandatory field has no value"
+    },
+    {
+      "value": "ETAG",
+      "name": "ETAG",
+      "description": "The instance changed since it was read"
+    },
+    {
+      "value": "DATABASE",
+      "name": "DATABASE",
+      "description": "The database rejected the change"
+    },
+    {
+      "value": "BEHAVIOR",
+      "name": "BEHAVIOR",
+      "description": "A method of the behavior class failed"
+    }
+  ]
+}

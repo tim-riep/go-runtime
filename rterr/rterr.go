@@ -581,6 +581,17 @@ func (e *ImplementationOverlap) Error() string {
 	return msg + ": " + strings.Join(parts, "; ")
 }
 
+// BusinessObjectsNotSaved reports an execution that ended with changes of
+// business objects that the save sequence rejected; the execution was
+// rolled back.
+type BusinessObjectsNotSaved struct {
+	Summary string
+}
+
+func (e *BusinessObjectsNotSaved) Error() string {
+	return "the changes of business objects could not be saved at the end of the execution: " + e.Summary
+}
+
 // UnsafeArchive reports a package archive that is rejected: an entry
 // outside the package, a link, a size beyond the limits or no package in
 // it.

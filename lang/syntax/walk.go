@@ -88,6 +88,8 @@ func Inspect(x Expr, fn func(Expr)) {
 		for _, f := range x.Filters {
 			Inspect(f.Value, fn)
 		}
+	case *ReadExpr:
+		Inspect(x.Keys, fn)
 	}
 }
 
@@ -136,6 +138,10 @@ func Includes(f *File, fn func(name Name, ifFound bool)) {
 			case *AuthCheckStmt:
 				for _, f := range s.Fields {
 					exprs(f.Value)
+				}
+			case *ModifyStmt:
+				for _, st := range s.Steps {
+					exprs(st.From, st.Keys, st.Param)
 				}
 			case *IfStmt:
 				for _, c := range s.Clauses {

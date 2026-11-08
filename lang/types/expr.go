@@ -202,6 +202,8 @@ func (c *checker) expr0(f *fnCtx, sc *scope, x syntax.Expr, e env, want Type) Ty
 		return TypSession
 	case *syntax.ExtensionPointExpr:
 		return c.extensionPointExpr(f, sc, x, e)
+	case *syntax.ReadExpr:
+		return c.readExpr(f, sc, x, e)
 	case *syntax.TransformExpr:
 		return c.transform(f, sc, x, e)
 	case *syntax.AuthorizedExpr:

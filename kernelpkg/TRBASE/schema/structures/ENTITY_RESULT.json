@@ -1,0 +1,30 @@
+{
+  "name": "/TRBASE/ENTITY_RESULT",
+  "texts": {
+    "en": {
+      "label": "Result of entity statements",
+      "description": "New instances, failed instances and messages"
+    },
+    "de": {
+      "label": "Ergebnis von Entitätsanweisungen",
+      "description": "Neue und fehlgeschlagene Instanzen und Meldungen"
+    }
+  },
+  "components": [
+    {
+      "name": "CREATED",
+      "arrayType": "/TRBASE/ENTITY_CREATED_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "FAILURES",
+      "arrayType": "/TRBASE/ENTITY_FAILURE_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "MESSAGES",
+      "arrayType": "/TRBASE/ENTITY_MESSAGE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

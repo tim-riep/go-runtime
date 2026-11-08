@@ -67,6 +67,9 @@ type execution struct {
 	// schema, and activation their activation, read on first use.
 	extensions *extensionRegistry
 	activation *activation
+	// entities is the transaction buffer of business objects, made on
+	// first use.
+	entities *entityBuffer
 	// selections are the evaluations of extension points a trace records,
 	// written when the execution ends.
 	selections []repo.SelectionEntry
@@ -494,5 +497,106 @@ func (r *fetchRows) Close() error {
 	}
 	r.closed = true
 	_, err := r.s.conn.ExecContext(context.Background(), "CLOSE "+r.name)
+	return err
+}
+
+// rawQuery runs a query of the kernel in the session and decodes the
+// columns with their domains.
+func (s *session) rawQuery(ctx context.Context, text string, args []any, domains []*model.Domain) ([][]any, error) {
+	if err := s.begin(ctx); err != nil {
+		return nil, s.x.classify(err)
+	}
+	slog.Debug("statement of the transaction buffer", "session", s.n, "sql", text)
+	var out [][]any
+	err := s.guard(ctx, func() error {
+		var err error
+		out, err = queryRows(ctx, s.conn, s.x, text, args, domains)
+		return err
+	})
+	return out, err
+}
+
+// queryRows runs a query and decodes the columns with their domains.
+func queryRows(ctx context.Context, q dialect.Querier, x *execution, text string, args []any, domains []*model.Domain) ([][]any, error) {
+	var out [][]any
+	err := func() error {
+		rows, err := q.QueryContext(ctx, text, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			vals := make([]any, len(domains))
+			ptrs := make([]any, len(domains))
+			for i := range vals {
+				ptrs[i] = &vals[i]
+			}
+			if err := rows.Scan(ptrs...); err != nil {
+				return err
+			}
+			for i, v := range vals {
+				dv, err := x.d.Decode(domains[i], v)
+				if err != nil {
+					return err
+				}
+				vals[i] = dv
+			}
+			out = append(out, vals)
+		}
+		return rows.Err()
+	}()
+	return out, x.classify(err)
+}
+
+// rawExec runs a statement of the kernel in the session and returns the
+// number of rows it changed.
+func (s *session) rawExec(ctx context.Context, text string, args []any) (int64, error) {
+	if s.sqlite() {
+		for _, o := range s.x.sessions {
+			if o != s && o.written {
+				return 0, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: fmt.Sprintf("SQLite allows only one writing transaction; commit or roll back session %d first", o.n)}
+			}
+		}
+	}
+	if err := s.begin(ctx); err != nil {
+		return 0, s.x.classify(err)
+	}
+	slog.Debug("statement of the transaction buffer", "session", s.n, "sql", text)
+	var n int64
+	err := s.guard(ctx, func() error {
+		res, err := s.conn.ExecContext(ctx, text, args...)
+		if err != nil {
+			return err
+		}
+		n, err = res.RowsAffected()
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+	s.written = true
+	return n, nil
+}
+
+// savepoint sets a savepoint in the transaction of the session.
+func (s *session) savepoint(ctx context.Context, name string) error {
+	if err := s.begin(ctx); err != nil {
+		return s.x.classify(err)
+	}
+	_, err := s.conn.ExecContext(ctx, "SAVEPOINT "+name)
+	return err
+}
+
+// rollbackTo rolls back to a savepoint and releases it.
+func (s *session) rollbackTo(ctx context.Context, name string) error {
+	if _, err := s.conn.ExecContext(ctx, "ROLLBACK TO SAVEPOINT "+name); err != nil {
+		return err
+	}
+	return s.release(ctx, name)
+}
+
+// release releases a savepoint.
+func (s *session) release(ctx context.Context, name string) error {
+	_, err := s.conn.ExecContext(ctx, "RELEASE SAVEPOINT "+name)
 	return err
 }

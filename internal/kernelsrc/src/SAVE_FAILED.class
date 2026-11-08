@@ -1,0 +1,10 @@
+# commit business objects without result found failures: a validation,
+# a mandatory field, an ETag or the database rejected changes. Nothing
+# was written and the transaction buffer keeps the changes.
+public class /RT/SAVE_FAILED extends /RT/RUNTIME_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -152,12 +152,16 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 	vo.Host = x
 	vo.Limits = k.formats.OrDefault()
 	vo.Transformer = x
+	vo.Entities = &entityStore{x: x}
 	m, err := vm.New(image, vo)
 	if err != nil {
 		return err
 	}
 	defer func() { err = errors.Join(err, m.ReleaseHandles()) }()
-	return fn(ctx, m)
+	if err := fn(ctx, m); err != nil {
+		return err
+	}
+	return x.endBuffer(ctx, m)
 }
 
 // finish ends the sessions of an execution.

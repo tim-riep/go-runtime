@@ -112,6 +112,7 @@ func (k *Kernel) Test(ctx context.Context, id model.PackageID, dir *model.Packag
 		vo.Host = x
 		vo.Limits = k.formats.OrDefault()
 		vo.Transformer = x
+		vo.Entities = &entityStore{x: x}
 		err = run(vo)
 		err = errors.Join(err, x.finish(err))
 		if _, derr := k.Tenants().Delete(context.Background(), tenant, Options{Confirm: true}); derr != nil {

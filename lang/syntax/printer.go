@@ -550,6 +550,36 @@ func (p *printer) stmt(s Stmt, ind int) {
 		p.w(s.Op + " ")
 		p.expr(s.Row)
 		p.using(s.Using)
+	case *ModifyStmt:
+		p.w("modify business object " + s.BusinessObject.Name)
+		if s.Local {
+			p.w(" in local mode")
+		}
+		p.endLine(trailing)
+		for i, st := range s.Steps {
+			p.doc(&st.Doc, ind+2, i > 0)
+			p.startLine(ind + 2)
+			p.stmtInd = ind + 2
+			p.modifyStep(st)
+			p.endLine(st.Doc.Trailing)
+		}
+		if s.Result != nil {
+			p.doc(&s.ResultDoc, ind+2, len(s.Steps) > 0)
+			p.startLine(ind + 2)
+			p.w("result " + s.Result.Name)
+			p.endLine(s.ResultDoc.Trailing)
+		}
+		p.blockEnd(s.End, ind, "end")
+		return
+	case *SaveStmt:
+		if s.Rollback {
+			p.w("rollback business objects")
+		} else {
+			p.w("commit business objects")
+			if s.Result != nil {
+				p.w(" result " + s.Result.Name)
+			}
+		}
 	case *AuthCheckStmt:
 		p.w("check authorization " + s.Object.Name)
 		p.endLine(trailing)
@@ -827,6 +857,39 @@ func (p *printer) expr(x Expr) {
 		p.using(x.Using)
 	case *OpenSessionExpr:
 		p.w("open session")
+	case *ReadExpr:
+		p.w("read business object " + x.BusinessObject.Name)
+		if x.Local {
+			p.w(" in local mode")
+		}
+		ind, saved := p.lineInd, p.stmtInd
+		p.endLine(x.Head)
+		p.doc(&x.LineDoc, ind+2, false)
+		p.startLine(ind + 2)
+		p.stmtInd = ind + 2
+		p.w(x.Entity.Name)
+		if x.ByParent {
+			p.w(" by parent")
+		}
+		if x.All {
+			p.w(" fields all")
+		} else {
+			p.w(" fields ")
+			p.fieldList(x.Fields)
+		}
+		p.w(" keys ")
+		p.expr(x.Keys)
+		p.endLine(x.LineDoc.Trailing)
+		if x.Result != nil {
+			p.doc(&x.ResultDoc, ind+2, false)
+			p.startLine(ind + 2)
+			p.w("result " + x.Result.Name)
+			p.endLine(x.ResultDoc.Trailing)
+		}
+		p.leading(x.End.Leading, ind+2, true)
+		p.startLine(ind)
+		p.w("end")
+		p.stmtInd = saved
 	case *AuthorizedExpr:
 		p.w("authorized " + x.Object.Name)
 		ind, saved := p.lineInd, p.stmtInd
@@ -899,4 +962,47 @@ func (p *printer) using(x Expr) {
 		p.w(" using ")
 		p.expr(x)
 	}
+}
+
+// modifyStep prints a step of modify business object.
+func (p *printer) modifyStep(st *ModifyStep) {
+	switch st.Op {
+	case "create", "update":
+		p.w(st.Op + " " + st.Entity.Name)
+		if st.ByParent {
+			p.w(" by parent")
+		}
+		p.w(" fields ")
+		p.fieldList(st.Fields)
+		p.w(" from ")
+		p.expr(st.From)
+	case "delete":
+		p.w("delete " + st.Entity.Name + " keys ")
+		p.expr(st.Keys)
+	case "execute":
+		p.w("execute " + st.Entity.Name + "." + st.Action.Name)
+		if st.Keys != nil {
+			p.w(" keys ")
+			p.expr(st.Keys)
+		}
+		if st.Param != nil {
+			p.w(" parameter ")
+			p.expr(st.Param)
+		}
+		if st.Into != nil {
+			p.w(" into " + st.Into.Name)
+		}
+	}
+}
+
+// fieldList prints (FIELD, ...).
+func (p *printer) fieldList(fs []Ident) {
+	p.w("(")
+	for i, f := range fs {
+		if i > 0 {
+			p.w(", ")
+		}
+		p.w(f.Name)
+	}
+	p.w(")")
 }

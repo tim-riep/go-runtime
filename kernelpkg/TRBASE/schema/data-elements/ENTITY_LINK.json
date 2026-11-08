@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ENTITY_LINK",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Link",
+      "medium": "Link",
+      "long": "Link of a new instance in a statement",
+      "heading": "Link"
+    },
+    "de": {
+      "short": "Verknüpf.",
+      "medium": "Verknüpfung",
+      "long": "Verknüpfung einer neuen Instanz",
+      "heading": "Verknüpfung"
+    }
+  }
+}

@@ -78,7 +78,10 @@ func (l *lexer) emit(k Kind, text string, p Pos) {
 		// After the contextual words of update ... set and order by a
 		// global name may follow, such as an extension field, and after
 		// extension point the name of the extension point.
-		l.operand = text != "set" && text != "by" && !(text == "point" && l.after("extension"))
+		// The same holds after business object and at the start of the
+		// steps create and execute of modify business object.
+		l.operand = text != "set" && text != "by" && !(text == "point" && l.after("extension")) &&
+			!(text == "object" && l.after("business")) && !((text == "create" || text == "execute") && l.lineStart())
 	case GLOBAL, INT, DEC, STRING:
 		l.operand = true
 	case KEYWORD:
@@ -95,6 +98,12 @@ func (l *lexer) emit(k Kind, text string, p Pos) {
 func (l *lexer) after(word string) bool {
 	n := len(l.toks)
 	return n >= 2 && l.toks[n-2].Kind == IDENT && l.toks[n-2].Text == word && l.toks[n-2].Pos.Line == l.toks[n-1].Pos.Line
+}
+
+// lineStart reports whether the token just emitted starts its line.
+func (l *lexer) lineStart() bool {
+	n := len(l.toks)
+	return n == 1 || n >= 2 && (l.toks[n-2].Kind == NEWLINE || l.toks[n-2].Pos.Line != l.toks[n-1].Pos.Line)
 }
 
 func (l *lexer) run() {

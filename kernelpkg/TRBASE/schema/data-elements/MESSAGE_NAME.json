@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/MESSAGE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Message",
+      "medium": "Message object",
+      "long": "Name of a message object",
+      "heading": "Message object"
+    },
+    "de": {
+      "short": "Meldung",
+      "medium": "Meldungsobjekt",
+      "long": "Name eines Meldungsobjekts",
+      "heading": "Meldungsobjekt"
+    }
+  }
+}

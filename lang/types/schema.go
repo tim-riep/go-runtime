@@ -16,6 +16,7 @@ package types
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/model"
@@ -249,6 +250,23 @@ func (st *schemaTypes) newOf(table string, pos syntax.Pos) Type {
 	s.Fields = append(s.Fields, &Field{Name: model.LinkField, Type: Opt(TypString)})
 	if e.Parent.Valid() {
 		s.Fields = append(s.Fields, &Field{Name: model.ParentLinkField, Type: Opt(TypString)})
+	}
+	st.structs[name] = s
+	return s
+}
+
+// projection returns the struct of the rows that read returns: the given
+// fields of a table, the key fields first.
+func (st *schemaTypes) projection(table *Struct, fields []string) *Struct {
+	name := table.Name + " fields (" + strings.Join(fields, ", ") + ")"
+	if s, ok := st.structs[name]; ok {
+		return s
+	}
+	s := &Struct{Name: name, Key: slices.Clone(table.Key)}
+	for _, f := range fields {
+		if fd := table.Field(f); fd != nil {
+			s.Fields = append(s.Fields, &Field{Name: fd.Name, Type: fd.Type, Default: fd.Default})
+		}
 	}
 	st.structs[name] = s
 	return s

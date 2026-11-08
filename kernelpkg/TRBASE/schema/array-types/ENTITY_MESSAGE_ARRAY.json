@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ENTITY_MESSAGE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Messages"
+    },
+    "de": {
+      "label": "Meldungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ENTITY_MESSAGE"
+  }
+}

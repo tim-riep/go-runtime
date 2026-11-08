@@ -46,6 +46,8 @@ type Options struct {
 	MaxCollectionLength int
 	// Log receives log statements; nil discards them.
 	Log LogSink
+	// Entities is the transaction buffer of business objects.
+	Entities EntityStore
 	// Database gives access to the database; without it database
 	// statements end the execution with an error.
 	Database Database
@@ -133,6 +135,9 @@ type Machine struct {
 	callers []native.Caller
 	// handles are the objects of native classes the execution created.
 	handles []*Record
+	// behaviors are the objects of behavior classes of the transaction
+	// buffer.
+	behaviors map[*LinkedClass]Value
 	// noCommit are the extension points without commits whose
 	// implementations run, innermost last.
 	noCommit []string
@@ -962,6 +967,26 @@ func (m *Machine) exec(fn *LinkedFunc, me Value, args []Value, cl *Closure) (res
 			stack = stack[:len(stack)-n]
 			if t == nil && err == nil && !a.Statement {
 				push(v)
+			}
+		case ENTITY:
+			es := &p.Entities[arg(0)]
+			n := 0
+			for _, st := range es.Steps {
+				if st.Rows >= 0 {
+					n++
+				}
+				if st.Param >= 0 {
+					n++
+				}
+			}
+			args := append([]Value(nil), stack[len(stack)-n:]...)
+			stack = stack[:len(stack)-n]
+			var vs []Value
+			vs, t, err = m.entity(fn, start, es, args)
+			if t == nil && err == nil {
+				for _, v := range vs {
+					push(v)
+				}
 			}
 		case EXT_GET:
 			e := &p.Extensions[arg(0)]

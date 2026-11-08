@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ENTITY_CREATED_ARRAY",
+  "texts": {
+    "en": {
+      "label": "New instances"
+    },
+    "de": {
+      "label": "Neue Instanzen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ENTITY_CREATED"
+  }
+}

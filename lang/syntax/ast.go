@@ -369,6 +369,25 @@ type (
 		AuthCheck
 		End EndLine
 	}
+	// ModifyStmt changes a business object through its transaction buffer:
+	// modify business object NAME [in local mode], steps on lines of their
+	// own, an optional result line and end.
+	ModifyStmt struct {
+		StmtBase
+		BusinessObject Name
+		Local          bool
+		Steps          []*ModifyStep
+		Result         *Ident // declared variable of the result, nil without
+		ResultDoc      Comments
+		End            EndLine
+	}
+	// SaveStmt is commit business objects [result x] or rollback business
+	// objects.
+	SaveStmt struct {
+		StmtBase
+		Rollback bool
+		Result   *Ident
+	}
 	// RowStmt is insert, update or delete of one row, given as value of the
 	// row type of a table.
 	RowStmt struct {
@@ -540,6 +559,25 @@ type (
 		Point   Name
 		Filters []ParamValue
 	}
+	// ReadExpr reads instances of an entity of a business object through
+	// its transaction buffer: read business object NAME [in local mode],
+	// the line ENTITY [by parent] fields (...) keys EXPR, an optional result
+	// line and end. All is set for fields all.
+	ReadExpr struct {
+		Pos            Pos
+		BusinessObject Name
+		Local          bool
+		Head           *Comment
+		Entity         Name
+		ByParent       bool
+		Fields         []Ident
+		All            bool
+		Keys           Expr
+		LineDoc        Comments
+		Result         *Ident
+		ResultDoc      Comments
+		End            EndLine
+	}
 	// AuthorizedExpr tells whether the user has an authorization. Head is
 	// the comment after the object, End the comments before end.
 	AuthorizedExpr struct {
@@ -563,6 +601,22 @@ type AuthField struct {
 	Name  Ident
 	Any   bool
 	Value Expr // nil for any
+}
+
+// ModifyStep is a step of modify business object: create, update, delete
+// or execute on an entity.
+type ModifyStep struct {
+	Doc      Comments
+	Pos      Pos
+	Op       string // create, update, delete or execute
+	Entity   Name
+	ByParent bool
+	Fields   []Ident
+	From     Expr  // create and update
+	Action   Ident // execute
+	Keys     Expr  // delete and instance actions
+	Param    Expr  // execute with parameter
+	Into     *Ident
 }
 
 // ParamValue is NAME = value of transform ... parameters and of
@@ -591,6 +645,7 @@ func (e *DeleteExpr) Start() Pos         { return e.Pos }
 func (e *OpenSessionExpr) Start() Pos    { return e.Pos }
 func (e *TransformExpr) Start() Pos      { return e.Pos }
 func (e *ExtensionPointExpr) Start() Pos { return e.Pos }
+func (e *ReadExpr) Start() Pos           { return e.Pos }
 func (e *AuthorizedExpr) Start() Pos     { return e.Pos }
 
 // Arg is an argument, possibly named (NAME: value).

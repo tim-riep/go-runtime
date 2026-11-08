@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/FAILURE_REASON",
+  "domain": "/TRBASE/FAILURE_REASON",
+  "texts": {
+    "en": {
+      "short": "Reason",
+      "medium": "Reason",
+      "long": "Reason of the failure",
+      "heading": "Reason"
+    },
+    "de": {
+      "short": "Grund",
+      "medium": "Grund",
+      "long": "Grund des Fehlschlags",
+      "heading": "Grund"
+    }
+  }
+}

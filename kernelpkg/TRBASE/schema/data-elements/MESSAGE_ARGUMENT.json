@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/MESSAGE_ARGUMENT",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Argument",
+      "medium": "Argument",
+      "long": "Argument of a message",
+      "heading": "Argument"
+    },
+    "de": {
+      "short": "Argument",
+      "medium": "Argument",
+      "long": "Argument einer Meldung",
+      "heading": "Argument"
+    }
+  }
+}

@@ -278,6 +278,24 @@ func Encode(p *Program) []byte {
 			w.int(f.Type)
 		}
 	}
+	w.int(len(p.Entities))
+	for _, e := range p.Entities {
+		w.int(int(e.Kind))
+		w.str(e.BusinessObject)
+		w.bool(e.Local)
+		w.int(e.Result)
+		w.int(len(e.Steps))
+		for _, st := range e.Steps {
+			w.str(st.Op)
+			w.str(st.Entity)
+			w.bool(st.ByParent)
+			w.strs(st.Fields)
+			w.int(st.Rows)
+			w.str(st.Action)
+			w.int(st.Param)
+			w.int(st.Into)
+		}
+	}
 	return w.b.Bytes()
 }
 
@@ -511,6 +529,16 @@ func Decode(b []byte) (*Program, error) {
 		}
 		p.Extensions[i] = e
 	}
+	p.Entities = make([]EntityStmt, r.count())
+	for i := range p.Entities {
+		e := EntityStmt{Kind: EntityKind(r.int()), BusinessObject: r.str(), Local: r.bool(), Result: r.int()}
+		e.Steps = make([]EntityStep, r.count())
+		for j := range e.Steps {
+			e.Steps[j] = EntityStep{Op: r.str(), Entity: r.str(), ByParent: r.bool(), Fields: r.strs(), Rows: r.int(), Action: r.str(),
+				Param: r.int(), Into: r.int()}
+		}
+		p.Entities[i] = e
+	}
 	if r.err != nil {
 		return nil, r.err
 	}
@@ -580,6 +608,8 @@ func (p *Program) Verify() error {
 				ok = in(arg(0), len(p.AuthChecks))
 			case EXT_GET, EXT_CALL, EXT_INFO:
 				ok = in(arg(0), len(p.Extensions))
+			case ENTITY:
+				ok = in(arg(0), len(p.Entities))
 			}
 			if !ok {
 				return fmt.Errorf("bytecode: %s: invalid operand of %s at %d", f.Name, op, pc)
@@ -620,6 +650,17 @@ func (p *Program) Verify() error {
 		}
 		if !ok {
 			return fmt.Errorf("bytecode: invalid extension point %s", e.Name)
+		}
+	}
+	for _, e := range p.Entities {
+		ok := e.Result == -1 || in(e.Result, len(p.Types))
+		for _, st := range e.Steps {
+			for _, t := range []int{st.Rows, st.Param, st.Into} {
+				ok = ok && (t == -1 || in(t, len(p.Types)))
+			}
+		}
+		if !ok {
+			return fmt.Errorf("bytecode: invalid entity statement on %s", e.BusinessObject)
 		}
 	}
 	for _, q := range p.Queries {

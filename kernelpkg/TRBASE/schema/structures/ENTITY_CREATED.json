@@ -1,0 +1,29 @@
+{
+  "name": "/TRBASE/ENTITY_CREATED",
+  "texts": {
+    "en": {
+      "label": "New instance",
+      "description": "A new instance with its link and key"
+    },
+    "de": {
+      "label": "Neue Instanz",
+      "description": "Eine neue Instanz mit Verknüpfung und Schlüssel"
+    }
+  },
+  "components": [
+    {
+      "name": "ENTITY",
+      "dataElement": "/TRBASE/ENTITY_NAME",
+      "notNull": true
+    },
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK"
+    },
+    {
+      "name": "KEY",
+      "dataElement": "/TRBASE/ENTITY_KEY",
+      "notNull": true
+    }
+  ]
+}
