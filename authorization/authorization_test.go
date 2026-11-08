@@ -167,3 +167,61 @@ func TestValidityLockAndAll(t *testing.T) {
 		t.Errorf("JSON: %v", err)
 	}
 }
+
+// TestCheck evaluates checks with any fields: an any field is not
+// checked, the others match as in Allows, and nil, locked and all
+// authorizations decide alone.
+func TestCheck(t *testing.T) {
+	s := schema(t)
+	e := authorization.Resolve(s, "anna", "ACME", day("2026-11-08"), false, []authorization.Assignment{open("a1", "/TRFIN/COMPANY_CLERK")})
+	read := map[string]string{"COUNTRY": "DE", "ACTIVITY": "READ"}
+	for _, c := range []struct {
+		name  string
+		check authorization.Check
+		want  bool
+	}{
+		{"all values", authorization.Check{Object: "/TRFIN/COMPANY", Values: company("C1", "DE", "READ")}, true},
+		{"any company", authorization.Check{Object: "/TRFIN/COMPANY", Values: read, Any: map[string]bool{"COMPANY_ID": true}}, true},
+		{"any country", authorization.Check{Object: "/TRFIN/COMPANY", Values: map[string]string{"COMPANY_ID": "C1", "ACTIVITY": "READ"},
+			Any: map[string]bool{"COUNTRY": true}}, true},
+		{"any activity", authorization.Check{Object: "/TRFIN/COMPANY", Values: map[string]string{"COMPANY_ID": "C1", "COUNTRY": "FR"},
+			Any: map[string]bool{"ACTIVITY": true}}, false},
+		{"empty company", authorization.Check{Object: "/TRFIN/COMPANY", Values: company("", "DE", "READ")}, true},
+		{"missing field", authorization.Check{Object: "/TRFIN/COMPANY", Values: read}, false},
+		{"other activity", authorization.Check{Object: "/TRFIN/COMPANY", Values: company("C1", "DE", "DELETE")}, false},
+		{"other object", authorization.Check{Object: "/TROTTO/SYNC", Values: read}, false},
+	} {
+		if got := e.Check(c.check); got != c.want {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
+		}
+	}
+	all := authorization.Check{Object: "/TRFIN/COMPANY", Values: company("C1", "DE", "READ")}
+	var none *authorization.Effective
+	if none.Check(all) {
+		t.Error("without user")
+	}
+	locked := authorization.Resolve(s, "anna", "ACME", day("2026-11-08"), true, []authorization.Assignment{open("a1", "/TRFIN/COMPANY_CLERK")})
+	if locked.Check(all) {
+		t.Error("locked user")
+	}
+	full := authorization.Resolve(s, "anna", "ACME", day("2026-11-08"), false, []authorization.Assignment{open("a1", model.AllAuthorizationsRole)})
+	if !full.Check(authorization.Check{Object: "/LATER/OBJECT"}) {
+		t.Error("all authorizations")
+	}
+	if g := e.Grants("/TRFIN/COMPANY"); len(g) != 1 || g[0].Origin.Role != "/TRFIN/COMPANY_CLERK" || e.Grants("/TROTTO/SYNC") != nil {
+		t.Errorf("grants: %+v", g)
+	}
+}
+
+// BenchmarkCheck measures a check in memory against a role with values,
+// a range and a star.
+func BenchmarkCheck(b *testing.B) {
+	s := testutil.AddPackages(b, testutil.KernelSchema(b), testutil.Example(b, "TRBASE"), testutil.Example(b, "TRFIN"), testutil.Example(b, "TROTTO"))
+	e := authorization.Resolve(s, "anna", "ACME", day("2026-11-08"), false, []authorization.Assignment{open("a1", "/TRFIN/COMPANY_CLERK")})
+	c := authorization.Check{Object: "/TRFIN/COMPANY", Values: company("C1", "PT", "READ")}
+	for b.Loop() {
+		if !e.Check(c) {
+			b.Fatal("not authorized")
+		}
+	}
+}

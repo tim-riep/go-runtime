@@ -7,6 +7,13 @@ public class /TRTEST/NATIVES
 
   public static method TEXT(text: STRING?) returns STRING? executed by kernel
 
+  # Checks /TRFIN/COMPANY for C1 in a country with READ, any company with
+  # any.
+  public static method AUTHORIZE(country: STRING, any: BOOL) returns STRING executed by kernel
+
+  # Checks /TRFIN/COMPANY n times.
+  public static method AUTHORIZE_MANY(n: INT4) returns INT4 executed by kernel
+
   public static method DOUBLE(amount: DEC(15,2)) returns DEC(15,2) executed by kernel
 
   public static method BAD_CODE() returns /TRTEST/CODE executed by kernel
@@ -63,6 +70,23 @@ public class /TRTEST/NATIVES
       return e.CODE
     end
     return 0
+  end
+
+  # Catches a failed check and lists its object and values.
+  public static method CAUGHT(country: STRING) returns STRING
+    try
+      return AUTHORIZE(country, true)
+    catch e: /RT/NOT_AUTHORIZED
+      var out = e.OBJECT
+      for key, value in e.VALUES
+        if value is null
+          out = out + " " + key + "=any"
+        else
+          out = out + " " + key + "=" + value
+        end
+      end
+      return out
+    end
   end
 
 end

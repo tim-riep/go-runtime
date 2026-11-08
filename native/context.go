@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"time"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/reflector"
 )
@@ -57,7 +58,44 @@ type Host interface {
 	// Reflector describes the schema of the execution with the texts of
 	// the languages set up.
 	Reflector() (*reflector.Reflector, error)
+	// CheckAuthorization checks an authorization of the user of the
+	// execution in its tenant today and records the check. A failed check
+	// of mode CheckStatement returns a *NotAuthorized with a text in the
+	// language of the execution.
+	CheckAuthorization(c authorization.Check, at CheckLocation, mode CheckMode) (bool, error)
 }
+
+// CheckLocation is where an authorization check is made: code of a
+// package, or a function of the kernel.
+type CheckLocation struct {
+	Package model.PackageID `json:"package,omitempty"`
+	Class   string          `json:"class,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Line    int             `json:"line,omitempty"`
+	// Kernel names the function of the kernel or the native method.
+	Kernel string `json:"kernel,omitempty"`
+}
+
+// CheckMode is how an authorization check is made.
+type CheckMode string
+
+// Modes of checks. A failed statement check raises /RT/NOT_AUTHORIZED and
+// is remembered as the last failed check; expressions and filters are
+// expected to fail sometimes.
+const (
+	CheckStatement  CheckMode = "check"
+	CheckExpression CheckMode = "expression"
+	CheckFilter     CheckMode = "filter"
+)
+
+// NotAuthorized is the error of a failed check; the VM raises it as
+// /RT/NOT_AUTHORIZED.
+type NotAuthorized struct {
+	Check authorization.Check
+	Text  string
+}
+
+func (e *NotAuthorized) Error() string { return e.Text }
 
 // AssetSource is an asset repository opened for reading. Its metadata
 // stays the same for the rest of the execution.
@@ -177,6 +215,31 @@ func (c *Context) AssetRepository(pkg model.PackageID, repo string) (AssetSource
 		return nil, errors.New("native: assets need the kernel")
 	}
 	return c.Host.AssetRepository(c.Reader(), pkg, repo)
+}
+
+// Authorize checks an authorization of the user of the execution for a
+// native method: values by field, any for fields that are not checked. A
+// failed check is a *NotAuthorized, which raises /RT/NOT_AUTHORIZED.
+func (c *Context) Authorize(object string, values map[string]string, any ...string) error {
+	if c.Host == nil {
+		return errors.New("native: authorization checks need the kernel")
+	}
+	check := authorization.Check{Object: object, Values: values, Any: map[string]bool{}}
+	for _, f := range any {
+		check.Any[f] = true
+	}
+	at := CheckLocation{Kernel: c.Caller.Class + "." + c.Caller.Method}
+	ok, err := c.Host.CheckAuthorization(check, at, CheckStatement)
+	if err != nil || ok {
+		return err
+	}
+	return &NotAuthorized{Check: check, Text: "no authorization for " + object}
+}
+
+// IsNotAuthorized reports a failed check.
+func IsNotAuthorized(err error) bool {
+	var na *NotAuthorized
+	return errors.As(err, &na)
 }
 
 // Effect is an effect outside of the VM and the database. It is

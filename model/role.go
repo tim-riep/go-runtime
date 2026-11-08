@@ -27,6 +27,10 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
+// NotAuthorizedClass is the runtime error of a failed authorization
+// check.
+const NotAuthorizedClass = KernelNamespace + "NOT_AUTHORIZED"
+
 // AllAuthorizationsRole is the role of the kernel that grants every
 // authorization object with all values, also objects installed later. It
 // is not stored, cannot change and is no member of composite roles.

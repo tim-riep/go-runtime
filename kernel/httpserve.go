@@ -192,6 +192,9 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ex *vm.Exception
 	var le *vm.LimitError
 	switch {
+	case errors.As(err, &ex) && ex.Class == model.NotAuthorizedClass:
+		fail(http.StatusForbidden, httpsvc.CodeForbidden)
+		return
 	case errors.As(err, &ex) && ex.Class == "/RT/INPUT_TOO_LARGE" && req.TooLarge:
 		fail(http.StatusRequestEntityTooLarge, httpsvc.CodeTooLarge)
 		return

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/model"
@@ -50,6 +51,10 @@ type execution struct {
 	contents map[string][]byte
 	// reflector describes the schema of the execution, made on first use.
 	reflector *reflector.Reflector
+	// auth are the effective authorizations of the user, loaded on first
+	// use; nil without user.
+	auth       *authorization.Effective
+	authLoaded bool
 }
 
 // session is a database session: its own connection and a transaction

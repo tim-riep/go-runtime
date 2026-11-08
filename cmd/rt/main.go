@@ -50,13 +50,14 @@ import (
 
 // Exit codes.
 const (
-	exitOK          = 0
-	exitError       = 1
-	exitUsage       = 2
-	exitInvalid     = 3 // validation or dependency problems
-	exitNeedsPermit = 4 // destructive change or confirmation required
-	exitCheck       = 5 // check found discrepancies
-	exitExec        = 6 // execution failed and was rolled back
+	exitOK            = 0
+	exitError         = 1
+	exitUsage         = 2
+	exitInvalid       = 3 // validation or dependency problems
+	exitNeedsPermit   = 4 // destructive change or confirmation required
+	exitCheck         = 5 // check found discrepancies
+	exitExec          = 6 // execution failed and was rolled back
+	exitNotAuthorized = 7 // an authorization check failed
 )
 
 const usage = `usage: rt [flags] <command> [arguments]
@@ -132,7 +133,7 @@ Commands:
                            --shutdown-timeout)
   effects list             list effects of native methods that failed after their commit
   effects retry <id>       run a failed effect again
-  run <package> <class> <method> [json] --tenant <id> [--lang code]
+  run <package> <class> <method> [json] --tenant <id> [--lang code] [--user U]
                            call a public static method of an installed package for a
                            tenant; arguments and result are JSON
   test <package|dir>       run the test classes of an installed package, or of a package
@@ -202,7 +203,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.output, "o", "", "file to write an asset or a role to, - for standard output")
 	c.fs.StringVar(&c.pkg, "package", "", "role list: only the roles of a package, LOCAL for local roles")
 	c.fs.BoolVar(&c.incomplete, "incomplete", false, "role list: only roles with authorizations that grant nothing")
-	c.fs.StringVar(&c.userFilter, "user", "", "role history: only the changes of a user")
+	c.fs.StringVar(&c.userFilter, "user", "", "run: the user of the execution; role history: only the changes of a user")
 	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD")
 	c.fs.StringVar(&c.to, "to", "", "role assign: last day of validity, YYYY-MM-DD")
 	c.fs.StringVar(&c.admin, "admin", "", "init: create this first user with all authorizations in --tenant; the password is read from standard input")

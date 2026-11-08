@@ -303,3 +303,55 @@ func compile(o *model.AuthorizationObject, f model.AuthorizationField, d *model.
 	}
 	return m
 }
+
+// Check is an authorization check: a value for every field of the object
+// in canonical text form, or Any for a field that is not checked.
+type Check struct {
+	Object string            `json:"object"`
+	Values map[string]string `json:"values"` // by field; fields in Any have none
+	Any    map[string]bool   `json:"any,omitempty"`
+}
+
+// Check reports whether a grant on the object matches the values of all
+// fields that are not checked with any. Without user (nil), for locked
+// users and without grant it fails; all authorizations pass.
+func (e *Effective) Check(c Check) bool {
+	if e == nil || e.Locked {
+		return false
+	}
+	if e.All {
+		return true
+	}
+	og := e.Objects[c.Object]
+	if og == nil {
+		return false
+	}
+	for i := range og.Grants {
+		if og.Grants[i].matches(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// matches reports whether all fields of the grant match the check.
+func (g *Grant) matches(c Check) bool {
+	for field, m := range g.Fields {
+		if c.Any[field] {
+			continue
+		}
+		v, ok := c.Values[field]
+		if !ok || !m.Match(v) {
+			return false
+		}
+	}
+	return true
+}
+
+// Grants returns the grants on an object.
+func (e *Effective) Grants(object string) []Grant {
+	if e == nil || e.Objects[object] == nil {
+		return nil
+	}
+	return e.Objects[object].Grants
+}

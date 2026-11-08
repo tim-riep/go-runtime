@@ -72,6 +72,27 @@ func Recorded() []string {
 }
 
 func init() {
+	register("AUTHORIZE", "(country: STRING, any: BOOL) returns STRING", func(c *native.Context, country string, any bool) (string, error) {
+		values := map[string]string{"COMPANY_ID": "C1", "COUNTRY": country, "ACTIVITY": "READ"}
+		var anyFields []string
+		if any {
+			delete(values, "COMPANY_ID")
+			anyFields = append(anyFields, "COMPANY_ID")
+		}
+		if err := c.Authorize("/TRFIN/COMPANY", values, anyFields...); err != nil {
+			return "", err
+		}
+		return "authorized", nil
+	})
+	register("AUTHORIZE_MANY", "(n: INT4) returns INT4", func(c *native.Context, n int32) (int32, error) {
+		values := map[string]string{"COMPANY_ID": "C1", "COUNTRY": "DE", "ACTIVITY": "READ"}
+		for i := int32(0); i < n; i++ {
+			if err := c.Authorize("/TRFIN/COMPANY", values); err != nil {
+				return i, err
+			}
+		}
+		return n, nil
+	})
 	Registry.RegisterClass("TRTEST", "/TRTEST/COUNTER", (*Counter)(nil))
 	const counter = "/TRTEST/COUNTER"
 	Registry.Register(native.Method{Package: "TRTEST", Class: counter, Method: "START", Static: true, Signature: "(first: INT8) returns /TRTEST/COUNTER",

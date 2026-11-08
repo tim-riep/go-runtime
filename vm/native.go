@@ -21,12 +21,13 @@ import (
 	"io"
 	"log/slog"
 	"reflect"
-	"slices"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/tim-riep/go-runtime/authorization"
 	. "github.com/tim-riep/go-runtime/lang/bytecode"
 	"github.com/tim-riep/go-runtime/lang/dec"
 	"github.com/tim-riep/go-runtime/model"
@@ -490,6 +491,7 @@ func (m *Machine) ReleaseHandles() error {
 func (m *Machine) nativeFailure(fn *LinkedFunc, ctx context.Context, e error) (Value, *thrown, error) {
 	var ex *native.Exception
 	var big *native.InputTooLarge
+	var denied *native.NotAuthorized
 	switch {
 	case errors.As(e, &ex):
 		c := m.image.classes[ex.Class]
@@ -507,6 +509,8 @@ func (m *Machine) nativeFailure(fn *LinkedFunc, ctx context.Context, e error) (V
 		return Value{}, &thrown{obj: obj, pc: -1}, nil
 	case errors.As(e, &big):
 		return Value{}, m.fail("/RT/INPUT_TOO_LARGE", "%s: %s", fn.Def.Name, big.Error()), nil
+	case errors.As(e, &denied):
+		return Value{}, m.notAuthorized(denied.Check, denied.Text), nil
 	case m.ctx.Err() != nil:
 		return Value{}, nil, &LimitError{Limit: "time limit", Msg: "the execution exceeded its time limit in " + fn.Def.Name}
 	case ctx.Err() != nil && errors.Is(e, ctx.Err()):
@@ -574,4 +578,39 @@ func (m *Machine) goArg(p *Program, t int, a any) (Value, error) {
 		a = int64(x)
 	}
 	return m.fromGo(p, t, a)
+}
+
+// notAuthorized returns /RT/NOT_AUTHORIZED for a failed check, with the
+// object and the checked values, null for fields checked with any.
+func (m *Machine) notAuthorized(c authorization.Check, text string) *thrown {
+	t := m.fail("/RT/NOT_AUTHORIZED", "%s", text)
+	r := t.obj
+	l := r.Class.Layout
+	if i := l.Field("OBJECT"); i >= 0 {
+		m.setField(r, l.Fields[i], Str(c.Object))
+	}
+	if i := l.Field("VALUES"); i >= 0 {
+		f := l.Fields[i]
+		mp := m.newMap(r.P, f.Type)
+		// Fields in order of their names, any as null.
+		var fields []string
+		for field := range c.Values {
+			fields = append(fields, field)
+		}
+		for field := range c.Any {
+			if _, ok := c.Values[field]; !ok {
+				fields = append(fields, field)
+			}
+		}
+		slices.Sort(fields)
+		for _, field := range fields {
+			if v, ok := c.Values[field]; ok && !c.Any[field] {
+				m.mapSet(mp, Str(field), Str(v))
+			} else {
+				m.mapSet(mp, Str(field), Null)
+			}
+		}
+		m.setField(r, f, Value{R: mp})
+	}
+	return t
 }

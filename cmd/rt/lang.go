@@ -266,6 +266,17 @@ func (c *cli) run(ctx context.Context, k *kernel.Kernel, args []string) int {
 		}
 	}
 	opts := kernel.ExecOptions{Tenant: c.tenantID, Language: c.lang, VM: vm.Options{Log: logWriter{c.stderr}}}
+	if c.userFilter != "" {
+		u, err := k.Users().Get(ctx, c.userFilter)
+		if err != nil {
+			return c.fail(err)
+		}
+		if !slices.Contains(u.Tenants, c.tenantID) {
+			fmt.Fprintf(c.stderr, "error: user %s does not work in tenant %s\n", u.Name, c.tenantID)
+			return exitUsage
+		}
+		opts.User = model.Some(u.Name)
+	}
 	out, err := k.Run(ctx, opts, class, args[2], list)
 	if err != nil {
 		var nf *rterr.NotFound
@@ -273,6 +284,10 @@ func (c *cli) run(ctx context.Context, k *kernel.Kernel, args []string) int {
 			return c.fail(err)
 		}
 		fmt.Fprintf(c.stderr, "error: %v\n", err)
+		var ex *vm.Exception
+		if errors.As(err, &ex) && ex.Class == model.NotAuthorizedClass {
+			return exitNotAuthorized
+		}
 		return exitError
 	}
 	var pretty bytes.Buffer

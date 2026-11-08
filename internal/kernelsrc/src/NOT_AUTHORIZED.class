@@ -1,0 +1,13 @@
+# An authorization check failed. OBJECT is the authorization object and
+# VALUES the checked value of each field, null for fields checked with
+# any. The text is in the language of the execution.
+public class /RT/NOT_AUTHORIZED extends /RT/RUNTIME_ERROR
+
+  public attribute OBJECT: STRING
+  public attribute VALUES: map of STRING to STRING?
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end
