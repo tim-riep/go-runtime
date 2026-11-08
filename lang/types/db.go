@@ -267,10 +267,22 @@ func (c *checker) query(f *fnCtx, sc *scope, x *syntax.QueryExpr, e env) Type {
 	return &Array{Elem: st}
 }
 
+// protected reports writing a table of a business object, which only
+// entity statements change.
+func (c *checker) protected(pos syntax.Pos, op, table string) {
+	if c.cfg.Schema == nil {
+		return
+	}
+	if b, _ := c.cfg.Schema.BusinessObjectOf(table); b != nil {
+		c.errorf(pos, CodeBusinessObject, "%s is an entity of business object %s; change it with modify business object instead of %s", table, b.Name, op)
+	}
+}
+
 // update checks update /PKG/T set ... and delete from /PKG/T ....
 func (c *checker) update(f *fnCtx, sc *scope, x *syntax.UpdateExpr, e env) Type {
 	st := c.table(x.Table)
 	if st != nil {
+		c.protected(x.Table.Pos, "update", st.Name)
 		seen := map[string]bool{}
 		for _, s := range x.Sets {
 			ft, _ := c.field(st, &s.Field)
@@ -295,6 +307,7 @@ func (c *checker) update(f *fnCtx, sc *scope, x *syntax.UpdateExpr, e env) Type 
 func (c *checker) delete(f *fnCtx, sc *scope, x *syntax.DeleteExpr, e env) Type {
 	st := c.table(x.Table)
 	if st != nil {
+		c.protected(x.Table.Pos, "delete", st.Name)
 		if x.Where != nil {
 			c.where(f, sc, st, x.Where, e)
 		}
@@ -318,6 +331,7 @@ func (c *checker) rowStmt(f *fnCtx, sc *scope, s *syntax.RowStmt, e env) {
 			c.visibleNamespace(syntax.Name{Pos: s.Row.Start(), Name: st.Name})
 		}
 		c.use(s.Row.Start(), "table", st.Name, "")
+		c.protected(s.Row.Start(), s.Op, st.Name)
 		c.info.RowTables[s] = st
 	}
 	c.session(f, sc, s.Using, e)

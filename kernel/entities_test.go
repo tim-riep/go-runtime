@@ -424,6 +424,11 @@ func TestEntityStatementRules(t *testing.T) {
 			{"unknown business object", "modify business object /TRBO/NOPE\nend\n", "business object /TRBO/NOPE does not exist"},
 			{"read of an unknown field", "var rows = read business object /TRBO/ORDER\n/TRBO/ORDERS fields (COLOR) keys keys\nend\n", "/TRBO/ORDERS has no field COLOR"},
 			{"projection", "var rows = read business object /TRBO/ORDER\n/TRBO/ORDERS fields (NAME) keys keys\nend\nvar note = rows[1].NOTE\n", "NOTE"},
+			{"insert", "insert orders[1]\n", "/TRBO/ORDERS is an entity of business object /TRBO/ORDER; change it with modify business object instead of insert"},
+			{"update row", "update orders[1]\n", "instead of update"},
+			{"delete row", "delete orders[1]\n", "instead of delete"},
+			{"update set", "var n = update /TRBO/ITEMS set TEXT = \"x\"\n", "/TRBO/ITEMS is an entity of business object /TRBO/ORDER"},
+			{"delete from", "var n = delete from /TRBO/NOTES\n", "/TRBO/NOTES is an entity of business object /TRBO/ORDER"},
 			{"unknown action", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.OPEN keys keys\nend\n", "/TRBO/ORDERS has no action OPEN; its actions are CLOSE, COUNT_OPEN"},
 			{"static action with keys", "modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.COUNT_OPEN keys keys\nend\n", "COUNT_OPEN is a static action and takes no keys"},
 			{"instance action without keys", "var p: /TRBO/REASON\nmodify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.CLOSE parameter p\nend\n", "CLOSE is an instance action and needs keys"},
@@ -996,6 +1001,38 @@ func TestEntityAuthorizations(t *testing.T) {
 		}
 		if r = result(t, run(anna, "REMOVE", `"A1"`)); len(r["FAILURES"]) != 0 {
 			t.Errorf("remove A1: %v", r)
+		}
+	})
+}
+
+// TestTableBecomesEntity upgrades a package whose code writes a table
+// that becomes an entity: the upgrade fails and names every place.
+func TestTableBecomesEntity(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		writer := "public class /TRBO/WRITER\n\npublic static method RUN(o: /TRBO/ORDERS)\ninsert o\nvar n = delete from /TRBO/ORDERS where NAME = \"x\"\nend\nend\n"
+		src, errs := syntax.Format("WRITER.class", writer)
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		files := map[string]string{
+			"manifest.json":     `{ "id": "TRBO", "version": "1.0.0", "requires": [{ "id": "TRBASE" }], "languageVersion": 1 }`,
+			"src/WRITER.class": src,
+		}
+		for name, v := range orderTables {
+			files[name] = v
+		}
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, files)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		next := boFiles("1.1.0", orderBO(strings.TrimSuffix(orderRoot, orderAuthorization)), orderBehavior)
+		next["src/WRITER.class"] = src
+		_, err := k.Upgrade(ctx, writePackage(t, next), kernel.Options{})
+		var ce *rterr.CompileError
+		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "WRITER.class:4:") || !strings.Contains(err.Error(), "WRITER.class:5:") ||
+			!strings.Contains(err.Error(), "instead of insert") {
+			t.Errorf("upgrade: %v", err)
 		}
 	})
 }
