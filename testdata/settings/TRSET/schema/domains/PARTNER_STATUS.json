@@ -1,0 +1,20 @@
+{
+  "name": "/TRSET/PARTNER_STATUS",
+  "description": "Lifecycle status of a partner",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "ACTIVE",
+      "description": "Active"
+    },
+    {
+      "value": "BLOCKED",
+      "description": "Blocked"
+    },
+    {
+      "value": "CLOSED",
+      "description": "Closed"
+    }
+  ]
+}

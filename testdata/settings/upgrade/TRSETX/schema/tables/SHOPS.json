@@ -1,0 +1,37 @@
+{
+  "name": "/TRSETX/SHOPS",
+  "description": "Shops of a tenant in an external system",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "SHOP_ID",
+      "domain": "/TRSETX/SHOP_ID"
+    },
+    {
+      "name": "PARTNER_ID",
+      "dataElement": "/TRSET/PARTNER",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SHOP_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "CONNECTION",
+      "table": "/TRSETX/CONNECTIONS",
+      "fields": [
+        {
+          "field": "PARTNER_ID",
+          "references": "PARTNER_ID"
+        }
+      ]
+    }
+  ]
+}

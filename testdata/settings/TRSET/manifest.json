@@ -1,0 +1,11 @@
+{
+  "id": "TRSET",
+  "version": "1.0.0",
+  "description": "Test package with a setting over partners and their accounts",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.0.0"
+    }
+  ]
+}

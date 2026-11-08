@@ -1,0 +1,5 @@
+{
+  "name": "/TRSET/ACCOUNT_NO",
+  "description": "Account number within a partner",
+  "type": "INT4"
+}

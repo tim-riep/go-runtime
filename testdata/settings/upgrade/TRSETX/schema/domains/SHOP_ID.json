@@ -1,0 +1,6 @@
+{
+  "name": "/TRSETX/SHOP_ID",
+  "description": "Shop in an external system",
+  "type": "CHAR",
+  "length": 12
+}

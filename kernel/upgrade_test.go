@@ -138,7 +138,6 @@ func TestUpgradeDestructive(t *testing.T) {
 		next := testutil.Example(t, "upgrade/TROTTO")
 		next.Manifest.Version = "1.2.0"
 		next.Tables = next.Tables[:1] // /TROTTO/OTTO_CONNECTIONS
-		next.SettingExtensions[0].Tables = next.SettingExtensions[0].Tables[:1]
 		next.Extensions[0].ForeignKeys = nil
 		next.Extensions[0].Fields = next.Extensions[0].Fields[:2]
 		for i := range next.Domains {

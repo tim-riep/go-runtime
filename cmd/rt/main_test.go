@@ -29,6 +29,7 @@ func TestCLI(t *testing.T) {
 	for _, db := range testutil.Databases(t) {
 		t.Run(db.Name, func(t *testing.T) {
 			ex := filepath.Join(testutil.ModuleRoot(t), "examples")
+			settings := filepath.Join(testutil.ModuleRoot(t), "testdata", "settings")
 			steps := []struct {
 				args     []string
 				code     int
@@ -85,11 +86,13 @@ func TestCLI(t *testing.T) {
 				{[]string{"asset", "get", "TRFIN", "templates", "invoice/invoice.xsl", "--lang", "pl", "-o", "-"}, exitOK, "Invoice"},
 				{[]string{"asset", "get", "TRFIN", "web", "images/logo.png", "-o", filepath.Join(t.TempDir(), "logo.png")}, exitOK, "image/png"},
 				{[]string{"asset", "get", "TRFIN", "web", "nope.png", "-o", "-"}, exitError, "not found"},
-				{[]string{"show", "/TROTTO/OTTO_SHOPS"}, exitOK, "setting /TRFIN/COMPANIES"},
+				{[]string{"install", filepath.Join(settings, "TRSET"), filepath.Join(settings, "TRSETX")}, exitOK, "Executed"},
+				{[]string{"upgrade", filepath.Join(settings, "upgrade", "TRSETX")}, exitOK, "Executed"},
+				{[]string{"show", "/TRSETX/SHOPS"}, exitOK, "setting /TRSET/PARTNERS"},
 				{[]string{"show", "/TRFIN/PAYMENTS"}, exitOK, "data class application"},
-				{[]string{"setting", "list"}, exitOK, "/TRFIN/COMPANIES  TRFIN"},
-				{[]string{"setting", "show", "/TRFIN/COMPANIES"}, exitOK, "parent /TROTTO/OTTO_CONNECTIONS through CONNECTION"},
-				{[]string{"setting", "show", "/TRFIN/COMPANIES", "--json"}, exitOK, `"formatVersion": 3`},
+				{[]string{"setting", "list"}, exitOK, "/TRSET/PARTNERS  TRSET"},
+				{[]string{"setting", "show", "/TRSET/PARTNERS"}, exitOK, "parent /TRSETX/CONNECTIONS through CONNECTION"},
+				{[]string{"setting", "show", "/TRSET/PARTNERS", "--json"}, exitOK, `"formatVersion": 3`},
 				{[]string{"setting", "show", "NOPE"}, exitError, "not found"},
 				{[]string{"show", "/TRBASE/ADDRESS"}, exitOK, "used by table /TRFIN/COMPANIES (include)"},
 				{[]string{"show", "/TRFIN/COMPANY_GROUP"}, exitOK, "SEAT"},

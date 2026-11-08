@@ -1,0 +1,38 @@
+{
+  "name": "/TRSETX/CONNECTIONS",
+  "description": "Connection of a partner to an external system",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "PARTNER_ID",
+      "dataElement": "/TRSET/PARTNER"
+    },
+    {
+      "name": "ENDPOINT",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true,
+      "default": true
+    }
+  ],
+  "primaryKey": [
+    "PARTNER_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARTNER",
+      "table": "/TRSET/PARTNERS",
+      "fields": [
+        {
+          "field": "PARTNER_ID",
+          "references": "PARTNER_ID"
+        }
+      ]
+    }
+  ]
+}

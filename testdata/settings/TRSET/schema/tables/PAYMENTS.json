@@ -1,0 +1,46 @@
+{
+  "name": "/TRSET/PAYMENTS",
+  "description": "Payments booked on accounts",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "PARTNER_ID",
+      "domain": "/TRSET/PARTNER_ID"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "/TRSET/ACCOUNT_NO"
+    },
+    {
+      "name": "PAYMENT_NO",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRBASE/AMOUNT",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PARTNER_ID",
+    "ACCOUNT_NO",
+    "PAYMENT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ACCOUNT",
+      "table": "/TRSET/ACCOUNTS",
+      "fields": [
+        {
+          "field": "PARTNER_ID",
+          "references": "PARTNER_ID"
+        },
+        {
+          "field": "ACCOUNT_NO",
+          "references": "ACCOUNT_NO"
+        }
+      ]
+    }
+  ]
+}

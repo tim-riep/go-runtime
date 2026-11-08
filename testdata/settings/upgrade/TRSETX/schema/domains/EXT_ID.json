@@ -1,0 +1,6 @@
+{
+  "name": "/TRSETX/EXT_ID",
+  "description": "Partner ID in an external system",
+  "type": "CHAR",
+  "length": 32
+}

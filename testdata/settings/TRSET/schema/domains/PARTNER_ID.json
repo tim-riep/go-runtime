@@ -1,0 +1,6 @@
+{
+  "name": "/TRSET/PARTNER_ID",
+  "description": "Partner key",
+  "type": "CHAR",
+  "length": 10
+}

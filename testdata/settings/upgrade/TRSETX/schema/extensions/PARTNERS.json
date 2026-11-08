@@ -1,0 +1,11 @@
+{
+  "table": "/TRSET/PARTNERS",
+  "description": "External data of a partner",
+  "fields": [
+    {
+      "name": "/TRSETX/EXT_ID",
+      "dataElement": "/TRSETX/EXT_PARTNER",
+      "description": "Partner ID in the external system"
+    }
+  ]
+}

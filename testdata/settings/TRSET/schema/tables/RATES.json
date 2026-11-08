@@ -1,0 +1,30 @@
+{
+  "name": "/TRSET/RATES",
+  "description": "Exchange rates, maintained during operation",
+  "tenantSpecific": false,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "FROM_CURRENCY",
+      "domain": "/TRBASE/CURRENCY"
+    },
+    {
+      "name": "TO_CURRENCY",
+      "domain": "/TRBASE/CURRENCY"
+    },
+    {
+      "name": "VALID_FROM",
+      "domain": "/TRBASE/DATE"
+    },
+    {
+      "name": "RATE",
+      "domain": "/TRSET/RATE",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "FROM_CURRENCY",
+    "TO_CURRENCY",
+    "VALID_FROM"
+  ]
+}

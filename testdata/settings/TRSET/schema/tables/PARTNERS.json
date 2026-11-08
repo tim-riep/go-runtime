@@ -1,0 +1,41 @@
+{
+  "name": "/TRSET/PARTNERS",
+  "description": "Partners of a tenant",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "PARTNER_ID",
+      "dataElement": "/TRSET/PARTNER"
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME",
+      "notNull": true
+    },
+    {
+      "include": "/TRBASE/ADDRESS"
+    },
+    {
+      "name": "STATUS",
+      "domain": "/TRSET/PARTNER_STATUS",
+      "notNull": true,
+      "default": "ACTIVE"
+    }
+  ],
+  "primaryKey": [
+    "PARTNER_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COUNTRY",
+      "table": "/TRSET/COUNTRIES",
+      "fields": [
+        {
+          "field": "COUNTRY",
+          "references": "COUNTRY_CODE"
+        }
+      ]
+    }
+  ]
+}

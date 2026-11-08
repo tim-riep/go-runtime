@@ -1,0 +1,43 @@
+{
+  "name": "/TRSET/ACCOUNTS",
+  "description": "Accounts of a partner",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "PARTNER_ID",
+      "dataElement": "/TRSET/PARTNER"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "/TRSET/ACCOUNT_NO"
+    },
+    {
+      "name": "IBAN",
+      "domain": "/TRSET/IBAN",
+      "notNull": true
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRBASE/AMOUNT",
+      "notNull": true,
+      "default": "0"
+    }
+  ],
+  "primaryKey": [
+    "PARTNER_ID",
+    "ACCOUNT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARTNER",
+      "table": "/TRSET/PARTNERS",
+      "fields": [
+        {
+          "field": "PARTNER_ID",
+          "references": "PARTNER_ID"
+        }
+      ]
+    }
+  ]
+}

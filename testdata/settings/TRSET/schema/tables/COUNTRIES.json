@@ -1,0 +1,20 @@
+{
+  "name": "/TRSET/COUNTRIES",
+  "description": "Countries, shared by all tenants",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "COUNTRY_CODE",
+      "dataElement": "/TRBASE/COUNTRY"
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "COUNTRY_CODE"
+  ]
+}

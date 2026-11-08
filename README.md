@@ -165,17 +165,18 @@ language given; English is mandatory. Lengths in characters: `short` 10, `medium
 }
 ```
 
-Setting (`schema/settings/COMPANIES.json`) and an extension of it in another package
-(`schema/setting-extensions/COMPANIES.json`). `foreignKey` names the key of the table to
-its parent; labels have at most 60 characters.
+Setting (`schema/settings/PARTNERS.json`) and an extension of it in another package
+(`schema/setting-extensions/PARTNERS.json`). `foreignKey` names the key of the table to
+its parent; labels have at most 60 characters. The test packages in
+[testdata/settings](testdata/settings) contain a complete example.
 
 ```json
 {
-  "id": "/TRFIN/COMPANIES",
-  "texts": { "en": { "label": "Companies" }, "de": { "label": "Firmen" } },
-  "root": { "table": "/TRFIN/COMPANIES", "operations": { "create": true, "update": true, "delete": true } },
+  "id": "/TRSET/PARTNERS",
+  "texts": { "en": { "label": "Partners" }, "de": { "label": "Partner" } },
+  "root": { "table": "/TRSET/PARTNERS", "operations": { "create": true, "update": true, "delete": true } },
   "tables": [
-    { "table": "/TRFIN/BANK_ACCOUNTS", "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
+    { "table": "/TRSET/ACCOUNTS", "parent": "/TRSET/PARTNERS", "foreignKey": "PARTNER",
       "operations": { "create": true, "update": true, "delete": false } }
   ]
 }
@@ -183,9 +184,9 @@ its parent; labels have at most 60 characters.
 
 ```json
 {
-  "setting": "/TRFIN/COMPANIES",
+  "setting": "/TRSET/PARTNERS",
   "tables": [
-    { "table": "/TROTTO/OTTO_CONNECTIONS", "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
+    { "table": "/TRSETX/CONNECTIONS", "parent": "/TRSET/PARTNERS", "foreignKey": "PARTNER",
       "operations": { "create": true, "update": true, "delete": true } }
   ]
 }
@@ -1185,9 +1186,10 @@ rt upgrade examples/upgrade/TROTTO
 rt list
 rt show /TRFIN/COMPANIES
 rt check
+rt install testdata/settings/TRSET testdata/settings/TRSETX
 rt setting list
-rt setting show /TRFIN/COMPANIES
-rt setting show /TRFIN/COMPANIES --json
+rt setting show /TRSET/PARTNERS
+rt setting show /TRSET/PARTNERS --json
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
 rt show /TRFIN/COMPANY_ARRAY --json

@@ -1,31 +1,31 @@
 {
   "formatVersion": 3,
-  "id": "/TRFIN/COMPANIES",
-  "owner": "TRFIN",
+  "id": "/TRSET/PARTNERS",
+  "owner": "TRSET",
   "texts": {
     "de": {
-      "label": "Firmen",
-      "description": "Firmen eines Mandanten mit ihren Bankkonten"
+      "label": "Partner",
+      "description": "Partner eines Mandanten mit ihren Konten"
     },
     "en": {
-      "label": "Companies",
-      "description": "Companies of a tenant with their bank accounts"
+      "label": "Partners",
+      "description": "Partners of a tenant with their accounts"
     }
   },
   "dataClass": "configuration",
   "tenantSpecific": true,
   "extensions": [
-    "TROTTO"
+    "TRSETX"
   ],
   "languages": [
     "de",
     "en"
   ],
   "root": {
-    "name": "/TRFIN/COMPANIES",
-    "description": "Companies of a tenant",
-    "owner": "TRFIN",
-    "origin": "TRFIN",
+    "name": "/TRSET/PARTNERS",
+    "description": "Partners of a tenant",
+    "owner": "TRSET",
+    "origin": "TRSET",
     "dataClass": "configuration",
     "tenantSpecific": true,
     "operations": {
@@ -34,38 +34,38 @@
       "delete": true
     },
     "primaryKey": [
-      "COMPANY_ID"
+      "PARTNER_ID"
     ],
     "fields": [
       {
-        "name": "COMPANY_ID",
-        "localName": "COMPANY_ID",
+        "name": "PARTNER_ID",
+        "localName": "PARTNER_ID",
         "description": null,
-        "owner": "TRFIN",
+        "owner": "TRSET",
         "origin": "TABLE",
         "include": null,
         "source": null,
         "dataElement": {
-          "name": "/TRFIN/COMPANY",
-          "owner": "TRFIN",
+          "name": "/TRSET/PARTNER",
+          "owner": "TRSET",
           "texts": {
             "de": {
-              "short": "Firma",
-              "medium": "Firma",
-              "long": "Firmennummer",
-              "heading": "Firma",
+              "short": "Partner",
+              "medium": "Partner",
+              "long": "Partnernummer",
+              "heading": "Partner",
               "description": null
             },
             "en": {
-              "short": "Company",
-              "medium": "Company",
-              "long": "Company ID",
-              "heading": "Company",
+              "short": "Partner",
+              "medium": "Partner",
+              "long": "Partner ID",
+              "heading": "Partner",
               "description": null
             }
           }
         },
-        "domain": "/TRFIN/COMPANY_ID",
+        "domain": "/TRSET/PARTNER_ID",
         "type": "CHAR",
         "length": 10,
         "notNull": true,
@@ -76,7 +76,7 @@
         "name": "NAME",
         "localName": "NAME",
         "description": null,
-        "owner": "TRFIN",
+        "owner": "TRSET",
         "origin": "TABLE",
         "include": null,
         "source": null,
@@ -249,7 +249,7 @@
         "valueHelps": [
           {
             "foreignKey": "COUNTRY",
-            "table": "/TRFIN/COUNTRIES",
+            "table": "/TRSET/COUNTRIES",
             "fields": [
               {
                 "field": "COUNTRY",
@@ -260,49 +260,14 @@
         ]
       },
       {
-        "name": "/TROTTO/PICKUP_POINT",
-        "localName": "/TROTTO/PICKUP_POINT",
-        "description": null,
-        "owner": "TROTTO",
-        "origin": "INCLUDE",
-        "include": "/TRBASE/ADDRESS",
-        "source": "/TRBASE/ADDRESS",
-        "dataElement": {
-          "name": "/TROTTO/PICKUP_POINT",
-          "owner": "TROTTO",
-          "texts": {
-            "de": {
-              "short": "Abholung",
-              "medium": "Abholstation",
-              "long": "Abholstation des Marktplatzes",
-              "heading": "Abholung",
-              "description": null
-            },
-            "en": {
-              "short": "Pickup",
-              "medium": "Pickup point",
-              "long": "Marketplace pickup point",
-              "heading": "Pickup",
-              "description": null
-            }
-          }
-        },
-        "domain": "/TROTTO/PICKUP_POINT",
-        "type": "CHAR",
-        "length": 20,
-        "notNull": false,
-        "key": false,
-        "allowEmpty": true
-      },
-      {
         "name": "STATUS",
         "localName": "STATUS",
         "description": null,
-        "owner": "TRFIN",
+        "owner": "TRSET",
         "origin": "TABLE",
         "include": null,
         "source": null,
-        "domain": "/TRFIN/COMPANY_STATUS",
+        "domain": "/TRSET/PARTNER_STATUS",
         "type": "CHAR",
         "length": 10,
         "fixedValues": [
@@ -313,7 +278,7 @@
           },
           {
             "value": "BLOCKED",
-            "description": "Blocked for postings",
+            "description": "Blocked",
             "name": null
           },
           {
@@ -328,64 +293,34 @@
         "allowEmpty": true
       },
       {
-        "name": "CAPITAL",
-        "localName": "CAPITAL",
-        "description": null,
-        "owner": "TRFIN",
-        "origin": "TABLE",
-        "include": null,
-        "source": null,
-        "domain": "/TRBASE/AMOUNT",
-        "type": "DEC",
-        "length": 15,
-        "decimals": 2,
-        "notNull": false,
-        "key": false,
-        "allowEmpty": null
-      },
-      {
-        "name": "FOUNDED_ON",
-        "localName": "FOUNDED_ON",
-        "description": null,
-        "owner": "TRFIN",
-        "origin": "TABLE",
-        "include": null,
-        "source": null,
-        "domain": "/TRBASE/DATE",
-        "type": "DATE",
-        "notNull": false,
-        "key": false,
-        "allowEmpty": null
-      },
-      {
-        "name": "/TROTTO/OTTO_ID",
-        "localName": "/TROTTO/OTTO_ID",
-        "description": "Partner ID of the company",
-        "owner": "TROTTO",
+        "name": "/TRSETX/EXT_ID",
+        "localName": "/TRSETX/EXT_ID",
+        "description": "Partner ID in the external system",
+        "owner": "TRSETX",
         "origin": "EXTENSION",
         "include": null,
         "source": null,
         "dataElement": {
-          "name": "/TROTTO/OTTO_PARTNER",
-          "owner": "TROTTO",
+          "name": "/TRSETX/EXT_PARTNER",
+          "owner": "TRSETX",
           "texts": {
             "de": {
-              "short": "Partner",
-              "medium": "OTTO-Partner",
-              "long": "Partner-ID bei OTTO",
-              "heading": "OTTO-Partner",
+              "short": "Ext. ID",
+              "medium": "Externer Partner",
+              "long": "Partner-ID im externen System",
+              "heading": "Externer Partner",
               "description": null
             },
             "en": {
-              "short": "Partner",
-              "medium": "OTTO partner",
-              "long": "Partner ID on OTTO",
-              "heading": "OTTO partner",
+              "short": "Ext. ID",
+              "medium": "External partner",
+              "long": "Partner ID in an external system",
+              "heading": "External partner",
               "description": null
             }
           }
         },
-        "domain": "/TROTTO/OTTO_ID",
+        "domain": "/TRSETX/EXT_ID",
         "type": "CHAR",
         "length": 20,
         "notNull": false,
@@ -395,19 +330,19 @@
     ],
     "children": [
       {
-        "name": "/TRFIN/BANK_ACCOUNTS",
-        "description": "Bank accounts of a company",
-        "owner": "TRFIN",
-        "origin": "TRFIN",
+        "name": "/TRSET/ACCOUNTS",
+        "description": "Accounts of a partner",
+        "owner": "TRSET",
+        "origin": "TRSET",
         "dataClass": "configuration",
         "tenantSpecific": true,
         "parentKey": {
-          "name": "COMPANY",
-          "table": "/TRFIN/COMPANIES",
+          "name": "PARTNER",
+          "table": "/TRSET/PARTNERS",
           "fields": [
             {
-              "field": "COMPANY_ID",
-              "references": "COMPANY_ID"
+              "field": "PARTNER_ID",
+              "references": "PARTNER_ID"
             }
           ]
         },
@@ -417,39 +352,39 @@
           "delete": false
         },
         "primaryKey": [
-          "COMPANY_ID",
+          "PARTNER_ID",
           "ACCOUNT_NO"
         ],
         "fields": [
           {
-            "name": "COMPANY_ID",
-            "localName": "COMPANY_ID",
+            "name": "PARTNER_ID",
+            "localName": "PARTNER_ID",
             "description": null,
-            "owner": "TRFIN",
+            "owner": "TRSET",
             "origin": "TABLE",
             "include": null,
             "source": null,
             "dataElement": {
-              "name": "/TRFIN/COMPANY",
-              "owner": "TRFIN",
+              "name": "/TRSET/PARTNER",
+              "owner": "TRSET",
               "texts": {
                 "de": {
-                  "short": "Firma",
-                  "medium": "Firma",
-                  "long": "Firmennummer",
-                  "heading": "Firma",
+                  "short": "Partner",
+                  "medium": "Partner",
+                  "long": "Partnernummer",
+                  "heading": "Partner",
                   "description": null
                 },
                 "en": {
-                  "short": "Company",
-                  "medium": "Company",
-                  "long": "Company ID",
-                  "heading": "Company",
+                  "short": "Partner",
+                  "medium": "Partner",
+                  "long": "Partner ID",
+                  "heading": "Partner",
                   "description": null
                 }
               }
             },
-            "domain": "/TRFIN/COMPANY_ID",
+            "domain": "/TRSET/PARTNER_ID",
             "type": "CHAR",
             "length": 10,
             "notNull": true,
@@ -458,12 +393,12 @@
             "fromParent": true,
             "valueHelps": [
               {
-                "foreignKey": "COMPANY",
-                "table": "/TRFIN/COMPANIES",
+                "foreignKey": "PARTNER",
+                "table": "/TRSET/PARTNERS",
                 "fields": [
                   {
-                    "field": "COMPANY_ID",
-                    "references": "COMPANY_ID"
+                    "field": "PARTNER_ID",
+                    "references": "PARTNER_ID"
                   }
                 ]
               }
@@ -473,11 +408,11 @@
             "name": "ACCOUNT_NO",
             "localName": "ACCOUNT_NO",
             "description": null,
-            "owner": "TRFIN",
+            "owner": "TRSET",
             "origin": "TABLE",
             "include": null,
             "source": null,
-            "domain": "/TRFIN/ACCOUNT_NO",
+            "domain": "/TRSET/ACCOUNT_NO",
             "type": "INT4",
             "notNull": true,
             "key": true,
@@ -487,11 +422,11 @@
             "name": "IBAN",
             "localName": "IBAN",
             "description": null,
-            "owner": "TRFIN",
+            "owner": "TRSET",
             "origin": "TABLE",
             "include": null,
             "source": null,
-            "domain": "/TRFIN/IBAN",
+            "domain": "/TRSET/IBAN",
             "type": "CHAR",
             "length": 34,
             "notNull": true,
@@ -502,7 +437,7 @@
             "name": "BALANCE",
             "localName": "BALANCE",
             "description": null,
-            "owner": "TRFIN",
+            "owner": "TRSET",
             "origin": "TABLE",
             "include": null,
             "source": null,
@@ -534,37 +469,23 @@
             "key": false,
             "default": "0.00",
             "allowEmpty": null
-          },
-          {
-            "name": "OPENED_AT",
-            "localName": "OPENED_AT",
-            "description": null,
-            "owner": "TRFIN",
-            "origin": "TABLE",
-            "include": null,
-            "source": null,
-            "domain": "/TRBASE/TIMESTAMP",
-            "type": "TIMESTAMP",
-            "notNull": false,
-            "key": false,
-            "allowEmpty": null
           }
         ]
       },
       {
-        "name": "/TROTTO/OTTO_CONNECTIONS",
-        "description": "Connection of a company to the OTTO marketplace",
-        "owner": "TROTTO",
-        "origin": "TROTTO",
+        "name": "/TRSETX/CONNECTIONS",
+        "description": "Connection of a partner to an external system",
+        "owner": "TRSETX",
+        "origin": "TRSETX",
         "dataClass": "configuration",
         "tenantSpecific": true,
         "parentKey": {
-          "name": "COMPANY",
-          "table": "/TRFIN/COMPANIES",
+          "name": "PARTNER",
+          "table": "/TRSET/PARTNERS",
           "fields": [
             {
-              "field": "COMPANY_ID",
-              "references": "COMPANY_ID"
+              "field": "PARTNER_ID",
+              "references": "PARTNER_ID"
             }
           ]
         },
@@ -574,38 +495,38 @@
           "delete": true
         },
         "primaryKey": [
-          "COMPANY_ID"
+          "PARTNER_ID"
         ],
         "fields": [
           {
-            "name": "COMPANY_ID",
-            "localName": "COMPANY_ID",
+            "name": "PARTNER_ID",
+            "localName": "PARTNER_ID",
             "description": null,
-            "owner": "TROTTO",
+            "owner": "TRSETX",
             "origin": "TABLE",
             "include": null,
             "source": null,
             "dataElement": {
-              "name": "/TRFIN/COMPANY",
-              "owner": "TRFIN",
+              "name": "/TRSET/PARTNER",
+              "owner": "TRSET",
               "texts": {
                 "de": {
-                  "short": "Firma",
-                  "medium": "Firma",
-                  "long": "Firmennummer",
-                  "heading": "Firma",
+                  "short": "Partner",
+                  "medium": "Partner",
+                  "long": "Partnernummer",
+                  "heading": "Partner",
                   "description": null
                 },
                 "en": {
-                  "short": "Company",
-                  "medium": "Company",
-                  "long": "Company ID",
-                  "heading": "Company",
+                  "short": "Partner",
+                  "medium": "Partner",
+                  "long": "Partner ID",
+                  "heading": "Partner",
                   "description": null
                 }
               }
             },
-            "domain": "/TRFIN/COMPANY_ID",
+            "domain": "/TRSET/PARTNER_ID",
             "type": "CHAR",
             "length": 10,
             "notNull": true,
@@ -614,12 +535,12 @@
             "fromParent": true,
             "valueHelps": [
               {
-                "foreignKey": "COMPANY",
-                "table": "/TRFIN/COMPANIES",
+                "foreignKey": "PARTNER",
+                "table": "/TRSET/PARTNERS",
                 "fields": [
                   {
-                    "field": "COMPANY_ID",
-                    "references": "COMPANY_ID"
+                    "field": "PARTNER_ID",
+                    "references": "PARTNER_ID"
                   }
                 ]
               }
@@ -629,7 +550,7 @@
             "name": "ENDPOINT",
             "localName": "ENDPOINT",
             "description": null,
-            "owner": "TROTTO",
+            "owner": "TRSETX",
             "origin": "TABLE",
             "include": null,
             "source": null,
@@ -643,7 +564,7 @@
             "name": "ACTIVE",
             "localName": "ACTIVE",
             "description": null,
-            "owner": "TROTTO",
+            "owner": "TRSETX",
             "origin": "TABLE",
             "include": null,
             "source": null,

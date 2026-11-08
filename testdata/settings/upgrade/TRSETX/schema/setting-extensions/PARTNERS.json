@@ -1,10 +1,10 @@
 {
-  "setting": "/TRFIN/COMPANIES",
+  "setting": "/TRSET/PARTNERS",
   "tables": [
     {
-      "table": "/TROTTO/OTTO_CONNECTIONS",
-      "parent": "/TRFIN/COMPANIES",
-      "foreignKey": "COMPANY",
+      "table": "/TRSETX/CONNECTIONS",
+      "parent": "/TRSET/PARTNERS",
+      "foreignKey": "PARTNER",
       "operations": {
         "create": true,
         "update": true,
@@ -12,8 +12,8 @@
       }
     },
     {
-      "table": "/TROTTO/OTTO_SHOPS",
-      "parent": "/TROTTO/OTTO_CONNECTIONS",
+      "table": "/TRSETX/SHOPS",
+      "parent": "/TRSETX/CONNECTIONS",
       "foreignKey": "CONNECTION",
       "operations": {
         "create": true,

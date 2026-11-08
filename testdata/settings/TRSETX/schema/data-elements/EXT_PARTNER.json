@@ -1,0 +1,18 @@
+{
+  "name": "/TRSETX/EXT_PARTNER",
+  "domain": "/TRSETX/EXT_ID",
+  "texts": {
+    "en": {
+      "short": "Ext. ID",
+      "medium": "External partner",
+      "long": "Partner ID in an external system",
+      "heading": "External partner"
+    },
+    "de": {
+      "short": "Ext. ID",
+      "medium": "Externer Partner",
+      "long": "Partner-ID im externen System",
+      "heading": "Externer Partner"
+    }
+  }
+}
