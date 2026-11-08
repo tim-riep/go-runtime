@@ -85,6 +85,7 @@ TRFIN/
     roles/*.json               one role or composite role per file, named <NAME>.json
     extension-points/*.json    one extension point per file, named <NAME>.json
     extension-implementations/*.json  one implementation per file, named <NAME>.json
+    business-objects/*.json    one business object per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -701,8 +702,9 @@ and switchable per tenant. `TRFIN` defines `/TRFIN/COMPANY_CHECKS`
 }
 ```
 
-and `/TRFIN/COMPANY_SERVICE.CREATE` runs it with `extension point /TRFIN/COMPANY_CHECKS filters
-COUNTRY = country`; see the [language reference](docs/language.md#extension-points).
+and the behavior class `/TRFIN/COMPANY_BEHAVIOR` of the business object `/TRFIN/COMPANY`
+runs it with `extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = ...` when it adjusts
+and validates new companies; see the [language reference](docs/language.md#extension-points).
 
 - **Extension point**: a name in the namespace of the package, unique among extension points,
   a description per language (English mandatory, at most 60 characters) and a `public`
@@ -771,6 +773,74 @@ recommended way for business extensions: they are typed against an interface, fi
 switchable per tenant and installed without compiling the defining package again.
 `include ... if found` remains for code that belongs into the context of the including package
 itself, such as members or statements that use its private parts.
+
+### Business objects
+
+A business object combines a root table and dependent tables of the own package, its
+entities, into one object with fixed behavior. Code changes its tables only with entity
+statements (see [docs/language.md](docs/language.md)), which work in a transaction buffer
+and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
+(`schema/business-objects/COMPANY.json`):
+
+```json
+{
+  "name": "/TRFIN/COMPANY",
+  "description": { "en": "Company", "de": "Firma" },
+  "root": "/TRFIN/COMPANIES",
+  "behaviorClass": "/TRFIN/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "operations": ["create", "update", "delete"],
+      "numbering": "external",
+      "fields": { "NAME": { "mandatory": true }, "STATUS": { "readOnly": true } },
+      "administrative": { "createdBy": "CREATED_BY", "createdAt": "CREATED_AT", "changedBy": "CHANGED_BY", "changedAt": "CHANGED_AT" },
+      "etag": "CHANGED_AT",
+      "determinations": [
+        { "name": "SET_INITIAL_STATUS", "when": "modify", "on": ["create"] },
+        { "name": "ADJUST", "when": "save", "on": ["create"] }
+      ],
+      "validations": [{ "name": "CHECK_COUNTRY", "on": ["create", "update"], "fields": ["COUNTRY"] }],
+      "actions": [{ "name": "BLOCK", "parameter": "/TRFIN/BLOCK_REASON", "result": "self" }],
+      "authorization": {
+        "object": "/TRFIN/COMPANY",
+        "fields": { "COMPANY_ID": "COMPANY_ID", "COUNTRY": "COUNTRY" },
+        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "BLOCK": "UPDATE" }
+      }
+    },
+    "/TRFIN/CONTACTS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"], "numbering": "uuid" },
+    "/TRFIN/BANK_ACCOUNTS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"] }
+  }
+}
+```
+
+- Every entity is a table of the own package in at most one business object and in no
+  setting, all with the same tenant flag and none of class `system`. Dependent entities name
+  their `parent` and a `foreignKey` of their table that covers the key of the parent; they
+  may not have fields `LINK` or `PARENT_LINK`, which link new instances in a statement.
+- `numbering` is `external` (the caller gives the key, the default) or `uuid` (the kernel
+  gives the single key field of type `UUID`).
+- `fields` sets `readOnly`, `readOnlyOnUpdate` and `mandatory`; `administrative` names the
+  fields the kernel fills when it saves (`createdAt`/`changedAt` TIMESTAMP, `createdBy`/
+  `changedBy` text) and `etag` a TIMESTAMP, UUID or INT8 field for optimistic locking.
+- Determinations (`when`: `modify` or `save`) and validations name methods of the behavior
+  class and trigger on operations, for `update` optionally only on some `fields`. Actions
+  are `instance` (the default) or static, with an optional `parameter` structure, a `result`
+  (`self` or a structure) and `modifies` (default `true`).
+- `authorization` maps every field of the authorization object except `ACTIVITY` to a field
+  of the entity and every operation, `read` and every action to an activity. A dependent
+  entity without one takes that of the root instance: `read` with its activity for read,
+  everything else with its activity for update.
+- In an upgrade new entities, actions, determinations and validations are allowed, and
+  removed ones or stricter field properties as far as the code compiles again. A new root, a
+  new parent, foreign key or numbering of an entity and removing the business object are
+  destructive. A table that becomes an entity fails the upgrade with every place of code
+  that still writes it.
+
+`kernel.BusinessObject` and `BusinessObjects` (from package [reflector](reflector), plus the
+code that works on it), `rt business-object list [package]` and `rt business-object show
+<name>` describe business objects: entities as a tree with key, parent key, operations,
+numbering, fields with type, texts and properties, behavior and authorization; `--json`
+gives the form of the reflector.
 
 ### Tenants
 
@@ -950,9 +1020,10 @@ program and its binary encoding with format version), `vm` (the machine with lim
   when it opens the database.
 - Code reads and writes tables with `select`, `insert`, `update` and `delete`, always
   restricted to the tenant of the execution, and controls transactions over several
-  sessions; see the [language reference](docs/language.md#database-access). The example
-  packages show it: `TRFIN` reads and writes companies in `/TRFIN/COMPANY_SERVICE`, and
-  `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
+  sessions; see the [language reference](docs/language.md#database-access). Tables of
+  business objects change only with entity statements. The example packages show it:
+  `TRFIN` reads companies in `/TRFIN/COMPANY_SERVICE` and changes them through the business
+  object `/TRFIN/COMPANY`, and `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
   of its own and checks new companies of `TRFIN` through the extension point
   `/TRFIN/COMPANY_CHECKS`.
 
@@ -1238,6 +1309,8 @@ rt user authorizations anna --tenant ACME --date 2027-01-15
 rt role history --user anna
 rt extension-point list TRFIN
 rt extension-point show /TRFIN/COMPANY_CHECKS
+rt business-object list TRFIN
+rt business-object show /TRFIN/COMPANY
 rt implementation deactivate /TROTTO/COMPANY_CHECKS --tenant ACME
 rt implementation history /TROTTO/COMPANY_CHECKS
 rt trace extension-points start anna --tenant ACME
@@ -1297,7 +1370,10 @@ other packages, references to assets from other objects, compression of stored a
 includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
 external role sources, extension points of kernel packages for events of the kernel such as
 sign-in or installation, implementations in local objects without package, implementations
-called asynchronously after the commit and extensions of user interfaces.
+called asynchronously after the commit, extensions of user interfaces, drafts of business
+objects, access to business objects from outside over HTTP, business objects in
+`/TRBASE/REFLECTOR` and data migrations of business object tables that bypass their
+behavior.
 
 ## License
 

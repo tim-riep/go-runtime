@@ -415,18 +415,18 @@ end
 ```
 
 ```
-public static method CREATE(id: /TRFIN/COMPANY, name: STRING, country: /TRFIN/COUNTRY_CODE) returns /TRFIN/COMPANIES raises /TRFIN/COMPANY_REJECTED
-  var company: /TRFIN/COMPANIES
-  company.COMPANY_ID = id
-  company.NAME = name
-  company.COUNTRY = country
-
-  var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country
-  checks.VALIDATE(company)
-  company = checks.ADJUST(company)
-
-  insert company
-  return company
+public method ADJUST(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+  var companies = read business object /TRFIN/COMPANY in local mode
+    /TRFIN/COMPANIES fields all keys keys
+  end
+  var adjusted: array of /TRFIN/COMPANIES = []
+  for company in companies
+    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = company.COUNTRY default ""
+    adjusted.APPEND(checks.ADJUST(company))
+  end
+  modify business object /TRFIN/COMPANY in local mode
+    update /TRFIN/COMPANIES fields (NAME, STATUS) from adjusted
+  end
 end
 ```
 
@@ -437,7 +437,7 @@ end
 - The implementations are selected when the expression runs: the active implementations
   in the tenant of the execution whose filter values match, in their order. Their objects
   are created then, once, and every call on the value uses them, so an implementation keeps
-  its state from `VALIDATE` to `ADJUST`. Nothing stays after the execution.
+  its state between calls on the same value. Nothing stays after the execution.
 - The value has the type `extension point NAME` with exactly the methods of the interface,
   and `IS_IMPLEMENTED()`, whether an implementation matches (the fallback class does not
   count), and `COUNT()`, the number of them. It may be kept in variables, passed as
@@ -623,6 +623,118 @@ end
   another session of the execution has uncommitted changes, the statement raises
   `/RT/SESSION_ERROR` at once. Sessions of SQLite read in parallel; a reading transaction
   keeps the state of its first statement until it ends.
+
+## Business objects and entity statements
+
+A business object (see the README for its file) combines a root table and dependent tables,
+its entities, into one object with fixed behavior. Code changes these tables only with
+entity statements; `insert`, `update`, `delete`, `update ... set` and `delete from` on them
+are rejected by the compiler, also in the own package, while `select` stays.
+
+```
+var companies: array of new of /TRFIN/COMPANIES = []
+var company: new of /TRFIN/COMPANIES
+company.LINK = "c1"
+company.COMPANY_ID = id
+company.NAME = name
+company.COUNTRY = country
+companies.APPEND(company)
+var contacts: array of new of /TRFIN/CONTACTS = []
+var contact: new of /TRFIN/CONTACTS
+contact.PARENT_LINK = "c1"
+contact.NAME = "Anna"
+contacts.APPEND(contact)
+modify business object /TRFIN/COMPANY
+  create /TRFIN/COMPANIES fields (COMPANY_ID, NAME, COUNTRY) from companies
+  create /TRFIN/CONTACTS by parent fields (NAME) from contacts
+  result created
+end
+if created.FAILURES is not empty
+  rollback business objects
+  return
+end
+commit business objects result saved
+```
+
+- `key of T` is the structure of the key fields of the table `T` without the tenant field;
+  `new of T` has all fields of `T` and `LINK: STRING?`, for dependent entities also
+  `PARENT_LINK: STRING?`. A new instance names its parent by the `LINK` of the parent in the
+  same statement, or by the foreign key fields of an existing one. `CREATED` of the result
+  gives the key of every new instance with its `LINK`; keys are JSON as `rt run` writes
+  them, `transform r.KEY using /TRBASE/JSON into key of T` types them.
+- `modify business object NAME` runs its steps in order: `create T [by parent] fields (...)
+  from rows`, `update T fields (...) from rows`, `delete T keys rows` and
+  `execute T.ACTION [keys rows] [parameter p] [into x]`. `from` takes an array of any
+  structure with the named fields, `keys` one with the key fields. Only the named fields
+  change; `create` without `by parent` is for the root, with it for dependent entities.
+  `delete` deletes the dependent instances with it.
+- `read business object NAME` gives the rows of `T [by parent] fields (...) keys rows`, a
+  structure of the key and the named fields, or `array of T` with `fields all`; `by parent`
+  reads the dependent instances of the parents whose keys are given.
+- `result x` declares `x: /TRBASE/ENTITY_RESULT` with `CREATED`, `FAILURES` (entity,
+  operation, link, key and `REASON`: `NOT_AUTHORIZED`, `NOT_FOUND`, `ALREADY_EXISTS`,
+  `PARENT_NOT_FOUND`, `VALIDATION`, `MANDATORY`, `ETAG`, `DATABASE`, `BEHAVIOR`) and
+  `MESSAGES`. An instance that fails leaves the others alone.
+- The changes go to the transaction buffer of the execution, not to the database: `read`
+  sees them, `select` does not. `commit business objects [result x]` runs the save
+  sequence: determinations on save, validations, mandatory fields (key fields and
+  `mandatory` ones: not `null`, text not `""`), administrative fields and a new ETag, then it
+  writes all changes in the default session and commits it. Updates and deletions of
+  entities with ETag fail with `ETAG` when another execution changed the row since it was
+  read. When anything fails nothing is written and the buffer stays; without `result` that
+  raises `/RT/SAVE_FAILED`. `rollback business objects` drops the buffer and rolls back the
+  default session.
+- `commit` of the default session raises `/RT/SESSION_ERROR` while the buffer has changes;
+  other sessions are free. At the end of an execution that commits, the buffer is saved and
+  a failed save fails the execution; an execution that rolls back drops it.
+- Field properties are checked by the compiler: `readOnly` fields and administrative fields
+  are set only in local mode, `readOnlyOnUpdate` and key fields not by `update`, and the key
+  of entities with numbering `uuid` comes from the kernel.
+
+The behavior class of the business object has public instance methods; the kernel makes one
+object of it per execution. Determinations and validations take the keys of the instances
+and a `/TRBASE/ENTITY_RESPONSE`, actions also their parameter:
+
+```
+public method SET_INITIAL_STATUS(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+  var rows: array of /TRFIN/COMPANIES = []
+  for key in keys
+    var row: /TRFIN/COMPANIES
+    row.COMPANY_ID = key.COMPANY_ID
+    row.STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+    rows.APPEND(row)
+  end
+  modify business object /TRFIN/COMPANY in local mode
+    update /TRFIN/COMPANIES fields (STATUS) from rows
+  end
+end
+```
+
+- `in local mode` is allowed only in the behavior class of the business object: it skips the
+  checks of authorizations and of read-only fields.
+- Determinations run on `modify` at the end of the statement for the instances whose
+  operations and fields trigger them, or on `save` for every instance changed since the last
+  save. Their changes in local mode trigger other determinations, never the running one;
+  determinations that trigger each other more than ten times raise `/RT/VALUE_ERROR`.
+- Validations run once in the save sequence after the determinations. They must not change
+  the buffer: the compiler rejects `modify` and actions that change instances in them.
+- The response addresses instances by their position in `keys`, starting at 1:
+  `FAIL(position)`, `ERROR(position, text)`, `FIELD_ERROR(position, field, text)`,
+  `MESSAGE(position, severity, text)` and `GLOBAL_MESSAGE(severity, text)`. An error fails
+  the instance. A runtime error of the method fails all its instances with `BEHAVIOR`.
+- An instance action returns `array of S` for a result structure `S`; with result `self` it
+  returns nothing and `into` gets the instances after the action. A static action has no
+  keys and returns `S`.
+- `commit business objects` and `rollback business objects` are not allowed in the behavior
+  class; the caller decides.
+
+Without `in local mode` every instance is checked with the authorization of its entity:
+`create` with the new values, `update` with the values before and, when a field of the
+authorization changes, also after, `delete`, `read` and actions with the current values.
+`read` leaves out what the user may not read. Dependent entities without an authorization of
+their own are checked with the root instance, `read` with its activity for read and
+everything else with its activity for update. The checks appear in the authorization trace
+with mode `entity`, and a failed one is the last failed check of the user.
 
 ## Methods executed by kernel
 
@@ -1205,6 +1317,7 @@ raises        = "raises" GLOBAL { "," GLOBAL } ;
 type          = ( "STRING" | "INT4" | "INT8" | "DEC" "(" INT "," INT ")" | "DATE" | "TIMESTAMP"
               | "BOOL" | "UUID" | "BYTES" | GLOBAL ) [ "?" ]
               | "array" "of" type | "map" "of" type "to" type | "extension" "point" GLOBAL
+              | "key" "of" GLOBAL | "new" "of" GLOBAL
               | "function" "(" [ type { "," type } ] ")" [ "returns" type ] [ raises ] ;
 stmt          = "var" LOCAL [ ":" type ] "=" expr | "var" LOCAL ":" type | place "=" expr | call
               | updateExpr | deleteExpr
@@ -1217,7 +1330,20 @@ stmt          = "var" LOCAL [ ":" type ] "=" expr | "var" LOCAL ":" type | place
               | "assert" expr [ "," expr ] | "log" LEVEL expr | "include" GLOBAL [ "if" "found" ]
               | ( "insert" | "update" | "delete" ) expr [ "using" expr ]
               | ( "commit" | "rollback" ) [ expr ]
-              | "check" "authorization" GLOBAL NL authFields "end" ;
+              | "check" "authorization" GLOBAL NL authFields "end"
+              | modifyStmt | "commit" "business" "objects" [ "result" LOCAL ]
+              | "rollback" "business" "objects" ;
+modifyStmt    = "modify" "business" "object" GLOBAL [ localMode ] NL { modifyStep NL }
+                [ "result" LOCAL NL ] "end" ;
+modifyStep    = "create" GLOBAL [ "by" "parent" ] "fields" fieldList "from" expr
+              | "update" GLOBAL "fields" fieldList "from" expr
+              | "delete" GLOBAL "keys" expr
+              | "execute" GLOBAL "." MEMBER [ "keys" expr ] [ "parameter" expr ] [ "into" LOCAL ] ;
+readExpr      = "read" "business" "object" GLOBAL [ localMode ] NL
+                GLOBAL [ "by" "parent" ] "fields" ( fieldList | "all" ) "keys" expr NL
+                [ "result" LOCAL NL ] "end" ;
+localMode     = "in" "local" "mode" ;
+fieldList     = "(" field { "," field } ")" ;
 expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr ")"
               | expr "." MEMBER | expr "(" [ args ] ")" | expr "[" expr "]"
               | "new" GLOBAL "(" [ args ] ")" | "new" ( "array" | "map" ) "of" ...
@@ -1226,7 +1352,7 @@ expr          = literal | LOCAL | MEMBER | GLOBAL "." MEMBER | "me" | "(" expr "
               | ( "-" | "not" ) expr | expr OPERATOR expr | expr "is" [ "not" ] ( "null" | "empty" )
               | expr "as" type | expr "." GLOBAL | expr "in" expr
               | selectExpr | updateExpr | deleteExpr | "open" "session" | transformExpr
-              | "authorized" GLOBAL NL authFields "end" | extensionExpr ;
+              | "authorized" GLOBAL NL authFields "end" | extensionExpr | readExpr ;
 authFields    = { MEMBER "=" ( "any" | expr ) NL } ;
 extensionExpr = "extension" "point" GLOBAL [ "filters" MEMBER "=" expr { "," MEMBER "=" expr } ] ;
 transformExpr = "transform" expr "using" GLOBAL [ "parameters" MEMBER "=" expr { "," MEMBER "=" expr } ]
