@@ -35,6 +35,7 @@ func TestEntityStatements(t *testing.T) {
       delete /TRX/T keys keys
       execute /TRX/T.BLOCK keys keys parameter companies[1] into blocked
       execute /TRX/T.COUNT_ALL
+      execute /TRX/T./TRY/SYNC keys keys
       result outcome
     end
     modify business object /TRX/COMPANY in local mode

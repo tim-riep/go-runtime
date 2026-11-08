@@ -35,15 +35,21 @@ type BusinessObject struct {
 	// BehaviorClass is null for a business object without behavior.
 	BehaviorClass model.Optional[string] `json:"behaviorClass"`
 	Root          *Entity                `json:"root"`
+	// Extensions are the installed extensions merged into the
+	// description, in the order their behavior runs.
+	Extensions []model.ExtensionRef `json:"extensions"`
 	// Languages are the languages of the texts.
 	Languages []string `json:"languages"`
 }
 
 // Entity is an entity of a business object with its dependent entities.
 type Entity struct {
-	Table string          `json:"table"`
-	Texts map[string]Text `json:"texts"`
-	Key   []string        `json:"key"`
+	Table string `json:"table"`
+	// Origin is the package that defines the entity: the owner of the
+	// business object or an extending package.
+	Origin model.PackageID `json:"origin"`
+	Texts  map[string]Text `json:"texts"`
+	Key    []string        `json:"key"`
 	// ParentKey links a dependent entity to its parent; null for the root.
 	ParentKey      *ParentKey              `json:"parentKey"`
 	Operations     []model.EntityOperation `json:"operations"`
@@ -83,6 +89,9 @@ type EntityField struct {
 	// saves: createdBy, createdAt, changedBy or changedAt; null for none.
 	Administrative model.Optional[string] `json:"administrative"`
 	ETag           bool                   `json:"etag"`
+	// PropertiesBy are the extending packages that set properties of the
+	// field.
+	PropertiesBy []model.PackageID `json:"propertiesBy"`
 }
 
 // EntityAction is an action with its parameter and result.
@@ -95,12 +104,15 @@ type EntityAction struct {
 // BusinessObject returns the definition of a business object, or
 // rterr.NotFound.
 func (r *Reflector) BusinessObject(name string) (*BusinessObject, error) {
-	b := r.s.BusinessObjects[name]
+	b := r.s.MergedBusinessObject(name, nil)
 	if b == nil {
 		return nil, &rterr.NotFound{Kind: "business object", Name: name}
 	}
 	out := &BusinessObject{FormatVersion: FormatVersion, Name: b.Name, Package: b.Owner, Description: r.texts(b.Description),
-		DataClass: b.DataClass, BehaviorClass: b.BehaviorClass, Languages: r.langs}
+		DataClass: b.DataClass, BehaviorClass: b.BehaviorClass, Extensions: b.Extensions, Languages: r.langs}
+	if out.Extensions == nil {
+		out.Extensions = []model.ExtensionRef{}
+	}
 	entities := map[string]*Entity{}
 	for i := range b.Entities {
 		e := &b.Entities[i]
@@ -125,7 +137,7 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 		return nil, err
 	}
 	t := r.s.Tables[e.Table]
-	out := &Entity{Table: e.Table, Texts: map[string]Text{}, Operations: e.Operations, Numbering: e.Numbering, Fields: []EntityField{},
+	out := &Entity{Table: e.Table, Origin: e.Origin, Texts: map[string]Text{}, Operations: e.Operations, Numbering: e.Numbering, Fields: []EntityField{},
 		Determinations: e.Determinations, Validations: e.Validations, Actions: []EntityAction{}, AuthorizationConstants: map[string]string{}, Children: []*Entity{}}
 	for l, tx := range d.Texts {
 		out.Texts[l] = Text{Label: tx.Label, Description: tx.Description}
@@ -161,7 +173,10 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 	for _, c := range d.Components {
 		p := e.Fields[c.Name]
 		f := EntityField{Component: c, Key: slices.Contains(out.Key, c.Name), ReadOnly: p.ReadOnly, ReadOnlyOnUpdate: p.ReadOnlyOnUpdate,
-			Mandatory: p.Mandatory, ETag: e.ETag.Or("") == c.Name}
+			Mandatory: p.Mandatory, ETag: e.ETag.Or("") == c.Name, PropertiesBy: e.FieldOrigins[c.Name]}
+		if f.PropertiesBy == nil {
+			f.PropertiesBy = []model.PackageID{}
+		}
 		if kind, ok := admin[c.Name]; ok {
 			f.Administrative = model.Some(kind)
 		}
@@ -169,7 +184,9 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 	}
 	for _, a := range e.Actions {
 		ra := EntityAction{Action: a}
-		if auth != nil {
+		if act, ok := a.Activity.Get(); ok {
+			ra.Activity = model.Some(act)
+		} else if auth != nil {
 			if act, ok := auth.Activities[a.Name]; ok {
 				ra.Activity = model.Some(act)
 			}

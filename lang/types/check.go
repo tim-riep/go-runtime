@@ -220,16 +220,18 @@ type Call struct {
 }
 
 type checker struct {
-	cfg      Config
-	own      string // namespace of the package
-	classes  map[string]*Class
-	schema   *schemaTypes
-	info     *Info
-	diags    []Diagnostic
-	calls    map[*Method][]capCall // calls of methods of kernel packages, by caller
-	loc      Site                  // file and include chain of the code being checked
-	included map[string]bool
-	quiet    bool // declarations of libraries were checked with their package
+	cfg     Config
+	own     string // namespace of the package
+	classes map[string]*Class
+	schema  *schemaTypes
+	info    *Info
+	// businessObjects caches business objects as the package sees them.
+	businessObjects map[string]*model.BusinessObject
+	diags           []Diagnostic
+	calls           map[*Method][]capCall // calls of methods of kernel packages, by caller
+	loc             Site                  // file and include chain of the code being checked
+	included        map[string]bool
+	quiet           bool // declarations of libraries were checked with their package
 	// extensionTypes are the types of the values of extension points, one
 	// per extension point.
 	extensionTypes map[string]*ExtensionPoint

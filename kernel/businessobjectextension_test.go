@@ -17,12 +17,15 @@ package kernel_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/lang/syntax"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/rterr"
 )
 
 // extensionJSON is the extension of /TRBO/ORDER by TRBX: a rating of its
@@ -131,5 +134,100 @@ func TestBusinessObjectExtensionRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 		consistent(t, k)
+	})
+}
+
+// TestBusinessObjectExtensionCompiler checks the behavior class of an
+// extension, what it changes in local mode and who may use what the
+// extension adds.
+func TestBusinessObjectExtensionCompiler(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, boFiles("1.0.0", orderBO(orderRoot), orderBehavior))}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		install := func(members string) error {
+			_, err := k.Install(ctx, []*model.Package{writePackage(t, extensionFiles(t, "1.0.0", extensionJSON, members, nil))}, kernel.Options{DryRun: true})
+			return err
+		}
+		const rate = "public method RATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\nend\n"
+		body := func(statements string) string {
+			return strings.Replace(extensionBehavior, rate, "public method RATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\n"+statements+"end\n", 1)
+		}
+		const rows = "var rows: array of /TRBO/ORDERS = []\nvar labels: array of /TRBX/LABELS = []\n"
+		for _, c := range []struct{ name, members, want string }{
+			{"missing method", strings.Replace(extensionBehavior, rate, "", 1),
+				"/TRBX/ORDER_BEHAVIOR needs the method public method RATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE) for /TRBO/ORDERS"},
+			{"wrong method", strings.Replace(extensionBehavior, "public method RERATE(keys", "public static method RERATE(keys", 1),
+				"needs the method public method RERATE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)"},
+			{"field of the base in local mode", body(rows + "modify business object /TRBO/ORDER in local mode\nupdate /TRBO/ORDERS fields (NOTE) from rows\nend\n"),
+				"in local mode the extension TRBX changes only its own fields; NOTE belongs to TRBO"},
+			{"creation of the base in local mode", body(rows + "modify business object /TRBO/ORDER in local mode\ncreate /TRBO/ORDERS fields (ORDER_ID, NAME) from rows\nend\n"),
+				"in local mode the extension TRBX does not create instances of /TRBO/ORDERS, which belongs to TRBO"},
+			{"action of the base in local mode", body("var closing: array of key of /TRBO/ORDERS = []\nvar reason: /TRBO/REASON\n" +
+				"modify business object /TRBO/ORDER in local mode\nexecute /TRBO/ORDERS.CLOSE keys closing parameter reason\nend\n"),
+				"in local mode the extension TRBX runs only its own actions; CLOSE belongs to TRBO"},
+			{"change in a validation", strings.Replace(extensionBehavior, "public method CHECK(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\n",
+				"public method CHECK(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)\n"+rows+
+					"modify business object /TRBO/ORDER in local mode\nupdate /TRBO/ORDERS fields (/TRBX/RATING) from rows\nend\n", 1),
+				"CHECK is a validation, which must not change the transaction buffer"},
+		} {
+			var ce *rterr.CompileError
+			if err := install(c.members); !errors.As(err, &ce) || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("%s: %v", c.name, err)
+			}
+		}
+		// Its own fields and entities it changes in local mode, the
+		// actions of the base without.
+		valid := body(rows + "modify business object /TRBO/ORDER in local mode\nupdate /TRBO/ORDERS fields (/TRBX/RATING) from rows\n" +
+			"create /TRBX/LABELS by parent fields (TEXT) from labels\nend\n" +
+			"var closing: array of key of /TRBO/ORDERS = []\nvar reason: /TRBO/REASON\n" +
+			"modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS.CLOSE keys closing parameter reason\nend\n")
+		if err := install(valid); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, extensionFiles(t, "1.0.0", extensionJSON, valid, nil))}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Code of a package uses what the extension adds only when it
+		// requires the extending package.
+		user := func(id, requires string) map[string]string {
+			src, errs := syntax.Format("USER.class", "public class /"+id+"/USER\n\npublic static method RUN(keys: array of key of /TRBO/ORDERS, labels: array of /TRBX/LABELS)\n"+
+				"modify business object /TRBO/ORDER\nexecute /TRBO/ORDERS./TRBX/RERATE keys keys\ncreate /TRBX/LABELS by parent fields (TEXT) from labels\nresult outcome\nend\nend\n\nend\n")
+			if len(errs) > 0 {
+				t.Fatal(errs)
+			}
+			return map[string]string{
+				"manifest.json":  `{ "id": "` + id + `", "version": "1.0.0", "requires": [{ "id": "TRBASE" }, { "id": "TRBO" }` + requires + `], "languageVersion": 1 }`,
+				"src/USER.class": src,
+			}
+		}
+		dir := t.TempDir()
+		for name, text := range user("TRBY", "") {
+			testutil.WriteFile(t, dir, name, []byte(text))
+		}
+		_, err := kernel.LoadDir(dir)
+		var nv *rterr.NamespaceViolation
+		if !errors.As(err, &nv) || !strings.Contains(err.Error(), "reference /TRBX/RERATE") || !strings.Contains(err.Error(), "reference /TRBX/LABELS") {
+			t.Errorf("use without the extending package: %v", err)
+		}
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, user("TRBZ", `, { "id": "TRBX" }`))}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		d, err := k.BusinessObject(ctx, "/TRBO/ORDER")
+		if err != nil {
+			t.Fatal(err)
+		}
+		uses := map[string]bool{}
+		for _, u := range d.CodeUses {
+			uses[string(u.Package)+" "+u.Kind+" "+u.Object+" "+u.Member.Or("")] = true
+		}
+		for _, want := range []string{"TRBZ action /TRBO/ORDERS /TRBX/RERATE", "TRBZ entity /TRBX/LABELS ", "TRBX business-object-extension /TRBO/ORDER "} {
+			if !uses[want] {
+				t.Errorf("use %q missing in %v", want, uses)
+			}
+		}
 	})
 }

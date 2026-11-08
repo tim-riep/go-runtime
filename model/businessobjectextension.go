@@ -337,3 +337,13 @@ func SortChildren(entities []Entity) []Entity {
 	}
 	return out
 }
+
+// BehaviorMethodName returns the method of the behavior class for a
+// determination, validation or action: its name without namespace, which
+// names of extensions carry.
+func BehaviorMethodName(name string) string {
+	if _, local, ok := SplitName(name); ok {
+		return local
+	}
+	return name
+}

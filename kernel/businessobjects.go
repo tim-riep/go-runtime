@@ -58,7 +58,7 @@ func (k *Kernel) BusinessObject(ctx context.Context, name string) (*BusinessObje
 			return nil, err
 		}
 		for _, u := range uses {
-			if slices.Contains([]string{"business-object", "entity", "action"}, u.Kind) {
+			if slices.Contains([]string{"business-object", "business-object-extension", "entity", "action"}, u.Kind) {
 				d.CodeUses = append(d.CodeUses, u)
 			}
 		}

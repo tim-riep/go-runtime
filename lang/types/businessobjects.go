@@ -53,19 +53,19 @@ func (b BehaviorMethod) String() string {
 // rows of their result structure, static actions get only the parameter
 // and return their result structure. An action with result self returns
 // nothing; the kernel reads the instances.
-func (c *checker) behaviorMethods(b *model.BusinessObject) []BehaviorMethod {
+func (c *checker) behaviorMethods(entities []model.Entity) []BehaviorMethod {
 	response := Type(TypInvalid)
 	if k := c.classes[EntityResponseClass]; k != nil {
 		response = k
 	}
 	var out []BehaviorMethod
-	for _, e := range b.Entities {
+	for _, e := range entities {
 		keys := Type(TypInvalid)
 		if k := c.schema.keyOf(e.Table, syntax.Pos{}); k != nil {
 			keys = &Array{Elem: k}
 		}
 		withKeys := func(name string) BehaviorMethod {
-			return BehaviorMethod{Name: name, Entity: e.Table, Params: []string{"keys", "response"}, Sig: &Func{Params: []Type{keys, response}, Result: TypVoid}}
+			return BehaviorMethod{Name: model.BehaviorMethodName(name), Entity: e.Table, Params: []string{"keys", "response"}, Sig: &Func{Params: []Type{keys, response}, Result: TypVoid}}
 		}
 		for _, d := range e.Determinations {
 			out = append(out, withKeys(d.Name))
@@ -74,7 +74,7 @@ func (c *checker) behaviorMethods(b *model.BusinessObject) []BehaviorMethod {
 			out = append(out, withKeys(v.Name))
 		}
 		for _, a := range e.Actions {
-			m := BehaviorMethod{Name: a.Name, Entity: e.Table, Sig: &Func{Result: TypVoid}}
+			m := BehaviorMethod{Name: model.BehaviorMethodName(a.Name), Entity: e.Table, Sig: &Func{Result: TypVoid}}
 			if a.Instance {
 				m.Params, m.Sig.Params = append(m.Params, "keys"), append(m.Sig.Params, keys)
 			}
@@ -110,14 +110,32 @@ func (c *checker) behaviorClasses() {
 	if c.cfg.Schema == nil {
 		return
 	}
+	type source struct {
+		file, class string
+		entities    []model.Entity
+	}
+	var sources []source
 	for _, name := range c.cfg.Schema.BusinessObjectNames() {
 		b := c.cfg.Schema.BusinessObjects[name]
-		class, ok := b.BehaviorClass.Get()
-		if b.Owner != c.cfg.Package || !ok {
+		if class, ok := b.BehaviorClass.Get(); ok && b.Owner == c.cfg.Package {
+			sources = append(sources, source{file: b.File, class: class, entities: b.Entities})
+		}
+	}
+	for _, x := range c.cfg.Schema.SortedBusinessObjectExtensions() {
+		if x.Package != c.cfg.Package {
 			continue
 		}
+		// The definition of the extension uses the business object; a
+		// change of it checks the extension again.
+		c.useIn(x.File, "business-object-extension", x.BusinessObject)
+		if class, ok := x.BehaviorClass.Get(); ok {
+			sources = append(sources, source{file: x.File, class: class, entities: x.Entities})
+		}
+	}
+	for _, b := range sources {
+		class := b.class
 		fail := func(format string, args ...any) {
-			c.report(Error, b.File, syntax.Pos{}, nil, CodeBusinessObject, "/behaviorClass: "+format, args...)
+			c.report(Error, b.file, syntax.Pos{}, nil, CodeBusinessObject, "/behaviorClass: "+format, args...)
 		}
 		if c.classes[EntityResponseClass] == nil || !c.visiblePackage(EntityResponseClass) {
 			fail("business objects need TRBASE for %s; add it to the requirements", EntityResponseClass)
@@ -143,8 +161,8 @@ func (c *checker) behaviorClasses() {
 				break
 			}
 		}
-		c.useIn(b.File, "class", class)
-		for _, want := range c.behaviorMethods(b) {
+		c.useIn(b.file, "class", class)
+		for _, want := range c.behaviorMethods(b.entities) {
 			m, ok := k.Member(want.Name).(*Method)
 			switch {
 			case !ok:

@@ -1644,7 +1644,7 @@ func (p *parser) modifyStmt(base StmtBase) Stmt {
 			p.next()
 			st.Entity = p.global()
 			p.expectOp(".")
-			st.Action = p.ident()
+			st.Action = p.memberName()
 			if p.isWord("keys") {
 				p.next()
 				st.Keys = p.expr(0)

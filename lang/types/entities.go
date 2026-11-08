@@ -58,15 +58,52 @@ type EntityStep struct {
 	RowType *Struct
 }
 
-// isBehaviorClass reports whether a class is the behavior class of a
-// business object, and returns it.
-func (c *checker) behaviorOf(k *Class) *model.BusinessObject {
+// behaviorSource is a business object or an extension of one whose
+// behavior class a class is: the business object as the package of the
+// class sees it, and that package.
+type behaviorSource struct {
+	bo  *model.BusinessObject
+	pkg model.PackageID
+}
+
+// extension reports whether the class is the behavior class of an
+// extension.
+func (b *behaviorSource) extension() bool { return b != nil && b.pkg != b.bo.Owner }
+
+// visibleBusinessObject returns a business object with the extensions of
+// the package and of the packages it requires, as code of the package
+// sees it, or nil.
+func (c *checker) visibleBusinessObject(name string) *model.BusinessObject {
+	if c.cfg.Schema == nil {
+		return nil
+	}
+	if b, ok := c.businessObjects[name]; ok {
+		return b
+	}
+	b := c.cfg.Schema.MergedBusinessObject(name, func(p model.PackageID) bool { return p == c.cfg.Package || slices.Contains(c.cfg.Visible, p) })
+	if c.businessObjects == nil {
+		c.businessObjects = map[string]*model.BusinessObject{}
+	}
+	c.businessObjects[name] = b
+	return b
+}
+
+// behaviorOf returns the business object or the extension of one whose
+// behavior class a class is, or nil.
+func (c *checker) behaviorOf(k *Class) *behaviorSource {
 	if k == nil || c.cfg.Schema == nil {
 		return nil
 	}
 	for _, name := range c.cfg.Schema.BusinessObjectNames() {
 		if b := c.cfg.Schema.BusinessObjects[name]; b.BehaviorClass == model.Some(k.Name) {
-			return b
+			return &behaviorSource{bo: c.visibleBusinessObject(name), pkg: b.Owner}
+		}
+	}
+	for _, x := range c.cfg.Schema.SortedBusinessObjectExtensions() {
+		if x.BehaviorClass == model.Some(k.Name) {
+			if b := c.visibleBusinessObject(x.BusinessObject); b != nil {
+				return &behaviorSource{bo: b, pkg: x.Package}
+			}
 		}
 	}
 	return nil
@@ -74,13 +111,13 @@ func (c *checker) behaviorOf(k *Class) *model.BusinessObject {
 
 // isValidation reports whether a method of a behavior class is a
 // validation, which must not change the buffer.
-func isValidation(b *model.BusinessObject, m *Method) bool {
+func isValidation(b *behaviorSource, m *Method) bool {
 	if b == nil || m == nil {
 		return false
 	}
-	for _, e := range b.Entities {
+	for _, e := range b.bo.Entities {
 		for _, v := range e.Validations {
-			if v.Name == m.Name {
+			if v.Origin == b.pkg && model.BehaviorMethodName(v.Name) == m.Name {
 				return true
 			}
 		}
@@ -89,29 +126,61 @@ func isValidation(b *model.BusinessObject, m *Method) bool {
 }
 
 // businessObjectOf returns the business object of an entity statement
-// that the code may use, or nil.
-func (c *checker) businessObjectOf(f *fnCtx, n syntax.Name, local bool) *model.BusinessObject {
+// as the code may use it, or nil, and the package whose behavior class
+// runs it in local mode.
+func (c *checker) businessObjectOf(f *fnCtx, n syntax.Name, local bool) (*model.BusinessObject, model.PackageID) {
 	c.checkGlobalName(n)
-	var b *model.BusinessObject
-	if c.cfg.Schema != nil {
-		b = c.cfg.Schema.BusinessObjects[n.Name]
-	}
+	b := c.visibleBusinessObject(n.Name)
 	if b == nil {
 		c.errorf(n.Pos, CodeBusinessObject, "business object %s does not exist", n.Name)
-		return nil
+		return nil, ""
 	}
 	if !c.visibleNamespace(n) {
-		return nil
+		return nil, ""
 	}
-	if local && (f.class == nil || b.BehaviorClass != model.Some(f.class.Name)) {
-		if class, ok := b.BehaviorClass.Get(); ok {
-			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in the behavior class %s of %s", class, b.Name)
-		} else {
-			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in a behavior class; %s has none", b.Name)
+	var mode model.PackageID
+	if local {
+		src := c.behaviorOf(f.class)
+		switch class, ok := b.BehaviorClass.Get(); {
+		case src != nil && src.bo.Name == b.Name:
+			mode = src.pkg
+		case ok:
+			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in the behavior class %s of %s and of its extensions", class, b.Name)
+		default:
+			c.errorf(n.Pos, CodeBusinessObject, "in local mode is only allowed in a behavior class of %s or of its extensions", b.Name)
 		}
 	}
 	c.use(n.Pos, "business-object", b.Name, "")
-	return b
+	return b, mode
+}
+
+// localChange checks what the behavior class of an extension changes in
+// local mode: its own entities and, of the others, only fields of its
+// own package with update; actions only its own.
+func (c *checker) localChange(b *model.BusinessObject, mode model.PackageID, st *syntax.ModifyStep, en *model.Entity, a *model.Action) {
+	if mode == "" || mode == b.Owner || en == nil {
+		return
+	}
+	switch {
+	case st.Op == "execute":
+		if a != nil && a.Origin != mode {
+			c.errorf(st.Action.Pos, CodeBusinessObject, "in local mode the extension %s runs only its own actions; %s belongs to %s, run it without local mode",
+				mode, a.Name, a.Origin)
+		}
+	case en.Origin == mode:
+	case st.Op == "update":
+		for _, id := range st.Fields {
+			if pkg, _, ok := model.SplitName(id.Name); !ok || pkg != mode {
+				owner := en.Origin
+				if ok {
+					owner = pkg
+				}
+				c.errorf(id.Pos, CodeBusinessObject, "in local mode the extension %s changes only its own fields; %s belongs to %s", mode, id.Name, owner)
+			}
+		}
+	default:
+		c.errorf(st.Entity.Pos, CodeBusinessObject, "in local mode the extension %s does not %s instances of %s, which belongs to %s", mode, st.Op, en.Table, en.Origin)
+	}
 }
 
 // entityOf returns the entity of a step.
@@ -189,7 +258,7 @@ func (c *checker) rowHas(rows *Struct, table *Struct, field string, pos syntax.P
 func (c *checker) modifyStmt(f *fnCtx, sc *scope, s *syntax.ModifyStmt, e env) {
 	info := &EntityStatement{Local: s.Local}
 	c.info.Entities[s] = info
-	b := c.businessObjectOf(f, s.BusinessObject, s.Local)
+	b, mode := c.businessObjectOf(f, s.BusinessObject, s.Local)
 	info.BusinessObject = b
 	if bo := c.behaviorOf(f.class); bo != nil && isValidation(bo, f.method) {
 		c.errorf(s.Pos, CodeBusinessObject, "%s is a validation, which must not change the transaction buffer", f.method.Name)
@@ -208,7 +277,9 @@ func (c *checker) modifyStmt(f *fnCtx, sc *scope, s *syntax.ModifyStmt, e env) {
 			var rows *Struct
 			step.Rows, rows = c.rowsOf(f, sc, st.From, e, "from")
 			c.entityFields(st, step, table, rows, s.Local)
+			c.localChange(b, mode, st, step.Entity, nil)
 		case "delete":
+			c.localChange(b, mode, st, step.Entity, nil)
 			var rows *Struct
 			step.Rows, rows = c.rowsOf(f, sc, st.Keys, e, "keys")
 			if step.Entity != nil && !step.Entity.Allows(model.OperationDelete) {
@@ -217,6 +288,7 @@ func (c *checker) modifyStmt(f *fnCtx, sc *scope, s *syntax.ModifyStmt, e env) {
 			c.keyRows(step, table, rows, st.Keys.Start())
 		case "execute":
 			c.executeStep(f, sc, st, step, table, e)
+			c.localChange(b, mode, st, step.Entity, step.Action)
 		}
 	}
 	info.Result = c.resultLocal(f, sc, s.Result)
@@ -394,7 +466,7 @@ func (c *checker) executeStep(f *fnCtx, sc *scope, st *syntax.ModifyStep, step *
 func (c *checker) readExpr(f *fnCtx, sc *scope, x *syntax.ReadExpr, e env) Type {
 	info := &EntityStatement{Local: x.Local}
 	c.info.Entities[x] = info
-	b := c.businessObjectOf(f, x.BusinessObject, x.Local)
+	b, _ := c.businessObjectOf(f, x.BusinessObject, x.Local)
 	info.BusinessObject = b
 	step := &EntityStep{Op: "read", ByParent: x.ByParent, All: x.All}
 	info.Read = step
@@ -462,7 +534,7 @@ func (c *checker) saveStmt(f *fnCtx, sc *scope, s *syntax.SaveStmt, e env) {
 	info := &EntityStatement{Save: !s.Rollback, Discard: s.Rollback}
 	c.info.Entities[s] = info
 	if b := c.behaviorOf(f.class); b != nil {
-		c.errorf(s.Pos, CodeBusinessObject, "the behavior class of %s does not commit or roll back business objects; the caller does", b.Name)
+		c.errorf(s.Pos, CodeBusinessObject, "the behavior class of %s does not commit or roll back business objects; the caller does", b.bo.Name)
 	}
 	info.Result = c.resultLocal(f, sc, s.Result)
 	e.call()
