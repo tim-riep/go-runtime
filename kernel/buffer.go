@@ -66,7 +66,11 @@ type instance struct {
 	// validations.
 	changed map[string]bool
 	ops     map[model.EntityOperation]bool
-	link    *string
+	// recent and recentOps are the fields and operations of the running
+	// entity statement, which trigger determinations on modify.
+	recent    map[string]bool
+	recentOps map[model.EntityOperation]bool
+	link      *string
 }
 
 // entityBuffer is the transaction buffer of the business objects of an
@@ -76,6 +80,10 @@ type entityBuffer struct {
 	x         *execution
 	instances map[string]*instance // by table and key
 	order     []*instance          // in the order they entered the buffer
+	// running are the determinations that run, which their own changes do
+	// not trigger again; depth counts nested entity statements of them.
+	running map[string]bool
+	depth   int
 }
 
 func (x *execution) buffer() *entityBuffer {
@@ -333,7 +341,8 @@ func (b *entityBuffer) find(ctx context.Context, bo *model.BusinessObject, e *mo
 // add puts an instance into the buffer.
 func (b *entityBuffer) add(bo *model.BusinessObject, e *model.Entity, values map[string]any, state instanceState) *instance {
 	key, _ := b.keyOf(e.Table, values)
-	in := &instance{bo: bo, entity: e, key: key, values: values, state: state, changed: map[string]bool{}, ops: map[model.EntityOperation]bool{}}
+	in := &instance{bo: bo, entity: e, key: key, values: values, state: state, changed: map[string]bool{}, ops: map[model.EntityOperation]bool{},
+		recent: map[string]bool{}, recentOps: map[model.EntityOperation]bool{}}
 	if f, ok := e.ETag.Get(); ok && state == stateRead {
 		in.etag = values[f]
 	}
@@ -418,6 +427,27 @@ func (b *entityBuffer) Modify(ctx context.Context, req vm.ModifyRequest) (*vm.En
 		return nil, nil, fmt.Errorf("business object %s is not installed", req.BusinessObject)
 	}
 	r := &result{}
+	b.depth++
+	defer func() { b.depth-- }()
+	if b.depth > maxRounds {
+		return nil, nil, &native.RuntimeError{Class: "/RT/VALUE_ERROR", Text: fmt.Sprintf("determinations changed %s more than %d times in a row; they trigger each other", bo.Name, maxRounds)}
+	}
+	// The changes of a statement in a determination trigger determinations
+	// on their own; the running statement keeps its changes.
+	type recentChanges struct {
+		fields map[string]bool
+		ops    map[model.EntityOperation]bool
+	}
+	outer := map[*instance]recentChanges{}
+	for _, in := range b.order {
+		outer[in] = recentChanges{in.recent, in.recentOps}
+		in.recent, in.recentOps = map[string]bool{}, map[model.EntityOperation]bool{}
+	}
+	defer func() {
+		for in, c := range outer {
+			in.recent, in.recentOps = c.fields, c.ops
+		}
+	}()
 	links := map[string]*instance{}
 	intos := make([]any, len(req.Steps))
 	var touched []*instance
@@ -533,13 +563,16 @@ func (b *entityBuffer) create(ctx context.Context, bo *model.BusinessObject, e *
 				in.changed[c.Name] = true
 			}
 			in.ops[model.OperationUpdate] = true
+			in.recentOps[model.OperationUpdate] = true
 		} else {
 			in = b.add(bo, e, values, stateCreated)
 			in.ops[model.OperationCreate] = true
+			in.recentOps[model.OperationCreate] = true
 		}
 		in.link = link
 		for _, f := range st.Fields {
 			in.changed[f] = true
+			in.recent[f] = true
 		}
 		if link != nil {
 			links[*link] = in
@@ -576,15 +609,19 @@ func (b *entityBuffer) update(ctx context.Context, bo *model.BusinessObject, e *
 		for _, f := range st.Fields {
 			if fmt.Sprint(in.values[f]) != fmt.Sprint(row[f]) || in.values[f] == nil != (row[f] == nil) {
 				in.changed[f] = true
+				in.recent[f] = true
 			}
 			in.values[f] = row[f]
 		}
 		if in.state == stateRead {
 			in.state = stateUpdated
 		}
+		// A new instance stays a creation for the save; on modify the
+		// statement updated it.
 		if in.state != stateCreated {
 			in.ops[model.OperationUpdate] = true
 		}
+		in.recentOps[model.OperationUpdate] = true
 		out = append(out, in)
 	}
 	return out, nil
@@ -650,6 +687,7 @@ func (b *entityBuffer) remove(ctx context.Context, bo *model.BusinessObject, in 
 	}
 	in.state = stateDeleted
 	in.ops[model.OperationDelete] = true
+	in.recentOps[model.OperationDelete] = true
 	return append(out, in), nil
 }
 

@@ -27,7 +27,7 @@ const EntityResponseClass = "/TRBASE/ENTITY_RESPONSE"
 
 func init() {
 	native.Default.RegisterClass(pkg, EntityResponseClass, (*native.EntityResponse)(nil))
-	add := func(r *native.EntityResponse, position int32, severity MessageSeverity, text string, field model.Optional[string]) error {
+	add := func(r *native.EntityResponse, position int64, severity MessageSeverity, text string, field model.Optional[string]) error {
 		if position < 1 || int(position) > r.Count {
 			return fmt.Errorf("position %d is not one of the %d keys", position, r.Count)
 		}
@@ -39,18 +39,18 @@ func init() {
 		}
 		return nil
 	}
-	instance(EntityResponseClass, "FAIL", "(position: INT4)", func(c *native.Context, r *native.EntityResponse, position int32) error {
+	instance(EntityResponseClass, "FAIL", "(position: INT8)", func(c *native.Context, r *native.EntityResponse, position int64) error {
 		return add(r, position, MessageSeverityError, "", model.None[string]())
 	})
-	instance(EntityResponseClass, "ERROR", "(position: INT4, text: STRING)", func(c *native.Context, r *native.EntityResponse, position int32, text string) error {
+	instance(EntityResponseClass, "ERROR", "(position: INT8, text: STRING)", func(c *native.Context, r *native.EntityResponse, position int64, text string) error {
 		return add(r, position, MessageSeverityError, text, model.None[string]())
 	})
-	instance(EntityResponseClass, "FIELD_ERROR", "(position: INT4, field: STRING, text: STRING)",
-		func(c *native.Context, r *native.EntityResponse, position int32, field, text string) error {
+	instance(EntityResponseClass, "FIELD_ERROR", "(position: INT8, field: STRING, text: STRING)",
+		func(c *native.Context, r *native.EntityResponse, position int64, field, text string) error {
 			return add(r, position, MessageSeverityError, text, model.Some(field))
 		})
-	instance(EntityResponseClass, "MESSAGE", "(position: INT4, severity: /TRBASE/MESSAGE_SEVERITY, text: STRING)",
-		func(c *native.Context, r *native.EntityResponse, position int32, severity MessageSeverity, text string) error {
+	instance(EntityResponseClass, "MESSAGE", "(position: INT8, severity: /TRBASE/MESSAGE_SEVERITY, text: STRING)",
+		func(c *native.Context, r *native.EntityResponse, position int64, severity MessageSeverity, text string) error {
 			return add(r, position, severity, text, model.None[string]())
 		})
 	instance(EntityResponseClass, "GLOBAL_MESSAGE", "(severity: /TRBASE/MESSAGE_SEVERITY, text: STRING)",

@@ -428,3 +428,226 @@ func TestEntityStatementRules(t *testing.T) {
 		}
 	})
 }
+
+// determinationRoot is the root entity of /TRBO/ORDER with determinations
+// on both times and a validation.
+const determinationRoot = `, "numbering": "external",
+	"fields": { "NAME": { "mandatory": true }, "STATUS": { "readOnly": true }, "NOTE": { "readOnly": true } },
+	"determinations": [
+		{ "name": "SET_STATUS", "when": "modify", "on": ["create"] },
+		{ "name": "MARK_NAME", "when": "modify", "on": ["create", "update"], "fields": ["NAME"] },
+		{ "name": "STAMP_NOTE", "when": "save", "on": ["create", "update"] } ],
+	"validations": [{ "name": "CHECK_NAME", "on": ["create", "update"], "fields": ["NAME"] }]`
+
+// determinationBehavior are the methods of /TRBO/ORDER_BEHAVIOR for
+// determinationRoot. MARK_NAME changes the field that triggers it.
+const determinationBehavior = `
+public method SET_STATUS(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  var rows: array of /TRBO/ORDERS = []
+  for key in keys
+    var r: /TRBO/ORDERS
+    r.ORDER_ID = key.ORDER_ID
+    r.STATUS = "new"
+    rows.APPEND(r)
+  end
+  modify business object /TRBO/ORDER in local mode
+    update /TRBO/ORDERS fields (STATUS) from rows
+  end
+end
+
+public method MARK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  var rows = read business object /TRBO/ORDER in local mode
+    /TRBO/ORDERS fields all keys keys
+  end
+  var changed: array of /TRBO/ORDERS = []
+  for row in rows
+    var r = row
+    r.NAME = (r.NAME default "") + "!"
+    changed.APPEND(r)
+  end
+  modify business object /TRBO/ORDER in local mode
+    update /TRBO/ORDERS fields (NAME) from changed
+  end
+end
+
+public method STAMP_NOTE(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  var rows = read business object /TRBO/ORDER in local mode
+    /TRBO/ORDERS fields all keys keys
+  end
+  var changed: array of /TRBO/ORDERS = []
+  for row in rows
+    var r = row
+    r.NOTE = "saved " + (r.NAME default "") + " " + (r.STATUS default "none")
+    changed.APPEND(r)
+  end
+  modify business object /TRBO/ORDER in local mode
+    update /TRBO/ORDERS fields (NOTE) from changed
+  end
+  response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.INFORMATION, "stamped {rows.LENGTH()}")
+end
+
+public method CHECK_NAME(keys: array of key of /TRBO/ORDERS, response: /TRBASE/ENTITY_RESPONSE)
+  var rows = read business object /TRBO/ORDER in local mode
+    /TRBO/ORDERS fields (NAME) keys keys
+  end
+  for i, row in rows
+    if (row.NAME default "").STARTS_WITH("x")
+      response.FIELD_ERROR(i, "NAME", "the name must not start with x")
+    end
+    if (row.NAME default "") = "boom!"
+      var zero = 0
+      var x = 1 / zero
+    end
+  end
+end
+`
+
+// determinationAPI is /TRBO/API for determinationRoot.
+const determinationAPI = `public class /TRBO/API
+
+public static method CREATE(id: STRING, name: STRING) returns /TRBASE/ENTITY_RESULT
+  var orders: array of new of /TRBO/ORDERS = []
+  var o: new of /TRBO/ORDERS
+  o.ORDER_ID = id
+  o.NAME = name
+  orders.APPEND(o)
+  modify business object /TRBO/ORDER
+    create /TRBO/ORDERS fields (ORDER_ID, NAME) from orders
+  end
+  commit business objects result saved
+  if saved.FAILURES is not empty
+    rollback business objects
+  end
+  return saved
+end
+
+public static method STAGE(id: STRING, name: STRING) returns STRING
+  var orders: array of new of /TRBO/ORDERS = []
+  var o: new of /TRBO/ORDERS
+  o.ORDER_ID = id
+  o.NAME = name
+  orders.APPEND(o)
+  modify business object /TRBO/ORDER
+    create /TRBO/ORDERS fields (ORDER_ID, NAME) from orders
+  end
+  var row = READ(id)[1]
+  rollback business objects
+  return "{row.NAME default "none"} {row.STATUS default "none"} {row.NOTE default "none"}"
+end
+
+public static method KEEP_FAILED(id: STRING) returns STRING
+  var orders: array of new of /TRBO/ORDERS = []
+  var o: new of /TRBO/ORDERS
+  o.ORDER_ID = id
+  o.NAME = "xray"
+  orders.APPEND(o)
+  modify business object /TRBO/ORDER
+    create /TRBO/ORDERS fields (ORDER_ID, NAME) from orders
+  end
+  commit business objects result saved
+  var out = "{saved.FAILURES.LENGTH()} {saved.FAILURES[1].REASON} {saved.MESSAGES[2].FIELD default "none"}"
+  var rows: array of /TRBO/ORDERS = []
+  var r: /TRBO/ORDERS
+  r.ORDER_ID = id
+  r.NAME = "yankee"
+  rows.APPEND(r)
+  modify business object /TRBO/ORDER
+    update /TRBO/ORDERS fields (NAME) from rows
+  end
+  commit business objects result again
+  return out + " " + "{again.FAILURES.LENGTH()} " + (READ(id)[1].NAME default "none")
+end
+
+public static method RENAME(id: STRING, name: STRING) returns /TRBASE/ENTITY_RESULT
+  var rows: array of /TRBO/ORDERS = []
+  var r: /TRBO/ORDERS
+  r.ORDER_ID = id
+  r.NAME = name
+  rows.APPEND(r)
+  modify business object /TRBO/ORDER
+    update /TRBO/ORDERS fields (NAME) from rows
+  end
+  commit business objects result saved
+  if saved.FAILURES is not empty
+    rollback business objects
+  end
+  return saved
+end
+
+public static method READ(id: STRING) returns array of /TRBO/ORDERS
+  var keys: array of key of /TRBO/ORDERS = []
+  var k: key of /TRBO/ORDERS
+  k.ORDER_ID = id
+  keys.APPEND(k)
+  return read business object /TRBO/ORDER
+    /TRBO/ORDERS fields all keys keys
+  end
+end
+
+end
+`
+
+// TestDeterminations runs determinations on modify and on save as their
+// operations and fields trigger them, lets their changes in local mode
+// trigger other determinations but not themselves, and fails the save
+// for instances a validation rejects while the buffer stays.
+func TestDeterminations(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		files := boFiles("1.0.0", orderBO(determinationRoot), determinationBehavior)
+		src, errs := syntax.Format("API.class", determinationAPI)
+		if len(errs) > 0 {
+			t.Fatal(errs)
+		}
+		files["src/API.class"] = src
+		if _, err := k.Install(ctx, []*model.Package{writePackage(t, files)}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		const api = "/TRBO/API"
+		// On modify: SET_STATUS for the creation and MARK_NAME once for the
+		// name, although it changes the name itself; STAMP_NOTE waits for
+		// the save.
+		expectCall(t, k, "ACME", api, "STAGE", `"Alpha! new none"`, `"A1"`, `"Alpha"`)
+
+		r := result(t, mustCall(t, k, "ACME", api, "CREATE", `"A1"`, `"Alpha"`))
+		if len(r["FAILURES"]) != 0 || len(r["MESSAGES"]) != 1 || r["MESSAGES"][0]["TEXT"] != "stamped 1" {
+			t.Fatalf("create: %v", r)
+		}
+		got := mustCall(t, k, "ACME", api, "READ", `"A1"`)
+		if !strings.Contains(got, `"NAME":"Alpha!"`) || !strings.Contains(got, `"STATUS":"new"`) || !strings.Contains(got, `"NOTE":"saved Alpha! new"`) {
+			t.Errorf("after create: %s", got)
+		}
+		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"Beta"`))
+		if len(r["FAILURES"]) != 0 {
+			t.Fatalf("rename: %v", r)
+		}
+		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) || !strings.Contains(got, `"NOTE":"saved Beta! new"`) {
+			t.Errorf("after rename: %s", got)
+		}
+
+		// A validation fails the save and keeps the buffer: a later change
+		// in the same execution saves it.
+		expectCall(t, k, "ACME", api, "KEEP_FAILED", `"1 VALIDATION NAME 0 yankee!"`, `"X1"`)
+
+		// A rename the validation rejects leaves the database as it was.
+		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"xenon"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "VALIDATION" || r["MESSAGES"][1]["FIELD"] != "NAME" ||
+			r["MESSAGES"][1]["KEY"] != `{"ORDER_ID":"A1"}` {
+			t.Errorf("rejected rename: %v", r)
+		}
+		if got := mustCall(t, k, "ACME", api, "READ", `"A1"`); !strings.Contains(got, `"NAME":"Beta!"`) {
+			t.Errorf("after the rejected rename: %s", got)
+		}
+
+		// A runtime error in a behavior method fails its instances.
+		r = result(t, mustCall(t, k, "ACME", api, "RENAME", `"A1"`, `"boom"`))
+		if len(r["FAILURES"]) != 1 || r["FAILURES"][0]["REASON"] != "BEHAVIOR" ||
+			!strings.Contains(r["MESSAGES"][1]["TEXT"].(string), "/TRBO/ORDER_BEHAVIOR.CHECK_NAME: ") {
+			t.Errorf("runtime error: %v", r)
+		}
+	})
+}
