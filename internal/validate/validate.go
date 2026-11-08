@@ -64,6 +64,7 @@ func Schema(s *model.Schema, opts Options) error {
 	}
 	v.generatedNames()
 	v.businessObjects()
+	v.services()
 	v.assetRepositories()
 	v.reportMissingLanguages()
 	return v.errs.Err()

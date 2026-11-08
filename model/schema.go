@@ -56,6 +56,8 @@ type Schema struct {
 	// BusinessObjectExtensions are the extensions of business objects by
 	// extending package and business object.
 	BusinessObjectExtensions map[BusinessObjectExtensionKey]*BusinessObjectExtension
+	// Services are the services by name.
+	Services map[string]*Service
 }
 
 // NewSchema returns an empty schema.
@@ -79,6 +81,7 @@ func NewSchema() *Schema {
 		Implementations:          map[string]*Implementation{},
 		BusinessObjects:          map[string]*BusinessObject{},
 		BusinessObjectExtensions: map[BusinessObjectExtensionKey]*BusinessObjectExtension{},
+		Services:                 map[string]*Service{},
 	}
 }
 
@@ -108,6 +111,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.BusinessObjectExtensions {
 		c.BusinessObjectExtensions[k] = cloneBusinessObjectExtension(v)
+	}
+	for k, v := range s.Services {
+		c.Services[k] = cloneService(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -331,6 +337,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.BusinessObjects[b.Name] = b
 	}
+	for i := range p.Services {
+		svc := cloneService(&p.Services[i])
+		svc.Owner = id
+		if old, ok := s.Services[svc.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "service", Name: svc.Name, Owner: string(old.Owner), Package: string(id), Location: svc.Src})
+			continue
+		}
+		s.Services[svc.Name] = svc
+	}
 	for i := range p.BusinessObjectExtensions {
 		x := cloneBusinessObjectExtension(&p.BusinessObjectExtensions[i])
 		x.Package = id
@@ -434,6 +449,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, svc := range s.Services {
+		if _, ok := svc.Description[code]; ok {
+			delete(svc.Description, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -498,6 +519,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for k := range s.BusinessObjectExtensions {
 		if k.Package == id {
 			delete(s.BusinessObjectExtensions, k)
+		}
+	}
+	for name, svc := range s.Services {
+		if svc.Owner == id {
+			delete(s.Services, name)
 		}
 	}
 	for name, d := range s.Domains {

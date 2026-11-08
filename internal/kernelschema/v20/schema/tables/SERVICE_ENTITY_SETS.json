@@ -1,0 +1,56 @@
+{
+  "name": "/RT/SERVICE_ENTITY_SETS",
+  "description": "Entity sets of services",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "SET_NAME",
+      "domain": "/RT/ODATA_NAME"
+    },
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "READ_ONLY",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "OPERATIONS_LISTED",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ACTIONS_LISTED",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_NAME",
+    "SET_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_NAME",
+          "references": "SERVICE_NAME"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "/RT/SERVICE_EXTENSIONS",
+  "description": "Extensions of other packages a service offers",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "all",
+      "description": "Extensions of all packages"
+    },
+    {
+      "value": "none",
+      "description": "No extensions"
+    },
+    {
+      "value": "listed",
+      "description": "Extensions of the listed packages"
+    }
+  ]
+}

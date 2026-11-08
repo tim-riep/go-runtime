@@ -45,4 +45,5 @@ const (
 	Implementation          = "extension-implementation.schema.json"
 	BusinessObject          = "business-object.schema.json"
 	BusinessObjectExtension = "business-object-extension.schema.json"
+	Service                 = "service.schema.json"
 )

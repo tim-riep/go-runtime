@@ -1,0 +1,53 @@
+{
+  "name": "/RT/EXTENSION_IMPLEMENTATION_VALUES",
+  "description": "Values, ranges and patterns per filter field of an implementation",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME"
+    },
+    {
+      "name": "VALUE_NO",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "VALUE_KIND",
+      "domain": "/RT/VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "LOW",
+      "domain": "/RT/AUTH_VALUE",
+      "notNull": true,
+      "description": "The value, the lower bound or the pattern"
+    },
+    {
+      "name": "HIGH",
+      "domain": "/RT/AUTH_VALUE",
+      "description": "The upper bound of a range"
+    }
+  ],
+  "primaryKey": [
+    "IMPLEMENTATION_NAME",
+    "FIELD_NAME",
+    "VALUE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "IMPLEMENTATION",
+      "table": "/RT/EXTENSION_IMPLEMENTATIONS",
+      "fields": [
+        {
+          "field": "IMPLEMENTATION_NAME",
+          "references": "IMPLEMENTATION_NAME"
+        }
+      ]
+    }
+  ]
+}

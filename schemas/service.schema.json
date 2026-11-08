@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/service.schema.json",
+  "title": "Service",
+  "description": "A service (schema/services/<name without namespace>.json): entities of business objects and tables without business object under public names. The kernel serves it over OData below /rt/odata/<package>/<service>/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "entitySets"
+  ],
+  "$defs": {
+    "fieldName": {
+      "type": "string",
+      "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
+      "maxLength": 63
+    },
+    "publicName": {
+      "description": "A simple identifier of OData.",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "maxLength": 128
+    },
+    "entitySet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "businessObject": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "A business object of the package or of a package it requires. Use it with entity, or use table."
+        },
+        "entity": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "The table of an entity of the business object."
+        },
+        "table": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "A table of configuration without business object, offered read only."
+        },
+        "readOnly": {
+          "description": "Offers the entity set for reading only.",
+          "type": "boolean"
+        },
+        "operations": {
+          "description": "The operations offered; without, all of the entity. Never more than the entity has.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "create",
+              "update",
+              "delete"
+            ]
+          }
+        },
+        "actions": {
+          "description": "The actions offered; without, all of the entity and of the extensions the service offers. Never more than the entity has.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fieldName"
+          }
+        },
+        "hiddenFields": {
+          "description": "Fields the service does not offer. Key fields, mandatory fields, the fields of the foreign key to the parent entity and the ETag field cannot be hidden.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fieldName"
+          }
+        },
+        "navigations": {
+          "description": "Public names of the navigations along foreign keys to other entity sets of the service, by the name of the foreign key. Without, a navigation takes the name of its target entity set.",
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/fieldName"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/publicName"
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "businessObject",
+            "entity"
+          ],
+          "not": {
+            "required": [
+              "table"
+            ]
+          }
+        },
+        {
+          "required": [
+            "table"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "businessObject"
+                ]
+              },
+              {
+                "required": [
+                  "entity"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/descriptions"
+    },
+    "extensions": {
+      "description": "The extensions of business objects and tables by other packages the service offers: all (the default), none, or a list of package IDs.",
+      "oneOf": [
+        {
+          "enum": [
+            "all",
+            "none"
+          ]
+        },
+        {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "common.schema.json#/$defs/packageId"
+          }
+        }
+      ]
+    },
+    "entitySets": {
+      "description": "The entity sets by public name.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/publicName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/entitySet"
+      }
+    }
+  }
+}

@@ -108,6 +108,22 @@ func TestBusinessObjectExtensionNames(t *testing.T) {
 	}
 }
 
+// TestServiceNames checks the names a service refers to, including
+// actions, hidden fields and foreign keys of navigations with namespace.
+func TestServiceNames(t *testing.T) {
+	fsys := validFS()
+	const f = "schema/services/SVC.json"
+	fsys[f] = file(`{"name":"/TRX/SVC","description":{"en":"S"},"entitySets":{"Orders":{"businessObject":"/TRBASE/ORDER",
+		"entity":"/TRBASE/ORDERS","actions":["/TRZ/SYNC"],"hiddenFields":["/TRX/NOTE"],"navigations":{"/TRZ/FK":"Z"}}}}`)
+	expectViolation(t, fsys, f, "/entitySets/Orders/actions", "/TRZ/SYNC")
+	expectViolation(t, fsys, f, "/entitySets/Orders/navigations//TRZ/FK", "/TRZ/FK")
+	for _, v := range violations(t, fsys) {
+		if v.Name == "/TRX/NOTE" || v.Name == "/TRBASE/ORDER" || v.Name == "/TRX/SVC" {
+			t.Errorf("violation of a valid name: %+v", v)
+		}
+	}
+}
+
 func TestSeveralViolationsReportedTogether(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/domains/QTY.json"] = file(`{"name":"/TRBASE/QTY","type":"INT4"}`)
@@ -179,6 +195,7 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"business object": {"schema/business-objects/X.json", `{"name":"/TRX/X","description":{"en":"X"},"root":"/TRZ/T",
 			"behaviorClass":"/TRX/B","entities":{"/TRZ/T":{}}}`},
 		"business object extension": {"schema/business-object-extensions/X.json", `{"businessObject":"/TRZ/X","entities":{"/TRZ/T":{}}}`},
+		"service":                   {"schema/services/X.json", `{"name":"/TRX/X","description":{"en":"X"},"entitySets":{"Xs":{"businessObject":"/TRZ/X","entity":"/TRX/T"}}}`},
 		"http service":              {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
 	}
 	for _, typ := range ObjectTypes() {

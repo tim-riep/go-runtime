@@ -87,6 +87,11 @@ func (p *Package) WithLanguages(keep func(lang string) bool) *Package {
 		b.Description = filter(b.Description)
 		c.BusinessObjects[i] = b
 	}
+	c.Services = make([]Service, len(p.Services))
+	for i, svc := range p.Services {
+		svc.Description = filter(svc.Description)
+		c.Services[i] = svc
+	}
 	c.Implementations = make([]Implementation, len(p.Implementations))
 	for i, impl := range p.Implementations {
 		impl.Description = filter(impl.Description)

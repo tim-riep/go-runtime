@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/COMPANY_SERVICE",
+  "description": { "en": "Companies", "de": "Firmen" },
+  "entitySets": {
+    "Companies": {
+      "businessObject": "/TRFIN/COMPANY",
+      "entity": "/TRFIN/COMPANIES",
+      "navigations": { "COUNTRY": "Country" }
+    },
+    "Contacts": { "businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/CONTACTS" },
+    "Countries": { "businessObject": "/TRFIN/COUNTRY", "entity": "/TRFIN/COUNTRIES", "readOnly": true },
+    "ExchangeRates": { "table": "/TRFIN/EXCHANGE_RATES" }
+  }
+}

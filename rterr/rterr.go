@@ -63,6 +63,7 @@ const (
 	CodeRole            Code = "role"             // invalid role or authorization of a role
 	CodeExtensionPoint  Code = "extension-point"  // invalid extension point or implementation
 	CodeBusinessObject  Code = "business-object"  // invalid business object
+	CodeService         Code = "service"          // invalid service
 )
 
 // Location points at the place in a package that caused an error.

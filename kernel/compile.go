@@ -501,8 +501,15 @@ func (k *Kernel) newGeneration(ctx context.Context, q dialect.Querier, c *compil
 	for _, ch := range p.Changes {
 		switch ch.Kind {
 		case plan.CreateExtensionPoint, plan.DropExtensionPoint, plan.AlterExtensionPoint,
-			plan.CreateImplementation, plan.DropImplementation, plan.AlterImplementation:
+			plan.CreateImplementation, plan.DropImplementation, plan.AlterImplementation,
+			// Services derive their model from business objects, their
+			// extensions and tables when a generation is loaded.
+			plan.CreateService, plan.DropService, plan.AlterService,
+			plan.CreateBusinessObject, plan.DropBusinessObject, plan.AlterBusinessObject,
+			plan.AddBusinessObjectExtension, plan.DropBusinessObjectExtension, plan.AlterBusinessObjectExtension:
 			needed = true
+		default:
+			needed = needed || ch.Kind.Physical() && len(want.Services) > 0
 		}
 	}
 	for id := range cur.Packages {

@@ -411,7 +411,9 @@ type Package struct {
 	// BusinessObjectExtensions are the extensions of business objects of
 	// other packages.
 	BusinessObjectExtensions []BusinessObjectExtension
-	Origin                   string // where the package was loaded from
+	// Services offer business objects and tables over OData.
+	Services []Service
+	Origin   string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

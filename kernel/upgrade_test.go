@@ -74,6 +74,11 @@ func withData(t *testing.T, k *kernel.Kernel) {
 	if k.TargetVersion() < 5 {
 		pkgs = legacyExamples(t)
 	}
+	if k.TargetVersion() < 20 { // before services
+		for _, p := range pkgs {
+			p.Services = nil
+		}
+	}
 	if k.TargetVersion() < 19 { // before extensions of business objects
 		for _, p := range pkgs {
 			withoutBusinessObjectExtensions(p)

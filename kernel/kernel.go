@@ -591,6 +591,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.syncHTTPStates(ctx, q, want); err != nil {
 			return err
 		}
+		if err := k.syncServiceStates(ctx, q, want); err != nil {
+			return err
+		}
 		if err := k.syncActivation(ctx, q, cur, want, started); err != nil {
 			return err
 		}

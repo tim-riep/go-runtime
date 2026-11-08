@@ -1,0 +1,6 @@
+{
+  "name": "/RT/KERNEL_FUNCTION",
+  "description": "Function of the kernel or native method that made a check",
+  "type": "CHAR",
+  "length": 120
+}

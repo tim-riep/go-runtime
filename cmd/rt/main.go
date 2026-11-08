@@ -155,6 +155,12 @@ Commands:
                            show a business object with its extensions, entities, fields,
                            behavior, authorization and the code that works on it; the
                            package of every part that an extension adds is in parentheses
+  service list [package]   list the services of a package or of all packages with their path
+                           and activation
+  service show <name>      show a service with its entity sets, the public names of fields,
+                           navigations and actions, and the operations it offers
+  service activate|deactivate <name>
+                           serve a service below /rt/odata or stop serving it
   implementation activate|deactivate <name> [--tenant T]
                            activate or deactivate an implementation of an extension point,
                            globally or in a tenant, whose setting wins over the global one
@@ -464,6 +470,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.extensionPoint(ctx, k, args)
 	case "business-object":
 		return c.businessObject(ctx, k, args)
+	case "service":
+		return c.service(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
 	case "role":

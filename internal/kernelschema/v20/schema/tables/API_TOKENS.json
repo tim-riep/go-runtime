@@ -1,0 +1,51 @@
+{
+  "name": "/RT/API_TOKENS",
+  "description": "API tokens of users; only a hash of the secret is stored",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TOKEN_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "LABEL",
+      "domain": "/RT/TOKEN_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "EXPIRES_AT",
+      "domain": "/RT/TIMESTAMP"
+    },
+    {
+      "name": "TOKEN_HASH",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TOKEN_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "USER",
+      "table": "/RT/USERS",
+      "fields": [
+        {
+          "field": "USER_NAME",
+          "references": "USER_NAME"
+        }
+      ]
+    }
+  ]
+}
