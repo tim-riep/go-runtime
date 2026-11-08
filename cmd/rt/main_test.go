@@ -260,3 +260,58 @@ func TestLanguageCommands(t *testing.T) {
 		}
 	}
 }
+
+func TestRoleCommands(t *testing.T) {
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			ex := filepath.Join(testutil.ModuleRoot(t), "examples")
+			dir := t.TempDir()
+			local := filepath.Join(dir, "ops.json")
+			testutil.WriteFile(t, dir, "ops.json", []byte(`{ "name": "/LOCAL/OPS", "texts": { "en": { "label": "Operations" } },
+				"roles": ["/TRFIN/COMPANY_CLERK", "/TROTTO/SYNC_OPERATOR"] }`))
+			testutil.WriteFile(t, dir, "all.json", []byte(`{ "name": "/LOCAL/ALL", "texts": { "en": { "label": "All" } },
+				"authorizations": [{ "object": "/TRFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } }] }`))
+			steps := []struct {
+				args     []string
+				code     int
+				contains string
+			}{
+				{[]string{"init", "--admin", "root", "--tenant", "ACME"}, exitOK, "User root created with all authorizations in tenant ACME"},
+				{[]string{"language", "add", "de"}, exitOK, "German"},
+				{[]string{"install", filepath.Join(ex, "TRFIN"), filepath.Join(ex, "TROTTO")}, exitOK, "create-role /TRFIN/COMPANY_CLERK"},
+				{[]string{"user", "create", "anna", "--tenant", "ACME"}, exitOK, "created"},
+				{[]string{"role", "list"}, exitOK, "/TROTTO/SYNC_OPERATOR  TROTTO   single"},
+				{[]string{"role", "show", "/TRFIN/COMPANY_CLERK"}, exitOK, `COUNTRY      "DE" "AT" "PL".."SK"`},
+				{[]string{"role", "show", "/TRFIN/COMPANY_ADMIN"}, exitOK, "note: * on ACTIVITY includes activities the object allows later"},
+				{[]string{"role", "import", local}, exitOK, "Role /LOCAL/OPS saved."},
+				{[]string{"role", "create", filepath.Join(dir, "all.json")}, exitOK, "grants * on ACTIVITY of /TRFIN/COMPANY"},
+				{[]string{"role", "create", local}, exitError, "exists already"},
+				{[]string{"role", "show", "--json", "/LOCAL/OPS"}, exitOK, `"role": "/TROTTO/SYNC_OPERATOR"`},
+				{[]string{"role", "list", "--package", "LOCAL"}, exitOK, "/LOCAL/OPS  LOCAL    composite"},
+				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "ACME", "--from", "2026-01-01"}, exitOK, "Role /LOCAL/OPS assigned to anna"},
+				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "ACME", "--to", "2026-03-01"}, exitOK, "overlaps (2026-01-01 to open)"},
+				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "BETA"}, exitError, "does not work in tenant BETA"},
+				{[]string{"user", "roles", "anna"}, exitOK, "(overlaps)"},
+				{[]string{"user", "authorizations", "anna", "--tenant", "ACME", "--date", "2026-02-01"}, exitOK, "from /TROTTO/SYNC_OPERATOR in /LOCAL/OPS"},
+				{[]string{"user", "authorizations", "anna", "--tenant", "ACME", "--date", "2026-02-01"}, exitOK, `COUNTRY      "AT" "CH" D*`},
+				{[]string{"user", "authorizations", "root", "--tenant", "ACME"}, exitOK, "ALL AUTHORIZATIONS from /RT/ALL_AUTHORIZATIONS"},
+				{[]string{"user", "authorizations", "--json", "anna", "--tenant", "ACME", "--date", "2025-12-01"}, exitOK, `"/TRFIN/COMPANY": {`},
+				{[]string{"role", "export", "/TRFIN/COMPANY_CLERK"}, exitOK, `"from": "PL"`},
+				{[]string{"role", "delete", "/TRFIN/COMPANY_CLERK"}, exitError, "package roles change with their package"},
+				{[]string{"role", "delete", "/LOCAL/OPS"}, exitNeedsPermit, "--yes"},
+				{[]string{"role", "delete", "/LOCAL/OPS", "--yes"}, exitOK, "deleted"},
+				{[]string{"role", "history", "--user", "anna"}, exitOK, "assignment-removed  /LOCAL/OPS"},
+				{[]string{"role", "history", "/RT/ALL_AUTHORIZATIONS"}, exitOK, "cli  assign"},
+			}
+			for _, s := range steps {
+				var out, errOut bytes.Buffer
+				input = strings.NewReader("secret\n")
+				code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
+				all := out.String() + errOut.String()
+				if code != s.code || !strings.Contains(all, s.contains) {
+					t.Fatalf("rt %s: exit %d (want %d), output:\n%s", strings.Join(s.args, " "), code, s.code, all)
+				}
+			}
+		})
+	}
+}

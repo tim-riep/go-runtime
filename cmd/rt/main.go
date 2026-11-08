@@ -62,7 +62,9 @@ const (
 const usage = `usage: rt [flags] <command> [arguments]
 
 Commands:
-  init                     create or migrate the kernel tables
+  init [--admin U --tenant T]
+                           create or migrate the kernel tables; a first user with all
+                           authorizations is created with --admin or asked for on a terminal
   plan <package>           show the install or upgrade plan of a package directory
   install <package>...     install package directories
   upgrade <package>        upgrade an installed package
@@ -172,6 +174,7 @@ type cli struct {
 	incomplete     bool
 	userFilter     string
 	from, to, date string
+	admin          string
 	check          bool
 	serve          server.Config
 }
@@ -201,6 +204,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.userFilter, "user", "", "role history: only the changes of a user")
 	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD")
 	c.fs.StringVar(&c.to, "to", "", "role assign: last day of validity, YYYY-MM-DD")
+	c.fs.StringVar(&c.admin, "admin", "", "init: create this first user with all authorizations in --tenant; the password is read from standard input")
 	c.fs.StringVar(&c.date, "date", "", "user authorizations: the day, YYYY-MM-DD (default today)")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	c.fs.StringVar(&c.serve.Addr, "addr", server.DefaultAddr, "serve: the address to listen on")
@@ -320,7 +324,10 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		if err != nil {
 			return c.fail(err)
 		}
-		return c.printPlan(p)
+		if code := c.printPlan(p); code != exitOK || c.dryRun {
+			return code
+		}
+		return c.firstAdmin(ctx, k)
 	case "plan":
 		if !c.need(args, 1, "plan <package>") {
 			return exitUsage
@@ -1386,9 +1393,28 @@ var input io.Reader = os.Stdin
 
 // readSecret reads a password from standard input: its first line.
 func (c *cli) readSecret() (string, error) {
-	line, err := bufio.NewReader(input).ReadString('\n')
-	if err != nil && line == "" {
+	line, err := readLine()
+	if err != nil {
 		return "", errors.New("no password on standard input")
+	}
+	return line, nil
+}
+
+// lines reads standard input line by line; it is made again when tests
+// replace input.
+var lines struct {
+	r    *bufio.Reader
+	from io.Reader
+}
+
+// readLine reads a line of standard input without its end.
+func readLine() (string, error) {
+	if lines.r == nil || lines.from != input {
+		lines.r, lines.from = bufio.NewReader(input), input
+	}
+	line, err := lines.r.ReadString('\n')
+	if err != nil && line == "" {
+		return "", err
 	}
 	return strings.TrimRight(line, "\r\n"), nil
 }

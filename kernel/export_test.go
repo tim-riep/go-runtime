@@ -36,6 +36,10 @@ func (k *Kernel) SetTargetVersion(v int) {
 // the database.
 func (k *Kernel) ContentReads() int64 { return k.contentReads.Load() }
 
+// EffectiveComputed returns how often effective authorizations were
+// computed rather than taken from the cache.
+func (k *Kernel) EffectiveComputed() int64 { return k.effectiveComputed.Load() }
+
 // SetHTTPLog replaces the sink for the log statements of requests.
 func (k *Kernel) SetHTTPLog(s vm.LogSink) { k.httpLog = s }
 

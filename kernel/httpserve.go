@@ -153,6 +153,9 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entry.tenant = tenant.Or("")
+	if u, ok := userName.Get(); ok && tenant.Valid() {
+		k.noteAllAuthorizations(ctx, u, tenant.Or(""))
+	}
 
 	req := &natives.HTTPRequest{R: r, Path: node.Path, Rest: rest, Package: node.Package, MaxBody: set.MaxBodySize}
 	resp := natives.NewHTTPResponse(set.MaxResponseSize)

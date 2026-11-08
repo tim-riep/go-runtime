@@ -16,8 +16,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -318,8 +321,140 @@ func overlaps(a, b kernel.RoleAssignment) bool {
 	return !before(a.ValidTo, b.ValidFrom) && !before(b.ValidTo, a.ValidFrom)
 }
 
-// userAuthorizations is added with the effective authorizations.
+// userAuthorizations shows the effective authorizations of a user in a
+// tenant on a day with their origin.
 func (c *cli) userAuthorizations(ctx context.Context, k *kernel.Kernel, user string) int {
-	fmt.Fprintln(c.stderr, "error: not available yet")
-	return exitError
+	if c.tenantID == "" {
+		fmt.Fprintln(c.stderr, "usage: rt user authorizations <user> --tenant T [--date D]")
+		return exitUsage
+	}
+	date := time.Now()
+	if c.date != "" {
+		d, err := day(c.date)
+		if err != nil {
+			return c.fail(err)
+		}
+		date = d.Or(date)
+	}
+	e, err := k.EffectiveAuthorizations(ctx, user, c.tenantID, date)
+	if err != nil {
+		return c.fail(err)
+	}
+	if c.asJSON {
+		c.json(e)
+		return exitOK
+	}
+	fmt.Fprintf(c.stdout, "Effective authorizations of %s in tenant %s on %s\n", e.User, e.Tenant, e.Date.Format(model.DateLayout))
+	if e.Locked {
+		fmt.Fprintln(c.stdout, "  none: the user is locked")
+		return exitOK
+	}
+	for _, o := range e.AllOrigins {
+		fmt.Fprintf(c.stdout, "  ALL AUTHORIZATIONS from %s (assignment %s)\n", o.Role, o.Assignment)
+	}
+	for _, name := range slices.Sorted(maps.Keys(e.Objects)) {
+		fmt.Fprintf(c.stdout, "\n  %s\n", name)
+		for _, g := range e.Objects[name].Grants {
+			origin := g.Origin.Role
+			if comp, ok := g.Origin.Composite.Get(); ok {
+				origin += " in " + comp
+			}
+			fmt.Fprintf(c.stdout, "    from %s (assignment %s, %s)\n", origin, g.Origin.Assignment,
+				period(kernel.RoleAssignment{ValidFrom: g.Origin.ValidFrom, ValidTo: g.Origin.ValidTo}))
+			for _, f := range slices.Sorted(maps.Keys(g.Fields)) {
+				b, _ := g.Fields[f].MarshalJSON()
+				var entries []model.ValueEntry
+				_ = json.Unmarshal(b, &entries)
+				var vals []string
+				for _, en := range entries {
+					switch en.Kind {
+					case model.ValueRange:
+						vals = append(vals, fmt.Sprintf("%q..%q", en.Low, en.High))
+					case model.ValuePattern:
+						vals = append(vals, en.Low)
+					default:
+						vals = append(vals, fmt.Sprintf("%q", en.Low))
+					}
+				}
+				fmt.Fprintf(c.stdout, "      %-12s %s\n", f, strings.Join(vals, " "))
+			}
+		}
+	}
+	if len(e.NotEffective) > 0 {
+		fmt.Fprintln(c.stdout, "\n  not effective:")
+		for _, n := range e.NotEffective {
+			var probs []string
+			for _, p := range n.Problems {
+				probs = append(probs, p.String())
+			}
+			fmt.Fprintf(c.stdout, "    %s from %s: %s\n", n.Object, n.Origin.Role, strings.Join(probs, "; "))
+		}
+	}
+	return exitOK
+}
+
+// terminal reports whether standard input is a terminal.
+func terminal() bool {
+	f, ok := input.(*os.File)
+	if !ok {
+		return false
+	}
+	fi, err := f.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}
+
+// firstAdmin creates a first user with all authorizations after init:
+// with --admin and --tenant, or after asking on a terminal when there is
+// no user yet. A missing tenant is created.
+func (c *cli) firstAdmin(ctx context.Context, k *kernel.Kernel) int {
+	name, tenant := c.admin, c.tenantID
+	var password string
+	switch {
+	case name != "":
+		if tenant == "" {
+			fmt.Fprintln(c.stderr, "usage: rt init --admin <user> --tenant <tenant>, the password on standard input")
+			return exitUsage
+		}
+		pw, err := c.readSecret()
+		if err != nil {
+			return c.fail(err)
+		}
+		password = pw
+	case terminal():
+		users, err := k.Users().List(ctx)
+		if err != nil || len(users) > 0 {
+			return exitOK
+		}
+		ask := func(q string) string {
+			fmt.Fprint(c.stdout, q)
+			line, _ := readLine()
+			return strings.TrimSpace(line)
+		}
+		if a := strings.ToLower(ask("Create a first user with all authorizations? [y/N] ")); a != "y" && a != "yes" {
+			return exitOK
+		}
+		name = ask("User name: ")
+		password = ask("Password (shown as typed): ")
+		tenant = ask("Tenant (created if missing): ")
+	default:
+		return exitOK
+	}
+	tenants, err := k.Tenants().List(ctx)
+	if err != nil {
+		return c.fail(err)
+	}
+	if !slices.ContainsFunc(tenants, func(t kernel.Tenant) bool { return t.ID == tenant }) {
+		if _, err := k.Tenants().Create(ctx, tenant, model.None[string]()); err != nil {
+			return c.fail(err)
+		}
+		fmt.Fprintf(c.stdout, "Tenant %s created.\n", tenant)
+	}
+	if _, err := k.Users().Create(ctx, name, password, kernel.UserOptions{Tenant: model.Some(tenant)}); err != nil {
+		return c.fail(err)
+	}
+	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: name, Role: model.AllAuthorizationsRole, Tenant: tenant}, c.roleOpts()); err != nil {
+		return c.fail(err)
+	}
+	fmt.Fprintf(c.stdout, "User %s created with all authorizations in tenant %s; every sign-in is recorded.\n", name, tenant)
+	return exitOK
 }

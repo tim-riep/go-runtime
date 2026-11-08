@@ -89,6 +89,10 @@ type Kernel struct {
 	// counts the contents read from the database.
 	contents     *contentCache
 	contentReads atomic.Int64
+	// effective caches effective authorizations; effectiveComputed counts
+	// the computations.
+	effective         *effectiveCache
+	effectiveComputed atomic.Int64
 	// httpLog receives the log statements of requests; nil writes them
 	// to slog.
 	httpLog vm.LogSink
@@ -173,7 +177,8 @@ func New(db *sql.DB, d dialect.Dialect) *Kernel {
 func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
 		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
-		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry)}
+		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry),
+		effective: newEffectiveCache()}
 	if k.maxAssetRead <= 0 {
 		k.maxAssetRead = DefaultMaxAssetRead
 	}
