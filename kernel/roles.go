@@ -682,6 +682,9 @@ func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error
 		if len(list) == 0 {
 			return &rterr.NotFound{Kind: "role assignment", Name: id}
 		}
+		if err := k.keepAllHolder(ctx, tx, opts, "removal", func(h AllAuthorizationsHolder) bool { return h.Assignment == id }); err != nil {
+			return err
+		}
 		at := k.timestamp()
 		if err := k.removeAssignment(ctx, tx, list[0], ChangeUnassign, opts.by(), at); err != nil {
 			return err

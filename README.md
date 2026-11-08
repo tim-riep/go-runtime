@@ -560,11 +560,30 @@ Roles are assigned to users per tenant, with an optional first and last day of v
 when it loses the tenant, or the tenant is deleted, its assignments there go too. The same
 role may be assigned several times, also with overlapping periods.
 
-`/RT/ALL_AUTHORIZATIONS` is the role of the kernel that grants every object with all
-values, also objects installed later. It cannot change, is assigned only on its own, and
-every assignment and every sign-in of a user who has it is logged and recorded.
-`rt init --admin <user> --tenant <tenant>` (or the question `rt init` asks on a terminal)
-creates a first user with it. TRBASE brings the authorization objects `/TRBASE/USER_ADMIN`,
+`/RT/ALL_AUTHORIZATIONS` is the role of the kernel for the first setup and emergencies. It
+grants every authorization object with all values and every allowed activity, decided when
+authorizations are evaluated: objects, fields and activities installed later are included,
+nothing is stored and nothing can become incomplete. It is part of the kernel tables with
+texts in English and German, written by `rt init` with the other kernel objects, and cannot
+be changed or deleted, neither by commands, the library, imports nor packages, which cannot
+use the namespace `/RT/`. The kernel checks it when it starts, after `rt init`, after every
+operation on packages and when languages change; a missing or changed role, e.g. after
+direct access to the database, is restored with its assignments kept and recorded as
+`all-authorizations-restored`.
+
+- It is assigned only with `rt role assign` (`RoleOptions.AllAuthorizations` in the library),
+  never by packages, imports or composite roles.
+- Every assignment, removal, restoration and sign-in of a user who has it is recorded in the
+  history and written to the log at level warn with `audit=true`, whatever level the log is
+  set to.
+- Removing the last effective assignment, locking the last user who has it or taking the
+  tenant of that user needs `--yes`, since nobody could administer everything afterwards.
+  A lock after failed logins happens anyway and is audited.
+- `rt check` lists the users who have it and warns when no active user has it today.
+- `rt init --admin <user> --tenant <tenant>` creates a first user with it, with the password
+  on standard input; `RT_ADMIN_USER`, `RT_ADMIN_TENANT` and `RT_ADMIN_PASSWORD` do the same,
+  flags win. On a terminal of a database without users, `rt init` asks. A missing tenant is
+  created. TRBASE brings the authorization objects `/TRBASE/USER_ADMIN`,
 `/TRBASE/ROLE_ADMIN` and `/TRBASE/ROLE_ASSIGNMENT` for the administration, which will be
 checked by a later version.
 

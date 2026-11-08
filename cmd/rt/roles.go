@@ -398,8 +398,8 @@ func (c *cli) userAuthorizations(ctx context.Context, k *kernel.Kernel, user str
 	return exitOK
 }
 
-// terminal reports whether standard input is a terminal.
-func terminal() bool {
+// terminal reports whether standard input is a terminal; tests replace it.
+var terminal = func() bool {
 	f, ok := input.(*os.File)
 	if !ok {
 		return false
@@ -409,22 +409,33 @@ func terminal() bool {
 }
 
 // firstAdmin creates a first user with all authorizations after init:
-// with --admin and --tenant, or after asking on a terminal when there is
-// no user yet. A missing tenant is created.
+// with --admin and --tenant or RT_ADMIN_USER and RT_ADMIN_TENANT, the
+// password from RT_ADMIN_PASSWORD or standard input, or after asking on
+// a terminal when there is no user yet. Flags win over the environment.
+// A missing tenant is created.
 func (c *cli) firstAdmin(ctx context.Context, k *kernel.Kernel) int {
-	name, tenant := c.admin, c.tenantID
+	or := func(flag, env string) string {
+		if flag != "" {
+			return flag
+		}
+		return os.Getenv(env)
+	}
+	name, tenant := or(c.admin, "RT_ADMIN_USER"), or(c.tenantID, "RT_ADMIN_TENANT")
 	var password string
 	switch {
 	case name != "":
 		if tenant == "" {
-			fmt.Fprintln(c.stderr, "usage: rt init --admin <user> --tenant <tenant>, the password on standard input")
+			fmt.Fprintln(c.stderr, "usage: rt init --admin <user> --tenant <tenant> (or RT_ADMIN_USER and RT_ADMIN_TENANT), the password in RT_ADMIN_PASSWORD or on standard input")
 			return exitUsage
 		}
-		pw, err := c.readSecret()
-		if err != nil {
-			return c.fail(err)
+		password = os.Getenv("RT_ADMIN_PASSWORD")
+		if password == "" {
+			pw, err := c.readSecret()
+			if err != nil {
+				return c.fail(err)
+			}
+			password = pw
 		}
-		password = pw
 	case terminal():
 		users, err := k.Users().List(ctx)
 		if err != nil || len(users) > 0 {
@@ -462,4 +473,36 @@ func (c *cli) firstAdmin(ctx context.Context, k *kernel.Kernel) int {
 	}
 	fmt.Fprintf(c.stdout, "User %s created with all authorizations in tenant %s; every sign-in is recorded.\n", name, tenant)
 	return exitOK
+}
+
+// allHolders returns the assignments of the role with all authorizations
+// and a warning when no active user has it today.
+func (c *cli) allHolders(ctx context.Context, k *kernel.Kernel) ([]kernel.AllAuthorizationsHolder, []string, error) {
+	holders, err := k.AllAuthorizationsHolders(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	warnings := []string{}
+	if !slices.ContainsFunc(holders, func(h kernel.AllAuthorizationsHolder) bool { return h.Effective }) {
+		warnings = append(warnings, "no active user has "+model.AllAuthorizationsRole+" in any tenant; nobody can administer everything")
+	}
+	return holders, warnings, nil
+}
+
+func (c *cli) printHolders(holders []kernel.AllAuthorizationsHolder, warnings []string) {
+	if len(holders) > 0 {
+		fmt.Fprintf(c.stdout, "Users with %s:\n", model.AllAuthorizationsRole)
+		w := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
+		for _, h := range holders {
+			state := "effective"
+			if !h.Effective {
+				state = "not effective"
+			}
+			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\n", h.User, h.Tenant, h.Status, period(kernel.RoleAssignment{ValidFrom: h.ValidFrom, ValidTo: h.ValidTo}), state)
+		}
+		w.Flush()
+	}
+	for _, x := range warnings {
+		fmt.Fprintln(c.stdout, "warning: "+x)
+	}
 }

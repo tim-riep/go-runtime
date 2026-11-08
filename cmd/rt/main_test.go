@@ -317,3 +317,70 @@ func TestRoleCommands(t *testing.T) {
 		})
 	}
 }
+
+// TestInitWithAdmin creates the first user with all authorizations from the
+// environment and on a terminal, and checks the users with the role.
+func TestInitWithAdmin(t *testing.T) {
+	for _, db := range testutil.Databases(t) {
+		t.Run(db.Name, func(t *testing.T) {
+			runCLI := func(stdin string, args ...string) (int, string) {
+				var out, errOut bytes.Buffer
+				input = strings.NewReader(stdin)
+				code := run(context.Background(), append([]string{"--db", db.DSN}, args...), &out, &errOut)
+				return code, out.String() + errOut.String()
+			}
+			t.Setenv("RT_ADMIN_USER", "root")
+			t.Setenv("RT_ADMIN_TENANT", "MAIN")
+			t.Setenv("RT_ADMIN_PASSWORD", "secret")
+			if code, out := runCLI("", "init"); code != exitOK || !strings.Contains(out, "Tenant MAIN created.") || !strings.Contains(out, "User root created with all authorizations in tenant MAIN") {
+				t.Fatalf("init from the environment: %d %s", code, out)
+			}
+			if code, out := runCLI("", "check"); code != exitOK || !strings.Contains(out, "root  MAIN  active  open to open  effective") || strings.Contains(out, "warning") {
+				t.Errorf("check: %d %s", code, out)
+			}
+			code, out := runCLI("", "user", "roles", "root")
+			id := ""
+			for _, f := range strings.Fields(out) {
+				if strings.Count(f, "-") == 4 {
+					id = f
+				}
+			}
+			if code != exitOK || id == "" {
+				t.Fatalf("roles: %d %s", code, out)
+			}
+			if code, out := runCLI("", "role", "unassign", id); code != exitNeedsPermit || !strings.Contains(out, "the last user with /RT/ALL_AUTHORIZATIONS") {
+				t.Errorf("unassign the last: %d %s", code, out)
+			}
+			if code, out := runCLI("", "user", "lock", "root"); code != exitNeedsPermit {
+				t.Errorf("lock the last: %d %s", code, out)
+			}
+			if code, out := runCLI("", "role", "unassign", id, "--yes"); code != exitOK {
+				t.Fatalf("unassign with --yes: %d %s", code, out)
+			}
+			if code, out := runCLI("", "check", "--json"); code != exitOK || !strings.Contains(out, `"warnings": [`) || !strings.Contains(out, "no active user has /RT/ALL_AUTHORIZATIONS") {
+				t.Errorf("check without holder: %d %s", code, out)
+			}
+			if code, out := runCLI("", "role", "history", "/RT/ALL_AUTHORIZATIONS"); code != exitOK || !strings.Contains(out, "cli  unassign") {
+				t.Errorf("history: %d %s", code, out)
+			}
+		})
+	}
+	// On a terminal of a new database, rt init asks.
+	t.Run("terminal", func(t *testing.T) {
+		old := terminal
+		terminal = func() bool { return true }
+		defer func() { terminal = old }()
+		var out, errOut bytes.Buffer
+		input = strings.NewReader("y\nadmin\nsecret\nFIRST\n")
+		dsn := "sqlite:" + filepath.Join(t.TempDir(), "rt.db")
+		if code := run(context.Background(), []string{"--db", dsn, "init"}, &out, &errOut); code != exitOK ||
+			!strings.Contains(out.String(), "Create a first user with all authorizations? [y/N]") || !strings.Contains(out.String(), "User admin created with all authorizations in tenant FIRST") {
+			t.Fatalf("interactive init: %d %s %s", code, out.String(), errOut.String())
+		}
+		out.Reset()
+		input = strings.NewReader("n\n")
+		if code := run(context.Background(), []string{"--db", dsn, "init"}, &out, &errOut); code != exitOK || strings.Contains(out.String(), "Create a first user") {
+			t.Errorf("init with a user already: %d %s", code, out.String())
+		}
+	})
+}

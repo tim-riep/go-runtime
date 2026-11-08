@@ -121,13 +121,18 @@ func (k *Kernel) user(ctx context.Context, q dialect.Querier, name string) (*Use
 	return list[0], nil
 }
 
-// change updates a user in a transaction.
-func (u *Users) change(ctx context.Context, name string, fn func(user *User) error) error {
+// change updates a user in a transaction, after the checks.
+func (u *Users) change(ctx context.Context, name string, fn func(user *User) error, checks ...func(q dialect.Querier) error) error {
 	k := u.k
 	return k.userTx(ctx, func(q dialect.Querier) error {
 		user, err := k.user(ctx, q, name)
 		if err != nil {
 			return err
+		}
+		for _, check := range checks {
+			if err := check(q); err != nil {
+				return err
+			}
 		}
 		if err := fn(user); err != nil {
 			return err
@@ -140,11 +145,18 @@ func (u *Users) change(ctx context.Context, name string, fn func(user *User) err
 	})
 }
 
-// Lock locks a user: it cannot sign in any more.
-func (u *Users) Lock(ctx context.Context, name string) error {
+// Lock locks a user: it cannot sign in any more. Locking the last user
+// with all authorizations needs opts.Confirm.
+func (u *Users) Lock(ctx context.Context, name string, opts ...RoleOptions) error {
+	o := RoleOptions{}
+	if len(opts) > 0 {
+		o = opts[0]
+	}
 	return u.change(ctx, name, func(user *User) error {
 		user.Status, user.LockedAt = "locked", model.Some(u.k.timestamp())
 		return nil
+	}, func(q dialect.Querier) error {
+		return u.k.keepAllHolder(ctx, q, o, "lock", func(h AllAuthorizationsHolder) bool { return h.User == name })
 	})
 }
 
@@ -188,10 +200,11 @@ func (u *Users) AddTenant(ctx context.Context, name, tenant string) error {
 // tenant are removed and recorded with opts.By.
 func (u *Users) RemoveTenant(ctx context.Context, name, tenant string, opts ...RoleOptions) error {
 	k := u.k
-	by := RoleOptions{}.by()
+	o := RoleOptions{}
 	if len(opts) > 0 {
-		by = opts[0].by()
+		o = opts[0]
 	}
+	by := o.by()
 	return k.userTx(ctx, func(q dialect.Querier) error {
 		user, err := k.user(ctx, q, name)
 		if err != nil {
@@ -199,6 +212,9 @@ func (u *Users) RemoveTenant(ctx context.Context, name, tenant string, opts ...R
 		}
 		if !slices.Contains(user.Tenants, tenant) {
 			return &rterr.NotFound{Kind: "tenant of user " + name, Name: tenant}
+		}
+		if err := k.keepAllHolder(ctx, q, o, "removal of the tenant", func(h AllAuthorizationsHolder) bool { return h.User == name && h.Tenant == tenant }); err != nil {
+			return err
 		}
 		if user.DefaultTenant.Or("") == tenant {
 			user.DefaultTenant = model.None[string]()
@@ -305,6 +321,13 @@ func (s authStore) Failed(ctx context.Context, name string) error {
 			u.Status, u.LockedAt = "locked", model.Some(k.timestamp())
 			locked = true
 			slog.Warn("user locked after failed logins", "user", name, "failed", u.FailedLogins)
+		}
+		if locked {
+			// The lock is a protection and needs no confirmation; that it
+			// takes away the last user with all authorizations is audited.
+			if err := k.keepAllHolder(ctx, q, RoleOptions{}, "lock", func(h AllAuthorizationsHolder) bool { return h.User == name }); err != nil {
+				audit(ctx, "the last user with all authorizations was locked after failed logins", "user", name)
+			}
 		}
 		if err := k.repo.UpdateUser(ctx, q, u); err != nil || !locked {
 			return err

@@ -72,7 +72,8 @@ Commands:
   list                     list installed packages
   show <object>            show a package, table, domain, data element, structure, array type
                            or authorization object (kind:name to disambiguate)
-  check                    compare the repository with the database schema
+  check                    compare the repository with the database schema; list the users
+                           with all authorizations and warn when no active user has them
   log                      show the operation log
   tenant create <id>       create a tenant (--description)
   tenant list              list tenants
@@ -432,14 +433,20 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		if err != nil {
 			return c.fail(err)
 		}
+		holders, warnings, err := c.allHolders(ctx, k)
+		if err != nil {
+			return c.fail(err)
+		}
 		if c.asJSON {
-			c.json(d)
-		} else if len(d) == 0 {
-			fmt.Fprintln(c.stdout, "Repository and database schema match.")
+			c.json(map[string]any{"discrepancies": append([]kernel.Discrepancy{}, d...), "allAuthorizations": holders, "warnings": warnings})
 		} else {
+			if len(d) == 0 {
+				fmt.Fprintln(c.stdout, "Repository and database schema match.")
+			}
 			for _, x := range d {
 				fmt.Fprintln(c.stdout, x)
 			}
+			c.printHolders(holders, warnings)
 		}
 		if len(d) > 0 {
 			return exitCheck
@@ -1472,7 +1479,7 @@ func (c *cli) user(ctx context.Context, k *kernel.Kernel, args []string) int {
 		w.Flush()
 		return exitOK
 	case args[0] == "lock" && len(args) == 2:
-		return done(us.Lock(ctx, args[1]), "User %s locked.", args[1])
+		return done(us.Lock(ctx, args[1], c.roleOpts()), "User %s locked.", args[1])
 	case args[0] == "unlock" && len(args) == 2:
 		return done(us.Unlock(ctx, args[1]), "User %s unlocked.", args[1])
 	case args[0] == "passwd" && len(args) == 2:

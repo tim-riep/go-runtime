@@ -23,6 +23,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/dialect"
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
+	"github.com/tim-riep/go-runtime/internal/repo"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 )
@@ -103,4 +104,72 @@ func (k *Kernel) ensureAllAuthorizationsRole(ctx context.Context) error {
 		audit(ctx, "role with all authorizations restored to its defined form", "role", model.AllAuthorizationsRole)
 	}
 	return err
+}
+
+// AllAuthorizationsHolder is an assignment of the role with all
+// authorizations.
+type AllAuthorizationsHolder struct {
+	User       string                    `json:"user"`
+	Status     string                    `json:"status"`
+	Tenant     string                    `json:"tenant"`
+	Assignment string                    `json:"assignment"`
+	ValidFrom  model.Optional[time.Time] `json:"validFrom"`
+	ValidTo    model.Optional[time.Time] `json:"validTo"`
+	// Effective tells that the user is active and the assignment valid
+	// today.
+	Effective bool `json:"effective"`
+}
+
+// AllAuthorizationsHolders lists the assignments of the role with all
+// authorizations in all tenants.
+func (k *Kernel) AllAuthorizationsHolders(ctx context.Context) ([]AllAuthorizationsHolder, error) {
+	if err := k.requireInit(ctx, k.db); err != nil {
+		return nil, err
+	}
+	return k.allHolders(ctx, k.db)
+}
+
+func (k *Kernel) allHolders(ctx context.Context, q dialect.Querier) ([]AllAuthorizationsHolder, error) {
+	list, err := k.repo.RoleAssignments(ctx, q, repo.AssignmentFilter{Role: model.AllAuthorizationsRole})
+	if err != nil {
+		return nil, err
+	}
+	today := k.now().UTC()
+	out := []AllAuthorizationsHolder{}
+	for _, a := range list {
+		u, err := k.user(ctx, q, a.User)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, AllAuthorizationsHolder{User: a.User, Status: u.Status, Tenant: a.Tenant, Assignment: a.ID, ValidFrom: a.ValidFrom, ValidTo: a.ValidTo,
+			Effective: u.Status != "locked" && validOn(a, time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC))})
+	}
+	return out, nil
+}
+
+// keepAllHolder fails without confirmation when a change takes away the
+// last effective assignment of the role with all authorizations, after
+// which nobody can administer everything. lost reports the holders the
+// change takes away.
+func (k *Kernel) keepAllHolder(ctx context.Context, q dialect.Querier, opts RoleOptions, what string, lost func(h AllAuthorizationsHolder) bool) error {
+	if opts.Confirm || !k.repo.HasRoles() {
+		return nil
+	}
+	holders, err := k.allHolders(ctx, q)
+	if err != nil {
+		return err
+	}
+	before, after := 0, 0
+	for _, h := range holders {
+		if h.Effective {
+			before++
+			if !lost(h) {
+				after++
+			}
+		}
+	}
+	if before > 0 && after == 0 {
+		return &rterr.ConfirmationRequired{Operation: what, Object: "the last user with " + model.AllAuthorizationsRole + "; nobody can administer everything afterwards"}
+	}
+	return nil
 }

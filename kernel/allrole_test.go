@@ -18,8 +18,11 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tim-riep/go-runtime/internal/testutil"
 	"github.com/tim-riep/go-runtime/kernel"
@@ -221,4 +224,135 @@ func TestAllAuthorizationsRoleRestored(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestAllAuthorizationsHolders protects the last effective user with the
+// role: removing its assignment, locking it or taking its tenant needs a
+// confirmation; with another holder it does not.
+func TestAllAuthorizationsHolders(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		audits := recordAudit(t)
+		withRoleKernel(t, k)
+		roles := k.Roles()
+		var ia *rterr.InvalidArgument
+		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: allRole, Tenant: "ACME"}, kernel.RoleOptions{}); !errors.As(err, &ia) ||
+			!strings.Contains(err.Error(), "assigned only on the command line") {
+			t.Fatalf("assign without release: %v", err)
+		}
+		cli := kernel.RoleOptions{By: "cli", AllAuthorizations: true}
+		annaACME, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: allRole, Tenant: "ACME"}, cli)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Users().Create(ctx, "bob", "secret", kernel.UserOptions{Tenant: model.Some("BETA")}); err != nil {
+			t.Fatal(err)
+		}
+		holders, err := k.AllAuthorizationsHolders(ctx)
+		if err != nil || len(holders) != 1 || holders[0].User != "anna" || !holders[0].Effective {
+			t.Fatalf("holders: %+v %v", holders, err)
+		}
+		var conf *rterr.ConfirmationRequired
+		if err := roles.Unassign(ctx, annaACME.ID, cli); !errors.As(err, &conf) {
+			t.Errorf("unassign the last: %v", err)
+		}
+		if err := k.Users().Lock(ctx, "anna", cli); !errors.As(err, &conf) {
+			t.Errorf("lock the last: %v", err)
+		}
+		if err := k.Users().RemoveTenant(ctx, "anna", "ACME", cli); !errors.As(err, &conf) {
+			t.Errorf("take the tenant of the last: %v", err)
+		}
+		// A second holder lets the first go; then he is the last one.
+		bobBETA, _, err := roles.Assign(ctx, kernel.Assignment{User: "bob", Role: allRole, Tenant: "BETA"}, cli)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := roles.Unassign(ctx, annaACME.ID, cli); err != nil {
+			t.Fatal(err)
+		}
+		if err := k.Users().Lock(ctx, "bob", cli); !errors.As(err, &conf) {
+			t.Errorf("lock the last: %v", err)
+		}
+		confirmed := cli
+		confirmed.Confirm = true
+		if err := k.Users().Lock(ctx, "bob", confirmed); err != nil {
+			t.Fatal(err)
+		}
+		holders, _ = k.AllAuthorizationsHolders(ctx)
+		if len(holders) != 1 || holders[0].Effective || holders[0].Status != "locked" {
+			t.Errorf("holders after the lock: %+v", holders)
+		}
+		// A locked user has nothing, though it has the role.
+		if e, _ := k.EffectiveAuthorizations(ctx, "bob", "BETA", time.Now()); e.All || e.Allows("/TRFIN/COMPANY", nil) {
+			t.Errorf("locked user: %+v", e)
+		}
+		if err := roles.Unassign(ctx, bobBETA.ID, cli); err != nil {
+			t.Errorf("unassign from a locked user: %v", err)
+		}
+		if got := audits(); strings.Join(got, ", ") != "all authorizations assigned, all authorizations assigned, all authorizations unassigned, all authorizations unassigned" {
+			t.Errorf("audit: %v", got)
+		}
+
+		// The last holder locked after failed logins is audited.
+		if err := k.Users().Unlock(ctx, "bob"); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "bob", Role: allRole, Tenant: "BETA"}, cli); err != nil {
+			t.Fatal(err)
+		}
+		audits()
+		srv := httptest.NewServer(k.HTTPHandler())
+		defer srv.Close()
+		if err := k.ActivateHTTPService(ctx, "/trfin"); err != nil {
+			t.Fatal(err)
+		}
+		for range 5 {
+			r, _ := http.NewRequest("GET", srv.URL+"/trfin/companies", nil)
+			r.SetBasicAuth("bob", "wrong")
+			resp, err := http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+		}
+		if got := audits(); len(got) != 1 || got[0] != "the last user with all authorizations was locked after failed logins" {
+			t.Errorf("audit of the lock: %v", got)
+		}
+	})
+}
+
+// TestAllAuthorizationsLater grants objects and activities that come
+// after the assignment.
+func TestAllAuthorizationsLater(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Users().Create(ctx, "root", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "root", Role: allRole, Tenant: "ACME"}, kernel.RoleOptions{AllAuthorizations: true}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Install(ctx, examples(t), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		values := map[string]string{"COMPANY_ID": "C1", "COUNTRY": "DE", "ACTIVITY": "APPROVE"}
+		e, err := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now())
+		if err != nil || !e.Allows("/TRFIN/COMPANY", values) || !e.Allows("/TROTTO/SYNC", map[string]string{"COUNTRY": "FR", "ACTIVITY": "SEND"}) {
+			t.Fatalf("objects installed after the assignment: %+v %v", e, err)
+		}
+		if _, err := k.Upgrade(ctx, finWithField(t, "1.1.0", true), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		values["REGION"] = "NORTH"
+		if e, _ := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now()); !e.Allows("/TRFIN/COMPANY", values) || len(e.NotEffective) != 0 {
+			t.Errorf("a field added later: %+v", e)
+		}
+		if d, _ := k.Roles().Get(ctx, allRole); len(d.Authorizations) != 6 {
+			t.Errorf("covered objects: %d", len(d.Authorizations))
+		}
+	})
 }
