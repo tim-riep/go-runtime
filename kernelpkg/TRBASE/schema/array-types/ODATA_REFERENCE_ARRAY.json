@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_REFERENCE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Reference to a vocabularys"
+    },
+    "de": {
+      "label": "Verweis auf ein Vokabular"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_REFERENCE"
+  }
+}

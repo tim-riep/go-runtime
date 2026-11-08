@@ -74,6 +74,13 @@
     "commitAllowed": {
       "description": "Whether implementations may commit or roll back the default session. Default false.",
       "type": "boolean"
+    },
+    "activation": {
+      "description": "Where implementations are activated: tenant (the default) globally and per tenant, global only globally, for points the kernel runs without tenant.",
+      "enum": [
+        "tenant",
+        "global"
+      ]
     }
   }
 }

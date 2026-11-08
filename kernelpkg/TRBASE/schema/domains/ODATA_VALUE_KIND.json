@@ -1,0 +1,83 @@
+{
+  "name": "/TRBASE/ODATA_VALUE_KIND",
+  "description": "Kind of a value of an annotation of OData",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "string",
+      "name": "STRING",
+      "description": "Text"
+    },
+    {
+      "value": "boolean",
+      "name": "BOOLEAN",
+      "description": "Truth value"
+    },
+    {
+      "value": "integer",
+      "name": "INTEGER",
+      "description": "Integer"
+    },
+    {
+      "value": "decimal",
+      "name": "DECIMAL",
+      "description": "Decimal number"
+    },
+    {
+      "value": "date",
+      "name": "DATE",
+      "description": "Date"
+    },
+    {
+      "value": "dateTimeOffset",
+      "name": "DATE_TIME_OFFSET",
+      "description": "Timestamp"
+    },
+    {
+      "value": "guid",
+      "name": "GUID",
+      "description": "GUID"
+    },
+    {
+      "value": "enumMember",
+      "name": "ENUM_MEMBER",
+      "description": "Member of an enumeration"
+    },
+    {
+      "value": "path",
+      "name": "PATH",
+      "description": "Path"
+    },
+    {
+      "value": "propertyPath",
+      "name": "PROPERTY_PATH",
+      "description": "Path to a property"
+    },
+    {
+      "value": "navigationPath",
+      "name": "NAVIGATION_PATH",
+      "description": "Path to a navigation"
+    },
+    {
+      "value": "annotationPath",
+      "name": "ANNOTATION_PATH",
+      "description": "Path to an annotation"
+    },
+    {
+      "value": "null",
+      "name": "NULL",
+      "description": "Null"
+    },
+    {
+      "value": "collection",
+      "name": "COLLECTION",
+      "description": "Collection"
+    },
+    {
+      "value": "record",
+      "name": "RECORD",
+      "description": "Record"
+    }
+  ]
+}

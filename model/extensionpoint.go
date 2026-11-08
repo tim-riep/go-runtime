@@ -53,9 +53,26 @@ type ExtensionPoint struct {
 	Fallback Optional[string] `json:"fallback"`
 	// CommitAllowed lets implementations commit or roll back the default
 	// session.
-	CommitAllowed bool           `json:"commitAllowed"`
-	Src           rterr.Location `json:"-"`
+	CommitAllowed bool `json:"commitAllowed"`
+	// Activation tells where implementations are activated: globally and
+	// per tenant, or only globally; empty means per tenant.
+	Activation ExtensionActivation `json:"activation"`
+	Src        rterr.Location      `json:"-"`
 }
+
+// ExtensionActivation tells where the implementations of an extension
+// point are activated.
+type ExtensionActivation string
+
+// Kinds of activation.
+const (
+	// ActivationTenant: globally and per tenant, where the setting of a
+	// tenant wins.
+	ActivationTenant ExtensionActivation = "tenant"
+	// ActivationGlobal: only globally, for points the kernel runs without
+	// tenant, such as the extensions of the metadata of services.
+	ActivationGlobal ExtensionActivation = "global"
+)
 
 // ExtensionFilter is a filter field of an extension point. Like a field
 // of an authorization object it has a data element or a domain.

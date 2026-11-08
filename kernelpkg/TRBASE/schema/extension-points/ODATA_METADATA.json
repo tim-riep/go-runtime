@@ -1,0 +1,30 @@
+{
+  "name": "/TRBASE/ODATA_METADATA",
+  "description": {
+    "en": "Annotations of the metadata of services",
+    "de": "Annotationen der Metadaten von Diensten"
+  },
+  "interface": "/TRBASE/ODATA_METADATA_EXTENSION",
+  "use": "multiple",
+  "filters": [
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "default": [
+        {
+          "pattern": "*"
+        }
+      ]
+    },
+    {
+      "name": "SERVICE_NAME",
+      "dataElement": "/TRBASE/SERVICE_NAME",
+      "default": [
+        {
+          "pattern": "*"
+        }
+      ]
+    }
+  ],
+  "activation": "global"
+}

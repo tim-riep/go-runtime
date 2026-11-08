@@ -46,6 +46,9 @@ func (v *validator) extensionPoint(p *model.ExtensionPoint) {
 	if fb, ok := p.Fallback.Get(); ok {
 		v.ownSource(fb, model.SourceClass, "class", p.Owner, loc.At("/fallback"), obj)
 	}
+	if p.Activation != "" && p.Activation != model.ActivationTenant && p.Activation != model.ActivationGlobal {
+		v.fail(rterr.CodeExtensionPoint, loc.At("/activation"), obj, "activation is tenant or global, not %q", p.Activation)
+	}
 	if p.Use != model.UseSingle && p.Use != model.UseMultiple {
 		v.fail(rterr.CodeExtensionPoint, loc.At("/use"), obj, "use is single or multiple, not %q", p.Use)
 	}

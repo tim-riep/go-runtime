@@ -1,0 +1,27 @@
+{
+  "name": "/TRBASE/ODATA_REFERENCE",
+  "texts": {
+    "en": {
+      "label": "Reference to a vocabulary"
+    },
+    "de": {
+      "label": "Verweis auf ein Vokabular"
+    }
+  },
+  "components": [
+    {
+      "name": "URI",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "NAMESPACE",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ALIAS",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

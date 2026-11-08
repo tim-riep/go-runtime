@@ -772,6 +772,9 @@ func (b *entityBuffer) Discard(ctx context.Context) error {
 type entityStore struct{ x *execution }
 
 func (s *entityStore) Modify(ctx context.Context, req vm.ModifyRequest) (*vm.EntityResult, []any, error) {
+	if s.x.opts.ReadOnly {
+		return nil, nil, errReadOnly
+	}
 	return s.x.buffer().Modify(ctx, req)
 }
 
@@ -780,6 +783,9 @@ func (s *entityStore) Read(ctx context.Context, req vm.ReadRequest) ([]map[strin
 }
 
 func (s *entityStore) Save(ctx context.Context, b vm.Behavior) (*vm.EntityResult, bool, error) {
+	if s.x.opts.ReadOnly {
+		return nil, false, errReadOnly
+	}
 	return s.x.buffer().Save(ctx, b)
 }
 

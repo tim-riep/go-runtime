@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ODATA_BINDING",
+  "texts": {
+    "en": {
+      "label": "Navigation binding"
+    },
+    "de": {
+      "label": "Navigationsbindung"
+    }
+  },
+  "components": [
+    {
+      "name": "PATH",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TARGET",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_VALUE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Value of an annotations"
+    },
+    "de": {
+      "label": "Wert einer Annotation"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_VALUE"
+  }
+}

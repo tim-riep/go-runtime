@@ -42,6 +42,7 @@ type extensionPointDoc struct {
 	} `json:"filters"`
 	Fallback      model.Optional[string] `json:"fallback"`
 	CommitAllowed bool                   `json:"commitAllowed"`
+	Activation    string                 `json:"activation"`
 }
 
 type implementationDoc struct {
@@ -72,7 +73,10 @@ func init() {
 		Build: func(l *loader, file string, doc any, pkg *model.Package) {
 			d := doc.(*extensionPointDoc)
 			p := model.ExtensionPoint{Name: d.Name, Owner: l.owner(), File: file, Description: d.Description, Interface: d.Interface,
-				Use: model.ExtensionUse(d.Use), Fallback: d.Fallback, CommitAllowed: d.CommitAllowed, Src: l.loc(file)}
+				Use: model.ExtensionUse(d.Use), Fallback: d.Fallback, CommitAllowed: d.CommitAllowed, Activation: model.ActivationTenant, Src: l.loc(file)}
+			if d.Activation != "" {
+				p.Activation = model.ExtensionActivation(d.Activation)
+			}
 			for _, f := range d.Filters {
 				p.Filters = append(p.Filters, model.ExtensionFilter{Name: f.Name, DataElement: f.DataElement, Domain: f.Domain, Default: f.Default})
 			}

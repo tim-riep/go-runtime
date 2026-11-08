@@ -1,0 +1,37 @@
+{
+  "name": "/TRBASE/ODATA_ANNOTATION",
+  "texts": {
+    "en": {
+      "label": "Annotation",
+      "description": "A term applied to a target, with its value as a tree of nodes"
+    },
+    "de": {
+      "label": "Annotation"
+    }
+  },
+  "components": [
+    {
+      "name": "TARGET",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TERM",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "QUALIFIER",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "ORIGIN",
+      "dataElement": "/TRBASE/PACKAGE_ID"
+    },
+    {
+      "name": "VALUE",
+      "arrayType": "/TRBASE/ODATA_VALUE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

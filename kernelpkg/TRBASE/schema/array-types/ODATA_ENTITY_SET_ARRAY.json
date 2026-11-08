@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_ENTITY_SET_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Entity sets"
+    },
+    "de": {
+      "label": "Entity Set"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_ENTITY_SET"
+  }
+}

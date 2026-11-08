@@ -1,0 +1,45 @@
+{
+  "name": "/TRBASE/ODATA_ACTION",
+  "texts": {
+    "en": {
+      "label": "Action"
+    },
+    "de": {
+      "label": "Aktion"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TECHNICAL_NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "BOUND_TO",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "PARAMETERS",
+      "arrayType": "/TRBASE/ODATA_PROPERTY_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "RETURN_TYPE",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "RETURN_NULLABLE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_SET_PATH",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "/TRBASE/ODATA_METADATA",
+  "texts": {
+    "en": {
+      "label": "Metadata of a service",
+      "description": "The metadata of a service of OData that extensions of the metadata may annotate"
+    },
+    "de": {
+      "label": "Metadaten eines Dienstes"
+    }
+  },
+  "components": [
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "SERVICE_NAME",
+      "dataElement": "/TRBASE/SERVICE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE",
+      "notNull": true
+    },
+    {
+      "name": "NAMESPACE",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_SETS",
+      "arrayType": "/TRBASE/ODATA_ENTITY_SET_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_TYPES",
+      "arrayType": "/TRBASE/ODATA_ENTITY_TYPE_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "COMPLEX_TYPES",
+      "arrayType": "/TRBASE/ODATA_COMPLEX_TYPE_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ACTIONS",
+      "arrayType": "/TRBASE/ODATA_ACTION_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ACTION_IMPORTS",
+      "arrayType": "/TRBASE/ODATA_ACTION_IMPORT_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ANNOTATIONS",
+      "arrayType": "/TRBASE/ODATA_ANNOTATION_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "REFERENCES",
+      "arrayType": "/TRBASE/ODATA_REFERENCE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

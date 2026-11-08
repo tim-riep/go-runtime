@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_CONSTRAINT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Referential constraints"
+    },
+    "de": {
+      "label": "Referenzielle Bedingung"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_CONSTRAINT"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ODATA_CONSTRAINT",
+  "texts": {
+    "en": {
+      "label": "Referential constraint"
+    },
+    "de": {
+      "label": "Referenzielle Bedingung"
+    }
+  },
+  "components": [
+    {
+      "name": "PROPERTY",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "REFERENCED_PROPERTY",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    }
+  ]
+}

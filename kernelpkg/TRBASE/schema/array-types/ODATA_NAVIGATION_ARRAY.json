@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_NAVIGATION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Navigations"
+    },
+    "de": {
+      "label": "Navigation"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_NAVIGATION"
+  }
+}

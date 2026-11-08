@@ -40,7 +40,7 @@ func (r *Repo) HasExtensionPoints() bool { return r.has(TExtensionPoints, "") }
 
 func (r *Repo) loadExtensionPoints(ctx context.Context, q dialect.Querier, s *model.Schema) error {
 	points, err := r.selectRows(ctx, q, TExtensionPoints, []string{"POINT_NAME", "PACKAGE_ID", "FILE_PATH", "INTERFACE_NAME", "EXTENSION_USE",
-		"FALLBACK_CLASS", "COMMIT_ALLOWED"}, "POINT_NAME")
+		"FALLBACK_CLASS", "COMMIT_ALLOWED", "ACTIVATION"}, "POINT_NAME")
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,10 @@ func (r *Repo) loadExtensionPoints(ctx context.Context, q dialect.Querier, s *mo
 		name := str(x["POINT_NAME"])
 		s.ExtensionPoints[name] = &model.ExtensionPoint{Name: name, Owner: owner(x["PACKAGE_ID"]), File: str(x["FILE_PATH"]), Description: map[string]string{},
 			Interface: str(x["INTERFACE_NAME"]), Use: model.ExtensionUse(str(x["EXTENSION_USE"])), Fallback: opt(x["FALLBACK_CLASS"]),
-			CommitAllowed: flag(x["COMMIT_ALLOWED"])}
+			CommitAllowed: flag(x["COMMIT_ALLOWED"]), Activation: model.ExtensionActivation(str(x["ACTIVATION"]))}
+		if s.ExtensionPoints[name].Activation == "" {
+			s.ExtensionPoints[name].Activation = model.ActivationTenant
+		}
 	}
 	texts, err := r.selectRows(ctx, q, TExtensionPointTexts, []string{"POINT_NAME", "LANGUAGE", "DESCRIPTION"})
 	if err != nil {
@@ -128,7 +131,7 @@ func (r *Repo) writeExtensionPoints(ctx context.Context, q dialect.Querier, s *m
 	for _, name := range s.ExtensionPointNames() {
 		p := s.ExtensionPoints[name]
 		if err := r.insert(ctx, q, TExtensionPoints, row{"POINT_NAME": name, "PACKAGE_ID": ownerValue(p.Owner), "FILE_PATH": p.File,
-			"INTERFACE_NAME": p.Interface, "EXTENSION_USE": string(p.Use), "FALLBACK_CLASS": val(p.Fallback), "COMMIT_ALLOWED": p.CommitAllowed}); err != nil {
+			"INTERFACE_NAME": p.Interface, "EXTENSION_USE": string(p.Use), "FALLBACK_CLASS": val(p.Fallback), "COMMIT_ALLOWED": p.CommitAllowed, "ACTIVATION": string(p.Activation)}); err != nil {
 			return err
 		}
 		for _, lang := range p.Languages() {

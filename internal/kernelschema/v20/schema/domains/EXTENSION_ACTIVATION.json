@@ -1,0 +1,16 @@
+{
+  "name": "/RT/EXTENSION_ACTIVATION",
+  "description": "Where the implementations of an extension point are activated",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "tenant",
+      "description": "Globally and per tenant"
+    },
+    {
+      "value": "global",
+      "description": "Only globally"
+    }
+  ]
+}

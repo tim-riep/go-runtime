@@ -1,0 +1,45 @@
+{
+  "name": "/TRBASE/ODATA_PROPERTY",
+  "texts": {
+    "en": {
+      "label": "Property",
+      "description": "A property of a type or a parameter of an action"
+    },
+    "de": {
+      "label": "Eigenschaft"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TECHNICAL_NAME",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "TYPE",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "NULLABLE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "MAX_LENGTH",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "PRECISION",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "SCALE",
+      "domain": "/TRBASE/COUNTER"
+    }
+  ]
+}

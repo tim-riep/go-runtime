@@ -416,6 +416,9 @@ func (m *Machine) endSession(v Value, rollback bool) (*thrown, error) {
 	if !rollback && sess.s.Number() == 1 && m.opts.Entities != nil && m.opts.Entities.Pending() {
 		return m.fail("/RT/SESSION_ERROR", "commit of the default session while the transaction buffer holds changes of business objects; use commit business objects"), nil
 	}
+	if m.opts.ReadOnly {
+		return m.fail("/RT/SESSION_ERROR", "%s is not allowed: the execution only reads", what), nil
+	}
 	if n := len(m.noCommit); n > 0 && sess.s.Number() == 1 {
 		return m.fail("/RT/SESSION_ERROR", "%s of the default session is not allowed in an implementation of extension point %s; open a session of its own", what, m.noCommit[n-1]), nil
 	}

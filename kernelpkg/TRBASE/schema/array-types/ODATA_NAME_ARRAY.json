@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_NAME_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Names"
+    },
+    "de": {
+      "label": "Namen"
+    }
+  },
+  "rowType": {
+    "domain": "/TRBASE/TEXT"
+  }
+}

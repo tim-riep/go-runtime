@@ -293,6 +293,9 @@ func (b *bufferedRows) Next() ([]any, bool, error) {
 func (b *bufferedRows) Close() error { return nil }
 
 func (s *session) Exec(ctx context.Context, p *bytecode.Program, q *bytecode.Query, args []any) (int64, error) {
+	if s.x.opts.ReadOnly {
+		return 0, errReadOnly
+	}
 	st, err := s.statement(p, q, args, 0)
 	if err != nil {
 		return 0, err
@@ -325,6 +328,9 @@ func (s *session) Exec(ctx context.Context, p *bytecode.Program, q *bytecode.Que
 	s.traceFilters(st, model.Some(n))
 	return n, nil
 }
+
+// errReadOnly rejects changes in an execution that only reads.
+var errReadOnly = &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: "the execution only reads; it changes no rows"}
 
 // AfterCommit registers a function that runs after the next successful
 // commit of the session; rollback discards it.

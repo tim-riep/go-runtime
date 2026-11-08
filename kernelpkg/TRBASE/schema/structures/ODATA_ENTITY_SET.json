@@ -1,0 +1,33 @@
+{
+  "name": "/TRBASE/ODATA_ENTITY_SET",
+  "texts": {
+    "en": {
+      "label": "Entity set"
+    },
+    "de": {
+      "label": "Entity Set"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_TYPE",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TECHNICAL_NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "BINDINGS",
+      "arrayType": "/TRBASE/ODATA_BINDING_ARRAY",
+      "notNull": true
+    }
+  ]
+}

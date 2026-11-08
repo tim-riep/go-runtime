@@ -1,0 +1,42 @@
+{
+  "name": "/TRBASE/ODATA_NAVIGATION",
+  "texts": {
+    "en": {
+      "label": "Navigation"
+    },
+    "de": {
+      "label": "Navigation"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TYPE",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "NULLABLE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "PARTNER",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "CONTAINS_TARGET",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CONSTRAINTS",
+      "arrayType": "/TRBASE/ODATA_CONSTRAINT_ARRAY",
+      "notNull": true
+    }
+  ]
+}

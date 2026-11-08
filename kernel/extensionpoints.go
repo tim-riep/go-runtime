@@ -191,9 +191,14 @@ func (x *execution) SelectImplementations(point string, values map[string]string
 			x.recordSelection(point, values, reasons, at)
 		}
 	}()
+	// Points activated only globally ignore the settings of tenants.
+	tenant := x.tenant
+	if p.Activation == model.ActivationGlobal {
+		tenant = ""
+	}
 	for _, ri := range rp.impls {
-		if !act.active(ri.impl.Name, x.tenant) {
-			note(ri.impl.Name, "inactive "+act.where(ri.impl.Name, x.tenant))
+		if !act.active(ri.impl.Name, tenant) {
+			note(ri.impl.Name, "inactive "+act.where(ri.impl.Name, tenant))
 			continue
 		}
 		if field, ok := rp.matches(ri, values); !ok {

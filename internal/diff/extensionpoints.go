@@ -57,6 +57,9 @@ func extensionPoints(cur, want *model.Schema) []plan.Change {
 		if c.Fallback != w.Fallback {
 			note(false, "fallback %s -> %s", c.Fallback.Or("none"), w.Fallback.Or("none"))
 		}
+		if c.Activation != w.Activation {
+			note(false, "activation %s -> %s", c.Activation, w.Activation)
+		}
 		if c.CommitAllowed != w.CommitAllowed {
 			note(c.CommitAllowed, "commit allowed %t -> %t", c.CommitAllowed, w.CommitAllowed)
 		}

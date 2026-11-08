@@ -48,6 +48,8 @@ type Options struct {
 	Log LogSink
 	// Entities is the transaction buffer of business objects.
 	Entities EntityStore
+	// ReadOnly forbids commit and rollback: the execution only reads.
+	ReadOnly bool
 	// Database gives access to the database; without it database
 	// statements end the execution with an error.
 	Database Database

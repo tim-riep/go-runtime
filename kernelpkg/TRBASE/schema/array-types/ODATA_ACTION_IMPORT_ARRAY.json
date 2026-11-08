@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_ACTION_IMPORT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Action imports"
+    },
+    "de": {
+      "label": "Action Import"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_ACTION_IMPORT"
+  }
+}

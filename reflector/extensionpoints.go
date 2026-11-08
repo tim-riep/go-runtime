@@ -30,9 +30,10 @@ type ExtensionPoint struct {
 	Interface   string             `json:"interface"`
 	Use         model.ExtensionUse `json:"use"`
 	// Filters are the filter fields in their order.
-	Filters       []ExtensionFilter      `json:"filters"`
-	Fallback      model.Optional[string] `json:"fallback"`
-	CommitAllowed bool                   `json:"commitAllowed"`
+	Filters       []ExtensionFilter         `json:"filters"`
+	Fallback      model.Optional[string]    `json:"fallback"`
+	CommitAllowed bool                      `json:"commitAllowed"`
+	Activation    model.ExtensionActivation `json:"activation"`
 	// Implementations are those of all packages, in the order they run.
 	Implementations []Implementation `json:"implementations"`
 	// Languages are the languages of the texts.
@@ -78,7 +79,7 @@ func (r *Reflector) ExtensionPoint(name string) (*ExtensionPoint, error) {
 		return nil, &rterr.NotFound{Kind: "extension point", Name: name}
 	}
 	out := &ExtensionPoint{FormatVersion: FormatVersion, Name: p.Name, Package: p.Owner, Description: r.texts(p.Description), Interface: p.Interface,
-		Use: p.Use, Filters: []ExtensionFilter{}, Fallback: p.Fallback, CommitAllowed: p.CommitAllowed, Implementations: []Implementation{}, Languages: r.langs}
+		Use: p.Use, Filters: []ExtensionFilter{}, Fallback: p.Fallback, CommitAllowed: p.CommitAllowed, Activation: p.Activation, Implementations: []Implementation{}, Languages: r.langs}
 	for _, f := range p.Filters {
 		af := model.AuthorizationField{Name: f.Name, DataElement: f.DataElement, Domain: f.Domain}
 		out.Filters = append(out.Filters, ExtensionFilter{AuthorizationField: r.field(&model.AuthorizationObject{}, af), Default: f.Default})

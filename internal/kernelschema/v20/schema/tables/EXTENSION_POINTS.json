@@ -37,6 +37,10 @@
       "name": "COMMIT_ALLOWED",
       "domain": "/RT/FLAG",
       "notNull": true
+    },
+    {
+      "name": "ACTIVATION",
+      "domain": "/RT/EXTENSION_ACTIVATION"
     }
   ],
   "primaryKey": [

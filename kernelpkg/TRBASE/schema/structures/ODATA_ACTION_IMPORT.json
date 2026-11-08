@@ -1,0 +1,27 @@
+{
+  "name": "/TRBASE/ODATA_ACTION_IMPORT",
+  "texts": {
+    "en": {
+      "label": "Action import"
+    },
+    "de": {
+      "label": "Action Import"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ACTION",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_SET",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

@@ -18,6 +18,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -61,19 +64,48 @@ type metadataCache struct {
 	docs map[string]*metadataDoc
 }
 
-// metadata returns the metadata document of a service in a language,
-// cached for the generation.
-func (k *Kernel) metadata(ctx context.Context, g *generation, svc *model.Service, lang string) (*metadataDoc, error) {
+// metadata returns the metadata document of a service in a language with
+// the implementations of the extension point of the metadata, or without
+// them. Documents are cached for the generation of the code and of the
+// activation of implementations, so that installing, removing, activating
+// and deactivating an implementation builds them again. Failures are not
+// cached.
+func (k *Kernel) metadata(ctx context.Context, g *generation, svc *model.Service, lang string, withExtensions bool) (*metadataDoc, error) {
 	g.metadataOnce.Do(func() { g.metadata = &metadataCache{docs: map[string]*metadataDoc{}} })
-	key := svc.Name + "\x00" + lang
+	var impls []*model.Implementation
+	var n int64
+	if withExtensions {
+		var err error
+		if impls, n, err = k.metadataImplementations(ctx, g, svc); err != nil {
+			return nil, err
+		}
+	}
+	key := fmt.Sprintf("%s\x00%s\x00%t\x00%d", svc.Name, lang, withExtensions, n)
 	g.metadata.mu.Lock()
 	d, ok := g.metadata.docs[key]
 	g.metadata.mu.Unlock()
 	if ok {
 		return d, nil
 	}
+	st, err := k.activation(ctx)
+	if err != nil {
+		return nil, err
+	}
 	md := odata.BuildMetadata(g.schema, g.odataModel(svc), lang)
-	d = newMetadataDoc(md, "")
+	md, err = k.extendMetadata(ctx, g, svc, md, impls, odataSettings(st.kernel).MetadataTimeout)
+	if err != nil {
+		var me *MetadataExtensionError
+		if errors.As(err, &me) {
+			slog.Error("an extension of the metadata failed", "service", svc.Name, "implementation", me.Implementation, "package", me.Package,
+				"reason", me.Reason)
+		}
+		return nil, err
+	}
+	var salt []string
+	for _, impl := range impls {
+		salt = append(salt, impl.Name+"@"+string(impl.Owner))
+	}
+	d = newMetadataDoc(md, strings.Join(salt, ","))
 	g.metadata.mu.Lock()
 	g.metadata.docs[key] = d
 	g.metadata.mu.Unlock()
@@ -91,7 +123,7 @@ func (k *Kernel) serveMetadata(w http.ResponseWriter, r *http.Request, sr *servi
 		sr.fail(w, e)
 		return
 	}
-	d, err := k.metadata(r.Context(), sr.g, sr.svc, sr.lang)
+	d, err := k.metadata(r.Context(), sr.g, sr.svc, sr.lang, true)
 	if err != nil {
 		sr.internal(w, "building the metadata", err)
 		return
@@ -190,7 +222,7 @@ func (k *Kernel) ServiceMetadata(ctx context.Context, name string, opts ServiceM
 	if !langs[lang] {
 		lang = model.DefaultLanguage
 	}
-	d, err := k.metadata(ctx, g, svc, lang)
+	d, err := k.metadata(ctx, g, svc, lang, !opts.WithoutExtensions)
 	if err != nil {
 		return nil, err
 	}

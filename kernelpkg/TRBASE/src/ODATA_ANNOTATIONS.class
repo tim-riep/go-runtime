@@ -1,0 +1,30 @@
+# Builds annotations of the metadata of services with simple values, so
+# that implementations of /TRBASE/ODATA_METADATA need no tree of values.
+public class /TRBASE/ODATA_ANNOTATIONS
+
+  # An annotation of a term with a text.
+  public static method TEXT(target: STRING, term: STRING, text: STRING) returns /TRBASE/ODATA_ANNOTATION
+    return /TRBASE/ODATA_ANNOTATIONS.SIMPLE(target, term, /TRBASE/ODATA_VALUE_KIND.STRING, text)
+  end
+
+  # An annotation of a term with the value true, such as a tag.
+  public static method TAG(target: STRING, term: STRING) returns /TRBASE/ODATA_ANNOTATION
+    return /TRBASE/ODATA_ANNOTATIONS.SIMPLE(target, term, /TRBASE/ODATA_VALUE_KIND.BOOLEAN, "true")
+  end
+
+  # An annotation of a term with a simple value of a kind in canonical
+  # text form.
+  public static method SIMPLE(target: STRING, term: STRING, kind: /TRBASE/ODATA_VALUE_KIND, text: STRING) returns /TRBASE/ODATA_ANNOTATION
+    var a: /TRBASE/ODATA_ANNOTATION
+    a.TARGET = target
+    a.TERM = term
+    a.VALUE = []
+    var v: /TRBASE/ODATA_VALUE
+    v.ID = 1
+    v.KIND = kind
+    v.TEXT = text
+    a.VALUE.APPEND(v)
+    return a
+  end
+
+end

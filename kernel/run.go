@@ -76,6 +76,10 @@ type ExecOptions struct {
 	// VM are the limits and the log of the VM; its Database is set by the
 	// kernel.
 	VM vm.Options
+	// ReadOnly runs an execution that only reads: statements that change
+	// rows, entity statements that change instances, commit and rollback
+	// raise /RT/SESSION_ERROR, and the end rolls back.
+	ReadOnly bool
 }
 
 func (o *ExecOptions) defaults() {
@@ -154,6 +158,7 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 	vo.Limits = k.formats.OrDefault()
 	vo.Transformer = x
 	vo.Entities = &entityStore{x: x}
+	vo.ReadOnly = opts.ReadOnly
 	m, err := vm.New(image, vo)
 	if err != nil {
 		return err

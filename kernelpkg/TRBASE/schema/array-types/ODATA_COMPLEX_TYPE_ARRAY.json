@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_COMPLEX_TYPE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Complex types"
+    },
+    "de": {
+      "label": "Komplexer Typ"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_COMPLEX_TYPE"
+  }
+}

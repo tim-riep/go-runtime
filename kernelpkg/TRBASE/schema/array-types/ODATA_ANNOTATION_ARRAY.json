@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_ANNOTATION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Annotations"
+    },
+    "de": {
+      "label": "Annotation"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_ANNOTATION"
+  }
+}

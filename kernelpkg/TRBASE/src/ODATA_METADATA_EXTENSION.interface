@@ -1,0 +1,11 @@
+# Implementations of the extension point /TRBASE/ODATA_METADATA annotate
+# the metadata of services: they add, change and remove annotations, add
+# references to vocabularies and change descriptions. The kernel rejects
+# changes of the structure and of the annotations it derives from business
+# objects, such as Core.Computed and the capabilities.
+public interface /TRBASE/ODATA_METADATA_EXTENSION
+
+  # Returns the metadata with the changes of the implementation.
+  method ADJUST(metadata: /TRBASE/ODATA_METADATA) returns /TRBASE/ODATA_METADATA
+
+end

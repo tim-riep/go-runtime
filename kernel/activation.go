@@ -17,6 +17,7 @@ package kernel
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"slices"
 	"time"
 
@@ -203,6 +204,9 @@ func (m *Implementations) change(ctx context.Context, name string, opts Implemen
 		impl := s.Implementations[name]
 		if impl == nil {
 			return &rterr.NotFound{Kind: "implementation", Name: name}
+		}
+		if p := s.ExtensionPoints[impl.ExtensionPoint]; opts.Tenant != "" && p != nil && p.Activation == model.ActivationGlobal {
+			return &rterr.InvalidArgument{Argument: "tenant", Message: fmt.Sprintf("the implementations of extension point %s are activated only globally", p.Name)}
 		}
 		a, err := k.readActivation(ctx, tx)
 		if err != nil {

@@ -1,0 +1,38 @@
+{
+  "name": "/TRBASE/ODATA_ENTITY_TYPE",
+  "texts": {
+    "en": {
+      "label": "Entity type"
+    },
+    "de": {
+      "label": "Entitätstyp"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TECHNICAL_NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "KEY",
+      "arrayType": "/TRBASE/ODATA_NAME_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "PROPERTIES",
+      "arrayType": "/TRBASE/ODATA_PROPERTY_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "NAVIGATIONS",
+      "arrayType": "/TRBASE/ODATA_NAVIGATION_ARRAY",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "/TRBASE/ODATA_VALUE",
+  "texts": {
+    "en": {
+      "label": "Value of an annotation",
+      "description": "A node of the value of an annotation: the root has no parent, items of collections and members of records name theirs"
+    },
+    "de": {
+      "label": "Wert einer Annotation"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "domain": "/TRBASE/COUNTER",
+      "notNull": true
+    },
+    {
+      "name": "PARENT",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "MEMBER",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "KIND",
+      "domain": "/TRBASE/ODATA_VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "TEXT",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "TYPE",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

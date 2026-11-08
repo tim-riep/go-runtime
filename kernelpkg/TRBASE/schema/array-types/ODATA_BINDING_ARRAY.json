@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_BINDING_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Navigation bindings"
+    },
+    "de": {
+      "label": "Navigationsbindung"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_BINDING"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_PROPERTY_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Propertys"
+    },
+    "de": {
+      "label": "Eigenschaft"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_PROPERTY"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ODATA_ACTION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Actions"
+    },
+    "de": {
+      "label": "Aktion"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ODATA_ACTION"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/ODATA_COMPLEX_TYPE",
+  "texts": {
+    "en": {
+      "label": "Complex type"
+    },
+    "de": {
+      "label": "Komplexer Typ"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "TECHNICAL_NAME",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "PROPERTIES",
+      "arrayType": "/TRBASE/ODATA_PROPERTY_ARRAY",
+      "notNull": true
+    }
+  ]
+}

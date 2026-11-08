@@ -15,6 +15,8 @@
 package vm
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -152,4 +154,50 @@ func (m *Machine) extensionError(xe *native.ExtensionError) *thrown {
 		m.setField(r, f, Value{R: a})
 	}
 	return t
+}
+
+// ChainJSON runs a method on an object of every class in order, as the
+// kernel runs the implementations of an extension point from Go: the
+// result of one is the argument of the next, given and returned in the
+// JSON format of rt run. The method takes one parameter and returns a
+// value of the same type. Without commitAllowed the implementations may
+// not commit or roll back the default session. after sees the result of
+// every class and may stop the chain with an error.
+func (m *Machine) ChainJSON(ctx context.Context, point string, classes []string, method string, commitAllowed bool, arg json.RawMessage,
+	after func(i int, out json.RawMessage) error) (json.RawMessage, error) {
+	for i, class := range classes {
+		obj, err := m.NewObject(ctx, class)
+		if err != nil {
+			return nil, err
+		}
+		mi, ok := obj.record().Class.Method(method)
+		if !ok || mi.Static || len(mi.Func.Def.ParamTypes) != 1 || mi.Func.Def.Result < 0 {
+			return nil, fmt.Errorf("vm: %s has no method %s with one parameter and a result", class, method)
+		}
+		f := mi.Func
+		in, err := m.FromJSON(f.Prog.P, f.Def.ParamTypes[0], arg)
+		if err != nil {
+			return nil, fmt.Errorf("vm: the argument of %s.%s: %w", class, method, err)
+		}
+		if !commitAllowed {
+			m.noCommit = append(m.noCommit, point)
+		}
+		m.ctx, m.depth = ctx, 0
+		r, err := m.run(f, obj, []Value{in}, nil)
+		if !commitAllowed {
+			m.noCommit = m.noCommit[:len(m.noCommit)-1]
+		}
+		if err != nil {
+			return nil, err
+		}
+		out, err := m.ToJSON(f.Prog.P, f.Def.Result, r)
+		if err != nil {
+			return nil, err
+		}
+		if err := after(i, out); err != nil {
+			return nil, err
+		}
+		arg = out
+	}
+	return arg, nil
 }
