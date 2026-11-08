@@ -202,3 +202,47 @@ func (x *execution) Reflector() (*reflector.Reflector, error) {
 	}
 	return x.reflector, nil
 }
+
+// Components returns the components of a structure or table for native
+// transformations: domain, the headings of the data element by language,
+// notNull and the default, of the component or else of its domain.
+func (x *execution) Components(structure string) ([]native.Component, error) {
+	comps, ok := x.schema.Resolver().Components(structure)
+	if !ok {
+		return nil, fmt.Errorf("kernel: %s is no structure or table", structure)
+	}
+	var out []native.Component
+	for _, c := range comps {
+		if c.Name == model.TenantField {
+			continue
+		}
+		nc := native.Component{Name: c.Name, NotNull: c.NotNull, Labels: map[string]string{}}
+		switch c.Type.Kind {
+		case model.TypeDataElement:
+			de := x.schema.DataElements[c.Type.Name]
+			if de == nil {
+				return nil, fmt.Errorf("kernel: data element %s of %s.%s is missing", c.Type.Name, structure, c.Name)
+			}
+			nc.Domain = x.schema.Domains[de.Domain]
+			for lang, t := range de.Texts {
+				nc.Labels[lang] = t.Heading
+			}
+		case model.TypeDomain:
+			nc.Domain = x.schema.Domains[c.Type.Name]
+		default:
+			return nil, fmt.Errorf("kernel: %s.%s is no simple component", structure, c.Name)
+		}
+		if nc.Domain == nil {
+			return nil, fmt.Errorf("kernel: the domain of %s.%s is missing", structure, c.Name)
+		}
+		def := c.Default
+		if def.IsZero() {
+			def = nc.Domain.Default
+		}
+		if def.Kind == model.DefaultValue {
+			nc.Default = model.Some(def.Value)
+		}
+		out = append(out, nc)
+	}
+	return out, nil
+}

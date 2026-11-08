@@ -1,0 +1,7 @@
+{
+  "name": "/TRXLSX/RATE",
+  "type": "DEC",
+  "length": 18,
+  "decimals": 10,
+  "description": "Rate"
+}

@@ -577,6 +577,18 @@ func (m *Machine) goArg(p *Program, t int, a any) (Value, error) {
 	case int32:
 		a = int64(x)
 	}
+	// Arrays and structures come as Go types with rt tags, like the
+	// results of native methods.
+	if rv := reflect.ValueOf(a); (rv.Kind() == reflect.Slice && rv.Type() != reflect.TypeFor[[]byte]()) || (rv.Kind() == reflect.Struct && rv.Type() != typTimestamp) {
+		if err := m.image.compatible(nil, p, t, rv.Type()); err != nil {
+			return Value{}, err
+		}
+		v, th := m.fromNative(p, t, rv)
+		if th != nil {
+			return Value{}, m.exception(th)
+		}
+		return v, nil
+	}
 	return m.fromGo(p, t, a)
 }
 

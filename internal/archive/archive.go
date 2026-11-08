@@ -37,7 +37,9 @@ type LimitError struct {
 	Max   int64
 }
 
-func (e *LimitError) Error() string { return fmt.Sprintf("the %s exceeds the limit of %d", e.Limit, e.Max) }
+func (e *LimitError) Error() string {
+	return fmt.Sprintf("the %s exceeds the limit of %d", e.Limit, e.Max)
+}
 
 // ErrCorrupt reports data that cannot be unpacked.
 var ErrCorrupt = errors.New("archive: the data is corrupt")

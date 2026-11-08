@@ -1,0 +1,7 @@
+{
+  "name": "/TRXLSX/AMOUNT",
+  "type": "DEC",
+  "length": 17,
+  "decimals": 2,
+  "description": "Amount"
+}

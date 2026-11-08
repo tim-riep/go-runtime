@@ -1,0 +1,18 @@
+{
+  "name": "/TRXLSX/COUNT",
+  "domain": "/TRXLSX/COUNT",
+  "texts": {
+    "en": {
+      "short": "Count",
+      "medium": "Count",
+      "long": "Count",
+      "heading": "Count"
+    },
+    "de": {
+      "short": "Anzahl",
+      "medium": "Anzahl",
+      "long": "Anzahl",
+      "heading": "Anzahl"
+    }
+  }
+}

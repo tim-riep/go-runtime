@@ -1,0 +1,18 @@
+{
+  "name": "/TRXLSX/FLAG",
+  "domain": "/TRXLSX/FLAG",
+  "texts": {
+    "en": {
+      "short": "Flag",
+      "medium": "Flag",
+      "long": "Flag",
+      "heading": "Flag"
+    },
+    "de": {
+      "short": "Kennzeiche",
+      "medium": "Kennzeichen",
+      "long": "Kennzeichen",
+      "heading": "Kennzeichen"
+    }
+  }
+}

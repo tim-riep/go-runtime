@@ -1,0 +1,41 @@
+# Arrays of items as sheets of workbooks and back.
+public class /TRXLSX/SHEETS
+
+  # Writes items with headings by label or name in a date system.
+  public static method WRITE(items: /TRXLSX/ITEM_ARRAY, header: STRING, system: STRING) returns BYTES raises /TRBASE/XLSX_ERROR
+    return transform items using /TRBASE/XLSX parameters SHEET = "Items", HEADER = header, DATE_SYSTEM = system into BYTES
+  end
+
+  # Writes items with long decimals as error.
+  public static method WRITE_STRICT(items: /TRXLSX/ITEM_ARRAY) returns STRING
+    try
+      var data = transform items using /TRBASE/XLSX parameters LONG_DECIMALS = "ERROR" into BYTES
+      return "ok"
+    catch e: /TRBASE/XLSX_ERROR
+      return e.TEXT
+    end
+  end
+
+  # Reads items from a sheet whose headings are in a row.
+  public static method READ(data: BYTES, sheet: STRING?, first: INT4, bools: STRING) returns /TRXLSX/ITEM_ARRAY raises /TRBASE/XLSX_ERROR
+    return transform data using /TRBASE/XLSX parameters SHEET = sheet, FIRST_ROW = first, BOOL_TEXT = bools into /TRXLSX/ITEM_ARRAY
+  end
+
+  # Reads items and lists the violations.
+  public static method VIOLATIONS(data: BYTES, max: INT4) returns array of STRING
+    var out: array of STRING
+    try
+      var items = transform data using /TRBASE/XLSX parameters MAX_ERRORS = max into /TRXLSX/ITEM_ARRAY
+      out.APPEND("read {items.LENGTH()}")
+    catch e: /TRBASE/XLSX_READ_FAILED
+      out.APPEND(e.TEXT)
+      for v in e.VIOLATIONS
+        out.APPEND("{v.ROW_NO} {v.COLUMN_NAME} {v.HEADER} {v.COMPONENT} {v.RAW default "<null>"}: {v.MESSAGE}")
+      end
+    catch e: /TRBASE/XLSX_ERROR
+      out.APPEND("error " + e.TEXT)
+    end
+    return out
+  end
+
+end

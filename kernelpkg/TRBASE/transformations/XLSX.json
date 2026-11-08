@@ -1,0 +1,8 @@
+{
+  "name": "/TRBASE/XLSX",
+  "native": "xlsx",
+  "texts": {
+    "en": { "label": "xlsx", "description": "Writes arrays of flat structures as a sheet of a workbook in xlsx format and reads them back" },
+    "de": { "label": "xlsx", "description": "Schreibt Arrays flacher Strukturen als Blatt einer Arbeitsmappe im xlsx-Format und liest sie zurück" }
+  }
+}

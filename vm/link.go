@@ -31,6 +31,7 @@ type Image struct {
 	classes    map[string]*LinkedClass
 	rt         map[string]*LinkedClass // kernel classes
 	textField  bytecode.Field
+	natives    *native.Registry
 }
 
 // Prog is a linked program.
@@ -198,6 +199,7 @@ func LinkWith(generation int64, natives *native.Registry, programs ...*bytecode.
 	if err := image.bindNatives(natives); err != nil {
 		return nil, err
 	}
+	image.natives = natives
 	return image, nil
 }
 

@@ -1,0 +1,20 @@
+{
+  "name": "/RT/ORIGIN_KIND",
+  "description": "Where an installed package comes from",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "asset",
+      "description": "A release asset <ID>-<version>.zip"
+    },
+    {
+      "value": "archive",
+      "description": "The archive of the repository at a commit"
+    },
+    {
+      "value": "local",
+      "description": "A directory or a ZIP file"
+    }
+  ]
+}

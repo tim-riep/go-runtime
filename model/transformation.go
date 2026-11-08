@@ -41,7 +41,10 @@ type Transformation struct {
 }
 
 // Native formats of transformations.
-const TransformJSON = "json"
+const (
+	TransformJSON = "json"
+	TransformXLSX = "xlsx"
+)
 
 // TransformParam is a top-level xsl:param of a transformation.
 type TransformParam struct {

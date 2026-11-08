@@ -76,6 +76,10 @@ type Natives interface {
 	NativeClass(pkg model.PackageID, class string) bool
 	// NativeCapabilities returns the capabilities of a native method.
 	NativeCapabilities(pkg model.PackageID, class, method string) []string
+	// NativeTransform returns the parameters with their allowed values,
+	// the pairs of source and result shapes and the exceptions of a native
+	// transformation.
+	NativeTransform(format string) (params map[string][]string, shapes [][2]string, raises []string, ok bool)
 }
 
 // Program is a checked program.

@@ -18,7 +18,7 @@
     },
     "native": {
       "description": "A format the kernel implements itself instead of a stylesheet; only kernel packages have native transformations, and they have no .xsl file.",
-      "enum": ["json"]
+      "enum": ["json", "xlsx"]
     },
     "output": {
       "description": "What the stylesheet produces; informative.",

@@ -1,0 +1,18 @@
+{
+  "name": "/TRXLSX/RATE",
+  "domain": "/TRXLSX/RATE",
+  "texts": {
+    "en": {
+      "short": "Rate",
+      "medium": "Rate",
+      "long": "Rate",
+      "heading": "Rate"
+    },
+    "de": {
+      "short": "Satz",
+      "medium": "Satz",
+      "long": "Satz",
+      "heading": "Satz"
+    }
+  }
+}

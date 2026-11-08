@@ -1,0 +1,18 @@
+{
+  "name": "/TRXLSX/REF",
+  "domain": "/TRXLSX/REF",
+  "texts": {
+    "en": {
+      "short": "Reference",
+      "medium": "Reference",
+      "long": "Reference",
+      "heading": "Reference"
+    },
+    "de": {
+      "short": "Referenz",
+      "medium": "Referenz",
+      "long": "Referenz",
+      "heading": "Referenz"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRXLSX/ITEM_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Items"
+    },
+    "de": {
+      "label": "Artikel"
+    }
+  },
+  "rowType": {
+    "structure": "/TRXLSX/ITEM"
+  }
+}

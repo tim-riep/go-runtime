@@ -65,7 +65,7 @@ func TestSerial(t *testing.T) {
 	}{
 		{"1", false, day("1900-01-01")}, {"59", false, day("1900-02-28")}, {"61", false, day("1900-03-01")},
 		{"45969", false, day("2025-11-08")}, {"44507", true, day("2025-11-08")}, {"0", true, day("1904-01-01")},
-		{"45969.5", false, day("2025-11-08").Add(12 * time.Hour)},
+		{"45969.5", false, day("2025-11-08").Add(12 * time.Hour)}, {"2958465", false, day("9999-12-31")}, {"2957003", true, day("9999-12-31")},
 	} {
 		got, err := FromSerial(c.serial, c.d1904)
 		if err != nil || !got.Equal(c.want) {

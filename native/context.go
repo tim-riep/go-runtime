@@ -66,6 +66,9 @@ type Host interface {
 	// GrantForTest changes the authorizations of a test method that rt
 	// test runs; elsewhere it fails.
 	GrantForTest(g TestGrant) error
+	// Components returns the components of a structure or table in the
+	// order of its resolved definition.
+	Components(structure string) ([]Component, error)
 }
 
 // TestGrant changes the authorizations of a test method: Clear removes

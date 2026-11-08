@@ -1,0 +1,7 @@
+{
+  "name": "/TRXLSX/ITEM_ID",
+  "type": "CHAR",
+  "length": 10,
+  "allowEmpty": false,
+  "description": "Key of an item"
+}

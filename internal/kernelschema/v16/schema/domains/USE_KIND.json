@@ -1,0 +1,76 @@
+{
+  "name": "/RT/USE_KIND",
+  "description": "Kind of object used by code",
+  "type": "CHAR",
+  "length": 32,
+  "values": [
+    {
+      "value": "table",
+      "description": "Table"
+    },
+    {
+      "value": "field",
+      "description": "Field of a table"
+    },
+    {
+      "value": "structure",
+      "description": "Structure"
+    },
+    {
+      "value": "component",
+      "description": "Component of a structure"
+    },
+    {
+      "value": "array-type",
+      "description": "Array type"
+    },
+    {
+      "value": "data-element",
+      "description": "Data element"
+    },
+    {
+      "value": "domain",
+      "description": "Domain"
+    },
+    {
+      "value": "fixed-value",
+      "description": "Fixed value of a domain"
+    },
+    {
+      "value": "class",
+      "description": "Class"
+    },
+    {
+      "value": "interface",
+      "description": "Interface"
+    },
+    {
+      "value": "method",
+      "description": "Method"
+    },
+    {
+      "value": "attribute",
+      "description": "Attribute"
+    },
+    {
+      "value": "constant",
+      "description": "Constant"
+    },
+    {
+      "value": "include",
+      "description": "Include"
+    },
+    {
+      "value": "transformation",
+      "description": "Transformation"
+    },
+    {
+      "value": "asset-repository",
+      "description": "Asset repository opened with literals"
+    },
+    {
+      "value": "authorization-object",
+      "description": "Authorization object named with a literal"
+    }
+  ]
+}

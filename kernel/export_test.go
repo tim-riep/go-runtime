@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"context"
+	"slices"
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/plan"
@@ -30,6 +31,17 @@ func (k *Kernel) TargetVersion() int { return k.target }
 func (k *Kernel) SetTargetVersion(v int) {
 	k.target = v
 	k.repo = k.repo.At(v)
+	if v < 16 { // before the native transformation format xlsx
+		pkgs := make([]*model.Package, len(k.kernelPkgs))
+		for i, p := range k.kernelPkgs {
+			c := *p
+			c.Transformations = slices.DeleteFunc(slices.Clone(p.Transformations), func(t model.Transformation) bool {
+				return t.Native.Or("") == model.TransformXLSX
+			})
+			pkgs[i] = &c
+		}
+		k.kernelPkgs = pkgs
+	}
 }
 
 // ContentReads returns the number of asset contents that code read from

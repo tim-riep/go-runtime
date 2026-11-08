@@ -369,7 +369,7 @@ func FromSerial(raw string, date1904 bool) (time.Time, error) {
 	}
 	us := n.Int64() * 1000
 	if date1904 {
-		return epoch1904.Add(time.Duration(us) * time.Microsecond), nil
+		return time.UnixMicro(epoch1904.UnixMicro() + us).UTC(), nil
 	}
 	day := us / microsPerDay
 	switch {
@@ -380,7 +380,7 @@ func FromSerial(raw string, date1904 bool) (time.Time, error) {
 	case day == 0:
 		return time.Time{}, fmt.Errorf("the serial number 0 names no date of the 1900 system")
 	}
-	return epoch1900.Add(time.Duration(us) * time.Microsecond), nil
+	return time.UnixMicro(epoch1900.UnixMicro() + us).UTC(), nil
 }
 
 // Serial turns a time into a serial number of the date system, as
@@ -389,9 +389,9 @@ func Serial(t time.Time, date1904 bool) string {
 	t = t.UTC().Round(time.Millisecond)
 	var us int64
 	if date1904 {
-		us = t.Sub(epoch1904).Microseconds()
+		us = t.UnixMicro() - epoch1904.UnixMicro()
 	} else {
-		us = t.Sub(epoch1900).Microseconds()
+		us = t.UnixMicro() - epoch1900.UnixMicro()
 		if us >= 60*microsPerDay {
 			us += microsPerDay
 		}

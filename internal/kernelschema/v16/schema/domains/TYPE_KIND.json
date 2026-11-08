@@ -1,0 +1,24 @@
+{
+  "name": "/RT/TYPE_KIND",
+  "description": "Kind of a type reference",
+  "type": "CHAR",
+  "length": 12,
+  "values": [
+    {
+      "value": "DATA_ELEMENT",
+      "description": "Data element"
+    },
+    {
+      "value": "DOMAIN",
+      "description": "Domain"
+    },
+    {
+      "value": "STRUCTURE",
+      "description": "Structure or table"
+    },
+    {
+      "value": "ARRAY_TYPE",
+      "description": "Array type"
+    }
+  ]
+}

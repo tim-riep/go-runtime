@@ -1,0 +1,51 @@
+{
+  "name": "/RT/PACKAGE_DEPS",
+  "description": "Requirements of installed packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "REQUIRED_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "VERSION_CONSTRAINT",
+      "domain": "/RT/VERSION_CONSTRAINT"
+    },
+    {
+      "name": "SOURCE",
+      "domain": "/RT/SOURCE_ADDRESS",
+      "description": "Where the required package can be installed from"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REQUIRED_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    },
+    {
+      "name": "REQUIRED",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "REQUIRED_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

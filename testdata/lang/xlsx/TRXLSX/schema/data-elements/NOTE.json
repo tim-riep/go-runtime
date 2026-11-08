@@ -1,0 +1,18 @@
+{
+  "name": "/TRXLSX/NOTE",
+  "domain": "/TRXLSX/NOTE",
+  "texts": {
+    "en": {
+      "short": "Remark",
+      "medium": "Remark",
+      "long": "Remark",
+      "heading": "Remark"
+    },
+    "de": {
+      "short": "Notiz",
+      "medium": "Notiz",
+      "long": "Notiz",
+      "heading": "Notiz"
+    }
+  }
+}

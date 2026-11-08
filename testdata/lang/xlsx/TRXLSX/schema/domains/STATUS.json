@@ -1,0 +1,14 @@
+{
+  "name": "/TRXLSX/STATUS",
+  "type": "CHAR",
+  "length": 8,
+  "description": "Status",
+  "values": [
+    {
+      "value": "ACTIVE"
+    },
+    {
+      "value": "CLOSED"
+    }
+  ]
+}

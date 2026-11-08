@@ -1,0 +1,68 @@
+{
+  "name": "/TRXLSX/ITEM",
+  "texts": {
+    "en": {
+      "label": "Item"
+    },
+    "de": {
+      "label": "Artikel"
+    }
+  },
+  "components": [
+    {
+      "name": "ITEM_ID",
+      "dataElement": "/TRXLSX/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRXLSX/AMOUNT"
+    },
+    {
+      "name": "STATUS",
+      "dataElement": "/TRXLSX/STATUS",
+      "notNull": true,
+      "default": "ACTIVE"
+    },
+    {
+      "name": "BIG",
+      "dataElement": "/TRXLSX/BIG"
+    },
+    {
+      "name": "DAY",
+      "dataElement": "/TRXLSX/DAY"
+    },
+    {
+      "name": "AT",
+      "dataElement": "/TRXLSX/AT"
+    },
+    {
+      "name": "FLAG",
+      "dataElement": "/TRXLSX/FLAG"
+    },
+    {
+      "name": "NOTE",
+      "dataElement": "/TRXLSX/NOTE"
+    },
+    {
+      "name": "COMMENT",
+      "dataElement": "/TRXLSX/COMMENT"
+    },
+    {
+      "name": "RATE",
+      "dataElement": "/TRXLSX/RATE"
+    },
+    {
+      "name": "COUNT",
+      "dataElement": "/TRXLSX/COUNT"
+    },
+    {
+      "name": "REF",
+      "dataElement": "/TRXLSX/REF"
+    },
+    {
+      "name": "CODE",
+      "domain": "/TRXLSX/CODE"
+    }
+  ]
+}

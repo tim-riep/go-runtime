@@ -92,11 +92,13 @@ type Registry struct {
 	methods map[string]*Method
 	classes map[string]*Class
 	effects map[string]EffectFunc
+	// transforms are the native transformations by format.
+	transforms map[string]*Transform
 }
 
 // NewRegistry returns an empty registry.
 func NewRegistry() *Registry {
-	return &Registry{methods: map[string]*Method{}, classes: map[string]*Class{}, effects: map[string]EffectFunc{}}
+	return &Registry{methods: map[string]*Method{}, classes: map[string]*Class{}, effects: map[string]EffectFunc{}, transforms: map[string]*Transform{}}
 }
 
 // Default is the registry of the kernel binary. Kernel packages register
@@ -200,6 +202,9 @@ func (r *Registry) Merge(others ...*Registry) *Registry {
 		}
 		for k, e := range src.effects {
 			out.effects[k] = e
+		}
+		for k, t := range src.transforms {
+			out.transforms[k] = t
 		}
 		src.mu.RUnlock()
 	}

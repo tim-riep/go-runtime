@@ -15,9 +15,12 @@
 package types
 
 import (
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/lang/syntax"
+	"github.com/tim-riep/go-runtime/model"
 )
 
 // The exceptions of transform, from the kernel package TRBASE.
@@ -71,6 +74,9 @@ func (c *checker) transform(f *fnCtx, sc *scope, x *syntax.TransformExpr, e env)
 	default:
 		c.use(x.Using.Pos, "transformation", x.Using.Name, "")
 		info.Format = t.Native.Or("xml")
+	}
+	if info.Format != "xml" && info.Format != model.TransformJSON {
+		return c.nativeTransform(f, sc, x, e, info)
 	}
 	seen := map[string]bool{}
 	for _, pv := range x.Params {
@@ -131,4 +137,114 @@ func isSimple(t Type) bool {
 		return true
 	}
 	return t == TypNull
+}
+
+// nativeTransform checks a transformation that a kernel package
+// implements natively, such as xlsx: its parameters, the shapes of source
+// and result and the exceptions, as the registry of the kernel states
+// them.
+func (c *checker) nativeTransform(f *fnCtx, sc *scope, x *syntax.TransformExpr, e env, info *Transform) Type {
+	var params map[string][]string
+	var shapes [][2]string
+	var raises []string
+	ok := false
+	if c.cfg.Natives != nil {
+		params, shapes, raises, ok = c.cfg.Natives.NativeTransform(info.Format)
+	}
+	if !ok {
+		c.errorf(x.Using.Pos, CodeNative, "the kernel has no native transformation of format %s", info.Format)
+	}
+	seen := map[string]bool{}
+	for _, pv := range x.Params {
+		name := pv.Name.Name
+		if seen[name] {
+			c.errorf(pv.Name.Pos, CodeDuplicate, "the parameter %s is given twice", name)
+		}
+		seen[name] = true
+		vt := c.expr(f, sc, pv.Value, e, nil)
+		if vt != TypInvalid && !isSimple(vt) {
+			c.errorf(pv.Value.Start(), CodeType, "the value of the parameter %s must be of a simple type, not %s", name, vt)
+		}
+		info.Params = append(info.Params, name)
+		info.ParamTypes = append(info.ParamTypes, vt)
+		if !ok {
+			continue
+		}
+		values, known := params[name]
+		if !known {
+			names := slices.Sorted(maps.Keys(params))
+			c.errorf(pv.Name.Pos, CodeUnknown, "%s has no parameter %s; its parameters are %s", x.Using.Name, name, strings.Join(names, ", "))
+			continue
+		}
+		if lit, isLit := literal(pv.Value); isLit && len(values) > 0 && !slices.Contains(values, lit) {
+			c.errorf(pv.Value.Start(), CodeType, "the parameter %s of %s takes %s, not %q", name, x.Using.Name, strings.Join(values, ", "), lit)
+		}
+	}
+	if ok {
+		src, into := shapeOf(info.Source, false), shapeOf(info.Into, true)
+		match := false
+		var allowed []string
+		for _, s := range shapes {
+			match = match || s[0] == src && s[1] == into
+			allowed = append(allowed, s[0]+" into "+s[1])
+		}
+		if !match && info.Source != TypInvalid && info.Into != TypInvalid {
+			c.errorf(x.Pos, CodeType, "%s transforms %s; %s into %s is not possible (an array type of the schema with simple components, or an array of a structure with simple components)",
+				x.Using.Name, strings.Join(allowed, " or "), describeShape(info.Source), describeShape(info.Into))
+		}
+		for _, r := range raises {
+			if k := c.classes[r]; k != nil && c.visiblePackage(r) {
+				c.raise(f, k, x.Pos)
+			} else {
+				c.errorf(x.Pos, CodeVisibility, "transform with %s raises %s; the package needs its package in requires", x.Using.Name, r)
+			}
+		}
+	}
+	c.info.Transforms[x] = info
+	e.call()
+	return info.Into
+}
+
+// shapeOf classifies a type for native transformations: bytes, an array
+// of a flat structure, or an array type of the schema with a flat row.
+func shapeOf(t Type, into bool) string {
+	if IsKind(t, Bytes) {
+		return "bytes"
+	}
+	a, ok := NonOpt(t).(*Array)
+	if !ok {
+		return ""
+	}
+	st, ok := NonOpt(a.Elem).(*Struct)
+	if !ok || !flat(st) {
+		return ""
+	}
+	if into {
+		if a.Name == "" {
+			return ""
+		}
+		return "array type"
+	}
+	return "rows"
+}
+
+func flat(st *Struct) bool {
+	for _, f := range st.Fields {
+		if !isSimple(f.Type) {
+			return false
+		}
+	}
+	return true
+}
+
+func describeShape(t Type) string {
+	if a, ok := NonOpt(t).(*Array); ok {
+		if st, ok := NonOpt(a.Elem).(*Struct); ok && !flat(st) {
+			return t.String() + " (with components that are not simple)"
+		}
+		if a.Name == "" {
+			return t.String() + " (no array type of the schema)"
+		}
+	}
+	return t.String()
 }
