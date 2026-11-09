@@ -60,6 +60,12 @@ func (k *Kernel) serveService(w http.ResponseWriter, r *http.Request, sr *servic
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
 			k.serveRead(w, r, sr, path)
+		case http.MethodPost:
+			k.servePost(w, r, sr, path)
+		case http.MethodPatch, http.MethodPut:
+			k.serveUpdate(w, r, sr, path)
+		case http.MethodDelete:
+			k.serveDelete(w, r, sr, path)
 		default:
 			sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, "the method "+r.Method))
 		}
@@ -70,4 +76,16 @@ func (k *Kernel) serveService(w http.ResponseWriter, r *http.Request, sr *servic
 func (kr *kernelRequest) internal(w http.ResponseWriter, what string, err error) {
 	slog.Error(what, "node", kr.node.Path, "user", kr.entry.user, "tenant", kr.entry.tenant, "error", err)
 	kr.fail(w, odata.Errorf(http.StatusInternalServerError, odata.CodeInternal))
+}
+
+// servePost answers POST: a new entity in a collection, or an action.
+func (k *Kernel) servePost(w http.ResponseWriter, r *http.Request, sr *serviceRequest, path *odata.Path) {
+	switch {
+	case path.Action != nil || path.Import != nil:
+		sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, "actions"))
+	case path.Count || path.Single():
+		sr.fail(w, odata.Errorf(http.StatusMethodNotAllowed, odata.CodeMethodNotAllowed, "this path", r.Method))
+	default:
+		k.serveCreate(w, r, sr, path)
+	}
 }

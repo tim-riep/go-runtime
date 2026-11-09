@@ -140,7 +140,13 @@ func (k *Kernel) Execute(ctx context.Context, opts ExecOptions, fn func(ctx cont
 }
 
 // executeWith runs fn on a machine with the code of generation g.
-func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOptions, fn func(ctx context.Context, m *vm.Machine) error) (err error) {
+func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOptions, fn func(ctx context.Context, m *vm.Machine) error) error {
+	return k.executeOn(ctx, g, opts, func(ctx context.Context, m *vm.Machine, _ *execution) error { return fn(ctx, m) })
+}
+
+// executeOn runs fn on a machine with the code of generation g and gives
+// it the execution, for the kernel to work with its transaction buffer.
+func (k *Kernel) executeOn(ctx context.Context, g *generation, opts ExecOptions, fn func(ctx context.Context, m *vm.Machine, x *execution) error) (err error) {
 	opts.defaults()
 	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
@@ -164,7 +170,7 @@ func (k *Kernel) executeWith(ctx context.Context, g *generation, opts ExecOption
 		return err
 	}
 	defer func() { err = errors.Join(err, m.ReleaseHandles()) }()
-	if err := fn(ctx, m); err != nil {
+	if err := fn(ctx, m, x); err != nil {
 		return err
 	}
 	return x.endBuffer(ctx, m)

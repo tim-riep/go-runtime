@@ -174,3 +174,22 @@ func CanonicalText(v any) string {
 	}
 	return fmt.Sprint(v)
 }
+
+// GoValue returns the canonical text of a literal in the form of the
+// transaction buffer.
+func GoValue(d *model.Domain, text string) any {
+	switch d.Type {
+	case model.Int4, model.Int8:
+		n, _ := strconv.ParseInt(text, 10, 64)
+		return n
+	case model.Bool:
+		return text == "true"
+	case model.Date:
+		t, _ := time.Parse(model.DateLayout, text)
+		return t
+	case model.Timestamp:
+		t, _ := time.Parse(model.TimestampLayout, text)
+		return t
+	}
+	return text
+}
