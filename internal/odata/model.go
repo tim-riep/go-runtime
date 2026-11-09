@@ -120,6 +120,8 @@ type Action struct {
 	// Type is the entity type an instance action is bound to; nil for
 	// static actions.
 	Type *EntityType
+	// Owner is the entity type whose entity declares the action.
+	Owner *EntityType
 }
 
 // Problem is a reason a service cannot be offered.
@@ -308,7 +310,7 @@ func (b *builder) set(def *model.EntitySet) *EntityType {
 			if listed, ok := def.Actions.Get(); ok && nameable && !slices.Contains(listed, a.Name) {
 				continue
 			}
-			act := &Action{Name: model.PublicName(a.Name), Action: a}
+			act := &Action{Name: model.PublicName(a.Name), Action: a, Owner: t}
 			if a.Instance {
 				act.Type = t
 				t.Actions = append(t.Actions, act)
@@ -462,7 +464,7 @@ func (b *builder) navigations(t *EntityType, set *Set) {
 			for i := range child.Actions {
 				a := &child.Actions[i]
 				if a.Instance && (def == nil || !def.ReadOnly) {
-					ct.Actions = append(ct.Actions, &Action{Name: model.PublicName(a.Name), Action: a, Type: ct})
+					ct.Actions = append(ct.Actions, &Action{Name: model.PublicName(a.Name), Action: a, Type: ct, Owner: ct})
 				}
 			}
 			b.m.Contained = append(b.m.Contained, ct)

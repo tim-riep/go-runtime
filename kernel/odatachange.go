@@ -69,15 +69,22 @@ func (cs *changeSet) read(ctx context.Context, t *odata.EntityType, key map[stri
 // modify runs entity statements and fails with the error of OData that
 // their result describes.
 func (cs *changeSet) modify(ctx context.Context, t *odata.EntityType, steps []vm.ModifyStep) (*vm.EntityResult, error) {
-	r, _, err := cs.x.buffer().Modify(ctx, vm.ModifyRequest{BusinessObject: t.BusinessObject.Name, Steps: steps, Behavior: cs.m, Caller: cs.caller})
+	r, _, err := cs.statements(ctx, t, steps)
+	return r, err
+}
+
+// statements runs entity statements and returns the results of actions
+// by step.
+func (cs *changeSet) statements(ctx context.Context, t *odata.EntityType, steps []vm.ModifyStep) (*vm.EntityResult, []any, error) {
+	r, intos, err := cs.x.buffer().Modify(ctx, vm.ModifyRequest{BusinessObject: t.BusinessObject.Name, Steps: steps, Behavior: cs.m, Caller: cs.caller})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if e := cs.sr.resultError(r, cs.links); e != nil {
-		return nil, e
+		return nil, nil, e
 	}
 	cs.messages = append(cs.messages, r.Messages...)
-	return r, nil
+	return r, intos, nil
 }
 
 // save runs the save sequence and commits.

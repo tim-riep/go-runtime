@@ -82,7 +82,7 @@ func (kr *kernelRequest) internal(w http.ResponseWriter, what string, err error)
 func (k *Kernel) servePost(w http.ResponseWriter, r *http.Request, sr *serviceRequest, path *odata.Path) {
 	switch {
 	case path.Action != nil || path.Import != nil:
-		sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, "actions"))
+		k.serveAction(w, r, sr, path)
 	case path.Count || path.Single():
 		sr.fail(w, odata.Errorf(http.StatusMethodNotAllowed, odata.CodeMethodNotAllowed, "this path", r.Method))
 	default:
