@@ -1,0 +1,21 @@
+# Creates the data of the tests of OData.
+public class /TRODATA/SEED
+
+  # Creates regions.
+  public static method REGIONS(regions: array of /TRODATA/REGIONS)
+    for region in regions
+      insert region
+    end
+  end
+
+  # Creates items and their parts, which name their item by LINK in
+  # PARENT_LINK.
+  public static method ITEMS(items: array of new of /TRODATA/ITEMS, parts: array of new of /TRODATA/PARTS)
+    modify business object /TRODATA/ITEM
+      create /TRODATA/ITEMS fields (ITEM_ID, NAME, PRIORITY, REGION, AMOUNT, QUANTITY, NOTE, ACTIVE, DUE_ON, DONE_AT, REFERENCE, DATA) from items
+      create /TRODATA/PARTS by parent fields (NAME, COUNT) from parts
+    end
+    commit business objects
+  end
+
+end

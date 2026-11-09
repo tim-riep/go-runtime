@@ -126,7 +126,7 @@ func (k *Kernel) serveOData(w http.ResponseWriter, r *http.Request, kr *kernelRe
 	if len(segs) == 3 {
 		resource = segs[2]
 	}
-	sr := &serviceRequest{kernelRequest: kr, svc: svc, m: kr.g.odataModel(svc), base: baseURL(r) + svc.Path(), resource: resource}
+	sr := &serviceRequest{kernelRequest: kr, k: k, svc: svc, m: kr.g.odataModel(svc), base: baseURL(r) + svc.Path(), resource: resource}
 	k.serveService(w, r, sr)
 }
 

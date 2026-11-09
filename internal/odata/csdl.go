@@ -259,76 +259,76 @@ func (w *xmlWriter) value(depth int, v Value) {
 
 // JSON returns the metadata document in the JSON format of CSDL 4.01.
 func (md *Metadata) JSON() []byte {
-	doc := &object{}
-	doc.set("$Version", "4.01")
-	doc.set("$EntityContainer", md.Container())
-	refs := &object{}
+	doc := &Object{}
+	doc.Set("$Version", "4.01")
+	doc.Set("$EntityContainer", md.Container())
+	refs := &Object{}
 	for _, r := range md.References {
-		inc := &object{}
-		inc.set("$Namespace", r.Namespace)
+		inc := &Object{}
+		inc.Set("$Namespace", r.Namespace)
 		if r.Alias != "" {
-			inc.set("$Alias", r.Alias)
+			inc.Set("$Alias", r.Alias)
 		}
-		ref := &object{}
-		ref.set("$Include", []any{inc})
-		refs.set(r.URI, ref)
+		ref := &Object{}
+		ref.Set("$Include", []any{inc})
+		refs.Set(r.URI, ref)
 	}
-	doc.set("$Reference", refs)
-	schema := &object{}
+	doc.Set("$Reference", refs)
+	schema := &Object{}
 	for _, t := range md.EntityTypes {
-		o := &object{}
-		o.set("$Kind", "EntityType")
-		o.set("$Key", t.Key)
+		o := &Object{}
+		o.Set("$Kind", "EntityType")
+		o.Set("$Key", t.Key)
 		for _, p := range t.Properties {
-			o.set(p.Name, propertyJSON(p, false))
+			o.Set(p.Name, propertyJSON(p, false))
 		}
 		for _, n := range t.Navigations {
-			no := &object{}
-			no.set("$Kind", "NavigationProperty")
+			no := &Object{}
+			no.Set("$Kind", "NavigationProperty")
 			typ, collection := strings.CutPrefix(n.Type, "Collection(")
 			if collection {
 				typ = strings.TrimSuffix(typ, ")")
-				no.set("$Collection", true)
+				no.Set("$Collection", true)
 			}
-			no.set("$Type", typ)
+			no.Set("$Type", typ)
 			if n.Nullable && !collection {
-				no.set("$Nullable", true)
+				no.Set("$Nullable", true)
 			}
 			if n.Partner != "" {
-				no.set("$Partner", n.Partner)
+				no.Set("$Partner", n.Partner)
 			}
 			if n.ContainsTarget {
-				no.set("$ContainsTarget", true)
+				no.Set("$ContainsTarget", true)
 			}
 			if len(n.Constraints) > 0 {
-				rc := &object{}
+				rc := &Object{}
 				for _, c := range n.Constraints {
-					rc.set(c.Property, c.ReferencedProperty)
+					rc.Set(c.Property, c.ReferencedProperty)
 				}
-				no.set("$ReferentialConstraint", rc)
+				no.Set("$ReferentialConstraint", rc)
 			}
-			o.set(n.Name, no)
+			o.Set(n.Name, no)
 		}
-		schema.set(t.Name, o)
+		schema.Set(t.Name, o)
 	}
 	for _, t := range md.ComplexTypes {
-		o := &object{}
-		o.set("$Kind", "ComplexType")
+		o := &Object{}
+		o.Set("$Kind", "ComplexType")
 		for _, p := range t.Properties {
-			o.set(p.Name, propertyJSON(p, false))
+			o.Set(p.Name, propertyJSON(p, false))
 		}
-		schema.set(t.Name, o)
+		schema.Set(t.Name, o)
 	}
 	overloads := map[string][]any{}
 	var names []string
 	for _, a := range md.Actions {
-		o := &object{}
-		o.set("$Kind", "Action")
+		o := &Object{}
+		o.Set("$Kind", "Action")
 		if a.BoundTo != "" {
-			o.set("$IsBound", true)
+			o.Set("$IsBound", true)
 		}
 		if a.EntitySetPath != "" {
-			o.set("$EntitySetPath", a.EntitySetPath)
+			o.Set("$EntitySetPath", a.EntitySetPath)
 		}
 		var params []any
 		for _, p := range a.Parameters {
@@ -336,20 +336,20 @@ func (md *Metadata) JSON() []byte {
 			params = append(params, po)
 		}
 		if len(params) > 0 {
-			o.set("$Parameter", params)
+			o.Set("$Parameter", params)
 		}
 		if a.ReturnType != "" {
-			rt := &object{}
+			rt := &Object{}
 			typ, collection := strings.CutPrefix(a.ReturnType, "Collection(")
 			if collection {
-				rt.set("$Collection", true)
+				rt.Set("$Collection", true)
 				typ = strings.TrimSuffix(typ, ")")
 			}
-			rt.set("$Type", typ)
+			rt.Set("$Type", typ)
 			if a.ReturnNullable {
-				rt.set("$Nullable", true)
+				rt.Set("$Nullable", true)
 			}
-			o.set("$ReturnType", rt)
+			o.Set("$ReturnType", rt)
 		}
 		if _, ok := overloads[a.Name]; !ok {
 			names = append(names, a.Name)
@@ -357,78 +357,78 @@ func (md *Metadata) JSON() []byte {
 		overloads[a.Name] = append(overloads[a.Name], o)
 	}
 	for _, n := range names {
-		schema.set(n, overloads[n])
+		schema.Set(n, overloads[n])
 	}
-	c := &object{}
-	c.set("$Kind", "EntityContainer")
+	c := &Object{}
+	c.Set("$Kind", "EntityContainer")
 	for _, s := range md.EntitySets {
-		o := &object{}
-		o.set("$Collection", true)
-		o.set("$Type", s.EntityType)
+		o := &Object{}
+		o.Set("$Collection", true)
+		o.Set("$Type", s.EntityType)
 		if len(s.Bindings) > 0 {
-			b := &object{}
+			b := &Object{}
 			for _, x := range s.Bindings {
-				b.set(x.Path, x.Target)
+				b.Set(x.Path, x.Target)
 			}
-			o.set("$NavigationPropertyBinding", b)
+			o.Set("$NavigationPropertyBinding", b)
 		}
-		c.set(s.Name, o)
+		c.Set(s.Name, o)
 	}
 	for _, a := range md.ActionImports {
-		o := &object{}
-		o.set("$Action", a.Action)
+		o := &Object{}
+		o.Set("$Action", a.Action)
 		if a.EntitySet != "" {
-			o.set("$EntitySet", a.EntitySet)
+			o.Set("$EntitySet", a.EntitySet)
 		}
-		c.set(a.Name, o)
+		c.Set(a.Name, o)
 	}
-	schema.set(containerName, c)
-	anns := &object{}
+	schema.Set(containerName, c)
+	anns := &Object{}
 	for _, g := range groupByTarget(md.Annotations) {
-		o := &object{}
+		o := &Object{}
 		for _, a := range g {
 			key := "@" + a.Term
 			if a.Qualifier != "" {
 				key += "#" + a.Qualifier
 			}
-			o.set(key, valueJSON(a.Value))
+			o.Set(key, valueJSON(a.Value))
 		}
-		anns.set(g[0].Target, o)
+		anns.Set(g[0].Target, o)
 	}
 	if len(anns.keys) > 0 {
-		schema.set("$Annotations", anns)
+		schema.Set("$Annotations", anns)
 	}
-	doc.set(md.Namespace, schema)
+	doc.Set(md.Namespace, schema)
 	out, _ := json.MarshalIndent(doc, "", "  ")
 	return append(out, '\n')
 }
 
 // propertyJSON returns a property or parameter; JSON defaults Type to
 // Edm.String and Nullable to false.
-func propertyJSON(p MetaProperty, parameter bool) *object {
-	o := &object{}
+func propertyJSON(p MetaProperty, parameter bool) *Object {
+	o := &Object{}
 	if parameter {
-		o.set("$Name", p.Name)
+		o.Set("$Name", p.Name)
 	}
 	typ, collection := strings.CutPrefix(p.Type, "Collection(")
 	if collection {
 		typ = strings.TrimSuffix(typ, ")")
-		o.set("$Collection", true)
+		o.Set("$Collection", true)
 	}
 	if typ != "Edm.String" {
-		o.set("$Type", typ)
+		o.Set("$Type", typ)
 	}
 	if p.Nullable {
-		o.set("$Nullable", true)
+		o.Set("$Nullable", true)
 	}
 	if v, ok := p.MaxLength.Get(); ok {
-		o.set("$MaxLength", v)
+		o.Set("$MaxLength", v)
 	}
 	if v, ok := p.Precision.Get(); ok {
-		o.set("$Precision", v)
+		o.Set("$Precision", v)
 	}
 	if v, ok := p.Scale.Get(); ok {
-		o.set("$Scale", v)
+		o.Set("$Scale", v)
 	}
 	return o
 }
@@ -453,36 +453,43 @@ func valueJSON(v Value) any {
 		}
 		return items
 	case KindRecord:
-		o := &object{}
+		o := &Object{}
 		if v.Type != "" {
-			o.set("@type", "#"+v.Type)
+			o.Set("@type", "#"+v.Type)
 		}
 		for _, m := range v.Members {
-			o.set(m.Name, valueJSON(m.Value))
+			o.Set(m.Name, valueJSON(m.Value))
 		}
 		return o
 	}
 	if key, ok := jsonPaths[v.Kind]; ok {
-		o := &object{}
-		o.set(key, v.Text)
+		o := &Object{}
+		o.Set(key, v.Text)
 		return o
 	}
 	return v.Text
 }
 
-// object is a JSON object that keeps the order of its members.
-type object struct {
+// Object is a JSON object that keeps the order of its members.
+type Object struct {
 	keys   []string
 	values []any
 }
 
-func (o *object) set(k string, v any) {
+// Append adds the members of another object.
+func (o *Object) Append(x *Object) {
+	o.keys = append(o.keys, x.keys...)
+	o.values = append(o.values, x.values...)
+}
+
+// Set adds a member.
+func (o *Object) Set(k string, v any) {
 	o.keys = append(o.keys, k)
 	o.values = append(o.values, v)
 }
 
 // MarshalJSON writes the members in their order.
-func (o *object) MarshalJSON() ([]byte, error) {
+func (o *Object) MarshalJSON() ([]byte, error) {
 	var b bytes.Buffer
 	b.WriteByte('{')
 	for i, k := range o.keys {

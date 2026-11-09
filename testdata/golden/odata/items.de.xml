@@ -165,6 +165,19 @@
       </Annotations>
       <Annotations Target="TRODATA.TRODATA_PARTS/ITEM_ID">
         <Annotation Term="Core.Immutable" Bool="true"/>
+        <Annotation Term="RT.ValueList">
+          <Record>
+            <PropertyValue Property="EntitySet" String="Items"/>
+            <PropertyValue Property="Parameters">
+              <Collection>
+                <Record>
+                  <PropertyValue Property="LocalProperty" PropertyPath="ITEM_ID"/>
+                  <PropertyValue Property="ValueListProperty" String="ITEM_ID"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
       </Annotations>
       <Annotations Target="TRODATA.TRODATA_PARTS/NAME">
         <Annotation Term="Core.Description" String="Bezeichnung"/>

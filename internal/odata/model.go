@@ -444,7 +444,7 @@ func (b *builder) navigations(t *EntityType, set *Set) {
 			}
 			if target := b.bySource[child.Table]; target != nil {
 				t.Navigations = append(t.Navigations, &Navigation{Name: target.Name, Target: target, Type: target.Type, Collection: true,
-					Partner: b.parentName(t), Reverse: fk.Columns, ForeignKey: fk.Name})
+					Partner: b.parentName(t), Reverse: withoutTenant(fk.Columns), ForeignKey: fk.Name})
 				continue
 			}
 			if child.Origin == t.BusinessObject.Owner {
@@ -467,7 +467,7 @@ func (b *builder) navigations(t *EntityType, set *Set) {
 			}
 			b.m.Contained = append(b.m.Contained, ct)
 			t.Navigations = append(t.Navigations, &Navigation{Name: model.PublicName(child.Table), Type: ct, Collection: true, Contained: true,
-				Reverse: fk.Columns, ForeignKey: fk.Name})
+				Reverse: withoutTenant(fk.Columns), ForeignKey: fk.Name})
 			b.navigations(ct, nil)
 		}
 	}
@@ -477,7 +477,7 @@ func (b *builder) navigations(t *EntityType, set *Set) {
 		if parent := b.bySource[e.Parent.Or("")]; parent != nil && set != nil {
 			fk := t.Table.ForeignKey(parentFK)
 			t.Navigations = append(t.Navigations, &Navigation{Name: parent.Name, Target: parent, Type: parent.Type, Partner: set.Name,
-				Constraints: fk.Columns, ForeignKey: fk.Name})
+				Constraints: withoutTenant(fk.Columns), ForeignKey: fk.Name})
 		}
 	}
 	named := map[string]string{}
@@ -509,7 +509,7 @@ func (b *builder) navigations(t *EntityType, set *Set) {
 			}
 		}
 		t.Navigations = append(t.Navigations, &Navigation{Name: name, Target: target, Type: target.Type, Nullable: nullable,
-			Constraints: fk.Columns, ForeignKey: fk.Name})
+			Constraints: withoutTenant(fk.Columns), ForeignKey: fk.Name})
 	}
 }
 
@@ -578,4 +578,16 @@ func Problems(ps []Problem) string {
 		out = append(out, p.Message)
 	}
 	return strings.Join(out, "; ")
+}
+
+// withoutTenant returns the pairs of a foreign key without the tenant
+// field, which the kernel adds to keys of tables of tenants.
+func withoutTenant(pairs []model.ColumnPair) []model.ColumnPair {
+	var out []model.ColumnPair
+	for _, c := range pairs {
+		if c.Field != model.TenantField {
+			out = append(out, c)
+		}
+	}
+	return out
 }

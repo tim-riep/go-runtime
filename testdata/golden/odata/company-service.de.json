@@ -388,7 +388,18 @@
         "@RT.MediumLabel": "Firma",
         "@RT.LongLabel": "Firmennummer",
         "@RT.Heading": "Firma",
-        "@Core.Immutable": true
+        "@Core.Immutable": true,
+        "@RT.ValueList": {
+          "EntitySet": "Companies",
+          "Parameters": [
+            {
+              "LocalProperty": {
+                "$PropertyPath": "COMPANY_ID"
+              },
+              "ValueListProperty": "COMPANY_ID"
+            }
+          ]
+        }
       },
       "TRFIN.TRFIN_CONTACTS/NAME": {
         "@Core.Description": "Name",

@@ -302,7 +302,18 @@
         "@Core.Computed": true
       },
       "TRODATA.TRODATA_PARTS/ITEM_ID": {
-        "@Core.Immutable": true
+        "@Core.Immutable": true,
+        "@RT.ValueList": {
+          "EntitySet": "Items",
+          "Parameters": [
+            {
+              "LocalProperty": {
+                "$PropertyPath": "ITEM_ID"
+              },
+              "ValueListProperty": "ITEM_ID"
+            }
+          ]
+        }
       },
       "TRODATA.TRODATA_PARTS/NAME": {
         "@Core.Description": "Name",

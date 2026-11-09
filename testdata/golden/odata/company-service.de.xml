@@ -227,6 +227,19 @@
         <Annotation Term="RT.LongLabel" String="Firmennummer"/>
         <Annotation Term="RT.Heading" String="Firma"/>
         <Annotation Term="Core.Immutable" Bool="true"/>
+        <Annotation Term="RT.ValueList">
+          <Record>
+            <PropertyValue Property="EntitySet" String="Companies"/>
+            <PropertyValue Property="Parameters">
+              <Collection>
+                <Record>
+                  <PropertyValue Property="LocalProperty" PropertyPath="COMPANY_ID"/>
+                  <PropertyValue Property="ValueListProperty" String="COMPANY_ID"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
       </Annotations>
       <Annotations Target="TRFIN.TRFIN_CONTACTS/NAME">
         <Annotation Term="Core.Description" String="Name"/>

@@ -15,6 +15,7 @@
 package kernel
 
 import (
+	"github.com/tim-riep/go-runtime/authorization"
 	"log/slog"
 	"net/http"
 
@@ -25,8 +26,12 @@ import (
 // serviceRequest is a request to a service the user may start.
 type serviceRequest struct {
 	*kernelRequest
+	k   *Kernel
 	svc *model.Service
 	m   *odata.Model
+	// auth are the effective authorizations of the user, loaded once.
+	auth       *authorization.Effective
+	authLoaded bool
 	// base is the absolute URL of the service, ending with a slash;
 	// resource the path below it.
 	base     string
@@ -44,8 +49,20 @@ func (k *Kernel) serveService(w http.ResponseWriter, r *http.Request, sr *servic
 		sr.writeJSON(w, r, http.StatusOK, odata.ServiceDocument(sr.m, sr.base))
 	case "$metadata":
 		k.serveMetadata(w, r, sr)
+	case "$batch":
+		sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, "$batch"))
 	default:
-		sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, sr.resource))
+		path, e := odata.ParsePath(sr.m, escapedResource(r))
+		if e != nil {
+			sr.fail(w, e)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet, http.MethodHead:
+			k.serveRead(w, r, sr, path)
+		default:
+			sr.fail(w, odata.Errorf(http.StatusNotImplemented, odata.CodeNotImplemented, "the method "+r.Method))
+		}
 	}
 }
 
