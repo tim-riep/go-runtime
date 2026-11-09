@@ -89,6 +89,7 @@ TRFIN/
     extension-implementations/*.json  one implementation per file, named <NAME>.json
     business-objects/*.json    one business object per file, named <NAME>.json
     business-object-extensions/*.json  one extension per extended business object, named <NAME>.json
+    services/*.json            one service over OData per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -669,7 +670,10 @@ and validates new companies; see the [language reference](docs/language.md#exten
   the interface and runs when no implementation matches; `null` or no attribute is none.
   Without fallback, no matching implementation is a runtime error for `single`
   (`/RT/NO_IMPLEMENTATION`) and runs nothing for `multiple`. `commitAllowed` (default `false`)
-  lets implementations commit or roll back the default session.
+  lets implementations commit or roll back the default session. `activation` is `tenant`
+  (the default: implementations are switched globally and per tenant) or `global` for points
+  the kernel runs without tenant, such as `/TRBASE/ODATA_METADATA`, whose implementations are
+  switched only globally.
 - **Implementation**: a name in the namespace of the implementing package, a description, the
   extension point, which belongs to the package or to a package it requires, a `public` class
   of the package with a public constructor without parameters that raises no checked
@@ -1229,6 +1233,19 @@ started with, also when an upgrade committed new code in the meantime. `--tls-ce
 request and writing a response. In Go, `k.HTTPHandler()` is an `http.Handler` and
 [server](server) runs it with the same options.
 
+## Services over OData
+
+A package offers entities of business objects and tables of configuration over OData with a
+service in `schema/services/`. The kernel serves every service below
+`/rt/odata/<package>/<service>/` with the node `/rt/odata` of its own and derives metadata,
+queries with `$filter`, `$orderby`, `$top`, `$skip`, `$count`, `$select` and `$expand`,
+changes through the transaction buffer and actions from the business objects, with the
+authorizations of the business objects in SQL. Services are inactive after installation;
+`rt service activate` switches them on. Packages annotate the metadata through the extension
+point `/TRBASE/ODATA_METADATA`. [docs/odata.md](docs/odata.md) describes services, the
+supported parts of OData and the use in a spreadsheet; [docs/odata-vocabulary.md](docs/odata-vocabulary.md)
+the vocabulary `RT.Fields` of the kernel.
+
 ## Library
 
 ```go
@@ -1280,6 +1297,11 @@ rt check
 rt install testdata/businessobjects/TRSET testdata/businessobjects/TRSETX
 rt business-object list --data-class configuration
 rt business-object show /TRSET/PARTNER
+rt service list
+rt service show /TRFIN/COMPANY_SERVICE
+rt service activate /TRFIN/COMPANY_SERVICE
+rt service metadata /TRFIN/COMPANY_SERVICE --lang de --format json
+rt http configure /rt/odata --max-page-size 100
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
 rt show /TRFIN/COMPANY_ARRAY --json
@@ -1391,7 +1413,8 @@ includes in extensions, derived roles with organizational levels, suggested valu
 external role sources, extension points of kernel packages for events of the kernel such as
 sign-in or installation, implementations in local objects without package, implementations
 called asynchronously after the commit, extensions of user interfaces, drafts of business
-objects, access to business objects from outside over HTTP, business objects in
+objects, `$batch`, `$search`, `$apply`, lambda operators, delta queries, media and OData
+Version 2 in services, business objects in
 `/TRBASE/REFLECTOR` and data migrations of business object tables that bypass their
 behavior.
 

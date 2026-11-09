@@ -12,6 +12,9 @@
   <edmx:Reference Uri="../../$vocabularies/RT.Fields.xml">
     <edmx:Include Namespace="RT.Fields" Alias="RT"/>
   </edmx:Reference>
+  <edmx:Reference Uri="urn:trotto:vocabularies:TROTTO.Marketplace">
+    <edmx:Include Namespace="TROTTO.Marketplace" Alias="Marketplace"/>
+  </edmx:Reference>
   <edmx:DataServices>
     <Schema Namespace="TRFIN" xmlns="http://docs.oasis-open.org/odata/ns/edm">
       <EntityType Name="TRFIN_COMPANIES">
@@ -171,6 +174,7 @@
         <Annotation Term="RT.MediumLabel" String="Abholstation"/>
         <Annotation Term="RT.LongLabel" String="Abholstation des Marktplatzes"/>
         <Annotation Term="RT.Heading" String="Abholung"/>
+        <Annotation Term="Marketplace.PickupPoint" Bool="true"/>
       </Annotations>
       <Annotations Target="TRFIN.TRFIN_COMPANIES/STATUS">
         <Annotation Term="Core.Computed" Bool="true"/>
@@ -211,6 +215,7 @@
         <Annotation Term="RT.LongLabel" String="Partner-ID bei OTTO"/>
         <Annotation Term="RT.Heading" String="OTTO-Partner"/>
         <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Marketplace.PartnerId" Bool="true"/>
       </Annotations>
       <Annotations Target="TRFIN.TRFIN_COMPANIES">
         <Annotation Term="Core.Description" String="Firma"/>
@@ -562,6 +567,9 @@
             <PropertyValue Property="ContentIDSupported" Bool="false"/>
           </Record>
         </Annotation>
+      </Annotations>
+      <Annotations Target="TRFIN.TROTTO_SYNC">
+        <Annotation Term="Core.Description" String="Vergibt der Firma eine Partner-ID bei OTTO"/>
       </Annotations>
     </Schema>
   </edmx:DataServices>

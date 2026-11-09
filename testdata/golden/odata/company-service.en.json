@@ -33,6 +33,14 @@
           "$Alias": "RT"
         }
       ]
+    },
+    "urn:trotto:vocabularies:TROTTO.Marketplace": {
+      "$Include": [
+        {
+          "$Namespace": "TROTTO.Marketplace",
+          "$Alias": "Marketplace"
+        }
+      ]
     }
   },
   "TRFIN": {
@@ -334,7 +342,8 @@
         "@RT.ShortLabel": "Pickup",
         "@RT.MediumLabel": "Pickup point",
         "@RT.LongLabel": "Marketplace pickup point",
-        "@RT.Heading": "Pickup"
+        "@RT.Heading": "Pickup",
+        "@Marketplace.PickupPoint": true
       },
       "TRFIN.TRFIN_COMPANIES/STATUS": {
         "@Core.Computed": true,
@@ -372,7 +381,8 @@
         "@RT.MediumLabel": "OTTO partner",
         "@RT.LongLabel": "Partner ID on OTTO",
         "@RT.Heading": "OTTO partner",
-        "@Core.Computed": true
+        "@Core.Computed": true,
+        "@Marketplace.PartnerId": true
       },
       "TRFIN.TRFIN_COMPANIES": {
         "@Core.Description": "Company",
@@ -626,6 +636,9 @@
           "Supported": false,
           "ContentIDSupported": false
         }
+      },
+      "TRFIN.TROTTO_SYNC": {
+        "@Core.Description": "Gives the company a partner ID at OTTO"
       }
     }
   }

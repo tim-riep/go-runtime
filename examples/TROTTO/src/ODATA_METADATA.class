@@ -1,0 +1,23 @@
+# Annotates the fields and the action that TROTTO adds to the companies of
+# TRFIN in the service /TRFIN/COMPANY_SERVICE with a vocabulary of its
+# own, so that a user interface shows them as data of the marketplace.
+public class /TROTTO/ODATA_METADATA implements /TRBASE/ODATA_METADATA_EXTENSION
+
+  public method ADJUST(metadata: /TRBASE/ODATA_METADATA) returns /TRBASE/ODATA_METADATA
+    var vocabulary: /TRBASE/ODATA_REFERENCE
+    vocabulary.URI = "urn:trotto:vocabularies:TROTTO.Marketplace"
+    vocabulary.NAMESPACE = "TROTTO.Marketplace"
+    vocabulary.ALIAS = "Marketplace"
+    metadata.REFERENCES.APPEND(vocabulary)
+    var companies = metadata.NAMESPACE + ".TRFIN_COMPANIES"
+    metadata.ANNOTATIONS.APPEND(/TRBASE/ODATA_ANNOTATIONS.TAG(companies + "/TROTTO_OTTO_ID", "Marketplace.PartnerId"))
+    metadata.ANNOTATIONS.APPEND(/TRBASE/ODATA_ANNOTATIONS.TAG(companies + "/TROTTO_PICKUP_POINT", "Marketplace.PickupPoint"))
+    var text = "Gives the company a partner ID at OTTO"
+    if metadata.LANGUAGE = "de"
+      text = "Vergibt der Firma eine Partner-ID bei OTTO"
+    end
+    metadata.ANNOTATIONS.APPEND(/TRBASE/ODATA_ANNOTATIONS.TEXT(metadata.NAMESPACE + ".TROTTO_SYNC", "Core.Description", text))
+    return metadata
+  end
+
+end

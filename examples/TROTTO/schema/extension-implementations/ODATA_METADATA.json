@@ -1,0 +1,13 @@
+{
+  "name": "/TROTTO/ODATA_METADATA",
+  "description": {
+    "en": "Marketplace annotations for the service of companies",
+    "de": "Marktplatz-Annotationen für den Dienst der Firmen"
+  },
+  "extensionPoint": "/TRBASE/ODATA_METADATA",
+  "class": "/TROTTO/ODATA_METADATA",
+  "filters": {
+    "PACKAGE_ID": [{ "value": "TRFIN" }],
+    "SERVICE_NAME": [{ "value": "/TRFIN/COMPANY_SERVICE" }]
+  }
+}
