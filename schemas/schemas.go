@@ -46,4 +46,6 @@ const (
 	BusinessObject          = "business-object.schema.json"
 	BusinessObjectExtension = "business-object-extension.schema.json"
 	Service                 = "service.schema.json"
+	ObjectType              = "object-type.schema.json"
+	Object                  = "object.schema.json"
 )

@@ -66,6 +66,10 @@
           }
         }
       }
+    },
+    "objectType": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "For the domain /TRBASE/REF_OBJECT only: the object type whose objects the data element refers to."
     }
   }
 }

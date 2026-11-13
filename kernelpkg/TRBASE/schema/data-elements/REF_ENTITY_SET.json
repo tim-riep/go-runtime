@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/REF_ENTITY_SET",
+  "domain": "/TRBASE/ODATA_NAME",
+  "texts": {
+    "en": {
+      "short": "Entity set",
+      "medium": "Entity set",
+      "long": "Entity set of a service",
+      "heading": "Entity set"
+    },
+    "de": {
+      "short": "Entity Set",
+      "medium": "Entity Set",
+      "long": "Entity Set eines Dienstes",
+      "heading": "Entity Set"
+    }
+  }
+}

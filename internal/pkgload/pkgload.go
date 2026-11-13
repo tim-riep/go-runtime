@@ -155,9 +155,10 @@ type domainDoc struct {
 }
 
 type dataElementDoc struct {
-	Name   string                           `json:"name"`
-	Domain string                           `json:"domain"`
-	Texts  map[string]model.DataElementText `json:"texts"`
+	Name       string                           `json:"name"`
+	Domain     string                           `json:"domain"`
+	Texts      map[string]model.DataElementText `json:"texts"`
+	ObjectType model.Optional[string]           `json:"objectType"`
 }
 
 type tableDoc struct {
@@ -228,6 +229,8 @@ func (l *loader) load() *model.Package {
 		}
 		t, isDoc := typeOf(p)
 		switch {
+		case t == nil && strings.HasPrefix(p, ObjectsDir+"/"):
+			l.fail(rterr.CodeFile, l.loc(p), "objects belong in objects/<defining package>/<type without namespace>/<name without namespace>.json")
 		case t == nil && path.Dir(p) == AssetsDir:
 			l.fail(rterr.CodeAsset, l.loc(p), "files directly below assets/ are not allowed; every folder below assets/ is an asset repository")
 		case t == nil:
@@ -238,6 +241,9 @@ func (l *loader) load() *model.Package {
 			}
 		case isDoc:
 			doc := t.NewDoc()
+			if od, ok := doc.(*objectDoc); ok {
+				od.typ, _ = objectPath(p)
+			}
 			if l.readDoc(p, t.Schema, doc) {
 				docs = append(docs, loadedDoc{typ: t, file: p, doc: doc})
 			}
@@ -282,9 +288,9 @@ func (l *loader) checkLayout() {
 		p := path.Join(SchemaDir, e.Name())
 		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir,
 			StructuresDir, ArrayTypesDir, StructureExtensionsDir, HTTPServicesDir, AuthorizationObjectsDir, RolesDir,
-			ExtensionPointsDir, ImplementationsDir, BusinessObjectsDir, BusinessObjectExtensionsDir, ServicesDir}
+			ExtensionPointsDir, ImplementationsDir, BusinessObjectsDir, BusinessObjectExtensionsDir, ServicesDir, ObjectTypesDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/, business-object-extensions/ and services/")
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/, business-object-extensions/, services/ and object-types/")
 		}
 	}
 }
@@ -495,4 +501,4 @@ func (l *loader) extension(file string, doc *extensionDoc) model.Extension {
 
 // TopLevel are the entries a package has at its root; the archives of
 // repositories may have other files beside them, such as README.md.
-var TopLevel = []string{ManifestFile, SchemaDir, SourceDir, AssetsDir, TransformationsDir}
+var TopLevel = []string{ManifestFile, SchemaDir, SourceDir, AssetsDir, TransformationsDir, ObjectsDir}

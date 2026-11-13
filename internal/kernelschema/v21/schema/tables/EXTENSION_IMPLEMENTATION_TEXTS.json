@@ -1,0 +1,47 @@
+{
+  "name": "/RT/EXTENSION_IMPLEMENTATION_TEXTS",
+  "description": "Descriptions of implementations per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "IMPLEMENTATION_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "IMPLEMENTATION",
+      "table": "/RT/EXTENSION_IMPLEMENTATIONS",
+      "fields": [
+        {
+          "field": "IMPLEMENTATION_NAME",
+          "references": "IMPLEMENTATION_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

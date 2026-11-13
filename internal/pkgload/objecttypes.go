@@ -175,10 +175,14 @@ func init() {
 		NewDoc:      func() any { return &dataElementDoc{} },
 		FileName:    func(doc any) (string, bool) { return fileNameOf(doc.(*dataElementDoc).Name) },
 		Definitions: func(doc any) []NameRef { return ref(doc.(*dataElementDoc).Name, "/name") },
-		References:  func(doc any) []NameRef { return ref(doc.(*dataElementDoc).Domain, "/domain") },
+		References: func(doc any) []NameRef {
+			d := doc.(*dataElementDoc)
+			return append(ref(d.Domain, "/domain"), ref(d.ObjectType.Or(""), "/objectType")...)
+		},
 		Build: func(l *loader, file string, doc any, pkg *model.Package) {
 			d := doc.(*dataElementDoc)
-			pkg.DataElements = append(pkg.DataElements, model.DataElement{Name: d.Name, Owner: l.owner(), Domain: d.Domain, Texts: d.Texts, Src: l.loc(file)})
+			pkg.DataElements = append(pkg.DataElements, model.DataElement{Name: d.Name, Owner: l.owner(), Domain: d.Domain, Texts: d.Texts,
+				ObjectType: d.ObjectType, Src: l.loc(file)})
 		},
 	})
 	register(ObjectType{

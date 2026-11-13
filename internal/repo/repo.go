@@ -403,14 +403,14 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 		}
 	}
 
-	des, err := r.selectRows(ctx, q, TDataElements, []string{"DATA_ELEMENT", "PACKAGE_ID", "DOMAIN_NAME"})
+	des, err := r.selectRows(ctx, q, TDataElements, []string{"DATA_ELEMENT", "PACKAGE_ID", "DOMAIN_NAME", "OBJECT_TYPE"})
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range des {
 		name := str(d["DATA_ELEMENT"])
 		s.DataElements[name] = &model.DataElement{Name: name, Owner: owner(d["PACKAGE_ID"]), Domain: str(d["DOMAIN_NAME"]),
-			Texts: map[string]model.DataElementText{}}
+			Texts: map[string]model.DataElementText{}, ObjectType: opt(d["OBJECT_TYPE"])}
 	}
 	deTexts, err := r.selectRows(ctx, q, TDataElementTexts, []string{"DATA_ELEMENT", "LANGUAGE", "SHORT_LABEL", "MEDIUM_LABEL", "LONG_LABEL", "HEADING", "DESCRIPTION"})
 	if err != nil {
@@ -559,6 +559,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadServices(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadObjects(ctx, q, s); err != nil {
+		return nil, err
+	}
 	if err := r.loadSources(ctx, q, s); err != nil {
 		return nil, err
 	}
@@ -579,7 +582,7 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TServiceMembers, TServiceSets, TServiceExtensions, TServiceTexts, TServices, TBusinessObjectExtensible, TBusinessObjectActAuth, TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
+var deleteOrder = []string{TObjectReferences, TObjects, TObjectTypeTexts, TObjectTypes, TServiceMembers, TServiceSets, TServiceExtensions, TServiceTexts, TServices, TBusinessObjectExtensible, TBusinessObjectActAuth, TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
 	TBusinessObjectExts, TBusinessObjectTexts, TBusinessObjects, TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
 	TExtensionPointTexts, TExtensionPoints, TRoleAuthValues, TRoleAuthorizations, TCompositeRoles, TRoleTexts, TRoles, TAuthObjectActivities, TAuthObjectFields, TAuthObjectTexts, TAuthObjects, THTTPHandlerParams, THTTPHandlers, THTTPServiceTexts, THTTPAuthFields, THTTPServices, TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, tSettingTables, tSettingExtensions, tSettingTexts, tSettings, TFKFields, TForeignKeys, TFields,
@@ -647,7 +650,8 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 	}
 	for _, name := range s.DataElementNames() {
 		d := s.DataElements[name]
-		if err := r.insert(ctx, q, TDataElements, row{"DATA_ELEMENT": name, "PACKAGE_ID": ownerValue(d.Owner), "DOMAIN_NAME": d.Domain}); err != nil {
+		if err := r.insert(ctx, q, TDataElements, row{"DATA_ELEMENT": name, "PACKAGE_ID": ownerValue(d.Owner), "DOMAIN_NAME": d.Domain,
+			"OBJECT_TYPE": val(d.ObjectType)}); err != nil {
 			return err
 		}
 		for _, lang := range d.Languages() {
@@ -718,6 +722,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		return err
 	}
 	if err := r.writeServices(ctx, q, s); err != nil {
+		return err
+	}
+	if err := r.writeObjects(ctx, q, s); err != nil {
 		return err
 	}
 	if err := r.writeSources(ctx, q, s); err != nil {

@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/HTTP_PATH",
+  "description": "Full path of a node of HTTP services, e.g. /trfin/companies",
+  "type": "CHAR",
+  "length": 300
+}

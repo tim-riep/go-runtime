@@ -151,7 +151,8 @@ func TestSettingsRejected(t *testing.T) {
 }
 
 func TestUnknownFiles(t *testing.T) {
-	for _, p := range []string{"README.md", "notes.json", "schema/domains/QTY.txt", "schema/tables/sub/X.json", "assets/logo.png"} {
+	for _, p := range []string{"README.md", "notes.json", "schema/domains/QTY.txt", "schema/tables/sub/X.json", "assets/logo.png",
+		"objects/X.json", "objects/TRX/X.json", "objects/TRX/T/sub/X.json", "objects/TRX/T/X.txt", "objects/trx/T/X.json"} {
 		fsys := validFS()
 		fsys[p] = file("x")
 		_, err := Load(fsys, "mem")
@@ -197,6 +198,8 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"business object extension": {"schema/business-object-extensions/X.json", `{"businessObject":"/TRZ/X","entities":{"/TRZ/T":{}}}`},
 		"service":                   {"schema/services/X.json", `{"name":"/TRX/X","description":{"en":"X"},"entitySets":{"Xs":{"businessObject":"/TRZ/X","entity":"/TRX/T"}}}`},
 		"http service":              {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
+		"object type":               {"schema/object-types/X.json", `{"name":"/TRX/X","description":{"en":"X"},"content":"/TRZ/C"}`},
+		"object":                    {"objects/TRZ/T/X.json", `{"name":"/TRX/X","content":{}}`},
 	}
 	for _, typ := range ObjectTypes() {
 		if typ.Definitions == nil || typ.References == nil {

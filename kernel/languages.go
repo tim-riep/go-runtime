@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/tim-riep/go-runtime/internal/objects"
 	"regexp"
 	"unicode/utf8"
 
@@ -144,6 +145,7 @@ func (l *Languages) Remove(ctx context.Context, code string, opts Options) (*pla
 				return err
 			}
 			s.RemoveLanguage(code)
+			objects.RemoveLanguage(s, code)
 			if err := k.persist(ctx, q, s); err != nil {
 				return err
 			}

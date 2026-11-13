@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"context"
+	"github.com/tim-riep/go-runtime/internal/pkgload"
 	"time"
 
 	"github.com/tim-riep/go-runtime/internal/resolve"
@@ -124,6 +125,12 @@ func (k *Kernel) install(ctx context.Context, pkgs []*model.Package, opts Option
 			for _, p := range order {
 				if err := want.AddPackage(p, now, now); err != nil {
 					errs = append(errs, err)
+					continue
+				}
+				// Objects are checked once the types of the packages
+				// before them are known.
+				if err := pkgload.CheckObjects(want, p.Manifest.ID); err != nil {
+					errs = append(errs, err)
 				}
 			}
 			return want, errs.Err()
@@ -171,7 +178,10 @@ func (k *Kernel) upgrade(ctx context.Context, pkg *model.Package, opts Options) 
 			}
 			want := cur.Clone()
 			want.RemovePackage(id)
-			return want, want.AddPackage(pkg, info.InstalledAt, now)
+			if err := want.AddPackage(pkg, info.InstalledAt, now); err != nil {
+				return want, err
+			}
+			return want, pkgload.CheckObjects(want, id)
 		},
 		check:   rejectDestructive(string(id), opts),
 		origins: localOrigins(pkg),

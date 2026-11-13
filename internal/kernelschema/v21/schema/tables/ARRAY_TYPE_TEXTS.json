@@ -1,0 +1,51 @@
+{
+  "name": "/RT/ARRAY_TYPE_TEXTS",
+  "description": "Labels of array types per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ARRAY_TYPE",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "ARRAY_TYPE",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ARRAY_TYPE",
+      "table": "/RT/ARRAY_TYPES",
+      "fields": [
+        {
+          "field": "ARRAY_TYPE",
+          "references": "ARRAY_TYPE"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/REF_HTTP_NODE",
+  "domain": "/TRBASE/HTTP_PATH",
+  "texts": {
+    "en": {
+      "short": "Node",
+      "medium": "HTTP node",
+      "long": "Node of HTTP services",
+      "heading": "HTTP node"
+    },
+    "de": {
+      "short": "Knoten",
+      "medium": "HTTP-Knoten",
+      "long": "Knoten der HTTP-Dienste",
+      "heading": "HTTP-Knoten"
+    }
+  }
+}

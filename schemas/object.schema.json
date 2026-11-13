@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/object.schema.json",
+  "title": "Object",
+  "description": "An object of a type that a package defines (objects/<defining package>/<type without namespace>/<name without namespace>.json). The kernel checks the content against the content structure of the type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "content"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "content": {
+      "description": "The content in the format of /TRBASE/JSON: an object with the components of the content structure.",
+      "type": "object"
+    }
+  }
+}

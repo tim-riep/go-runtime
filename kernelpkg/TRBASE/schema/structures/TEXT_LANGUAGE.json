@@ -1,0 +1,20 @@
+{
+  "name": "/TRBASE/TEXT_LANGUAGE",
+  "texts": {
+    "en": {
+      "label": "Language of texts",
+      "description": "The language of a row of texts; arrays whose rows include it and have the unique key LANGUAGE hold texts per language"
+    },
+    "de": {
+      "label": "Sprache von Texten",
+      "description": "Die Sprache einer Zeile mit Texten; Arrays, deren Zeilen sie einbinden und den eindeutigen Schlüssel LANGUAGE haben, enthalten Texte je Sprache"
+    }
+  },
+  "components": [
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE",
+      "notNull": true
+    }
+  ]
+}

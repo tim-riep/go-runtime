@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/object-type.schema.json",
+  "title": "Object type",
+  "description": "A type of objects that the package defines (schema/object-types/<name without namespace>.json). Packages that require the package ship objects of the type below objects/<package>/<type without namespace>/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "content"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/descriptions"
+    },
+    "content": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "A structure of the package that describes the content of every object of the type."
+    },
+    "behavior": {
+      "$ref": "common.schema.json#/$defs/objectName",
+      "description": "A class of the package that implements /TRBASE/OBJECT_TYPE_BEHAVIOR: it checks objects of the type and learns about their changes."
+    }
+  }
+}

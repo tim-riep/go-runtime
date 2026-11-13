@@ -1,0 +1,42 @@
+{
+  "name": "/RT/STRUCTURE_EXTENSIONS",
+  "description": "Extensions of structures by other packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "STRUCTURE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "STRUCTURE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    },
+    {
+      "name": "STRUCTURE",
+      "table": "/RT/STRUCTURES",
+      "fields": [
+        {
+          "field": "STRUCTURE_NAME",
+          "references": "STRUCTURE_NAME"
+        }
+      ]
+    }
+  ]
+}

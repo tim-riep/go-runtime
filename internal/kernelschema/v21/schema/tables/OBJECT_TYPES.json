@@ -1,0 +1,46 @@
+{
+  "name": "/RT/OBJECT_TYPES",
+  "description": "Object types that packages define",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TYPE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "CONTENT_STRUCTURE",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "BEHAVIOR_CLASS",
+      "domain": "/RT/OBJECT_NAME"
+    }
+  ],
+  "primaryKey": [
+    "TYPE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

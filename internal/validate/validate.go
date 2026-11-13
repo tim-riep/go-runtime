@@ -26,6 +26,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
+	"github.com/tim-riep/go-runtime/internal/objects"
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
 )
@@ -65,6 +66,8 @@ func Schema(s *model.Schema, opts Options) error {
 	v.generatedNames()
 	v.businessObjects()
 	v.services()
+	v.objectTypes()
+	v.objects()
 	v.assetRepositories()
 	v.reportMissingLanguages()
 	return v.errs.Err()
@@ -87,6 +90,7 @@ func (v *validator) physicalField(table, name string) *model.Field {
 }
 
 type validator struct {
+	types   map[string]*objects.Type
 	phys    *model.Physical
 	s       *model.Schema
 	opts    Options
@@ -302,6 +306,17 @@ func (v *validator) dataElement(de *model.DataElement) {
 		}
 	}
 	v.languages(obj, de.Src, de.Languages())
+	if typ, ok := de.ObjectType.Get(); ok {
+		t := v.s.ObjectTypes[typ]
+		switch {
+		case de.Domain != model.ObjectReferenceDomain:
+			v.fail(rterr.CodeDataElement, de.Src.At("/objectType"), obj, "only data elements with the domain %s name an object type", model.ObjectReferenceDomain)
+		case t == nil:
+			v.fail(rterr.CodeDataElement, de.Src.At("/objectType"), obj, "object type %s does not exist", typ)
+		case !v.s.Visible(de.Owner, t.Owner):
+			v.fail(rterr.CodeNotVisible, de.Src.At("/objectType"), obj, "object type %s belongs to package %s, which %s does not require", typ, t.Owner, de.Owner)
+		}
+	}
 }
 
 // field checks a field declared by owner and normalizes its default.

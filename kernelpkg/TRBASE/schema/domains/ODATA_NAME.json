@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/ODATA_NAME",
+  "description": "Public name in a service, a simple identifier of OData",
+  "type": "CHAR",
+  "length": 128
+}

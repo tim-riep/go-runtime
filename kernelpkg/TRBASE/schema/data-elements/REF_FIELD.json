@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/REF_FIELD",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Field",
+      "medium": "Field",
+      "long": "Field of an entity",
+      "heading": "Field"
+    },
+    "de": {
+      "short": "Feld",
+      "medium": "Feld",
+      "long": "Feld einer Entität",
+      "heading": "Feld"
+    }
+  }
+}

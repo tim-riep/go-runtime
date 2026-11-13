@@ -64,6 +64,8 @@ const (
 	CodeExtensionPoint  Code = "extension-point"  // invalid extension point or implementation
 	CodeBusinessObject  Code = "business-object"  // invalid business object
 	CodeService         Code = "service"          // invalid service
+	CodeObjectType      Code = "object-type"      // invalid object type
+	CodeObject          Code = "object"           // invalid object of a package-defined type
 )
 
 // Location points at the place in a package that caused an error.

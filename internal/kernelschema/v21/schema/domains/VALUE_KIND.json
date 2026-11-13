@@ -1,0 +1,20 @@
+{
+  "name": "/RT/VALUE_KIND",
+  "description": "Kind of an entry of granted values",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "value",
+      "description": "Single value"
+    },
+    {
+      "value": "range",
+      "description": "Range with both bounds"
+    },
+    {
+      "value": "pattern",
+      "description": "* or a prefix followed by *"
+    }
+  ]
+}

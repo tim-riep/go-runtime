@@ -543,6 +543,10 @@ func (k *Kernel) ApplyResolution(ctx context.Context, res *Resolution, opts Opti
 				}
 				if err := want.AddPackage(p, at, now); err != nil {
 					errs = append(errs, err)
+					continue
+				}
+				if err := pkgload.CheckObjects(want, p.Manifest.ID); err != nil {
+					errs = append(errs, err)
 				}
 			}
 			return want, errs.Err()

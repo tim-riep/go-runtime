@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/REF_OBJECT",
+  "description": "Name of an object of a package-defined type; data elements with this domain refer to objects",
+  "type": "CHAR",
+  "length": 63
+}

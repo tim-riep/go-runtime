@@ -1,0 +1,46 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_TRIGGER_FIELDS",
+  "description": "Fields whose change triggers a determination or validation",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "METHOD_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "METHOD",
+      "table": "/RT/BUSINESS_OBJECT_METHODS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        },
+        {
+          "field": "METHOD_NAME",
+          "references": "METHOD_NAME"
+        }
+      ]
+    }
+  ]
+}

@@ -199,7 +199,10 @@ type DataElement struct {
 	Owner  PackageID                  `json:"owner"`
 	Domain string                     `json:"domain"`
 	Texts  map[string]DataElementText `json:"texts"` // by language code
-	Src    rterr.Location             `json:"-"`
+	// ObjectType is the type of the objects a reference to objects refers
+	// to; only for the domain ObjectReferenceDomain.
+	ObjectType Optional[string] `json:"objectType"`
+	Src        rterr.Location   `json:"-"`
 }
 
 // Languages returns the languages of the texts in sorted order.
@@ -413,7 +416,11 @@ type Package struct {
 	BusinessObjectExtensions []BusinessObjectExtension
 	// Services offer business objects and tables over OData.
 	Services []Service
-	Origin   string // where the package was loaded from
+	// ObjectTypes are the types of objects the package defines.
+	ObjectTypes []ObjectType
+	// Objects are the objects of package-defined types the package ships.
+	Objects []Object
+	Origin  string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

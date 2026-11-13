@@ -1,0 +1,47 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_TEXTS",
+  "description": "Descriptions of business objects per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "table": "/RT/BUSINESS_OBJECTS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

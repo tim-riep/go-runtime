@@ -1,0 +1,5 @@
+{
+  "name": "/RT/EFFECT_ERROR",
+  "description": "Error of a failed effect",
+  "type": "STRING"
+}

@@ -58,6 +58,10 @@ type Schema struct {
 	BusinessObjectExtensions map[BusinessObjectExtensionKey]*BusinessObjectExtension
 	// Services are the services by name.
 	Services map[string]*Service
+	// ObjectTypes are the object types that packages define, by name.
+	ObjectTypes map[string]*ObjectType
+	// Objects are the objects of package-defined types by name.
+	Objects map[string]*Object
 }
 
 // NewSchema returns an empty schema.
@@ -82,6 +86,8 @@ func NewSchema() *Schema {
 		BusinessObjects:          map[string]*BusinessObject{},
 		BusinessObjectExtensions: map[BusinessObjectExtensionKey]*BusinessObjectExtension{},
 		Services:                 map[string]*Service{},
+		ObjectTypes:              map[string]*ObjectType{},
+		Objects:                  map[string]*Object{},
 	}
 }
 
@@ -114,6 +120,12 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.Services {
 		c.Services[k] = cloneService(v)
+	}
+	for k, v := range s.ObjectTypes {
+		c.ObjectTypes[k] = cloneObjectType(v)
+	}
+	for k, v := range s.Objects {
+		c.Objects[k] = cloneObject(v)
 	}
 	for k, v := range s.Sources {
 		c.Sources[k] = slices.Clone(v)
@@ -346,6 +358,24 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.Services[svc.Name] = svc
 	}
+	for i := range p.ObjectTypes {
+		t := cloneObjectType(&p.ObjectTypes[i])
+		t.Owner = id
+		if old, ok := s.ObjectTypes[t.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "object type", Name: t.Name, Owner: string(old.Owner), Package: string(id), Location: t.Src})
+			continue
+		}
+		s.ObjectTypes[t.Name] = t
+	}
+	for i := range p.Objects {
+		o := cloneObject(&p.Objects[i])
+		o.Owner = id
+		if old, ok := s.Objects[o.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "object", Name: o.Name, Owner: string(old.Owner), Package: string(id), Location: o.Src})
+			continue
+		}
+		s.Objects[o.Name] = o
+	}
 	for i := range p.BusinessObjectExtensions {
 		x := cloneBusinessObjectExtension(&p.BusinessObjectExtensions[i])
 		x.Package = id
@@ -455,6 +485,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, t := range s.ObjectTypes {
+		if _, ok := t.Description[code]; ok {
+			delete(t.Description, code)
+			n++
+		}
+	}
 	for _, r := range s.AssetRepositories {
 		if _, ok := r.Description[code]; ok {
 			delete(r.Description, code)
@@ -524,6 +560,16 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, svc := range s.Services {
 		if svc.Owner == id {
 			delete(s.Services, name)
+		}
+	}
+	for name, t := range s.ObjectTypes {
+		if t.Owner == id {
+			delete(s.ObjectTypes, name)
+		}
+	}
+	for name, o := range s.Objects {
+		if o.Owner == id {
+			delete(s.Objects, name)
 		}
 	}
 	for name, d := range s.Domains {

@@ -1,0 +1,55 @@
+{
+  "name": "/RT/ROLE_HISTORY",
+  "description": "Changes of local roles and role assignments; entries are never changed",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "CHANGE_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "CHANGE_KIND",
+      "domain": "/RT/ROLE_CHANGE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME"
+    },
+    {
+      "name": "ASSIGNMENT_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "OLD_STATE",
+      "domain": "/RT/ROLE_STATE"
+    },
+    {
+      "name": "NEW_STATE",
+      "domain": "/RT/ROLE_STATE"
+    }
+  ],
+  "primaryKey": [
+    "CHANGE_ID"
+  ],
+  "foreignKeys": []
+}

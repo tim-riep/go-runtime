@@ -68,6 +68,9 @@ transaction together with its own bookkeeping.
 - **Implementation**: a class of a package that implements the interface of an extension point
   of the package or of a required one, for the filter values it names. The kernel selects the
   active implementations when the code runs; the defining package does not know them.
+- **Object type**: a type of objects that a package defines, whose content is a structure of
+  the package. Packages that require it ship objects of the type, e.g. descriptions of
+  pages; the kernel checks them like every other object and keeps them read-only.
 
 ## Package format
 
@@ -90,6 +93,7 @@ TRFIN/
     business-objects/*.json    one business object per file, named <NAME>.json
     business-object-extensions/*.json  one extension per extended business object, named <NAME>.json
     services/*.json            one service over OData per file, named <NAME>.json
+    object-types/*.json        one object type per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -100,6 +104,8 @@ TRFIN/
   transformations/
     <NAME>.xsl                 an XSLT stylesheet, the transformation /<PACKAGE>/<NAME>
     <NAME>.json                its labels and output, optional
+  objects/
+    <PACKAGE>/<TYPE>/<NAME>.json  an object of the type /<PACKAGE>/<TYPE>
 ```
 
 `manifest.json`:
@@ -865,6 +871,50 @@ business-object show <name> [--base]` describe business objects with their insta
 extensions: entities as a tree with key, parent key, operations, numbering, fields with
 type, texts and properties, behavior and authorization, each with the package it comes from;
 `--base` leaves the extensions out and `--json` gives the form of the reflector.
+
+### Object types and objects
+
+A package defines an object type in `schema/object-types/<NAME>.json`:
+
+```json
+{ "name": "/TRDEF/VIEW", "description": { "en": "View" },
+  "content": "/TRDEF/VIEW", "behavior": "/TRDEF/VIEW_BEHAVIOR" }
+```
+
+`content` is a structure of the package, flat or deep with nested structures and array
+types. A package that requires the defining package directly, or the defining package
+itself, ships objects in `objects/<DEFINING PACKAGE>/<TYPE WITHOUT NAMESPACE>/<NAME>.json`;
+the name carries the namespace of the shipping package:
+
+```json
+{ "name": "/TRUSE/NOTES",
+  "content": { "ENTITY": "/TRDEF/NOTES", "TEXTS": [{ "LANGUAGE": "en", "TITLE": "Notes" }],
+               "COLUMNS": [{ "FIELD": "TITLE" }, { "FIELD": "BODY", "WIDTH": 20 }] } }
+```
+
+- The content has the format of `/TRBASE/JSON`: components by name, extension fields by their
+  full name, `DEC` as string, fixed values by their name, `null` and `""` apart. Data
+  elements, domains, fixed values, `notNull` and defaults apply as everywhere. The kernel
+  stores the canonical form: every component in order, a missing optional component as
+  `null`, a missing component with `notNull` with its default. Its SHA-256 is the hash.
+- **References** are components with a data element of TRBASE that has the meaning of a
+  reference: `/TRBASE/REF_PACKAGE`, `REF_BUSINESS_OBJECT`, `REF_ENTITY`, `REF_FIELD`,
+  `REF_ACTION`, `REF_SERVICE`, `REF_ENTITY_SET`, `REF_ROLE`, `REF_HTTP_NODE`,
+  `REF_ASSET_REPOSITORY` and `REF_OBJECT`. A field, an action, an entity set and an asset
+  repository belong to the nearest entity (or business object), service or package in the
+  same structure or one that encloses it; the type needs such a component in scope. A data
+  element of the package with the domain `/TRBASE/REF_OBJECT` and `"objectType"` refers to
+  objects of that type. References take part in the namespace check of the import, must name
+  existing objects of the package or of packages it requires, and keep them from being
+  removed by an upgrade; `rt show` lists the objects that use an object.
+- **Texts** are arrays whose rows include `/TRBASE/TEXT_LANGUAGE` and have the unique key
+  `LANGUAGE`. English is mandatory and other languages must be set up, as for all texts.
+- Types of the repository and of the same installation are known. An object whose type, or
+  whose folder, is unknown is rejected, so is an object of a type whose package is not
+  required.
+- When an upgrade changes the content structure, every installed object of the type must
+  fit the new structure, or the upgrade fails with the name of the object and its package.
+- Objects are not tenant-specific and read-only at runtime.
 
 ### Tenants
 

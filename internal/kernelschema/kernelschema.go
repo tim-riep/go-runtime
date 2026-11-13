@@ -30,7 +30,7 @@ import (
 	"github.com/tim-riep/go-runtime/model"
 )
 
-//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20
+//go:embed v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21
 var files embed.FS
 
 // Migration is one version of the kernel tables.
@@ -62,6 +62,7 @@ var Migrations = []Migration{
 	{Version: 18, Dir: "v18"}, // business objects
 	{Version: 19, Dir: "v19"}, // data classes and extensions of business objects, no settings
 	{Version: 20, Dir: "v20"}, // services over OData
+	{Version: 21, Dir: "v21"}, // package-defined object types and their objects
 }
 
 // Latest returns the newest version.

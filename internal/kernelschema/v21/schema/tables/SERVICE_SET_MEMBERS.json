@@ -1,0 +1,50 @@
+{
+  "name": "/RT/SERVICE_SET_MEMBERS",
+  "description": "Operations, actions, hidden fields and navigations of entity sets of services",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "SET_NAME",
+      "domain": "/RT/ODATA_NAME"
+    },
+    {
+      "name": "MEMBER_KIND",
+      "domain": "/RT/SERVICE_MEMBER_KIND"
+    },
+    {
+      "name": "MEMBER_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PUBLIC_NAME",
+      "domain": "/RT/ODATA_NAME"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_NAME",
+    "SET_NAME",
+    "MEMBER_KIND",
+    "MEMBER_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTITY_SET",
+      "table": "/RT/SERVICE_ENTITY_SETS",
+      "fields": [
+        {
+          "field": "SERVICE_NAME",
+          "references": "SERVICE_NAME"
+        },
+        {
+          "field": "SET_NAME",
+          "references": "SET_NAME"
+        }
+      ]
+    }
+  ]
+}
