@@ -219,6 +219,8 @@ const (
 	KindClass       = "class" // a class or interface in code
 
 	KindAuthorizationObject = "authorization-object"
+	KindObjectType          = "object-type"
+	KindObject              = "object"
 )
 
 // Resolve determines which kind of object a name refers to. A prefix
@@ -227,7 +229,8 @@ const (
 // explicitly; a bare name
 // that matches several kinds is reported as rterr.Ambiguous.
 func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, err error) {
-	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType, KindClass, KindAuthorizationObject}, kd) {
+	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType, KindClass, KindAuthorizationObject,
+		KindObjectType, KindObject}, kd) {
 		return kd, n, nil
 	}
 	s, err := k.Schema(ctx)
@@ -255,6 +258,12 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	}
 	if _, ok := s.AuthorizationObjects[ref]; ok {
 		kinds = append(kinds, KindAuthorizationObject)
+	}
+	if _, ok := s.ObjectTypes[ref]; ok {
+		kinds = append(kinds, KindObjectType)
+	}
+	if _, ok := s.Objects[ref]; ok {
+		kinds = append(kinds, KindObject)
 	}
 	for _, sources := range s.Sources {
 		for _, src := range sources {

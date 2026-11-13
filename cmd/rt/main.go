@@ -168,6 +168,15 @@ Commands:
                            print the metadata document of a service as clients get it
   service activate|deactivate <name>
                            serve a service below /rt/odata or stop serving it
+  object-type list [package]
+                           list the object types that packages define, with the number
+                           of their objects
+  object-type show <name>  show an object type with its resolved content structure
+  object-type schema <name> [--lang L]
+                           print a JSON Schema of the object files of a type for editors
+  object list <type> [package]
+                           list the objects of a type in the dependency order of packages
+  object show <name>       show an object with its references and canonical content
   implementation activate|deactivate <name> [--tenant T]
                            activate or deactivate an implementation of an extension point,
                            globally or in a tenant, whose setting wins over the global one
@@ -485,6 +494,10 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.businessObject(ctx, k, args)
 	case "service":
 		return c.service(ctx, k, args)
+	case "object-type":
+		return c.objectType(ctx, k, args)
+	case "object":
+		return c.object(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
 	case "role":
@@ -710,6 +723,14 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 	case kernel.KindAuthorizationObject:
 		return c.showAuthorizationObject(ctx, k, name)
+	case kernel.KindObjectType:
+		if code := c.showObjectType(ctx, k, name); code != exitOK || c.asJSON {
+			return code
+		}
+	case kernel.KindObject:
+		if code := c.showObject(ctx, k, name); code != exitOK || c.asJSON {
+			return code
+		}
 	case kernel.KindClass:
 		d, err := k.Class(ctx, name)
 		if err != nil {
@@ -791,6 +812,9 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 			}
 			fmt.Fprintf(c.stdout, "  used in code by %s at %s:%d (%s)\n", u.Package, u.File, u.Line, what)
 		}
+	}
+	if err := c.showObjectUses(ctx, k, name); err != nil {
+		return c.fail(err)
 	}
 	return exitOK
 }

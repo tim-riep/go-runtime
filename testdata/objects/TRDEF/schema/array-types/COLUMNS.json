@@ -1,0 +1,11 @@
+{
+  "name": "/TRDEF/COLUMNS",
+  "texts": {
+    "en": {
+      "label": "Columns"
+    }
+  },
+  "rowType": {
+    "structure": "/TRDEF/COLUMN"
+  }
+}

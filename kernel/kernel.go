@@ -105,6 +105,9 @@ type Kernel struct {
 	// maxAssetRead limits the size of an asset that code loads into the
 	// memory of an execution.
 	maxAssetRead int64
+	// objectBehaviorTimeout limits each call of the behavior of an object
+	// type.
+	objectBehaviorTimeout time.Duration
 	// contents caches small asset contents by their hash; contentReads
 	// counts the contents read from the database.
 	contents     *contentCache
@@ -201,7 +204,8 @@ func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
 		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
 		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry), sources: cfg.Sources, formats: cfg.Formats,
-		effective: newEffectiveCache()}
+		objectBehaviorTimeout: cfg.ObjectBehaviorTimeout,
+		effective:             newEffectiveCache()}
 	if k.maxAssetRead <= 0 {
 		k.maxAssetRead = DefaultMaxAssetRead
 	}
@@ -603,6 +607,11 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 		if err := k.syncOrigins(ctx, q, want, o, started, opts); err != nil {
 			return err
 		}
+		notes, err := k.runObjectBehaviors(ctx, q, cur, want)
+		if err != nil {
+			return err
+		}
+		p.Changes = append(p.Changes, notes...)
 		return k.writeLog(ctx, q, p, started, repo.StatusSuccess, model.None[string]())
 	}
 	if opts.DryRun {

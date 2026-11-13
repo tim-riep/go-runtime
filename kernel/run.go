@@ -80,6 +80,9 @@ type ExecOptions struct {
 	// rows, entity statements that change instances, commit and rollback
 	// raise /RT/SESSION_ERROR, and the end rolls back.
 	ReadOnly bool
+	// bound runs the execution in a transaction of the kernel, which it
+	// only reads; see execution.bound.
+	bound dialect.Querier
 }
 
 func (o *ExecOptions) defaults() {
@@ -151,7 +154,7 @@ func (k *Kernel) executeOn(ctx context.Context, g *generation, opts ExecOptions,
 	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
 	image := g.image
-	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts}
+	x := &execution{k: k, d: k.d, phys: g.phys, schema: g.schema, sheets: g.sheets, ctx: ctx, tenant: opts.Tenant, opts: opts, bound: opts.bound}
 	x.sessions = []*session{{x: x, n: 1}}
 	x.extensions = g.extensionRegistry()
 	x.behaviors = g.behaviorRegistry()
@@ -199,6 +202,9 @@ func (x *execution) finish(failure error) error {
 			}
 		}
 		s.close()
+	}
+	if x.bound != nil {
+		return errors.Join(errs...) // the kernel's transaction is busy
 	}
 	x.flushDiagnosis()
 	x.flushSelections()

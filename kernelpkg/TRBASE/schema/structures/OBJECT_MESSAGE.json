@@ -1,0 +1,32 @@
+{
+  "name": "/TRBASE/OBJECT_MESSAGE",
+  "texts": {
+    "en": {
+      "label": "Message about an object"
+    },
+    "de": {
+      "label": "Meldung zu einem Objekt"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "SEVERITY",
+      "dataElement": "/TRBASE/MESSAGE_SEVERITY",
+      "notNull": true
+    },
+    {
+      "name": "TEXT",
+      "dataElement": "/TRBASE/MESSAGE_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "POINTER",
+      "dataElement": "/TRBASE/JSON_POINTER"
+    }
+  ]
+}

@@ -359,3 +359,200 @@ func TestObjectsUninstallAndLanguage(t *testing.T) {
 		}
 	})
 }
+
+// trdefBehavior gives /TRDEF/VIEW a behavior: CHECK warns about views
+// without next view and rejects more than three columns; CHANGED rejects
+// changes and the removal of /TRUSE/FROZEN, which proves that it runs.
+func trdefBehavior() map[string]string {
+	return withFiles(trdefFiles, map[string]string{
+		"manifest.json": `{"id":"TRDEF","version":"1.0.0","languageVersion":1,"requires":[{"id":"TRBASE"}]}`,
+		"schema/object-types/VIEW.json": `{"name":"/TRDEF/VIEW","description":{"en":"View","de":"Ansicht"},
+			"content":"/TRDEF/VIEW","behavior":"/TRDEF/VIEW_BEHAVIOR"}`,
+		"src/REJECTED.class": `public class /TRDEF/REJECTED extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end
+`,
+		"src/VIEW_BEHAVIOR.class": `public class /TRDEF/VIEW_BEHAVIOR implements /TRBASE/OBJECT_TYPE_BEHAVIOR
+
+  public method CHECK(changes: /TRBASE/OBJECT_CHANGE_ARRAY) returns /TRBASE/OBJECT_MESSAGE_ARRAY raises /RT/EXCEPTION
+    var messages = new array of /TRBASE/OBJECT_MESSAGE
+    for change in changes
+      if change.KIND = /TRBASE/OBJECT_CHANGE_KIND.DELETED
+        continue
+      end
+      var info = /TRBASE/OBJECTS.GET(change.NAME)
+      if info is null
+        raise /TRDEF/REJECTED with "{change.NAME} cannot be read"
+      end
+      var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
+      var message: /TRBASE/OBJECT_MESSAGE
+      message.NAME = change.NAME
+      if view.NEXT is null
+        message.SEVERITY = /TRBASE/MESSAGE_SEVERITY.WARNING
+        message.TEXT = "{change.NAME} has no next view"
+        messages.APPEND(message)
+      end
+      var columns = view.COLUMNS
+      if columns is not null and columns.LENGTH() > 3
+        message.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+        message.TEXT = "a view has at most 3 columns"
+        message.POINTER = "/COLUMNS"
+        messages.APPEND(message)
+      end
+    end
+    return messages
+  end
+
+  public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+    for change in changes
+      if change.NAME = "/TRUSE/FROZEN" and change.KIND <> /TRBASE/OBJECT_CHANGE_KIND.CREATED
+        raise /TRDEF/REJECTED with "{change.NAME} was {change.KIND}"
+      end
+    end
+  end
+
+end
+`,
+	})
+}
+
+// truseCode gives TRUSE a class that reads views with /TRBASE/OBJECTS.
+func truseCode(files map[string]string) map[string]string {
+	return withFiles(files, map[string]string{
+		"manifest.json": `{"id":"TRUSE","version":"1.0.0","languageVersion":1,
+			"requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRFIN"},{"id":"TROTTO"}]}`,
+		"src/VIEWS.class": `public class /TRUSE/VIEWS
+
+  public static method NAMES(pkg: STRING?) returns array of STRING raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE
+    var out = new array of STRING
+    for info in /TRBASE/OBJECTS.OF_TYPE("/TRDEF/VIEW", pkg)
+      out.APPEND(info.NAME)
+    end
+    return out
+  end
+
+  public static method USING(entity: STRING, field: STRING?) returns array of STRING raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE
+    var out = new array of STRING
+    var kind = /TRBASE/REFERENCE_KIND.ENTITY
+    if field is not null
+      kind = /TRBASE/REFERENCE_KIND.FIELD
+    end
+    for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRDEF/VIEW", kind, entity, field)
+      out.APPEND(info.NAME)
+    end
+    return out
+  end
+
+  public static method TITLE(name: STRING) returns STRING? raises /RT/EXCEPTION
+    var info = /TRBASE/OBJECTS.GET(name)
+    if info is null
+      return null
+    end
+    var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
+    var texts = view.TEXTS
+    if texts is null
+      return null
+    end
+    return texts[1].TITLE
+  end
+
+end
+`,
+	})
+}
+
+func TestObjectBehavior(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		base := []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO"), writePackage(t, trdefBehavior())}
+		// CHECK rejects a view with four columns.
+		bad := withFiles(truseFiles(), map[string]string{
+			"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRDEF/NOTES","NEXT":"/TRUSE/COMPANIES",
+				"COLUMNS":[{"FIELD":"TITLE"},{"FIELD":"BODY"},{"FIELD":"NOTE_ID"},{"FIELD":"TITLE"}]}}`,
+		})
+		_, err := k.Install(ctx, append(base, writePackage(t, bad)), kernel.Options{})
+		if err == nil || !strings.Contains(err.Error(), "a view has at most 3 columns") || !strings.Contains(objectErrors(err), "/content/COLUMNS") {
+			t.Fatalf("CHECK did not reject: %v", err)
+		}
+		// Warnings appear in the plan; CHANGED runs on installation.
+		files := withFiles(truseFiles(), map[string]string{
+			"objects/TRDEF/VIEW/FROZEN.json": `{"name":"/TRUSE/FROZEN","content":{"ENTITY":"/TRDEF/NOTES","NEXT":"/TRUSE/NOTES"}}`,
+		})
+		p, err := k.Install(ctx, append(base, writePackage(t, files)), kernel.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var notes []string
+		for _, c := range p.Changes {
+			if c.Kind == plan.ObjectMessage {
+				notes = append(notes, c.Name+" "+c.Detail)
+			}
+		}
+		if !slices.Equal(notes, []string{"/TRUSE/COMPANIES warning: /TRUSE/COMPANIES has no next view"}) {
+			t.Errorf("notes %v", notes)
+		}
+		// CHANGED runs on an upgrade that changes an object ...
+		up := withFiles(files, map[string]string{
+			"manifest.json":                  `{"id":"TRUSE","version":"1.1.0","requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRFIN"},{"id":"TROTTO"}]}`,
+			"objects/TRDEF/VIEW/FROZEN.json": `{"name":"/TRUSE/FROZEN","content":{"ENTITY":"/TRDEF/NOTES","NEXT":"/TRUSE/COMPANIES"}}`,
+		})
+		if _, err := k.Upgrade(ctx, writePackage(t, up), kernel.Options{}); err == nil || !strings.Contains(err.Error(), "/TRUSE/FROZEN was CHANGED") {
+			t.Fatalf("CHANGED on upgrade: %v", err)
+		}
+		// ... and on the removal of the package that ships it.
+		if _, err := k.Uninstall(ctx, "TRUSE", kernel.Options{Confirm: true}); err == nil || !strings.Contains(err.Error(), "/TRUSE/FROZEN was DELETED") {
+			t.Fatalf("CHANGED on uninstall: %v", err)
+		}
+		s, _ := k.Schema(ctx)
+		if s.Objects["/TRUSE/FROZEN"] == nil {
+			t.Error("the rejected removal was not rolled back")
+		}
+	})
+}
+
+func TestObjectsRead(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		if _, err := installObjects(t, k, writePackage(t, truseCode(truseFiles()))); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.Some("Acme")); err != nil {
+			t.Fatal(err)
+		}
+		run := func(method string, args ...string) string {
+			t.Helper()
+			var raw []json.RawMessage
+			for _, a := range args {
+				raw = append(raw, json.RawMessage(a))
+			}
+			out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME", Language: "en"}, "/TRUSE/VIEWS", method, raw)
+			if err != nil {
+				t.Fatalf("%s: %v", method, err)
+			}
+			return string(out)
+		}
+		if got := run("NAMES", `null`); got != `["/TRUSE/COMPANIES","/TRUSE/NOTES"]` {
+			t.Errorf("all views: %s", got)
+		}
+		if got := run("NAMES", `"TRFIN"`); got != `[]` {
+			t.Errorf("views of TRFIN: %s", got)
+		}
+		if got := run("USING", `"/TRFIN/COMPANIES"`, `"/TROTTO/OTTO_ID"`); got != `["/TRUSE/COMPANIES"]` {
+			t.Errorf("by field: %s", got)
+		}
+		if got := run("USING", `"/TRDEF/NOTES"`, `null`); got != `["/TRUSE/NOTES"]` {
+			t.Errorf("by entity: %s", got)
+		}
+		if got := run("TITLE", `"/TRUSE/NOTES"`); got != `"Notes"` {
+			t.Errorf("typed content: %s", got)
+		}
+		if got := run("TITLE", `"/TRUSE/NONE"`); got != `null` {
+			t.Errorf("missing object: %s", got)
+		}
+	})
+}

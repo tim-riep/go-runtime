@@ -914,7 +914,20 @@ the name carries the namespace of the shipping package:
   required.
 - When an upgrade changes the content structure, every installed object of the type must
   fit the new structure, or the upgrade fails with the name of the object and its package.
-- Objects are not tenant-specific and read-only at runtime.
+- Objects are not tenant-specific and read-only at runtime. Code reads them with
+  `/TRBASE/OBJECTS` (see the [language](docs/language.md#objects-of-package-defined-types)).
+- The **behavior class** implements `/TRBASE/OBJECT_TYPE_BEHAVIOR`. In the transaction of an
+  installation, upgrade or removal, after the repository holds the new objects, the kernel
+  calls `CHECK` and then `CHANGED` once per type with all changed objects of the type
+  (`CREATED`, `CHANGED`, `DELETED` with the old and new hash), types in the dependency order
+  of their packages. Both run in an execution that only reads, without tenant and user, for
+  at most `Config.ObjectBehaviorTimeout` (5 seconds). `CHECK` returns messages: an error, or
+  an exception of either method, rejects the operation; warnings appear in its plan as
+  `object-message`. A dry run does not call them. Combining several objects that refer to
+  the same target is up to the defining package.
+- `rt object-type list|show|schema`, `rt object list <type> [package]` and `rt object show
+  <name>` describe types and objects; `rt object-type schema` writes a JSON Schema of the
+  object files for editors. `rt show` lists the objects that refer to an object.
 
 ### Tenants
 
@@ -1352,6 +1365,11 @@ rt service show /TRFIN/COMPANY_SERVICE
 rt service activate /TRFIN/COMPANY_SERVICE
 rt service metadata /TRFIN/COMPANY_SERVICE --lang de --format json
 rt http configure /rt/odata --max-page-size 100
+rt install testdata/objects/TRDEF testdata/objects/TRUSE
+rt object-type list
+rt object-type schema /TRDEF/VIEW > view.schema.json
+rt object list /TRDEF/VIEW
+rt object show /TRUSE/COMPANIES
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
 rt show /TRFIN/COMPANY_ARRAY --json

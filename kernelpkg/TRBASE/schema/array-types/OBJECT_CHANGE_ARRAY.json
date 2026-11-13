@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/OBJECT_CHANGE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Changes of objects"
+    },
+    "de": {
+      "label": "Änderungen von Objekten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/OBJECT_CHANGE"
+  }
+}

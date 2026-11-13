@@ -201,3 +201,31 @@ func (m *Machine) ChainJSON(ctx context.Context, point string, classes []string,
 	}
 	return arg, nil
 }
+
+// CallObjectJSON creates an object of class with its constructor without
+// parameters and calls its instance method with one argument in JSON. It
+// returns the result in JSON, or null for a method without result.
+func (m *Machine) CallObjectJSON(ctx context.Context, class, method string, arg json.RawMessage) (json.RawMessage, error) {
+	obj, err := m.NewObject(ctx, class)
+	if err != nil {
+		return nil, err
+	}
+	mi, ok := obj.record().Class.Method(method)
+	if !ok || mi.Static || len(mi.Func.Def.ParamTypes) != 1 {
+		return nil, fmt.Errorf("vm: %s has no method %s with one parameter", class, method)
+	}
+	f := mi.Func
+	in, err := m.FromJSON(f.Prog.P, f.Def.ParamTypes[0], arg)
+	if err != nil {
+		return nil, fmt.Errorf("vm: the argument of %s.%s: %w", class, method, err)
+	}
+	m.ctx, m.depth = ctx, 0
+	r, err := m.run(f, obj, []Value{in}, nil)
+	if err != nil {
+		return nil, err
+	}
+	if f.Def.Result < 0 {
+		return json.RawMessage("null"), nil
+	}
+	return m.ToJSON(f.Prog.P, f.Def.Result, r)
+}

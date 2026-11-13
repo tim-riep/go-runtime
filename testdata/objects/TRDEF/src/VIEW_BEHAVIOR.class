@@ -1,0 +1,40 @@
+public class /TRDEF/VIEW_BEHAVIOR implements /TRBASE/OBJECT_TYPE_BEHAVIOR
+
+  public method CHECK(changes: /TRBASE/OBJECT_CHANGE_ARRAY) returns /TRBASE/OBJECT_MESSAGE_ARRAY raises /RT/EXCEPTION
+    var messages = new array of /TRBASE/OBJECT_MESSAGE
+    for change in changes
+      if change.KIND = /TRBASE/OBJECT_CHANGE_KIND.DELETED
+        continue
+      end
+      var info = /TRBASE/OBJECTS.GET(change.NAME)
+      if info is null
+        raise /TRDEF/REJECTED with "{change.NAME} cannot be read"
+      end
+      var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
+      var message: /TRBASE/OBJECT_MESSAGE
+      message.NAME = change.NAME
+      if view.NEXT is null
+        message.SEVERITY = /TRBASE/MESSAGE_SEVERITY.WARNING
+        message.TEXT = "{change.NAME} has no next view"
+        messages.APPEND(message)
+      end
+      var columns = view.COLUMNS
+      if columns is not null and columns.LENGTH() > 3
+        message.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+        message.TEXT = "a view has at most 3 columns"
+        message.POINTER = "/COLUMNS"
+        messages.APPEND(message)
+      end
+    end
+    return messages
+  end
+
+  public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+    for change in changes
+      if change.NAME = "/TRUSE/FROZEN" and change.KIND <> /TRBASE/OBJECT_CHANGE_KIND.CREATED
+        raise /TRDEF/REJECTED with "{change.NAME} was {change.KIND}"
+      end
+    end
+  end
+
+end

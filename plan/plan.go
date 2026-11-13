@@ -115,6 +115,8 @@ const (
 	CreateObject     ChangeKind = "create-object"
 	DropObject       ChangeKind = "drop-object"
 	AlterObject      ChangeKind = "alter-object" // content changed
+	// ObjectMessage is a warning of the behavior of an object type.
+	ObjectMessage ChangeKind = "object-message"
 
 	AddAssetRepository   ChangeKind = "add-asset-repository"
 	DropAssetRepository  ChangeKind = "drop-asset-repository"
@@ -147,7 +149,7 @@ func (k ChangeKind) Physical() bool {
 		CreateBusinessObject, DropBusinessObject, AlterBusinessObject,
 		AddBusinessObjectExtension, DropBusinessObjectExtension, AlterBusinessObjectExtension,
 		CreateService, DropService, AlterService,
-		CreateObjectType, DropObjectType, AlterObjectType, CreateObject, DropObject, AlterObject:
+		CreateObjectType, DropObjectType, AlterObjectType, CreateObject, DropObject, AlterObject, ObjectMessage:
 		return false
 	}
 	return true

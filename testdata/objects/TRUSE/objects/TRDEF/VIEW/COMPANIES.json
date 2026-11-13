@@ -1,0 +1,25 @@
+{
+  "name": "/TRUSE/COMPANIES",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANIES",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      }
+    ],
+    "GROUPS": [
+      {
+        "ID": "MAIN",
+        "FIELDS": [
+          {
+            "FIELD": "NAME"
+          },
+          {
+            "FIELD": "/TROTTO/OTTO_ID"
+          }
+        ]
+      }
+    ]
+  }
+}

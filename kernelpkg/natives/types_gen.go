@@ -61,6 +61,24 @@ const (
 	MessageSeveritySuccess     MessageSeverity = "success"
 )
 
+// ReferenceKind is the enum /TRBASE/REFERENCE_KIND.
+type ReferenceKind string
+
+// Fixed values of /TRBASE/REFERENCE_KIND.
+const (
+	ReferenceKindPackage         ReferenceKind = "package"
+	ReferenceKindBusinessObject  ReferenceKind = "businessObject"
+	ReferenceKindEntity          ReferenceKind = "entity"
+	ReferenceKindField           ReferenceKind = "field"
+	ReferenceKindAction          ReferenceKind = "action"
+	ReferenceKindService         ReferenceKind = "service"
+	ReferenceKindEntitySet       ReferenceKind = "entitySet"
+	ReferenceKindRole            ReferenceKind = "role"
+	ReferenceKindHttpNode        ReferenceKind = "httpNode"
+	ReferenceKindAssetRepository ReferenceKind = "assetRepository"
+	ReferenceKindObject          ReferenceKind = "object"
+)
+
 // ValueKind is the enum /TRBASE/VALUE_KIND.
 type ValueKind string
 
@@ -203,6 +221,15 @@ type Implementation struct {
 	SortOrder   int32                  `rt:"SORT_ORDER"`
 	Filters     []FilterEntry          `rt:"FILTERS"`
 	Active      bool                   `rt:"ACTIVE"`
+}
+
+// ObjectInfo is the structure /TRBASE/OBJECT_INFO.
+type ObjectInfo struct {
+	Name      string `rt:"NAME"`
+	Type      string `rt:"TYPE"`
+	PackageID string `rt:"PACKAGE_ID"`
+	Hash      string `rt:"HASH"`
+	Content   string `rt:"CONTENT"`
 }
 
 // XlsxDimension is the structure /TRBASE/XLSX_DIMENSION.

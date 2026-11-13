@@ -75,6 +75,9 @@ type execution struct {
 	// selections are the evaluations of extension points a trace records,
 	// written when the execution ends.
 	selections []repo.SelectionEntry
+	// bound is the transaction of the kernel that a bound execution reads
+	// in; nil for executions with sessions of their own.
+	bound dialect.Querier
 }
 
 // session is a database session: its own connection and a transaction
@@ -82,17 +85,21 @@ type execution struct {
 type session struct {
 	x       *execution
 	n       int
-	conn    *sql.Conn
-	open    bool // a transaction is running
-	written bool // the transaction changed rows
-	cursors int  // cursors declared, for their names
-	saved   bool // a commit of a test set the savepoint rt_committed
+	conn    dialect.Querier
+	own     *sql.Conn // the connection of the session; nil when bound
+	open    bool      // a transaction is running
+	written bool      // the transaction changed rows
+	cursors int       // cursors declared, for their names
+	saved   bool      // a commit of a test set the savepoint rt_committed
 	after   []func()
 }
 
 func (x *execution) Default() vm.Session { return x.sessions[0] }
 
 func (x *execution) Open(ctx context.Context) (vm.Session, error) {
+	if x.bound != nil {
+		return nil, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: "the execution runs in the transaction of the kernel and has no other sessions"}
+	}
 	if len(x.sessions) >= x.opts.MaxSessions {
 		return nil, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: fmt.Sprintf("an execution may use at most %d sessions, including the default session", x.opts.MaxSessions)}
 	}
@@ -110,12 +117,22 @@ func (s *session) begin(ctx context.Context) error {
 	if s.open {
 		return nil
 	}
+	if s.x.bound != nil {
+		// A bound execution runs in the transaction of the kernel, in a
+		// savepoint that its end rolls back.
+		s.conn = s.x.bound
+		if _, err := s.conn.ExecContext(ctx, "SAVEPOINT rt_bound"); err != nil {
+			return err
+		}
+		s.open = true
+		return nil
+	}
 	if s.conn == nil {
 		conn, err := s.x.k.db.Conn(ctx)
 		if err != nil {
 			return err
 		}
-		s.conn = conn
+		s.conn, s.own = conn, conn
 		if s.sqlite() {
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", s.x.opts.LockTimeout.Milliseconds())); err != nil {
 				return err
@@ -341,6 +358,9 @@ func (s *session) Commit(ctx context.Context) error {
 		s.runAfter()
 		return nil
 	}
+	if s.x.bound != nil {
+		return errReadOnly
+	}
 	if s.x.test {
 		if _, err := s.conn.ExecContext(ctx, "SAVEPOINT rt_committed"); err != nil {
 			return err
@@ -375,8 +395,22 @@ func (s *session) Rollback(ctx context.Context) error {
 		_, err := s.conn.ExecContext(ctx, "ROLLBACK TO SAVEPOINT rt_committed")
 		return err
 	}
-	_, err := s.conn.ExecContext(ctx, "ROLLBACK")
+	err := s.rollback(ctx)
 	s.open, s.written = false, false
+	return err
+}
+
+// rollback ends the transaction of the session, or for a bound execution
+// returns to the state before it.
+func (s *session) rollback(ctx context.Context) error {
+	if s.x.bound != nil {
+		if _, err := s.conn.ExecContext(ctx, "ROLLBACK TO SAVEPOINT rt_bound"); err != nil {
+			return err
+		}
+		_, err := s.conn.ExecContext(ctx, "RELEASE SAVEPOINT rt_bound")
+		return err
+	}
+	_, err := s.conn.ExecContext(ctx, "ROLLBACK")
 	return err
 }
 
@@ -386,7 +420,7 @@ func (s *session) discard(ctx context.Context) error {
 	if !s.open {
 		return nil
 	}
-	_, err := s.conn.ExecContext(ctx, "ROLLBACK")
+	err := s.rollback(ctx)
 	s.open, s.written, s.saved = false, false, false
 	return err
 }
@@ -394,7 +428,7 @@ func (s *session) discard(ctx context.Context) error {
 // end rolls back a running transaction after a failed commit.
 func (s *session) end(ctx context.Context) {
 	if s.open {
-		_, _ = s.conn.ExecContext(ctx, "ROLLBACK")
+		_ = s.rollback(ctx)
 	}
 	s.open, s.written, s.after = false, false, nil
 }
@@ -406,14 +440,18 @@ func (s *session) close() {
 	}
 	ctx := context.Background()
 	if s.open {
-		_, _ = s.conn.ExecContext(ctx, "ROLLBACK")
+		_ = s.rollback(ctx)
 		s.open = false
+	}
+	if s.own == nil {
+		s.conn = nil
+		return
 	}
 	if s.sqlite() {
 		_, _ = s.conn.ExecContext(ctx, "PRAGMA busy_timeout = 10000")
 	}
-	_ = s.conn.Close()
-	s.conn = nil
+	_ = s.own.Close()
+	s.conn, s.own = nil, nil
 }
 
 // resultRows decodes the rows of a select.

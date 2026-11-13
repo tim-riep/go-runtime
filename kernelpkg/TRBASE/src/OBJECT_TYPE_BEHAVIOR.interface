@@ -1,0 +1,17 @@
+# The behavior of an object type that a package defines. The kernel calls
+# it in the transaction of an installation, upgrade or removal, after the
+# repository holds the new objects, in an execution that only reads,
+# without tenant and user and with a short time limit.
+public interface /TRBASE/OBJECT_TYPE_BEHAVIOR
+
+  # Checks the installed and changed objects of the type beyond their
+  # structure and references. A message with the severity ERROR, or an
+  # exception, rejects the operation; warnings are shown.
+  method CHECK(changes: /TRBASE/OBJECT_CHANGE_ARRAY) returns /TRBASE/OBJECT_MESSAGE_ARRAY raises /RT/EXCEPTION
+
+  # Learns that objects of the type were installed, changed or removed,
+  # e.g. to drop what it keeps in memory. An exception rejects the
+  # operation.
+  method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+
+end

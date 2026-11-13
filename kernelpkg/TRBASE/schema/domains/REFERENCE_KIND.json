@@ -1,0 +1,52 @@
+{
+  "name": "/TRBASE/REFERENCE_KIND",
+  "description": "Kind of a reference in the content of an object",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "package",
+      "name": "PACKAGE"
+    },
+    {
+      "value": "businessObject",
+      "name": "BUSINESS_OBJECT"
+    },
+    {
+      "value": "entity",
+      "name": "ENTITY"
+    },
+    {
+      "value": "field",
+      "name": "FIELD"
+    },
+    {
+      "value": "action",
+      "name": "ACTION"
+    },
+    {
+      "value": "service",
+      "name": "SERVICE"
+    },
+    {
+      "value": "entitySet",
+      "name": "ENTITY_SET"
+    },
+    {
+      "value": "role",
+      "name": "ROLE"
+    },
+    {
+      "value": "httpNode",
+      "name": "HTTP_NODE"
+    },
+    {
+      "value": "assetRepository",
+      "name": "ASSET_REPOSITORY"
+    },
+    {
+      "value": "object",
+      "name": "OBJECT"
+    }
+  ]
+}

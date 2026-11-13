@@ -77,6 +77,30 @@ type Host interface {
 	// ImplementationActive reports whether an implementation is active in
 	// the tenant of the execution.
 	ImplementationActive(name string) (bool, error)
+	// Objects returns the objects of a package-defined type for code of
+	// the package reader, which must define the type or require its
+	// package: all of them, or those of pkg, or those whose references
+	// match ref, in the dependency order of their packages. An unknown
+	// type or one the reader may not use returns an *ObjectTypeNotVisible.
+	Objects(reader model.PackageID, typeName string, pkg model.PackageID, ref *model.ObjectReference) ([]*model.Object, error)
+	// Object returns an object by name under the same rule, nil if there
+	// is none.
+	Object(reader model.PackageID, name string) (*model.Object, error)
+}
+
+// ObjectTypeNotVisible tells that an object type does not exist or that
+// a package may not read its objects.
+type ObjectTypeNotVisible struct {
+	Reader model.PackageID
+	Type   string
+	Exists bool
+}
+
+func (e *ObjectTypeNotVisible) Error() string {
+	if !e.Exists {
+		return fmt.Sprintf("object type %s does not exist", e.Type)
+	}
+	return fmt.Sprintf("package %s may not read the objects of type %s; it must require the package of the type", e.Reader, e.Type)
 }
 
 // Selection is what an extension point runs: the classes in order and

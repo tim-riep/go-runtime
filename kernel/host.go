@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"slices"
 	"time"
 
 	"github.com/tim-riep/go-runtime/internal/repo"
@@ -245,4 +246,48 @@ func (x *execution) Components(structure string) ([]native.Component, error) {
 		out = append(out, nc)
 	}
 	return out, nil
+}
+
+// objectType returns a package-defined type whose objects code of reader
+// may read: the defining package, packages that require it and kernel
+// packages.
+func (x *execution) objectType(reader model.PackageID, typeName string) (*model.ObjectType, error) {
+	t := x.schema.ObjectTypes[typeName]
+	if t == nil {
+		return nil, &native.ObjectTypeNotVisible{Reader: reader, Type: typeName}
+	}
+	if !x.KernelPackage(reader) && !x.schema.Visible(reader, t.Owner) {
+		return nil, &native.ObjectTypeNotVisible{Reader: reader, Type: typeName, Exists: true}
+	}
+	return t, nil
+}
+
+func (x *execution) Objects(reader model.PackageID, typeName string, pkg model.PackageID, ref *model.ObjectReference) ([]*model.Object, error) {
+	if _, err := x.objectType(reader, typeName); err != nil {
+		return nil, err
+	}
+	var out []*model.Object
+	for _, o := range x.schema.ObjectsOf(typeName) {
+		if pkg != "" && o.Owner != pkg {
+			continue
+		}
+		if ref != nil && !slices.ContainsFunc(o.References, func(r model.ObjectReference) bool {
+			return r.Kind == ref.Kind && r.Target == ref.Target && (ref.Part == "" || r.Part == ref.Part)
+		}) {
+			continue
+		}
+		out = append(out, o)
+	}
+	return out, nil
+}
+
+func (x *execution) Object(reader model.PackageID, name string) (*model.Object, error) {
+	o := x.schema.Objects[name]
+	if o == nil {
+		return nil, nil
+	}
+	if _, err := x.objectType(reader, o.Type); err != nil {
+		return nil, err
+	}
+	return o, nil
 }

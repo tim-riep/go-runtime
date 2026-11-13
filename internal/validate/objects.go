@@ -34,9 +34,7 @@ func (v *validator) objectTypes() {
 		v.objectName(name, t.Owner, t.Src.At("/name"), obj)
 		v.descriptions(obj, t.Src, t.Description, t.Languages())
 		if b, ok := t.Behavior.Get(); ok {
-			if pkg, _, split := model.SplitName(b); !split || pkg != t.Owner {
-				v.fail(rterr.CodeObjectType, t.Src.At("/behavior"), obj, "the behavior class %s must belong to %s", b, t.Owner)
-			}
+			v.ownSource(b, model.SourceClass, "behavior class", t.Owner, t.Src.At("/behavior"), obj)
 		}
 		rt, problems := objects.Resolve(v.s, t, nil)
 		for _, p := range problems {

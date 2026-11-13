@@ -56,6 +56,9 @@ type Config struct {
 	// Formats are the limits of native methods for zip, gzip and xlsx;
 	// zero fields mean native.DefaultLimits.
 	Formats native.Limits
+	// ObjectBehaviorTimeout limits each call of the behavior class of an
+	// object type; 0 means DefaultObjectBehaviorTimeout.
+	ObjectBehaviorTimeout time.Duration
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

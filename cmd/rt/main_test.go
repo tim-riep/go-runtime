@@ -447,3 +447,36 @@ func TestInitWithAdmin(t *testing.T) {
 		}
 	})
 }
+
+func TestObjectCommands(t *testing.T) {
+	db := testutil.Databases(t)[0]
+	ex := filepath.Join(testutil.ModuleRoot(t), "examples")
+	objs := filepath.Join(testutil.ModuleRoot(t), "testdata", "objects")
+	for _, s := range []struct {
+		args     []string
+		code     int
+		contains string
+	}{
+		{[]string{"init"}, exitOK, "Executed"},
+		{[]string{"language", "add", "de"}, exitOK, "German"},
+		{[]string{"install", filepath.Join(ex, "TRFIN"), filepath.Join(ex, "TROTTO")}, exitOK, "Executed"},
+		{[]string{"install", filepath.Join(objs, "TRDEF"), filepath.Join(objs, "TRUSE")}, exitOK, "create-object /TRUSE/NOTES"},
+		{[]string{"object-type", "list"}, exitOK, "/TRDEF/VIEW  TRDEF    /TRDEF/VIEW  /TRDEF/VIEW_BEHAVIOR  2        View"},
+		{[]string{"object-type", "show", "/TRDEF/VIEW"}, exitOK, "COLUMNS"},
+		{[]string{"object-type", "schema", "/TRDEF/VIEW"}, exitOK, `"additionalProperties": false`},
+		{[]string{"object", "list", "/TRDEF/VIEW"}, exitOK, "/TRUSE/NOTES"},
+		{[]string{"object", "list", "/TRDEF/NOPE"}, exitError, "object type /TRDEF/NOPE"},
+		{[]string{"object", "show", "/TRUSE/COMPANIES"}, exitOK, "refers to field /TRFIN/COMPANIES /TROTTO/OTTO_ID at /GROUPS/0/FIELDS/1/FIELD"},
+		{[]string{"show", "/TRUSE/NOTES"}, exitOK, "Object /TRUSE/NOTES of type /TRDEF/VIEW"},
+		{[]string{"show", "/TRFIN/COMPANIES"}, exitOK, "used by object /TRUSE/COMPANIES of package TRUSE at /ENTITY (entity)"},
+		{[]string{"show", "/TRDEF/VIEW"}, exitError, "ambiguous"},
+		{[]string{"show", "object-type:/TRDEF/VIEW"}, exitOK, "used by object /TRUSE/NOTES of package TRUSE at /NEXT (object)"},
+	} {
+		var out, errOut bytes.Buffer
+		code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
+		all := out.String() + errOut.String()
+		if code != s.code || !strings.Contains(all, s.contains) {
+			t.Errorf("rt %s: exit %d (want %d):\n%s", strings.Join(s.args, " "), code, s.code, all)
+		}
+	}
+}

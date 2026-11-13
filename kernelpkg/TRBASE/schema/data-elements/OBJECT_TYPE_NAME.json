@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/OBJECT_TYPE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Obj. type",
+      "medium": "Object type",
+      "long": "Object type",
+      "heading": "Object type"
+    },
+    "de": {
+      "short": "Objekttyp",
+      "medium": "Objekttyp",
+      "long": "Objekttyp",
+      "heading": "Objekttyp"
+    }
+  }
+}

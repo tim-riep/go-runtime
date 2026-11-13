@@ -1,0 +1,20 @@
+# Reads the objects of types that packages define. Code reads the objects
+# of types that its package defines or whose package it requires. Lists
+# come in the dependency order of the packages that ship the objects, then
+# by name. CONTENT is the canonical JSON of the content; read it typed with
+# transform info.CONTENT using /TRBASE/JSON into <content structure>.
+public class /TRBASE/OBJECTS
+
+  # All objects of a type, or those of one package.
+  public static method OF_TYPE(type: STRING, pkg: STRING?) returns /TRBASE/OBJECT_INFO_ARRAY raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE executed by kernel
+
+  # The objects of a type whose content refers to target: for fields,
+  # actions, entity sets and asset repositories target is the entity,
+  # business object, service or package and part the field, action, entity
+  # set or repository; a null part matches all.
+  public static method BY_REFERENCE(type: STRING, kind: /TRBASE/REFERENCE_KIND, target: STRING, part: STRING?) returns /TRBASE/OBJECT_INFO_ARRAY raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE executed by kernel
+
+  # An object by name, null if there is none.
+  public static method GET(name: STRING) returns /TRBASE/OBJECT_INFO? raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE executed by kernel
+
+end

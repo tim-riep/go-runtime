@@ -1,0 +1,38 @@
+{
+  "name": "/TRBASE/OBJECT_INFO",
+  "texts": {
+    "en": {
+      "label": "Object"
+    },
+    "de": {
+      "label": "Objekt"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TYPE",
+      "dataElement": "/TRBASE/OBJECT_TYPE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "HASH",
+      "dataElement": "/TRBASE/SHA256",
+      "notNull": true
+    },
+    {
+      "name": "CONTENT",
+      "dataElement": "/TRBASE/OBJECT_CONTENT",
+      "notNull": true
+    }
+  ]
+}

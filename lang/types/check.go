@@ -264,6 +264,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 	c.httpHandlers()
 	c.extensionPointDefinitions()
 	c.implementations()
+	c.objectTypeBehaviors()
 	c.behaviorClasses()
 	for _, k := range c.sorted() {
 		if !k.External {

@@ -1,0 +1,14 @@
+{
+  "name": "/TRDEF/IMPORTANCE",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "HIGH"
+    },
+    {
+      "value": "low",
+      "name": "LOW"
+    }
+  ]
+}

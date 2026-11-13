@@ -1,0 +1,12 @@
+# An object type does not exist, or the package of the code may not read
+# its objects because it does not require the package of the type.
+public class /TRBASE/OBJECT_TYPE_NOT_VISIBLE extends /RT/EXCEPTION
+
+  public attribute TYPE: STRING
+
+  public constructor(text: STRING, type: STRING)
+    super(text)
+    TYPE = type
+  end
+
+end

@@ -1,0 +1,25 @@
+{
+  "name": "/TRDEF/COLUMN",
+  "texts": {
+    "en": {
+      "label": "Column"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/REF_FIELD",
+      "notNull": true
+    },
+    {
+      "name": "WIDTH",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "IMPORTANCE",
+      "domain": "/TRDEF/IMPORTANCE",
+      "notNull": true,
+      "default": "HIGH"
+    }
+  ]
+}

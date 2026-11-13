@@ -1,0 +1,9 @@
+{
+  "name": "/TRDEF/VIEW",
+  "description": {
+    "en": "View",
+    "de": "Ansicht"
+  },
+  "content": "/TRDEF/VIEW",
+  "behavior": "/TRDEF/VIEW_BEHAVIOR"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "TRUSE",
+  "version": "1.0.0",
+  "requires": [
+    {
+      "id": "TRBASE"
+    },
+    {
+      "id": "TRDEF"
+    },
+    {
+      "id": "TRFIN"
+    },
+    {
+      "id": "TROTTO"
+    }
+  ]
+}

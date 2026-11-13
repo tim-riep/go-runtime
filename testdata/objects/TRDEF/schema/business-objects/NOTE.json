@@ -1,0 +1,17 @@
+{
+  "name": "/TRDEF/NOTE",
+  "description": {
+    "en": "Note"
+  },
+  "dataClass": "configuration",
+  "root": "/TRDEF/NOTES",
+  "entities": {
+    "/TRDEF/NOTES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "/TRBASE/OBJECT_CONTENT",
+  "description": "Content of an object in canonical JSON",
+  "type": "STRING"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/OBJECT_INFO_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Objects"
+    },
+    "de": {
+      "label": "Objekte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/OBJECT_INFO"
+  }
+}

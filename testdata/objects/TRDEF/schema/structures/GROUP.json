@@ -1,0 +1,19 @@
+{
+  "name": "/TRDEF/GROUP",
+  "texts": {
+    "en": {
+      "label": "Group"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "domain": "/TRBASE/NAME",
+      "notNull": true
+    },
+    {
+      "name": "FIELDS",
+      "arrayType": "/TRDEF/COLUMNS"
+    }
+  ]
+}

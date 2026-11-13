@@ -1,0 +1,11 @@
+{
+  "name": "/TRDEF/GROUPS",
+  "texts": {
+    "en": {
+      "label": "Groups"
+    }
+  },
+  "rowType": {
+    "structure": "/TRDEF/GROUP"
+  }
+}

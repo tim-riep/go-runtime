@@ -1,0 +1,17 @@
+{
+  "name": "/TRDEF/VIEW_TEXTS",
+  "texts": {
+    "en": {
+      "label": "Texts"
+    }
+  },
+  "rowType": {
+    "structure": "/TRDEF/VIEW_TEXT"
+  },
+  "key": {
+    "fields": [
+      "LANGUAGE"
+    ],
+    "unique": true
+  }
+}

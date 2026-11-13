@@ -1,0 +1,22 @@
+{
+  "name": "/TRDEF/NOTES",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NOTE_ID",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "TITLE",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "BODY",
+      "domain": "/TRBASE/TEXT"
+    }
+  ],
+  "primaryKey": [
+    "NOTE_ID"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "/TRBASE/OBJECT_CHANGE",
+  "texts": {
+    "en": {
+      "label": "Change of an object"
+    },
+    "de": {
+      "label": "Änderung eines Objekts"
+    }
+  },
+  "components": [
+    {
+      "name": "TYPE",
+      "dataElement": "/TRBASE/OBJECT_TYPE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRBASE/OBJECT_CHANGE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "OLD_HASH",
+      "dataElement": "/TRBASE/SHA256"
+    },
+    {
+      "name": "NEW_HASH",
+      "dataElement": "/TRBASE/SHA256"
+    }
+  ]
+}

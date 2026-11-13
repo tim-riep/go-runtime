@@ -804,9 +804,33 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/ZIP_ARCHIVE` | native class: zip archives, see [Zip archives and gzip](#zip-archives-and-gzip) |
 | `/TRBASE/GZIP` | `COMPRESS`, `DECOMPRESS` and more, see [Zip archives and gzip](#zip-archives-and-gzip) |
 | `/TRBASE/XLSX_WORKBOOK` | native class: workbooks in xlsx format cell by cell, see [Workbooks](#workbooks) |
+| `/TRBASE/OBJECTS` | objects of package-defined types, see [Objects of package-defined types](#objects-of-package-defined-types) |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
 `LINE_NO`, the line in the stylesheet or `null`.
+
+## Objects of package-defined types
+
+`/TRBASE/OBJECTS` reads the objects of types that packages define (see the README). Code
+reads the objects of types that its package defines or whose package it requires; others
+raise `/TRBASE/OBJECT_TYPE_NOT_VISIBLE`.
+
+- `OF_TYPE(type, pkg)` returns all objects of a type, or those of package `pkg`.
+- `BY_REFERENCE(type, kind, target, part)` returns the objects whose content refers to
+  `target`: for fields, actions, entity sets and asset repositories `target` is the entity,
+  business object, service or package and `part` the field, action, entity set or
+  repository; a `null` part matches all.
+- `GET(name)` returns one object, `null` if there is none.
+
+Lists come in the dependency order of the packages that ship the objects, then by name.
+`/TRBASE/OBJECT_INFO` has `NAME`, `TYPE`, `PACKAGE_ID`, `HASH` and `CONTENT`, the
+canonical JSON of the content, which `transform` reads typed:
+
+```
+for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRDEF/VIEW", /TRBASE/REFERENCE_KIND.ENTITY, "/TRFIN/COMPANIES", null)
+  var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
+end
+```
 
 ## Asset repositories
 

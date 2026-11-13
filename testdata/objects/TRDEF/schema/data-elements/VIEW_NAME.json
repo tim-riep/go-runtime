@@ -1,0 +1,13 @@
+{
+  "name": "/TRDEF/VIEW_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRDEF/VIEW",
+  "texts": {
+    "en": {
+      "short": "View",
+      "medium": "View",
+      "long": "View",
+      "heading": "View"
+    }
+  }
+}

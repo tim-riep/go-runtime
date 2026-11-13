@@ -1,0 +1,27 @@
+{
+  "name": "/TRUSE/NOTES",
+  "content": {
+    "ENTITY": "/TRDEF/NOTES",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Notes"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Notizen"
+      }
+    ],
+    "COLUMNS": [
+      {
+        "FIELD": "TITLE"
+      },
+      {
+        "FIELD": "BODY",
+        "WIDTH": 20,
+        "IMPORTANCE": "LOW"
+      }
+    ],
+    "NEXT": "/TRUSE/COMPANIES"
+  }
+}
