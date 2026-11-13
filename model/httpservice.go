@@ -150,8 +150,9 @@ func (s *HTTPAuthSetting) UnmarshalJSON(data []byte) error {
 // Authentication methods, tenant sources and language sources of
 // service nodes.
 const (
-	AuthBasic = "basic"
-	AuthToken = "token"
+	AuthBasic   = "basic"
+	AuthToken   = "token"
+	AuthSession = "session"
 
 	SourceHeader = "header"
 	SourceQuery  = "query"

@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -158,12 +159,28 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entry.node = node.Path
+	if node.Package == model.Kernel && node.Handlers()[0].Class == httpsvc.SessionHandler {
+		entry.handler = httpsvc.SessionHandler
+		k.serveSession(w, r, langs, entry)
+		return
+	}
 	set := st.settingsOf(node)
 
 	user, err := k.Authenticate(ctx, r, set.Authentication)
 	if err != nil && !errors.Is(err, auth.ErrInvalid) {
 		slog.Error("authentication", "error", err)
 		fail(http.StatusInternalServerError, httpsvc.CodeInternal)
+		return
+	}
+	if errors.Is(err, auth.ErrSessionExpired) {
+		fail(http.StatusUnauthorized, httpsvc.CodeSessionExpired)
+		return
+	}
+	// Requests of a browser session that change something carry the token
+	// of the session, which other sites cannot know.
+	if user != nil && user.Session != nil && r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get(auth.CSRFHeader)), []byte(user.Session.CSRFToken)) != 1 {
+		fail(http.StatusForbidden, httpsvc.CodeCSRF)
 		return
 	}
 	if err != nil || user == nil && !set.Anonymous {

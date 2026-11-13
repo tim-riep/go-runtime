@@ -36,14 +36,19 @@ func (e *Error) Error() string { return e.Code }
 
 // Codes of the answers of the kernel.
 const (
-	CodeNotFound     = "not-found"
-	CodeUnauthorized = "unauthorized"
-	CodeForbidden    = "forbidden"
-	CodeBadRequest   = "bad-request"
-	CodeTooLarge     = "body-too-large"
-	CodeInternal     = "internal-error"
-	CodeUnavailable  = "unavailable"
-	CodeNotHandled   = "method-not-handled"
+	CodeNotFound       = "not-found"
+	CodeUnauthorized   = "unauthorized"
+	CodeForbidden      = "forbidden"
+	CodeBadRequest     = "bad-request"
+	CodeTooLarge       = "body-too-large"
+	CodeInternal       = "internal-error"
+	CodeUnavailable    = "unavailable"
+	CodeNotHandled     = "method-not-handled"
+	CodeSessionExpired = "session-expired"
+	CodeCSRF           = "csrf-token-invalid"
+	CodeSignInFailed   = "sign-in-failed"
+	CodeMethod         = "method-not-allowed"
+	CodeLanguage       = "language-not-set-up"
 )
 
 // TenantHeader is the header of the tenant of a request.
@@ -69,6 +74,10 @@ func Tenant(r *http.Request, s Settings, u *auth.User) (model.Optional[string], 
 		case model.SourceUser:
 			if u != nil && !asked.Valid() {
 				asked = u.DefaultTenant
+				// A browser session has its own tenant.
+				if u.Session != nil && u.Session.Tenant.Valid() {
+					asked = u.Session.Tenant
+				}
 			}
 		}
 	}
@@ -107,6 +116,11 @@ func Language(r *http.Request, s Settings, u *auth.User, available map[string]bo
 				}
 			}
 		case model.SourceUser:
+			if u != nil && u.Session != nil {
+				if l, ok := u.Session.Language.Get(); ok && available[l] {
+					return l
+				}
+			}
 			if u != nil {
 				if l, ok := u.Language.Get(); ok && available[l] {
 					return l

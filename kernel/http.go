@@ -290,8 +290,8 @@ func checkNodeChange(path string, c KernelNodeChange) error {
 		return &rterr.InvalidArgument{Argument: "setting", Message: fmt.Sprintf(format, args...)}
 	}
 	for _, m := range c.Authentication.Or(nil) {
-		if m != model.AuthBasic && m != model.AuthToken {
-			return bad("the authentication is basic or token, not %q", m)
+		if m != model.AuthBasic && m != model.AuthToken && m != model.AuthSession {
+			return bad("the authentication is basic, token or session, not %q", m)
 		}
 	}
 	if v, ok := c.Authentication.Get(); ok && len(v) == 0 {

@@ -62,11 +62,11 @@
       "additionalProperties": false,
       "properties": {
         "authentication": {
-          "description": "Allowed authentication methods.",
+          "description": "Allowed authentication methods: basic (user and password), token (API token) and session (the cookie of a browser session from /rt/session).",
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "enum": ["basic", "token"]
+            "enum": ["basic", "token", "session"]
           }
         },
         "anonymous": {
@@ -78,7 +78,7 @@
           "type": ["string", "null"]
         },
         "tenantSources": {
-          "description": "Where the tenant of a request comes from, in this order: the header X-Tenant, the query parameter tenant, the default tenant of the user.",
+          "description": "Where the tenant of a request comes from, in this order: the header X-Tenant, the query parameter tenant, the default tenant of the user, or the tenant of the browser session.",
           "type": "array",
           "uniqueItems": true,
           "items": {
@@ -86,7 +86,7 @@
           }
         },
         "languageSources": {
-          "description": "Where the language of a request comes from, in this order: the query parameter lang, the header Accept-Language, the default language of the user; English otherwise.",
+          "description": "Where the language of a request comes from, in this order: the query parameter lang, the header Accept-Language, the default language of the user, or the language of the browser session; English otherwise.",
           "type": "array",
           "uniqueItems": true,
           "items": {

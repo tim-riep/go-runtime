@@ -1212,10 +1212,34 @@ only when it is created and stored as SHA-256 hash. After 5 failed logins in a r
 (`kernel.Config.MaxFailedLogins`) a user is locked until `rt user unlock`. Every failure
 answers 401 with `WWW-Authenticate` and does not tell whether the user exists.
 
+`session` signs in browsers with the cookie of a session of the kernel node `/rt/session`,
+which works without the dialog of the browser:
+
+- `POST /rt/session` with `{"user": "...", "password": "..."}` as `application/json`, and
+  optionally `"tenant"` and `"language"`, signs in. Failed attempts count as for `basic`. The
+  answer sets the cookie `rt_session` with `HttpOnly`, `Secure`, `SameSite=Strict` and
+  `Path=/`; the database keeps only a hash of the session ID.
+- `GET /rt/session` describes the session: `user`, `name` (`null` until users have names),
+  `tenants` of the user, the current `tenant` and `language`, the `languages` set up,
+  `csrfToken` and `expiresAt`. Without a valid session it answers 401 `session-expired`.
+- `PATCH /rt/session` with `{"tenant": ..., "language": ...}` changes tenant and language of
+  the session, a tenant only among those of the user; `DELETE /rt/session` signs out.
+- A request of a session with a method other than GET, HEAD and OPTIONS needs the header
+  `X-CSRF-Token` with `csrfToken`, otherwise it is answered with 403 `csrf-token-invalid`.
+  `basic` and `token` need none.
+- A session ends after 30 minutes without use and 12 hours after the sign-in (`rt serve
+  --session-idle`, `--session-lifetime`, `kernel.Config.Sessions`). Locking a user, a new
+  password and taking a tenant from the user end the sessions of the user; `rt session list
+  [user]` lists them and `rt session revoke <user>` ends them. `rt serve
+  --insecure-session-cookie` leaves out `Secure` for development without TLS.
+
+`session` is part of the defaults of all nodes, including `/rt/odata`.
+
 The tenant of a request comes from the first source of the node that gives one; a tenant the
 user is not assigned to is answered with 403, a request without tenant with 400. Anonymous
 requests run in `anonymousTenant` only. The language is the first one of the sources that is
-set up, else English.
+set up, else English. For a browser session the source `user` gives the tenant and language
+of the session before the defaults of the user.
 
 ### Authorizations of requests
 

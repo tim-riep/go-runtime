@@ -189,7 +189,13 @@ func (u *Users) Lock(ctx context.Context, name string, opts ...RoleOptions) erro
 		return nil
 	}, func(q dialect.Querier) error {
 		return u.k.keepAllHolder(ctx, q, o, "lock", func(h AllAuthorizationsHolder) bool { return h.User == name })
-	})
+	}, u.endSessions(ctx, name))
+}
+
+// endSessions returns a check of change that ends the browser sessions of
+// a user.
+func (u *Users) endSessions(ctx context.Context, name string) func(q dialect.Querier) error {
+	return func(q dialect.Querier) error { return u.k.repo.DeleteWebSessions(ctx, q, name) }
 }
 
 // Unlock unlocks a user and resets its failed logins.
@@ -218,7 +224,7 @@ func (u *Users) SetPassword(ctx context.Context, name, password string) error {
 	return u.change(ctx, name, func(user *User) error {
 		user.PasswordHash = model.Some(hash)
 		return nil
-	})
+	}, u.endSessions(ctx, name))
 }
 
 // AddTenant lets a user work in a tenant.
@@ -258,6 +264,9 @@ func (u *Users) RemoveTenant(ctx context.Context, name, tenant string, opts ...R
 			return &rterr.NotFound{Kind: "tenant of user " + name, Name: tenant}
 		}
 		if err := k.keepAllHolder(ctx, q, o, "removal of the tenant", func(h AllAuthorizationsHolder) bool { return h.User == name && h.Tenant == tenant }); err != nil {
+			return err
+		}
+		if err := k.repo.DeleteWebSessions(ctx, q, name); err != nil {
 			return err
 		}
 		if user.DefaultTenant.Or("") == tenant {
@@ -374,6 +383,9 @@ func (s authStore) Failed(ctx context.Context, name string) error {
 			}
 		}
 		if err := k.repo.UpdateUser(ctx, q, u); err != nil || !locked {
+			return err
+		}
+		if err := k.repo.DeleteWebSessions(ctx, q, name); err != nil {
 			return err
 		}
 		return k.repo.NextAuthGeneration(ctx, q, k.timestamp())

@@ -48,6 +48,26 @@ var httpTexts = map[string]map[string]string{
 		"en": "The service did not finish in time. Try again later.",
 		"de": "Der Dienst wurde nicht rechtzeitig fertig. Versuchen Sie es später noch einmal.",
 	},
+	httpsvc.CodeSessionExpired: {
+		"en": "The session expired. Sign in again.",
+		"de": "Die Sitzung ist abgelaufen. Melden Sie sich erneut an.",
+	},
+	httpsvc.CodeCSRF: {
+		"en": "The request lacks the token of the session in the header X-CSRF-Token.",
+		"de": "Der Anfrage fehlt das Token der Sitzung im Header X-CSRF-Token.",
+	},
+	httpsvc.CodeSignInFailed: {
+		"en": "The user name or the password is wrong, or the user is locked.",
+		"de": "Benutzername oder Passwort sind falsch, oder der Benutzer ist gesperrt.",
+	},
+	httpsvc.CodeMethod: {
+		"en": "The service does not support this method.",
+		"de": "Der Dienst unterstützt diese Methode nicht.",
+	},
+	httpsvc.CodeLanguage: {
+		"en": "The language is not set up.",
+		"de": "Die Sprache ist nicht angelegt.",
+	},
 	httpsvc.CodeNotHandled: {
 		"en": "No handler of the service handled the request.",
 		"de": "Kein Handler des Dienstes hat die Anfrage bearbeitet.",

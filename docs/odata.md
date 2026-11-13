@@ -312,7 +312,8 @@ parts listed above for changing. `OData-MaxVersion` below 4.0 answers 400; answe
 Not supported: `$batch`, drafts, `$search`, `$apply` and aggregation, lambda operators,
 delta queries, functions, `$levels` and options other than `$select` in `$expand`, paths to
 single properties and `$value`, `$ref` and `@odata.bind`, media entities and streams, OData
-Version 2, XML and Atom payloads, sessions with cookies and CSRF tokens.
+Version 2, XML and Atom payloads. Browsers sign in with the session of `/rt/session` (see
+the README); requests of a session that change something send the header `X-CSRF-Token`.
 
 The tests check the metadata documents in JSON against the JSON Schema of CSDL 4.01 of
 OASIS (`testdata/odata/oasis`).

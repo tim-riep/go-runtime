@@ -220,3 +220,112 @@ func (r *Repo) deleteWhere(ctx context.Context, q dialect.Querier, table string,
 	}
 	return nil
 }
+
+// THTTPSessions holds the sessions of browsers.
+const THTTPSessions = model.KernelNamespace + "HTTP_SESSIONS"
+
+// WebSession is a session of a browser; only the hash of its ID is kept.
+type WebSession struct {
+	Hash       string
+	User       string
+	Tenant     model.Optional[string]
+	Language   model.Optional[string]
+	CreatedAt  time.Time
+	LastSeenAt time.Time
+	ExpiresAt  time.Time
+}
+
+// HasWebSessions reports whether the kernel tables have browser sessions.
+func (r *Repo) HasWebSessions() bool { return r.has(THTTPSessions, "") }
+
+var webSessionCols = []string{"SESSION_HASH", "USER_NAME", "TENANT", "LANGUAGE", "CREATED_AT", "LAST_SEEN_AT", "EXPIRES_AT"}
+
+func webSession(x row) *WebSession {
+	return &WebSession{Hash: str(x["SESSION_HASH"]), User: str(x["USER_NAME"]), Tenant: opt(x["TENANT"]), Language: opt(x["LANGUAGE"]),
+		CreatedAt: tm(x["CREATED_AT"]), LastSeenAt: tm(x["LAST_SEEN_AT"]), ExpiresAt: tm(x["EXPIRES_AT"])}
+}
+
+// WebSession returns a session by the hash of its ID, or nil.
+func (r *Repo) WebSession(ctx context.Context, q dialect.Querier, hash string) (*WebSession, error) {
+	if !r.HasWebSessions() {
+		return nil, nil
+	}
+	rows, err := r.selectWhere(ctx, q, THTTPSessions, webSessionCols, row{"SESSION_HASH": hash})
+	if err != nil || len(rows) == 0 {
+		return nil, err
+	}
+	return webSession(rows[0]), nil
+}
+
+// WebSessions returns the sessions of a user, or of all users for "".
+func (r *Repo) WebSessions(ctx context.Context, q dialect.Querier, user string) ([]*WebSession, error) {
+	if !r.HasWebSessions() {
+		return nil, nil
+	}
+	var filter row
+	if user != "" {
+		filter = row{"USER_NAME": user}
+	}
+	rows, err := r.selectWhere(ctx, q, THTTPSessions, webSessionCols, filter, "USER_NAME", "CREATED_AT")
+	if err != nil {
+		return nil, err
+	}
+	var out []*WebSession
+	for _, x := range rows {
+		out = append(out, webSession(x))
+	}
+	return out, nil
+}
+
+// InsertWebSession stores a session.
+func (r *Repo) InsertWebSession(ctx context.Context, q dialect.Querier, s *WebSession) error {
+	return r.insert(ctx, q, THTTPSessions, row{"SESSION_HASH": s.Hash, "USER_NAME": s.User, "TENANT": val(s.Tenant), "LANGUAGE": val(s.Language),
+		"CREATED_AT": s.CreatedAt, "LAST_SEEN_AT": s.LastSeenAt, "EXPIRES_AT": s.ExpiresAt})
+}
+
+// UpdateWebSession writes the tenant, language and last use of a session.
+func (r *Repo) UpdateWebSession(ctx context.Context, q dialect.Querier, s *WebSession) error {
+	if err := r.deleteWhere(ctx, q, THTTPSessions, row{"SESSION_HASH": s.Hash}); err != nil {
+		return err
+	}
+	return r.InsertWebSession(ctx, q, s)
+}
+
+// DeleteWebSession removes a session.
+func (r *Repo) DeleteWebSession(ctx context.Context, q dialect.Querier, hash string) error {
+	if !r.HasWebSessions() {
+		return nil
+	}
+	return r.deleteWhere(ctx, q, THTTPSessions, row{"SESSION_HASH": hash})
+}
+
+// DeleteWebSessions removes the sessions of a user.
+func (r *Repo) DeleteWebSessions(ctx context.Context, q dialect.Querier, user string) error {
+	if !r.HasWebSessions() {
+		return nil
+	}
+	return r.deleteWhere(ctx, q, THTTPSessions, row{"USER_NAME": user})
+}
+
+// DeleteExpiredWebSessions removes the sessions that expired by now or
+// were last used before idleSince.
+func (r *Repo) DeleteExpiredWebSessions(ctx context.Context, q dialect.Querier, now, idleSince time.Time) error {
+	if !r.HasWebSessions() {
+		return nil
+	}
+	d, err := r.domain(THTTPSessions, "EXPIRES_AT")
+	if err != nil {
+		return err
+	}
+	a, err := r.d.Encode(d, now)
+	if err != nil {
+		return err
+	}
+	b, err := r.d.Encode(d, idleSince)
+	if err != nil {
+		return err
+	}
+	_, err = q.ExecContext(ctx, "DELETE FROM "+r.d.QuoteIdent(THTTPSessions)+" WHERE "+r.d.QuoteIdent("EXPIRES_AT")+" <= "+r.d.Placeholder(1)+
+		" OR "+r.d.QuoteIdent("LAST_SEEN_AT")+" < "+r.d.Placeholder(2), a, b)
+	return err
+}

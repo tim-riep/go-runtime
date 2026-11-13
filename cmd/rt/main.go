@@ -190,7 +190,10 @@ Commands:
   http deactivate <path>   deactivate a service node; its subtree is not reachable
   serve [--addr :8080]     serve the reachable http services until SIGINT or SIGTERM
                            (--tls-cert/--tls-key, --read-timeout, --write-timeout,
-                           --shutdown-timeout)
+                           --shutdown-timeout, --session-idle, --session-lifetime,
+                           --insecure-session-cookie for development without TLS)
+  session list [user]      list the browser sessions of a user or of all users
+  session revoke <user>    end all browser sessions of a user
   effects list             list effects of native methods that failed after their commit
   effects retry <id>       run a failed effect again
   run <package> <class> <method> [json] --tenant <id> [--lang code] [--user U]
@@ -251,6 +254,7 @@ type cli struct {
 	expectSHA         string
 	lockFile          string
 	serve             server.Config
+	sessions          kernel.SessionSettings
 }
 
 func main() {
@@ -299,6 +303,9 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.DurationVar(&c.serve.ReadTimeout, "read-timeout", server.DefaultReadTimeout, "serve: time to read a request with its body")
 	c.fs.DurationVar(&c.serve.WriteTimeout, "write-timeout", server.DefaultWriteTimeout, "serve: time to write a response")
 	c.fs.DurationVar(&c.serve.ShutdownTimeout, "shutdown-timeout", server.DefaultShutdownTimeout, "serve: time running requests get on shutdown")
+	c.fs.DurationVar(&c.sessions.IdleTimeout, "session-idle", kernel.DefaultSessionIdleTimeout, "serve: browser sessions end after this time without use")
+	c.fs.DurationVar(&c.sessions.Lifetime, "session-lifetime", kernel.DefaultSessionLifetime, "serve: browser sessions end this long after the sign-in")
+	c.fs.BoolVar(&c.sessions.InsecureCookie, "insecure-session-cookie", false, "serve: send the session cookie without TLS, for development only")
 	maxSize := int64(model.DefaultMaxAssetSize)
 	if env := os.Getenv("RT_MAX_ASSET_SIZE"); env != "" {
 		n, err := strconv.ParseInt(env, 10, 64)
@@ -510,12 +517,15 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		}
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 		defer stop()
+		k.SetSessionSettings(c.sessions)
 		if err := server.Run(ctx, c.serve, k.HTTPHandler()); err != nil {
 			return c.fail(err)
 		}
 		return exitOK
 	case "user":
 		return c.user(ctx, k, args)
+	case "session":
+		return c.session(ctx, k, args)
 	case "trace":
 		return c.trace(ctx, k, args)
 	case "outdated":

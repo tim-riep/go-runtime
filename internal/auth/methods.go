@@ -16,8 +16,12 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -31,6 +35,21 @@ type User struct {
 	Language      model.Optional[string]
 	DefaultTenant model.Optional[string]
 	Tenants       []string // tenants the user may work in
+	// Session is the browser session the user signed in with; nil for
+	// other methods.
+	Session *Session
+}
+
+// Session is a session of a browser as the store keeps it.
+type Session struct {
+	// Hash is the hash of the session ID, the key in the store.
+	Hash     string
+	User     string
+	Tenant   model.Optional[string]
+	Language model.Optional[string]
+	// CSRFToken is the token that changing requests of the session send.
+	CSRFToken string
+	ExpiresAt time.Time
 }
 
 // Account is a user as the store keeps it.
@@ -57,12 +76,19 @@ type Store interface {
 	Failed(ctx context.Context, name string) error
 	// Succeeded resets the failed attempts of a user.
 	Succeeded(ctx context.Context, name string) error
+	// Session returns a session by the hash of its ID, nil if there is
+	// none or it expired.
+	Session(ctx context.Context, hash string) (*Session, error)
 	Now() time.Time
 }
 
 // ErrInvalid is the error of every failed authentication: it does not
 // tell whether the user exists, is locked or gave a wrong secret.
 var ErrInvalid = errors.New("auth: invalid credentials")
+
+// ErrSessionExpired is the error of a session cookie whose session does
+// not exist or expired; it is an ErrInvalid.
+var ErrSessionExpired = fmt.Errorf("%w: the session expired", ErrInvalid)
 
 // Method is an authentication method of http services.
 type Method interface {
@@ -76,7 +102,7 @@ type Method interface {
 }
 
 // Methods are the authentication methods by name.
-var Methods = map[string]Method{model.AuthBasic: Basic{}, model.AuthToken: Bearer{}}
+var Methods = map[string]Method{model.AuthBasic: Basic{}, model.AuthToken: Bearer{}, model.AuthSession: Cookie{}}
 
 // Basic is HTTP Basic authentication with user name and password.
 type Basic struct{}
@@ -94,6 +120,12 @@ func (Basic) Authenticate(ctx context.Context, r *http.Request, s Store) (*User,
 	if !ok {
 		return nil, ErrInvalid
 	}
+	return Login(ctx, s, name, password)
+}
+
+// Login checks the password of a user. Failed attempts count against the
+// user, a success resets them.
+func Login(ctx context.Context, s Store, name, password string) (*User, error) {
 	a, err := s.Account(ctx, name)
 	if err != nil {
 		return nil, err
@@ -164,6 +196,71 @@ func (Bearer) Authenticate(ctx context.Context, r *http.Request, s Store) (*User
 	return &a.User, nil
 }
 
+// SessionCookie is the name of the cookie of browser sessions.
+const SessionCookie = "rt_session"
+
+// CSRFHeader is the header with the token of the session that requests
+// other than GET, HEAD and OPTIONS send.
+const CSRFHeader = "X-CSRF-Token"
+
+// NewSessionID returns a new random session ID for the cookie.
+func NewSessionID() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// SessionHash returns the stored hash of a session ID.
+func SessionHash(id string) string { return TokenHash("session:" + id) }
+
+// CSRFToken returns the token of a session. It derives from the session
+// ID, which only the cookie holds, so it needs no storage.
+func CSRFToken(id string) string {
+	sum := sha256.Sum256([]byte("csrf\x00" + id))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+// Cookie is authentication with the cookie of a browser session.
+type Cookie struct{}
+
+func (Cookie) Name() string { return model.AuthSession }
+
+// Challenge is empty: browsers sign in through /rt/session, not through a
+// dialog.
+func (Cookie) Challenge() string { return "" }
+
+func (Cookie) Applies(r *http.Request) bool {
+	c, err := r.Cookie(SessionCookie)
+	return err == nil && c.Value != ""
+}
+
+func (Cookie) Authenticate(ctx context.Context, r *http.Request, s Store) (*User, error) {
+	c, err := r.Cookie(SessionCookie)
+	if err != nil {
+		return nil, ErrSessionExpired
+	}
+	sess, err := s.Session(ctx, SessionHash(c.Value))
+	if err != nil {
+		return nil, err
+	}
+	if sess == nil {
+		return nil, ErrSessionExpired
+	}
+	a, err := s.Account(ctx, sess.User)
+	if err != nil {
+		return nil, err
+	}
+	if a == nil || a.Locked {
+		return nil, ErrSessionExpired
+	}
+	u := a.User
+	sess.CSRFToken = CSRFToken(c.Value)
+	u.Session = sess
+	return &u, nil
+}
+
 // Authenticate signs in a request with the first allowed method whose
 // credentials the request carries. Without credentials it returns nil and
 // no error.
@@ -181,7 +278,7 @@ func Authenticate(ctx context.Context, r *http.Request, allowed []string, s Stor
 func Challenges(allowed []string) []string {
 	var out []string
 	for _, name := range allowed {
-		if m := Methods[name]; m != nil {
+		if m := Methods[name]; m != nil && m.Challenge() != "" {
 			out = append(out, m.Challenge())
 		}
 	}

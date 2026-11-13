@@ -59,6 +59,8 @@ type Config struct {
 	// ObjectBehaviorTimeout limits each call of the behavior class of an
 	// object type; 0 means DefaultObjectBehaviorTimeout.
 	ObjectBehaviorTimeout time.Duration
+	// Sessions configure the browser sessions of /rt/session.
+	Sessions SessionSettings
 }
 
 // syncKernelPackages installs the kernel packages that are missing and

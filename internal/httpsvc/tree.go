@@ -44,7 +44,7 @@ type Settings struct {
 // Defaults are the settings of the kernel for the root node of every
 // package: authentication required, no anonymous access.
 var Defaults = Settings{
-	Authentication:  []string{model.AuthBasic, model.AuthToken},
+	Authentication:  []string{model.AuthBasic, model.AuthToken, model.AuthSession},
 	TenantSources:   []string{model.SourceHeader, model.SourceQuery, model.SourceUser},
 	LanguageSources: []string{model.SourceQuery, model.SourceHeader, model.SourceUser},
 	MaxBodySize:     1 << 20,
@@ -96,7 +96,20 @@ var KernelNodes = []*model.HTTPService{{
 	},
 	Handlers: []model.HTTPHandlerRef{{Class: ODataHandler}},
 	Settings: model.HTTPSettings{Anonymous: model.Some(false)},
+}, {
+	Path: "session", Owner: model.Kernel, File: "-",
+	Texts: map[string]model.Label{
+		model.DefaultLanguage: {Label: "Session", Description: model.Some("Signing in and out of browsers")},
+		"de":                  {Label: "Sitzung", Description: model.Some("An- und Abmeldung von Browsern")},
+	},
+	Handlers: []model.HTTPHandlerRef{{Class: SessionHandler}},
+	Settings: model.HTTPSettings{Anonymous: model.Some(false)},
 }}
+
+// SessionHandler is the class of the handler of the kernel that signs
+// browsers in and out at /rt/session; the kernel runs it in Go before
+// authentication.
+const SessionHandler = model.KernelNamespace + "SESSION_HANDLER"
 
 // Build builds the tree of the service nodes of a schema. Every installed
 // package has a root node, also without service nodes, and the kernel has

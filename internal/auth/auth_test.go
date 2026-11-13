@@ -17,6 +17,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -28,7 +29,12 @@ type memStore struct {
 	accounts map[string]*Account
 	tokens   map[string]*Token
 	failed   map[string]int
+	sessions map[string]*Session
 	now      time.Time
+}
+
+func (s *memStore) Session(_ context.Context, hash string) (*Session, error) {
+	return s.sessions[hash], nil
 }
 
 func (s *memStore) Account(_ context.Context, name string) (*Account, error) {
@@ -120,5 +126,50 @@ func TestBasicAndBearer(t *testing.T) {
 	}
 	if u, err := Authenticate(ctx, httptest.NewRequest("GET", "/", nil), []string{model.AuthBasic}, s); u != nil || err != nil {
 		t.Errorf("no credentials: %v %v", u, err)
+	}
+}
+
+func TestSessionCookie(t *testing.T) {
+	hash, _ := HashPassword("pw")
+	s := &memStore{accounts: map[string]*Account{"anna": {User: User{Name: "anna", Tenants: []string{"ACME"}}, PasswordHash: model.Some(hash)}},
+		failed: map[string]int{}, sessions: map[string]*Session{}}
+	id, err := NewSessionID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.sessions[SessionHash(id)] = &Session{User: "anna", Tenant: model.Some("ACME")}
+	r := httptest.NewRequest("GET", "/x", nil)
+	if (Cookie{}).Applies(r) {
+		t.Error("applies without cookie")
+	}
+	r.AddCookie(&http.Cookie{Name: SessionCookie, Value: id})
+	u, err := Authenticate(context.Background(), r, []string{model.AuthBasic, model.AuthSession}, s)
+	if err != nil || u.Name != "anna" || u.Session == nil || u.Session.CSRFToken != CSRFToken(id) || u.Session.Tenant.Or("") != "ACME" {
+		t.Fatalf("session: %+v %v", u, err)
+	}
+	if CSRFToken(id) == CSRFToken(id+"x") || SessionHash(id) == id {
+		t.Error("token or hash does not depend on the ID")
+	}
+	// Basic wins when listed first and the request carries both.
+	r.SetBasicAuth("anna", "pw")
+	if u, err := Authenticate(context.Background(), r, []string{model.AuthBasic, model.AuthSession}, s); err != nil || u.Session != nil {
+		t.Errorf("basic first: %+v %v", u, err)
+	}
+	unknown := httptest.NewRequest("GET", "/x", nil)
+	unknown.AddCookie(&http.Cookie{Name: SessionCookie, Value: "nope"})
+	if _, err := Authenticate(context.Background(), unknown, []string{model.AuthSession}, s); !errors.Is(err, ErrSessionExpired) || !errors.Is(err, ErrInvalid) {
+		t.Errorf("unknown session: %v", err)
+	}
+	s.accounts["anna"].Locked = true
+	if _, err := Authenticate(context.Background(), httptest.NewRequest("GET", "/x", nil), []string{model.AuthSession}, s); err != nil {
+		t.Errorf("without cookie: %v", err)
+	}
+	locked := httptest.NewRequest("GET", "/x", nil)
+	locked.AddCookie(&http.Cookie{Name: SessionCookie, Value: id})
+	if _, err := Authenticate(context.Background(), locked, []string{model.AuthSession}, s); !errors.Is(err, ErrSessionExpired) {
+		t.Errorf("locked user: %v", err)
+	}
+	if got := Challenges([]string{model.AuthBasic, model.AuthSession}); len(got) != 1 {
+		t.Errorf("challenges: %v", got)
 	}
 }

@@ -108,6 +108,8 @@ type Kernel struct {
 	// objectBehaviorTimeout limits each call of the behavior of an object
 	// type.
 	objectBehaviorTimeout time.Duration
+	// sessions configure the browser sessions.
+	sessions SessionSettings
 	// contents caches small asset contents by their hash; contentReads
 	// counts the contents read from the database.
 	contents     *contentCache
@@ -204,8 +206,8 @@ func NewConfig(db *sql.DB, d dialect.Dialect, cfg Config) (*Kernel, error) {
 	k := &Kernel{db: db, d: d, repo: repo.New(d), target: kernelschema.Latest(), now: time.Now, maxAssetSize: model.DefaultMaxAssetSize,
 		natives: cfg.Natives, kernelPkgs: cfg.KernelPackages, maxFailedLogins: cfg.MaxFailedLogins,
 		maxAssetRead: cfg.MaxAssetRead, contents: newContentCache(contentCacheSize, contentCacheEntry), sources: cfg.Sources, formats: cfg.Formats,
-		objectBehaviorTimeout: cfg.ObjectBehaviorTimeout,
-		effective:             newEffectiveCache()}
+		objectBehaviorTimeout: cfg.ObjectBehaviorTimeout, sessions: cfg.Sessions.withDefaults(),
+		effective: newEffectiveCache()}
 	if k.maxAssetRead <= 0 {
 		k.maxAssetRead = DefaultMaxAssetRead
 	}
