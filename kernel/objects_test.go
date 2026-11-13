@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http/httptest"
+	"net/url"
 	"slices"
 	"strings"
 	"testing"
@@ -76,6 +78,11 @@ func truseFiles() map[string]string {
 		"objects/TRDEF/VIEW/COMPANIES.json": `{"name":"/TRUSE/COMPANIES","content":{"ENTITY":"/TRFIN/COMPANIES",
 			"TEXTS":[{"LANGUAGE":"en","TITLE":"Companies"}],
 			"GROUPS":[{"ID":"MAIN","FIELDS":[{"FIELD":"NAME"},{"FIELD":"/TROTTO/OTTO_ID"}]}]}}`,
+		"schema/services/VIEWS.json": `{"name":"/TRUSE/VIEWS","description":{"en":"Views"},
+			"entitySets":{"Views":{"objectType":"/TRDEF/VIEW"},"Notes":{"businessObject":"/TRDEF/NOTE","entity":"/TRDEF/NOTES"}}}`,
+		"schema/roles/VIEWER.json": `{"name":"/TRUSE/VIEWER","texts":{"en":{"label":"Viewer"}},"authorizations":[
+			{"object":"/TRBASE/HTTP_SERVICE","fields":{"PACKAGE_ID":[{"value":"RT"}],"SERVICE_PATH":[{"value":"/rt/odata"}],"ACTIVITY":[{"value":"EXECUTE"}]}},
+			{"object":"/TRBASE/ODATA_SERVICE","fields":{"PACKAGE_ID":[{"value":"TRUSE"}],"SERVICE_NAME":[{"value":"/TRUSE/VIEWS"}],"ACTIVITY":[{"value":"EXECUTE"}]}}]}`,
 	}
 }
 
@@ -408,6 +415,7 @@ end
   end
 
   public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+    /TRBASE/ODATA_METADATA_CACHE.INVALIDATE(null, null)
     for change in changes
       if change.NAME = "/TRUSE/FROZEN" and change.KIND <> /TRBASE/OBJECT_CHANGE_KIND.CREATED
         raise /TRDEF/REJECTED with "{change.NAME} was {change.KIND}"
@@ -487,6 +495,9 @@ func TestObjectBehavior(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if n := scalar(t, k, "/RT/METADATA_GENERATIONS", "GENERATION", where(k, "SERVICE_NAME"), "*"); n != int64(1) {
+			t.Errorf("metadata of all services discarded %v times", n)
+		}
 		var notes []string
 		for _, c := range p.Changes {
 			if c.Kind == plan.ObjectMessage {
@@ -553,6 +564,73 @@ func TestObjectsRead(t *testing.T) {
 		}
 		if got := run("TITLE", `"/TRUSE/NONE"`); got != `null` {
 			t.Errorf("missing object: %s", got)
+		}
+	})
+}
+
+func TestObjectEntitySet(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		if _, err := installObjects(t, k, writePackage(t, truseFiles())); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Users().Create(ctx, "vera", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "vera", Role: "/TRUSE/VIEWER", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := k.ActivateService(ctx, "/TRUSE/VIEWS", "test"); err != nil {
+			t.Fatal(err)
+		}
+		srv := httptest.NewServer(k.HTTPHandler())
+		t.Cleanup(srv.Close)
+		c := client{t, srv.URL}
+		vera := basicAuth("vera", "secret")
+		root := "/rt/odata/truse/views/"
+
+		a := c.do("GET", root+"$metadata?$format=json", vera, "")
+		if a.status != 200 || !strings.Contains(a.body, `"TRDEF_VIEW"`) || !strings.Contains(a.body, `"$Type": "TRUSE.TRDEF_VIEW_TEXT"`) &&
+			!strings.Contains(a.body, `"$Type":"TRUSE.TRDEF_VIEW_TEXT"`) {
+			t.Fatalf("metadata: %d %s", a.status, a.body)
+		}
+		var list struct {
+			Count int              `json:"@odata.count"`
+			Value []map[string]any `json:"value"`
+		}
+		a = c.do("GET", root+"Views?$count=true&$orderby=NAME%20desc", vera, "")
+		if a.status != 200 || json.Unmarshal([]byte(a.body), &list) != nil || list.Count != 2 || len(list.Value) != 2 || list.Value[0]["NAME"] != "/TRUSE/NOTES" {
+			t.Fatalf("collection: %d %s", a.status, a.body)
+		}
+		notes := list.Value[0]
+		if notes["PACKAGE_ID"] != "TRUSE" || notes["ENTITY"] != "/TRDEF/NOTES" || notes["NEXT"] != "/TRUSE/COMPANIES" || notes["GROUPS"] != nil {
+			t.Errorf("entity: %v", notes)
+		}
+		if texts, _ := notes["TEXTS"].([]any); len(texts) != 2 || texts[0].(map[string]any)["TITLE"] != "Notes" {
+			t.Errorf("texts: %v", notes["TEXTS"])
+		}
+		a = c.do("GET", root+"Views?$filter="+url.QueryEscape("ENTITY eq '/TRFIN/COMPANIES'")+"&$select=NAME", vera, "")
+		list.Value = nil
+		if a.status != 200 || json.Unmarshal([]byte(a.body), &list) != nil || len(list.Value) != 1 || list.Value[0]["NAME"] != "/TRUSE/COMPANIES" || len(list.Value[0]) != 1 {
+			t.Errorf("filter: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", root+"Views/$count?$filter="+url.QueryEscape("startswith(NAME,'/TRUSE/N')"), vera, ""); a.body != "1" {
+			t.Errorf("count: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", root+"Views('"+url.PathEscape("/TRUSE/COMPANIES")+"')", vera, ""); a.status != 200 || !strings.Contains(a.body, `"MAIN"`) {
+			t.Errorf("single: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", root+"Views('"+url.PathEscape("/TRUSE/NONE")+"')", vera, ""); a.status != 404 {
+			t.Errorf("missing: %d", a.status)
+		}
+		if a := c.do("GET", root+"Views?$filter="+url.QueryEscape("TEXTS eq 'x'"), vera, ""); a.status != 400 {
+			t.Errorf("filter on a collection: %d %s", a.status, a.body)
+		}
+		if a := c.do("DELETE", root+"Views('"+url.PathEscape("/TRUSE/NOTES")+"')", vera, ""); a.status < 400 {
+			t.Errorf("delete: %d", a.status)
 		}
 	})
 }

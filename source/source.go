@@ -78,6 +78,15 @@ func Resolve(ctx context.Context, s Source, a Address, allowBranch bool, constra
 		c, err := s.Commit(ctx, a, a.Spec.Text)
 		return Resolved{Address: a, Commit: c}, err
 	case Branch:
+		// A tag with the prefix of the package, such as trfrontend-v1.2.0,
+		// names its version.
+		if prefix := TagPrefix(a); prefix != "" {
+			if v, ok := strings.CutPrefix(a.Spec.Text, prefix); ok {
+				if sp, err := ParseSpec(v); err == nil && sp.Kind == Version {
+					return Resolve(ctx, s, a.WithSpec(sp), allowBranch, constraints...)
+				}
+			}
+		}
 		if !allowBranch {
 			return Resolved{}, &rterr.InvalidArgument{Argument: "address", Message: fmt.Sprintf("%s names the branch %s, which may change; allow branches explicitly (--allow-branch)", a, a.Spec.Text)}
 		}
@@ -88,7 +97,7 @@ func Resolve(ctx context.Context, s Source, a Address, allowBranch bool, constra
 	if err != nil {
 		return Resolved{}, err
 	}
-	r, err := Choose(a.Location(), Releases(tags), a.Spec, constraints...)
+	r, err := Choose(a.Location(), ReleasesOf(a, tags), a.Spec, constraints...)
 	if err != nil {
 		return Resolved{}, err
 	}

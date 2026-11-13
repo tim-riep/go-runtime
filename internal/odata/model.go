@@ -26,6 +26,7 @@ import (
 
 	"github.com/tim-riep/go-runtime/model"
 	"github.com/tim-riep/go-runtime/rterr"
+	"github.com/tim-riep/go-runtime/structure"
 )
 
 // Model is the model of a service.
@@ -72,6 +73,9 @@ type EntityType struct {
 	Operations []model.EntityOperation
 	// ETag is the property with the ETag, if the entity has one.
 	ETag *Property
+	// Object is set for entity sets of objects of a package-defined
+	// type; Table is then a table without columns in the database.
+	Object *ObjectSource
 }
 
 // Property is a field offered by a type.
@@ -88,6 +92,10 @@ type Property struct {
 	Computed  bool
 	Immutable bool
 	Mandatory bool
+	// Component is the component of the content of objects the property
+	// offers; nested and array components are complex types and
+	// collections.
+	Component *structure.Component
 }
 
 // Navigation leads from an entity type to related instances.
@@ -247,7 +255,9 @@ func Build(s *model.Schema, phys *model.Physical, svc *model.Service) (*Model, [
 		return b.m, b.problems
 	}
 	for _, set := range b.m.Sets {
-		b.navigations(set.Type, set)
+		if set.Type.Object == nil {
+			b.navigations(set.Type, set)
+		}
 	}
 	b.names()
 	return b.m, b.problems
@@ -257,6 +267,9 @@ func Build(s *model.Schema, phys *model.Physical, svc *model.Service) (*Model, [
 func (b *builder) set(def *model.EntitySet) *EntityType {
 	if name, ok := def.Table.Get(); ok {
 		return b.tableSet(def, name)
+	}
+	if name, ok := def.ObjectType.Get(); ok {
+		return b.objectSet(def, name)
 	}
 	boName := def.BusinessObject.Or("")
 	base := b.s.BusinessObjects[boName]

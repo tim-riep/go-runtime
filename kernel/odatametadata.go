@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/tim-riep/go-runtime/internal/repo"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -80,7 +81,13 @@ func (k *Kernel) metadata(ctx context.Context, g *generation, svc *model.Service
 			return nil, err
 		}
 	}
-	key := fmt.Sprintf("%s\x00%s\x00%t\x00%d", svc.Name, lang, withExtensions, n)
+	// Behaviors of object types discard the metadata of services, which
+	// counters in the database tell all kernels.
+	gens, err := k.repo.MetadataGenerations(ctx, k.db)
+	if err != nil {
+		return nil, err
+	}
+	key := fmt.Sprintf("%s\x00%s\x00%t\x00%d\x00%d\x00%d", svc.Name, lang, withExtensions, n, gens[svc.Name], gens[repo.AllServices])
 	g.metadata.mu.Lock()
 	d, ok := g.metadata.docs[key]
 	g.metadata.mu.Unlock()

@@ -1,0 +1,9 @@
+# A service, an entity set or a filter that code names does not exist, is
+# not active or is invalid.
+public class /TRBASE/ODATA_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

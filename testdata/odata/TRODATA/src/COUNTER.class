@@ -1,0 +1,8 @@
+# Counts items with /TRBASE/ODATA for tests.
+public class /TRODATA/COUNTER
+
+  public static method COUNT(set: STRING, filter: STRING?) returns INT8 raises /TRBASE/ODATA_ERROR
+    return /TRBASE/ODATA.COUNT("TRODATA", "/TRODATA/ITEMS", set, filter)
+  end
+
+end

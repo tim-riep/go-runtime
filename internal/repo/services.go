@@ -77,7 +77,7 @@ func (r *Repo) loadServices(ctx context.Context, q dialect.Querier, s *model.Sch
 		}
 	}
 	sets, err := r.selectRows(ctx, q, TServiceSets, []string{"SERVICE_NAME", "SET_NAME", "BO_NAME", "TABLE_NAME", "READ_ONLY", "OPERATIONS_LISTED",
-		"ACTIONS_LISTED"}, "SERVICE_NAME", "SET_NAME")
+		"ACTIONS_LISTED", "OBJECT_TYPE"}, "SERVICE_NAME", "SET_NAME")
 	if err != nil {
 		return err
 	}
@@ -89,6 +89,8 @@ func (r *Repo) loadServices(ctx context.Context, q dialect.Querier, s *model.Sch
 		set := model.EntitySet{Name: str(x["SET_NAME"]), ReadOnly: flag(x["READ_ONLY"])}
 		if bo, ok := opt(x["BO_NAME"]).Get(); ok {
 			set.BusinessObject, set.Entity = model.Some(bo), model.Some(str(x["TABLE_NAME"]))
+		} else if ot, ok := opt(x["OBJECT_TYPE"]).Get(); ok {
+			set.ObjectType = model.Some(ot)
 		} else {
 			set.Table = model.Some(str(x["TABLE_NAME"]))
 		}
@@ -162,7 +164,7 @@ func (r *Repo) writeServices(ctx context.Context, q dialect.Querier, s *model.Sc
 		for _, set := range svc.EntitySets {
 			if err := r.insert(ctx, q, TServiceSets, row{"SERVICE_NAME": name, "SET_NAME": set.Name, "BO_NAME": val(set.BusinessObject),
 				"TABLE_NAME": set.Source(), "READ_ONLY": set.ReadOnly, "OPERATIONS_LISTED": set.Operations.Valid(),
-				"ACTIONS_LISTED": set.Actions.Valid()}); err != nil {
+				"ACTIONS_LISTED": set.Actions.Valid(), "OBJECT_TYPE": val(set.ObjectType)}); err != nil {
 				return err
 			}
 			member := func(kind, member string, public any) error {
@@ -287,4 +289,46 @@ func (r *Repo) WriteKernelNodeSettings(ctx context.Context, q dialect.Querier, k
 		"MAX_RESPONSE_SIZE": optValue(set.MaxResponseSize), "TIMEOUT_SECONDS": optValue(set.TimeoutSeconds), "BUDGET": optValue(set.Budget),
 		"MAX_PAGE_SIZE": optValue(k.MaxPageSize), "METADATA_TIMEOUT_SECONDS": optValue(k.MetadataTimeoutSeconds), "CHANGED_AT": k.ChangedAt,
 		"CHANGED_BY": val(k.ChangedBy)})
+}
+
+// TMetadataGenerations counts changes of the metadata of services that the
+// generation of the code does not cover, per service and for all ("*").
+const TMetadataGenerations = model.KernelNamespace + "METADATA_GENERATIONS"
+
+// AllServices stands for all services in TMetadataGenerations.
+const AllServices = "*"
+
+// MetadataGenerations returns the counters of the metadata of the
+// services; services without changes have none.
+func (r *Repo) MetadataGenerations(ctx context.Context, q dialect.Querier) (map[string]int64, error) {
+	out := map[string]int64{}
+	if !r.has(TMetadataGenerations, "") {
+		return out, nil
+	}
+	rows, err := r.selectRows(ctx, q, TMetadataGenerations, []string{"SERVICE_NAME", "GENERATION"})
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range rows {
+		n, _ := x["GENERATION"].(int64)
+		out[str(x["SERVICE_NAME"])] = n
+	}
+	return out, nil
+}
+
+// NextMetadataGeneration increases the counter of the metadata of a
+// service, or of all for AllServices, so that every kernel on the
+// database builds it again.
+func (r *Repo) NextMetadataGeneration(ctx context.Context, q dialect.Querier, service string, at time.Time) error {
+	if !r.has(TMetadataGenerations, "") {
+		return nil
+	}
+	all, err := r.MetadataGenerations(ctx, q)
+	if err != nil {
+		return err
+	}
+	if err := r.deleteWhere(ctx, q, TMetadataGenerations, row{"SERVICE_NAME": service}); err != nil {
+		return err
+	}
+	return r.insert(ctx, q, TMetadataGenerations, row{"SERVICE_NAME": service, "GENERATION": all[service] + 1, "CHANGED_AT": at})
 }

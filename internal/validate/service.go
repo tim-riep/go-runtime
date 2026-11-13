@@ -48,6 +48,8 @@ func (v *validator) service(svc *model.Service) {
 		var at rterr.Location
 		if bo, isBO := set.BusinessObject.Get(); isBO {
 			source, at = bo, set.Src.At("/businessObject")
+		} else if ot, isObj := set.ObjectType.Get(); isObj {
+			source, at = ot, set.Src.At("/objectType")
 		} else {
 			source, at = set.Table.Or(""), set.Src.At("/table")
 		}

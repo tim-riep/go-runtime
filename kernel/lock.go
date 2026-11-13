@@ -198,7 +198,7 @@ func (k *Kernel) Outdated(ctx context.Context) ([]Outdated, error) {
 		if err != nil {
 			return nil, err
 		}
-		rels := source.Releases(tags)
+		rels := source.ReleasesOf(a, tags)
 		if rel, err := source.Choose(a.Location(), rels, source.Spec{Kind: source.Latest}); err == nil {
 			item.Latest = rel.Version
 		}

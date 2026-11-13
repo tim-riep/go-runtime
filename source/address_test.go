@@ -136,3 +136,23 @@ func TestCache(t *testing.T) {
 		t.Error("allowed")
 	}
 }
+
+func TestReleasesOf(t *testing.T) {
+	tags := []source.Tag{{"v3.0.0", "a"}, {"trp-v1.0.0", "b"}, {"trp-1.1.0", "c"}, {"trq-v2.0.0", "d"}, {"trp-latest", "e"}}
+	a := source.Address{Host: "github.com", Owner: "o", Repo: "r", Dir: "packages/TRP"}
+	got := source.ReleasesOf(a, tags)
+	if len(got) != 2 || got[0].Tag != "trp-1.1.0" || got[0].Version != "1.1.0" || got[1].Tag != "trp-v1.0.0" {
+		t.Errorf("prefixed: %+v", got)
+	}
+	if source.TagPrefix(a) != "trp-" {
+		t.Errorf("prefix: %s", source.TagPrefix(a))
+	}
+	// Without tags of its own prefix a package takes those of the repository.
+	b := source.Address{Host: "github.com", Owner: "o", Repo: "r", Dir: "packages/TRX"}
+	if got := source.ReleasesOf(b, tags); len(got) != 1 || got[0].Tag != "v3.0.0" {
+		t.Errorf("fallback: %+v", got)
+	}
+	if got := source.ReleasesOf(source.Address{Host: "github.com", Owner: "o", Repo: "r"}, tags); len(got) != 1 {
+		t.Errorf("root: %+v", got)
+	}
+}

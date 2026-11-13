@@ -1,0 +1,12 @@
+# Services over OData for code, with the authorizations of the user of the
+# execution in its tenant as for requests below /rt/odata.
+public class /TRBASE/ODATA
+
+  # The number of entities of an entity set of a service that the user may
+  # read, optionally restricted by a $filter of OData. The service must be
+  # active and the user may start it; otherwise, and for an unknown entity
+  # set or an invalid filter, it raises /TRBASE/ODATA_ERROR. Without user it
+  # raises /RT/NOT_AUTHORIZED.
+  public static method COUNT(pkg: STRING, service: STRING, set: STRING, filter: STRING?) returns INT8 raises /TRBASE/ODATA_ERROR executed by kernel
+
+end

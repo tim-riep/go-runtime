@@ -1,0 +1,15 @@
+{
+  "name": "/TRUSE/VIEWS",
+  "description": {
+    "en": "Views"
+  },
+  "entitySets": {
+    "Views": {
+      "objectType": "/TRDEF/VIEW"
+    },
+    "Notes": {
+      "businessObject": "/TRDEF/NOTE",
+      "entity": "/TRDEF/NOTES"
+    }
+  }
+}

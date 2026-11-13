@@ -125,11 +125,20 @@ func (k *Kernel) runObjectBehaviors(ctx context.Context, q dialect.Querier, cur,
 		opts := ExecOptions{Language: model.DefaultLanguage, ReadOnly: true, End: RollbackUnlessCommitted, Timeout: timeout,
 			VM: vm.Options{Log: k.requestLog("object type " + t.Name)}, bound: q}
 		var out json.RawMessage
-		err := k.executeWith(ctx, g, opts, func(ctx context.Context, m *vm.Machine) error {
+		var invalidated []string
+		err := k.executeOn(ctx, g, opts, func(ctx context.Context, m *vm.Machine, x *execution) error {
 			var err error
 			out, err = m.CallObjectJSON(ctx, class, method, arg)
+			invalidated = x.invalidated
 			return err
 		})
+		if err == nil {
+			for _, name := range invalidated {
+				if err = k.repo.NextMetadataGeneration(ctx, q, name, k.timestamp()); err != nil {
+					return nil, err
+				}
+			}
+		}
 		if err != nil {
 			return nil, &rterr.ValidationError{Code: rterr.CodeObjectType, Location: t.Src, Object: "object type " + t.Name,
 				Message: fmt.Sprintf("%s.%s failed: %s", class, method, strings.TrimSpace(err.Error()))}

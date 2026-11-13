@@ -31,6 +31,7 @@ type entitySetDoc struct {
 	BusinessObject model.Optional[string]                  `json:"businessObject"`
 	Entity         model.Optional[string]                  `json:"entity"`
 	Table          model.Optional[string]                  `json:"table"`
+	ObjectType     model.Optional[string]                  `json:"objectType"`
 	ReadOnly       bool                                    `json:"readOnly"`
 	Operations     model.Optional[[]model.EntityOperation] `json:"operations"`
 	Actions        model.Optional[[]string]                `json:"actions"`
@@ -65,6 +66,7 @@ func init() {
 				out = append(out, ref(e.BusinessObject.Or(""), at+"/businessObject")...)
 				out = append(out, ref(e.Entity.Or(""), at+"/entity")...)
 				out = append(out, ref(e.Table.Or(""), at+"/table")...)
+				out = append(out, ref(e.ObjectType.Or(""), at+"/objectType")...)
 				for _, a := range e.Actions.Or(nil) {
 					field(a, at+"/actions")
 				}
@@ -93,8 +95,8 @@ func init() {
 			}
 			for _, name := range slices.Sorted(maps.Keys(d.EntitySets)) {
 				e := d.EntitySets[name]
-				set := model.EntitySet{Name: name, BusinessObject: e.BusinessObject, Entity: e.Entity, Table: e.Table,
-					ReadOnly: e.ReadOnly || e.Table.Valid(), Operations: e.Operations, Actions: e.Actions, HiddenFields: e.HiddenFields,
+				set := model.EntitySet{Name: name, BusinessObject: e.BusinessObject, Entity: e.Entity, Table: e.Table, ObjectType: e.ObjectType,
+					ReadOnly: e.ReadOnly || e.Table.Valid() || e.ObjectType.Valid(), Operations: e.Operations, Actions: e.Actions, HiddenFields: e.HiddenFields,
 					Navigations: e.Navigations, Src: loc.At("/entitySets/" + name)}
 				svc.EntitySets = append(svc.EntitySets, set)
 			}

@@ -69,7 +69,9 @@ type EntitySet struct {
 	BusinessObject Optional[string] `json:"businessObject"`
 	Entity         Optional[string] `json:"entity"`
 	Table          Optional[string] `json:"table"`
-	ReadOnly       bool             `json:"readOnly,omitempty"`
+	// ObjectType offers the objects of a package-defined type, read only.
+	ObjectType Optional[string] `json:"objectType"`
+	ReadOnly   bool             `json:"readOnly,omitempty"`
 	// Operations and Actions narrow those of the entity; none offers all.
 	Operations Optional[[]EntityOperation] `json:"operations"`
 	Actions    Optional[[]string]          `json:"actions"`
@@ -84,6 +86,9 @@ type EntitySet struct {
 // Source returns the table of the entity set: the entity or the table.
 func (e *EntitySet) Source() string {
 	if t, ok := e.Entity.Get(); ok {
+		return t
+	}
+	if t, ok := e.ObjectType.Get(); ok {
 		return t
 	}
 	return e.Table.Or("")

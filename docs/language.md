@@ -806,6 +806,8 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/XLSX_WORKBOOK` | native class: workbooks in xlsx format cell by cell, see [Workbooks](#workbooks) |
 | `/TRBASE/ROLE_ADMINISTRATION` | roles, composite roles and their assignments, see [Roles and users](#roles-and-users) |
 | `/TRBASE/USER_ADMINISTRATION` | `USERS()`: the users without passwords and tokens |
+| `/TRBASE/ODATA` | `COUNT(pkg, service, set, filter)`: the number of entities of an entity set that the user of the execution may read, as `$count` of a request with an optional `$filter`; it raises `/TRBASE/ODATA_ERROR` for services that are not active or that the user may not start, unknown entity sets and invalid filters |
+| `/TRBASE/ODATA_METADATA_CACHE` | `INVALIDATE(pkg, service)`: discards the metadata documents of a service, of the services of a package or of all; only `CHANGED` of the behavior of an object type calls it |
 | `/TRBASE/OBJECTS` | objects of package-defined types, see [Objects of package-defined types](#objects-of-package-defined-types) |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and

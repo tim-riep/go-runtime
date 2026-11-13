@@ -278,3 +278,46 @@ func TestODataRead(t *testing.T) {
 		}
 	})
 }
+
+// TestODataCount counts entities in code with the authorizations of the
+// user.
+func TestODataCount(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		itemsKernel(t, k)
+		count := func(user, set, filter string) (string, error) {
+			t.Helper()
+			opts := kernel.ExecOptions{Tenant: "ACME"}
+			if user != "" {
+				opts.User = model.Some(user)
+			}
+			out, err := k.Run(ctx, opts, "/TRODATA/COUNTER", "COUNT", []json.RawMessage{json.RawMessage(`"` + set + `"`), json.RawMessage(filter)})
+			return string(out), err
+		}
+		for _, c := range []struct{ user, set, filter, want string }{
+			{"eva", "Items", `null`, "3"},
+			{"nina", "Items", `null`, "2"},
+			{"nina", "Items", `"NAME eq 'Gamma'"`, "1"},
+			{"eva", "Items", `"STATUS eq 'NEW' and ACTIVE eq false"`, "1"},
+		} {
+			if got, err := count(c.user, c.set, c.filter); err != nil || got != c.want {
+				t.Errorf("%s %s %s: %s %v", c.user, c.set, c.filter, got, err)
+			}
+		}
+		for _, c := range []struct{ user, set, filter, want string }{
+			{"eva", "Nope", `null`, "has no entity set Nope"},
+			{"eva", "Items", `"NAME eq"`, "/TRBASE/ODATA_ERROR"},
+			{"", "Items", `null`, "/RT/NOT_AUTHORIZED"},
+		} {
+			if _, err := count(c.user, c.set, c.filter); err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("%s %s %s: want %s, got %v", c.user, c.set, c.filter, c.want, err)
+			}
+		}
+		if err := k.DeactivateService(ctx, itemsService, "test"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := count("eva", "Items", `null`); err == nil || !strings.Contains(err.Error(), "no active service") {
+			t.Errorf("inactive: %v", err)
+		}
+	})
+}

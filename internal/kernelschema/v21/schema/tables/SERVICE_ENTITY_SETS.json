@@ -35,6 +35,11 @@
       "name": "ACTIONS_LISTED",
       "domain": "/RT/FLAG",
       "notNull": true
+    },
+    {
+      "name": "OBJECT_TYPE",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "The object type of a read-only entity set of objects"
     }
   ],
   "primaryKey": [

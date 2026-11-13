@@ -30,6 +30,7 @@ public class /TRDEF/VIEW_BEHAVIOR implements /TRBASE/OBJECT_TYPE_BEHAVIOR
   end
 
   public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+    /TRBASE/ODATA_METADATA_CACHE.INVALIDATE(null, null)
     for change in changes
       if change.NAME = "/TRUSE/FROZEN" and change.KIND <> /TRBASE/OBJECT_CHANGE_KIND.CREATED
         raise /TRDEF/REJECTED with "{change.NAME} was {change.KIND}"

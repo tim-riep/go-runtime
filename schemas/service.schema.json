@@ -38,6 +38,10 @@
           "$ref": "common.schema.json#/$defs/objectName",
           "description": "A table of configuration without business object, offered read only."
         },
+        "objectType": {
+          "$ref": "common.schema.json#/$defs/objectName",
+          "description": "A type of objects that packages define, of the package or of a package it requires. Its objects are offered read only with NAME, PACKAGE_ID, HASH and the components of their content."
+        },
         "readOnly": {
           "description": "Offers the entity set for reading only.",
           "type": "boolean"
@@ -88,8 +92,17 @@
             "entity"
           ],
           "not": {
-            "required": [
-              "table"
+            "anyOf": [
+              {
+                "required": [
+                  "table"
+                ]
+              },
+              {
+                "required": [
+                  "objectType"
+                ]
+              }
             ]
           }
         },
@@ -107,6 +120,35 @@
               {
                 "required": [
                   "entity"
+                ]
+              },
+              {
+                "required": [
+                  "objectType"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "objectType"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "businessObject"
+                ]
+              },
+              {
+                "required": [
+                  "entity"
+                ]
+              },
+              {
+                "required": [
+                  "table"
                 ]
               }
             ]

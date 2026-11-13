@@ -46,6 +46,15 @@ the business objects. A package writes no code for it.
   `/TRBASE/CONFIGURATION` with the activity `READ`, the table as `BUSINESS_OBJECT` and its
   data class.
 
+- `objectType` offers the objects of a type that a package defines (see the README), of the
+  own package or a package it requires, read only: `NAME` as key, `PACKAGE_ID`, `HASH` and
+  the components of the content, nested structures as complex types and arrays as
+  collections. The kernel reads them from the schema it runs with and evaluates `$filter`,
+  `$orderby`, `$top`, `$skip`, `$count` and `$select` in memory; filters and orders work on
+  the elementary components. Reading needs only the start of the service, since objects are
+  part of the installed packages like the descriptions of the reflector. Such an entity set
+  has no operations, actions, hidden fields or navigations.
+
 Installation checks a service against its business objects and tables as they are: an
 upgrade of a business object that breaks an installed service fails with the name of the
 service. Services hold no data; removing one is not destructive.

@@ -1,0 +1,50 @@
+{
+  "name": "/TRUSE/VIEWER",
+  "texts": {
+    "en": {
+      "label": "Viewer"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "RT"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/rt/odata"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRUSE"
+          }
+        ],
+        "SERVICE_NAME": [
+          {
+            "value": "/TRUSE/VIEWS"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    }
+  ]
+}

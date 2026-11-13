@@ -78,6 +78,9 @@ type execution struct {
 	// bound is the transaction of the kernel that a bound execution reads
 	// in; nil for executions with sessions of their own.
 	bound dialect.Querier
+	// invalidated are the services whose metadata a bound execution
+	// discards; "*" for all.
+	invalidated []string
 }
 
 // session is a database session: its own connection and a transaction

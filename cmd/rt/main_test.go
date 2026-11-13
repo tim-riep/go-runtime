@@ -471,6 +471,8 @@ func TestObjectCommands(t *testing.T) {
 		{[]string{"show", "/TRFIN/COMPANIES"}, exitOK, "used by object /TRUSE/COMPANIES of package TRUSE at /ENTITY (entity)"},
 		{[]string{"show", "/TRDEF/VIEW"}, exitError, "ambiguous"},
 		{[]string{"show", "object-type:/TRDEF/VIEW"}, exitOK, "used by object /TRUSE/NOTES of package TRUSE at /NEXT (object)"},
+		{[]string{"service", "show", "/TRUSE/VIEWS"}, exitOK, "Views"},
+		{[]string{"service", "metadata", "/TRUSE/VIEWS"}, exitOK, `<EntitySet Name="Views" EntityType="TRUSE.TRDEF_VIEW"`},
 	} {
 		var out, errOut bytes.Buffer
 		code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)

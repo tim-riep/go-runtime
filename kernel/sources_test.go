@@ -26,6 +26,7 @@ import (
 	"github.com/tim-riep/go-runtime/internal/testutil/fakegithub"
 	"github.com/tim-riep/go-runtime/kernel"
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/plan"
 	"github.com/tim-riep/go-runtime/rterr"
 	"github.com/tim-riep/go-runtime/source"
 	"github.com/tim-riep/go-runtime/source/github"
@@ -379,6 +380,49 @@ func TestSourceUpgrade(t *testing.T) {
 		}
 		if list, _ := k.Outdated(ctx); len(list) != 0 {
 			t.Errorf("after uninstall: %+v", list)
+		}
+	})
+}
+
+// TestSourcePrefixedTags installs packages from directories of one
+// repository that releases each with tags of its own prefix.
+func TestSourcePrefixedTags(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		f := newForge(t)
+		f.connect(k, t.TempDir())
+		f.publish("tim-riep/mono", "v9.0.0", false, "packages/TRP", f.manifest("TRP", "9.0.0"))
+		f.publish("tim-riep/mono", "trp-v1.0.0", false, "packages/TRP", f.manifest("TRP", "1.0.0"))
+		f.publish("tim-riep/mono", "trp-v1.1.0", true, "packages/TRP", f.manifest("TRP", "1.1.0"))
+		f.publish("tim-riep/mono", "trq-v2.0.0", false, "packages/TRQ", f.manifest("TRQ", "2.0.0"))
+
+		plan := func(addr string) *plan.Plan {
+			t.Helper()
+			res, err := k.ResolveSources(ctx, kernel.SourceRequest{Addresses: []string{f.addr(addr)}})
+			if err != nil {
+				t.Fatalf("%s: %v", addr, err)
+			}
+			p, err := k.ApplyResolution(ctx, res, kernel.Options{DryRun: true})
+			if err != nil {
+				t.Fatalf("%s: %v", addr, err)
+			}
+			return p
+		}
+		if p := plan("tim-riep/mono/packages/TRP"); p.Packages[0].To.Or("") != "1.1.0" || p.Packages[0].Source.Asset != "TRP-1.1.0.zip" {
+			t.Errorf("latest: %s", p.Text())
+		}
+		if p := plan("tim-riep/mono/packages/TRP@trp-v1.0.0"); p.Packages[0].To.Or("") != "1.0.0" {
+			t.Errorf("by tag: %s", p.Text())
+		}
+		if p := plan("tim-riep/mono/packages/TRP@1.0.0"); p.Packages[0].To.Or("") != "1.0.0" {
+			t.Errorf("by version: %s", p.Text())
+		}
+		if err := installSources(t, k, kernel.SourceRequest{Addresses: []string{f.addr("tim-riep/mono/packages/TRQ@^2")}}, kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if o, err := k.PackageOrigin(ctx, "TRQ"); err != nil || o.Tag.Or("") != "trq-v2.0.0" {
+			t.Errorf("origin: %+v %v", o, err)
 		}
 	})
 }

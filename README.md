@@ -987,11 +987,16 @@ rt outdated
   `>=1.2.0 <2.0.0`, highest matching tag, pre-releases only when the constraint names one), a
   full commit hash or, with `--allow-branch`, a branch. Without spec the highest stable version
   counts. A branch with `/` in its name is written after `@`.
+- **Tags of packages in directories**: a repository that releases several packages tags
+  each with the ID of the package in lower case as prefix, e.g. `trfrontend-v1.2.0` for
+  `github.com/tim-riep/go-runtime/packages/TRFRONTEND`. For an address whose directory ends
+  with a package ID only such tags count, as long as the repository has one; otherwise its
+  tags without prefix do. `@1.2.0` and `@trfrontend-v1.2.0` name the same version.
 - **Archives**: the asset `<ID>-<version>.zip` of the release of the tag comes first, the way
   for packages with a build step; with several package assets the last segment of the
   directory or `--package <ID>` chooses. Otherwise the archive of the commit counts, with
   the package at the root or in the directory; of a repository only the package entries
-  (`manifest.json`, `schema/`, `src/`, `assets/`, `transformations/`) are taken, not
+  (`manifest.json`, `schema/`, `src/`, `assets/`, `transformations/`, `objects/`) are taken, not
   README.md and the like. The manifest decides the ID, and its version must be that of the
   tag. Then the usual path follows: validation, namespace check, dependencies, compiling,
   plan, one transaction.

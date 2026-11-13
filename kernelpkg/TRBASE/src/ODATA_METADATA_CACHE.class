@@ -1,0 +1,11 @@
+# The metadata documents that the kernel keeps of services. The behavior of
+# an object type discards them in CHANGED when objects that extensions of
+# the metadata read have changed.
+public class /TRBASE/ODATA_METADATA_CACHE
+
+  # Discards the metadata of a service, of all services of a package, or
+  # with both null of all services. Only CHANGED of the behavior of an
+  # object type may call it.
+  public static method INVALIDATE(pkg: STRING?, service: STRING?) executed by kernel
+
+end

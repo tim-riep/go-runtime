@@ -506,7 +506,9 @@ func (k *Kernel) newGeneration(ctx context.Context, q dialect.Querier, c *compil
 			// extensions and tables when a generation is loaded.
 			plan.CreateService, plan.DropService, plan.AlterService,
 			plan.CreateBusinessObject, plan.DropBusinessObject, plan.AlterBusinessObject,
-			plan.AddBusinessObjectExtension, plan.DropBusinessObjectExtension, plan.AlterBusinessObjectExtension:
+			plan.AddBusinessObjectExtension, plan.DropBusinessObjectExtension, plan.AlterBusinessObjectExtension,
+			// Code reads objects from the schema of its generation.
+			plan.CreateObjectType, plan.DropObjectType, plan.AlterObjectType, plan.CreateObject, plan.DropObject, plan.AlterObject:
 			needed = true
 		default:
 			needed = needed || ch.Kind.Physical() && len(want.Services) > 0

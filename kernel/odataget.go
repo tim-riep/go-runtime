@@ -97,6 +97,10 @@ func (k *Kernel) serveRead(w http.ResponseWriter, r *http.Request, sr *serviceRe
 		sr.fail(w, e)
 		return
 	}
+	if path.Set != nil && path.Set.Type.Object != nil {
+		k.readObjects(w, r, sr, path, query, f)
+		return
+	}
 	if err := sr.effective(ctx); err != nil {
 		sr.internal(w, "loading the authorizations", err)
 		return

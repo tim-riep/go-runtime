@@ -314,6 +314,9 @@ func (b *metaBuilder) entityType(t *EntityType) {
 	qualified := b.md.Qualified(t.Name)
 	for _, p := range t.Properties {
 		mp := EdmType(p.Domain)
+		if !p.Elementary() {
+			mp = b.component(*p.Component)
+		}
 		mp.Name, mp.TechnicalName, mp.Nullable = p.Name, p.Field.Name, p.Nullable
 		et.Properties = append(et.Properties, mp)
 		b.property(qualified+"/"+p.Name, p, t)
@@ -332,10 +335,13 @@ func (b *metaBuilder) entityType(t *EntityType) {
 		et.Navigations = append(et.Navigations, mn)
 	}
 	b.md.EntityTypes = append(b.md.EntityTypes, et)
-	if t.BusinessObject != nil {
+	switch {
+	case t.Object != nil:
+		b.annotate(qualified, "Core.Description", textIn(t.Object.Type.Description, b.lang))
+	case t.BusinessObject != nil:
 		b.annotate(qualified, "Core.Description", textIn(t.BusinessObject.Description, b.lang))
 		b.add(qualified, FieldsAlias+".DataClass", String(string(t.BusinessObject.DataClass)))
-	} else {
+	default:
 		b.annotate(qualified, "Core.Description", t.Table.Description.Or(""))
 		b.add(qualified, FieldsAlias+".DataClass", String(string(t.Table.DataClass)))
 	}
@@ -437,7 +443,7 @@ func (b *metaBuilder) restrictions(target string, t *EntityType) {
 	b.add(target, "Capabilities.DeleteRestrictions", Record(Member{Name: "Deletable", Value: Bool(t.Allows(model.OperationDelete))}))
 	var blobs []Value
 	for _, p := range t.Properties {
-		if p.Domain.Type == model.Blob {
+		if p.Domain.Type == model.Blob || !p.Elementary() {
 			blobs = append(blobs, PropertyPath(p.Name))
 		}
 	}
@@ -448,7 +454,7 @@ func (b *metaBuilder) restrictions(target string, t *EntityType) {
 	b.add(target, "Capabilities.TopSupported", Bool(true))
 	b.add(target, "Capabilities.SkipSupported", Bool(true))
 	b.add(target, "Capabilities.CountRestrictions", Record(Member{Name: "Countable", Value: Bool(true)}))
-	b.add(target, "Capabilities.ExpandRestrictions", Record(Member{Name: "Expandable", Value: Bool(true)}, Member{Name: "MaxLevels", Value: Int(1)}))
+	b.add(target, "Capabilities.ExpandRestrictions", Record(Member{Name: "Expandable", Value: Bool(t.Object == nil)}, Member{Name: "MaxLevels", Value: Int(1)}))
 	b.add(target, "Capabilities.SearchRestrictions", Record(Member{Name: "Searchable", Value: Bool(false)}))
 	b.add(target, "Capabilities.DeepInsertSupport", Record(Member{Name: "Supported", Value: Bool(t.Allows(model.OperationCreate))},
 		Member{Name: "ContentIDSupported", Value: Bool(false)}))

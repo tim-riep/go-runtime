@@ -36,16 +36,45 @@ type Release struct {
 	Commit  string `json:"commit"`
 }
 
+// TagPrefix returns the prefix of the tags of the package that an address
+// names by the last segment of its directory, such as "trfrontend-" for
+// github.com/o/r/packages/TRFRONTEND; "" without one.
+func TagPrefix(a Address) string {
+	if id := PackageOf(a); id != "" {
+		return strings.ToLower(id) + "-"
+	}
+	return ""
+}
+
+// ReleasesOf returns the releases of the package of an address. A package
+// in a directory has its own tags with the prefix of TagPrefix, e.g.
+// trfrontend-v1.2.0, so that one repository can release several packages;
+// when the repository has no such tags, its tags without prefix count.
+func ReleasesOf(a Address, tags []Tag) []Release {
+	if prefix := TagPrefix(a); prefix != "" {
+		if own := releases(tags, prefix); len(own) > 0 {
+			return own
+		}
+	}
+	return Releases(tags)
+}
+
 // Releases returns the tags that name versions, the highest first. When
 // both v1.2.0 and 1.2.0 exist, the one with v counts.
-func Releases(tags []Tag) []Release {
+func Releases(tags []Tag) []Release { return releases(tags, "") }
+
+func releases(tags []Tag, prefix string) []Release {
 	byVersion := map[string]Release{}
 	for _, t := range tags {
-		v := strings.TrimPrefix(t.Name, "v")
+		name, ok := strings.CutPrefix(t.Name, prefix)
+		if !ok {
+			continue
+		}
+		v := strings.TrimPrefix(name, "v")
 		if !semver.Valid(v) {
 			continue
 		}
-		if old, ok := byVersion[v]; ok && strings.HasPrefix(old.Tag, "v") {
+		if old, ok := byVersion[v]; ok && strings.HasPrefix(strings.TrimPrefix(old.Tag, prefix), "v") {
 			continue
 		}
 		byVersion[v] = Release{Tag: t.Name, Version: v, Commit: t.Commit}
