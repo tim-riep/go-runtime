@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/TILE_SIZE",
+  "description": "Size of a tile",
+  "type": "CHAR",
+  "length": 5,
+  "values": [
+    {
+      "value": "SMALL",
+      "description": "One unit"
+    },
+    {
+      "value": "WIDE",
+      "description": "Two units wide"
+    },
+    {
+      "value": "LARGE",
+      "description": "Two units wide and high, content tiles only"
+    }
+  ]
+}

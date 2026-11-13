@@ -1,0 +1,12 @@
+{
+  "name": "/TRFDEMO/COMPANIES_TILE",
+  "content": {
+    "APP": "/TRFDEMO/COMPANIES",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "/TRFRONTEND/APP_COLLECTION_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRFRONTEND/APP_COLLECTION",
+  "texts": {
+    "en": {
+      "short": "Collection",
+      "medium": "App collection",
+      "long": "App collection",
+      "heading": "App collection"
+    },
+    "de": {
+      "short": "Sammlung",
+      "medium": "App-Sammlung",
+      "long": "App-Sammlung",
+      "heading": "App-Sammlung"
+    }
+  }
+}

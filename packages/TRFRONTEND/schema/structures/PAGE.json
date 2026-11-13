@@ -1,0 +1,22 @@
+{
+  "name": "/TRFRONTEND/PAGE",
+  "texts": {
+    "en": {
+      "label": "Page"
+    },
+    "de": {
+      "label": "Page"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TITLE_TEXTS",
+      "notNull": true
+    },
+    {
+      "name": "SECTIONS",
+      "arrayType": "/TRFRONTEND/SECTIONS"
+    }
+  ]
+}

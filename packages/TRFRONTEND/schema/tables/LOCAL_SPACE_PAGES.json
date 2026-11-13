@@ -1,0 +1,39 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACE_PAGES",
+  "description": "Pages of local spaces",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "dataElement": "/TRFRONTEND/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "PAGE",
+      "dataElement": "/TRFRONTEND/PAGE_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_SPACES",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

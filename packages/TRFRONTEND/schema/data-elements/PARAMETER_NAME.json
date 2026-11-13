@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/PARAMETER_NAME",
+  "domain": "/TRFRONTEND/PARAMETER_NAME",
+  "texts": {
+    "en": {
+      "short": "Parameter",
+      "medium": "Parameter",
+      "long": "Start parameter",
+      "heading": "Parameter"
+    },
+    "de": {
+      "short": "Parameter",
+      "medium": "Parameter",
+      "long": "Startparameter",
+      "heading": "Parameter"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "/TRFRONTEND/COLUMN",
+  "texts": {
+    "en": {
+      "label": "Column of a list"
+    },
+    "de": {
+      "label": "Spalte einer Liste"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/REF_FIELD",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "structure": "/TRFRONTEND/FIELD_POSITION"
+    },
+    {
+      "name": "WIDTH",
+      "dataElement": "/TRFRONTEND/WIDTH"
+    },
+    {
+      "name": "IMPORTANCE",
+      "dataElement": "/TRFRONTEND/IMPORTANCE",
+      "notNull": true,
+      "default": "HIGH"
+    }
+  ]
+}

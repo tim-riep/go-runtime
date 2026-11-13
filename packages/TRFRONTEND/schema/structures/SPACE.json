@@ -1,0 +1,22 @@
+{
+  "name": "/TRFRONTEND/SPACE",
+  "texts": {
+    "en": {
+      "label": "Space"
+    },
+    "de": {
+      "label": "Space"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TITLE_TEXTS",
+      "notNull": true
+    },
+    {
+      "name": "PAGES",
+      "arrayType": "/TRFRONTEND/PAGE_ENTRIES"
+    }
+  ]
+}

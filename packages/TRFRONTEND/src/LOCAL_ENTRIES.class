@@ -1,0 +1,46 @@
+# Helpers of the local configuration of the start page.
+public class /TRFRONTEND/LOCAL_ENTRIES
+
+  # Whether a shipped object of a type or a local entry of the same kind
+  # exists.
+  public static method EXISTS(type: STRING, name: STRING) returns BOOL raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var info = /TRBASE/OBJECTS.GET(name)
+      return info is not null and info.TYPE = type
+    end
+    if type = "/TRFRONTEND/APP"
+      return (select count from /TRFRONTEND/LOCAL_APPS where NAME = name) > 0
+    elseif type = "/TRFRONTEND/TILE"
+      return (select count from /TRFRONTEND/LOCAL_TILES where NAME = name) > 0
+    elseif type = "/TRFRONTEND/APP_COLLECTION"
+      return (select count from /TRFRONTEND/LOCAL_APP_COLLECTIONS where NAME = name) > 0
+    elseif type = "/TRFRONTEND/PAGE"
+      return (select count from /TRFRONTEND/LOCAL_PAGES where NAME = name) > 0
+    elseif type = "/TRFRONTEND/SPACE"
+      return (select count from /TRFRONTEND/LOCAL_SPACES where NAME = name) > 0
+    end
+    return false
+  end
+
+  # The content of a shipped object of a type; raises /TRFRONTEND/COPY_FAILED
+  # if there is none.
+  public static method SHIPPED(name: STRING, type: STRING) returns STRING raises /TRFRONTEND/COPY_FAILED
+    var info: /TRBASE/OBJECT_INFO? = null
+    try
+      info = /TRBASE/OBJECTS.GET(name)
+    catch e: /TRBASE/OBJECT_TYPE_NOT_VISIBLE
+      raise /TRFRONTEND/COPY_FAILED with e.TEXT
+    end
+    if info is null or info.TYPE <> type
+      raise /TRFRONTEND/COPY_FAILED with "there is no shipped object {name} of the type {type}"
+    end
+    return info.CONTENT
+  end
+
+  public static method LOCAL_NAME(name: STRING) raises /TRFRONTEND/COPY_FAILED
+    if not name.STARTS_WITH("/LOCAL/")
+      raise /TRFRONTEND/COPY_FAILED with "local entries are named /LOCAL/<NAME>, not {name}"
+    end
+  end
+
+end

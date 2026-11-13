@@ -1,0 +1,28 @@
+{
+  "name": "/TRFRONTEND/GROUP_ADDITION",
+  "texts": {
+    "en": {
+      "label": "Fields added to a group"
+    },
+    "de": {
+      "label": "Felder für eine Gruppe"
+    }
+  },
+  "components": [
+    {
+      "name": "SECTION",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "GROUP",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "FIELDS",
+      "arrayType": "/TRFRONTEND/FIELD_ENTRIES",
+      "notNull": true
+    }
+  ]
+}

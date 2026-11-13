@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/COLLECTION_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "App collections"
+    },
+    "de": {
+      "label": "App-Sammlungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/COLLECTION_ENTRY"
+  }
+}

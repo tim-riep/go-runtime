@@ -1,0 +1,17 @@
+{
+  "id": "TRFRONTEND",
+  "version": "1.0.0",
+  "description": "The user interface of go-runtime in the browser: shell, start page, generic pages and administration",
+  "languageVersion": 1,
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.10.0"
+    },
+    {
+      "id": "TRUI",
+      "version": "^0.1.0",
+      "source": "github.com/tim-riep/trui"
+    }
+  ]
+}

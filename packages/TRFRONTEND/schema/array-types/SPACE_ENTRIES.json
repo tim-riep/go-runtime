@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/SPACE_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "Spaces"
+    },
+    "de": {
+      "label": "Spaces"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/SPACE_ENTRY"
+  }
+}

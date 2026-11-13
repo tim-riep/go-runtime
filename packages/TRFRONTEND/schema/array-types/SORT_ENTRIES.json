@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/SORT_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "Sort orders"
+    },
+    "de": {
+      "label": "Sortierungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/SORT_ENTRY"
+  }
+}

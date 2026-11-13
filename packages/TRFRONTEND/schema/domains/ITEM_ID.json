@@ -1,0 +1,6 @@
+{
+  "name": "/TRFRONTEND/ITEM_ID",
+  "description": "ID of a section or group; others than the base carry the namespace of their package",
+  "type": "CHAR",
+  "length": 63
+}

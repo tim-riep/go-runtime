@@ -1,0 +1,33 @@
+{
+  "name": "/TRFRONTEND/LIST_PAGE",
+  "texts": {
+    "en": {
+      "label": "List page"
+    },
+    "de": {
+      "label": "Listenseite"
+    }
+  },
+  "components": [
+    {
+      "name": "COLUMNS",
+      "arrayType": "/TRFRONTEND/COLUMNS"
+    },
+    {
+      "name": "FILTER_FIELDS",
+      "arrayType": "/TRFRONTEND/FIELD_ENTRIES"
+    },
+    {
+      "name": "SORT",
+      "arrayType": "/TRFRONTEND/SORT_ENTRIES"
+    },
+    {
+      "name": "ACTIONS",
+      "arrayType": "/TRFRONTEND/ACTION_ENTRIES"
+    },
+    {
+      "name": "MERGE_SET",
+      "dataElement": "/TRFRONTEND/MERGE_SET"
+    }
+  ]
+}

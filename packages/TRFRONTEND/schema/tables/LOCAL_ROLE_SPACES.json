@@ -1,0 +1,39 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_SPACES",
+  "description": "Spaces of roles, local",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "ROLE",
+      "dataElement": "/TRFRONTEND/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "dataElement": "/TRFRONTEND/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "SPACE",
+      "dataElement": "/TRFRONTEND/SPACE_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ROLE",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+      "fields": [
+        {
+          "field": "ROLE",
+          "references": "ROLE"
+        }
+      ]
+    }
+  ]
+}

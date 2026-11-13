@@ -1,0 +1,145 @@
+{
+  "name": "/TRFRONTEND/ADMINISTRATOR",
+  "texts": {
+    "en": {
+      "label": "Administration of the start page",
+      "description": "Maintains apps, tiles, app collections, pages, spaces and roles"
+    },
+    "de": {
+      "label": "Verwaltung der Startseite",
+      "description": "Pflegt Apps, Kacheln, App-Sammlungen, Pages, Spaces und Rollen"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "RT"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/rt/odata"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRFRONTEND"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "pattern": "/trfrontend/api*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRFRONTEND"
+          }
+        ],
+        "SERVICE_NAME": [
+          {
+            "value": "/TRFRONTEND/CONFIGURATION_SERVICE"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRFRONTEND/LOCAL_*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ROLE_ADMIN",
+      "fields": {
+        "ROLE_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ROLE_ASSIGNMENT",
+      "fields": {
+        "ROLE_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "TENANT": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/USER_ADMIN",
+      "fields": {
+        "USER_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

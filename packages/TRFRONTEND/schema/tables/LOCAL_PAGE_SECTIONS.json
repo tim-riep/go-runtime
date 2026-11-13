@@ -1,0 +1,39 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE_SECTIONS",
+  "description": "Sections of local pages",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "SECTION",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "dataElement": "/TRFRONTEND/POSITION",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "SECTION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_PAGES",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

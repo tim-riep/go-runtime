@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/PATH",
+  "domain": "/TRBASE/ASSET_PATH",
+  "texts": {
+    "en": {
+      "short": "Path",
+      "medium": "Path",
+      "long": "Path below the node",
+      "heading": "Path"
+    },
+    "de": {
+      "short": "Pfad",
+      "medium": "Pfad",
+      "long": "Pfad unterhalb des Knotens",
+      "heading": "Pfad"
+    }
+  }
+}

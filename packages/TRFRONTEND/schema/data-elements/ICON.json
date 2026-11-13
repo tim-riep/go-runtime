@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/ICON",
+  "domain": "/TRFRONTEND/ICON",
+  "texts": {
+    "en": {
+      "short": "Icon",
+      "medium": "Icon",
+      "long": "Icon of TRUI",
+      "heading": "Icon"
+    },
+    "de": {
+      "short": "Icon",
+      "medium": "Icon",
+      "long": "Icon aus TRUI",
+      "heading": "Icon"
+    }
+  }
+}

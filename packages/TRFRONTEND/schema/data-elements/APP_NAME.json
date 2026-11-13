@@ -1,0 +1,19 @@
+{
+  "name": "/TRFRONTEND/APP_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRFRONTEND/APP",
+  "texts": {
+    "en": {
+      "short": "App",
+      "medium": "App",
+      "long": "App",
+      "heading": "App"
+    },
+    "de": {
+      "short": "App",
+      "medium": "App",
+      "long": "App",
+      "heading": "App"
+    }
+  }
+}

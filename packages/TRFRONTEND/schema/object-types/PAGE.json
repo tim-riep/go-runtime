@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/PAGE",
+  "description": {
+    "en": "Page",
+    "de": "Page"
+  },
+  "content": "/TRFRONTEND/PAGE",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "/TRFRONTEND/HEADER_TEXT",
+  "texts": {
+    "en": {
+      "label": "Names of a type"
+    },
+    "de": {
+      "label": "Namen eines Typs"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "TYPE_NAME",
+      "dataElement": "/TRFRONTEND/TYPE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TYPE_NAME_PLURAL",
+      "dataElement": "/TRFRONTEND/TYPE_NAME_PLURAL"
+    }
+  ]
+}

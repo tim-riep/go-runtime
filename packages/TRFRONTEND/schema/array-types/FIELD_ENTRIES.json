@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/FIELD_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "Fields"
+    },
+    "de": {
+      "label": "Felder"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/FIELD_ENTRY"
+  }
+}

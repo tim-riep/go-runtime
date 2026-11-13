@@ -1,0 +1,24 @@
+{
+  "name": "/TRFRONTEND/SORT_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Sort order"
+    },
+    "de": {
+      "label": "Sortierung"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/REF_FIELD",
+      "notNull": true
+    },
+    {
+      "name": "DESCENDING",
+      "dataElement": "/TRFRONTEND/DESCENDING",
+      "notNull": true,
+      "default": false
+    }
+  ]
+}

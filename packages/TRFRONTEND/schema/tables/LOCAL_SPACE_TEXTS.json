@@ -1,0 +1,32 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACE_TEXTS",
+  "description": "Titles of local spaces",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "include": "/TRFRONTEND/TITLE_TEXT"
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_SPACES",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

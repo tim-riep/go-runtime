@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/TILE",
+  "description": {
+    "en": "Tile",
+    "de": "Kachel"
+  },
+  "content": "/TRFRONTEND/TILE",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

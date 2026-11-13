@@ -1,0 +1,20 @@
+{
+  "name": "/TRFDEMO/ACTIVE_TILE",
+  "content": {
+    "APP": "/TRFDEMO/COMPANIES",
+    "KIND": "METRIC",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Active companies",
+        "UNIT": "companies"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies",
+      "FILTER": "STATUS eq 'ACTIVE'",
+      "TONE": "GOOD"
+    }
+  }
+}

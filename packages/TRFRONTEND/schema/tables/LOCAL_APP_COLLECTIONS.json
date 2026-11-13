@@ -1,0 +1,24 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP_COLLECTIONS",
+  "description": "Local app collections",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "NAME"
+  ],
+  "foreignKeys": []
+}

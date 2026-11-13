@@ -1,0 +1,107 @@
+{
+  "name": "/TRFRONTEND/CONFIGURATION_SERVICE",
+  "description": {
+    "en": "Configuration of the start page",
+    "de": "Konfiguration der Startseite"
+  },
+  "extensions": "none",
+  "entitySets": {
+    "LocalApps": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP",
+      "entity": "/TRFRONTEND/LOCAL_APPS"
+    },
+    "LocalAppTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP",
+      "entity": "/TRFRONTEND/LOCAL_APP_TEXTS"
+    },
+    "LocalAppParameters": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP",
+      "entity": "/TRFRONTEND/LOCAL_APP_PARAMETERS"
+    },
+    "LocalTiles": {
+      "businessObject": "/TRFRONTEND/LOCAL_TILE",
+      "entity": "/TRFRONTEND/LOCAL_TILES"
+    },
+    "LocalTileTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_TILE",
+      "entity": "/TRFRONTEND/LOCAL_TILE_TEXTS"
+    },
+    "LocalAppCollections": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP_COLLECTION",
+      "entity": "/TRFRONTEND/LOCAL_APP_COLLECTIONS"
+    },
+    "LocalAppCollectionTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP_COLLECTION",
+      "entity": "/TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS"
+    },
+    "LocalAppCollectionTiles": {
+      "businessObject": "/TRFRONTEND/LOCAL_APP_COLLECTION",
+      "entity": "/TRFRONTEND/LOCAL_APP_COLLECTION_TILES"
+    },
+    "LocalPages": {
+      "businessObject": "/TRFRONTEND/LOCAL_PAGE",
+      "entity": "/TRFRONTEND/LOCAL_PAGES"
+    },
+    "LocalPageTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_PAGE",
+      "entity": "/TRFRONTEND/LOCAL_PAGE_TEXTS"
+    },
+    "LocalPageSections": {
+      "businessObject": "/TRFRONTEND/LOCAL_PAGE",
+      "entity": "/TRFRONTEND/LOCAL_PAGE_SECTIONS"
+    },
+    "LocalPageSectionTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_PAGE",
+      "entity": "/TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS"
+    },
+    "LocalPageSectionTiles": {
+      "businessObject": "/TRFRONTEND/LOCAL_PAGE",
+      "entity": "/TRFRONTEND/LOCAL_PAGE_SECTION_TILES"
+    },
+    "LocalSpaces": {
+      "businessObject": "/TRFRONTEND/LOCAL_SPACE",
+      "entity": "/TRFRONTEND/LOCAL_SPACES"
+    },
+    "LocalSpaceTexts": {
+      "businessObject": "/TRFRONTEND/LOCAL_SPACE",
+      "entity": "/TRFRONTEND/LOCAL_SPACE_TEXTS"
+    },
+    "LocalSpacePages": {
+      "businessObject": "/TRFRONTEND/LOCAL_SPACE",
+      "entity": "/TRFRONTEND/LOCAL_SPACE_PAGES"
+    },
+    "LocalRoleContents": {
+      "businessObject": "/TRFRONTEND/LOCAL_ROLE_CONTENT",
+      "entity": "/TRFRONTEND/LOCAL_ROLE_CONTENTS"
+    },
+    "LocalRoleCollections": {
+      "businessObject": "/TRFRONTEND/LOCAL_ROLE_CONTENT",
+      "entity": "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS"
+    },
+    "LocalRoleSpaces": {
+      "businessObject": "/TRFRONTEND/LOCAL_ROLE_CONTENT",
+      "entity": "/TRFRONTEND/LOCAL_ROLE_SPACES"
+    },
+    "Apps": {
+      "objectType": "/TRFRONTEND/APP"
+    },
+    "Tiles": {
+      "objectType": "/TRFRONTEND/TILE"
+    },
+    "AppCollections": {
+      "objectType": "/TRFRONTEND/APP_COLLECTION"
+    },
+    "Pages": {
+      "objectType": "/TRFRONTEND/PAGE"
+    },
+    "Spaces": {
+      "objectType": "/TRFRONTEND/SPACE"
+    },
+    "RoleContents": {
+      "objectType": "/TRFRONTEND/ROLE_CONTENT"
+    },
+    "UiAnnotations": {
+      "objectType": "/TRFRONTEND/UI_ANNOTATIONS"
+    }
+  }
+}

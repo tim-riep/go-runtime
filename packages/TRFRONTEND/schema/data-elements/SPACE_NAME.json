@@ -1,0 +1,19 @@
+{
+  "name": "/TRFRONTEND/SPACE_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRFRONTEND/SPACE",
+  "texts": {
+    "en": {
+      "short": "Space",
+      "medium": "Space",
+      "long": "Space",
+      "heading": "Space"
+    },
+    "de": {
+      "short": "Space",
+      "medium": "Space",
+      "long": "Space",
+      "heading": "Space"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "/TRFDEMO/COMPANIES_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFDEMO/COMPANIES_TILE"
+      },
+      {
+        "TILE": "/TRFDEMO/ACTIVE_TILE"
+      }
+    ]
+  }
+}

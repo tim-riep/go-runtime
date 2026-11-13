@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/SECTIONS",
+  "texts": {
+    "en": {
+      "label": "Sections"
+    },
+    "de": {
+      "label": "Sections"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/SECTION"
+  },
+  "key": {
+    "fields": [
+      "ID"
+    ],
+    "unique": true
+  }
+}

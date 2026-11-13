@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/ITEM_ID",
+  "domain": "/TRFRONTEND/ITEM_ID",
+  "texts": {
+    "en": {
+      "short": "ID",
+      "medium": "ID",
+      "long": "ID of a section or group",
+      "heading": "ID"
+    },
+    "de": {
+      "short": "ID",
+      "medium": "ID",
+      "long": "ID eines Abschnitts oder einer Gruppe",
+      "heading": "ID"
+    }
+  }
+}

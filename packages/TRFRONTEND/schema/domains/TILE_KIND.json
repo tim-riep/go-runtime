@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/TILE_KIND",
+  "description": "Kind of a tile",
+  "type": "CHAR",
+  "length": 7,
+  "values": [
+    {
+      "value": "SIMPLE",
+      "description": "Title, subtitle and icon"
+    },
+    {
+      "value": "METRIC",
+      "description": "A number from a metric source"
+    },
+    {
+      "value": "CONTENT",
+      "description": "A text"
+    }
+  ]
+}

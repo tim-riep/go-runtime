@@ -1,0 +1,32 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE_TEXTS",
+  "description": "Titles of local pages",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "include": "/TRFRONTEND/TITLE_TEXT"
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_PAGES",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

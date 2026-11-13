@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/UI_ANNOTATIONS",
+  "description": {
+    "en": "UI annotations",
+    "de": "UI-Annotationen"
+  },
+  "content": "/TRFRONTEND/UI_ANNOTATIONS",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

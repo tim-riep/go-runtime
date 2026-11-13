@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/HEADER_TEXTS",
+  "texts": {
+    "en": {
+      "label": "Names of a type"
+    },
+    "de": {
+      "label": "Namen eines Typs"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HEADER_TEXT"
+  },
+  "key": {
+    "fields": [
+      "LANGUAGE"
+    ],
+    "unique": true
+  }
+}

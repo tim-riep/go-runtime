@@ -1,0 +1,19 @@
+{
+  "name": "/TRFRONTEND/TILE_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRFRONTEND/TILE",
+  "texts": {
+    "en": {
+      "short": "Tile",
+      "medium": "Tile",
+      "long": "Tile",
+      "heading": "Tile"
+    },
+    "de": {
+      "short": "Kachel",
+      "medium": "Kachel",
+      "long": "Kachel",
+      "heading": "Kachel"
+    }
+  }
+}

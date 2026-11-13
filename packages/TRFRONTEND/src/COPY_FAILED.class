@@ -1,0 +1,9 @@
+# A local copy of a shipped entry failed: the entry does not exist or the
+# name is no local name.
+public class /TRFRONTEND/COPY_FAILED extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

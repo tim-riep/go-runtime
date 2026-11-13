@@ -1,0 +1,57 @@
+{
+  "name": "/TRFRONTEND/LOCAL_TILES",
+  "description": "Local tiles",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME"
+    },
+    {
+      "name": "APP",
+      "dataElement": "/TRFRONTEND/APP_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFRONTEND/TILE_KIND",
+      "notNull": true,
+      "default": "SIMPLE"
+    },
+    {
+      "name": "SIZE",
+      "dataElement": "/TRFRONTEND/TILE_SIZE",
+      "notNull": true,
+      "default": "SMALL"
+    },
+    {
+      "name": "METRIC_SERVICE",
+      "dataElement": "/TRBASE/REF_SERVICE"
+    },
+    {
+      "name": "METRIC_ENTITY_SET",
+      "dataElement": "/TRBASE/REF_ENTITY_SET"
+    },
+    {
+      "name": "METRIC_FILTER",
+      "dataElement": "/TRFRONTEND/FILTER"
+    },
+    {
+      "name": "METRIC_TONE",
+      "dataElement": "/TRFRONTEND/TONE"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "NAME"
+  ],
+  "foreignKeys": []
+}

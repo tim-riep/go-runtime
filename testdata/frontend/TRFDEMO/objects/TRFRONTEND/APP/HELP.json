@@ -1,0 +1,15 @@
+{
+  "name": "/TRFDEMO/HELP",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Help"
+      }
+    ],
+    "TARGET": {
+      "KIND": "URL",
+      "URL": "https://example.org/help"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "/TRFRONTEND/HEADER",
+  "texts": {
+    "en": {
+      "label": "Header"
+    },
+    "de": {
+      "label": "Kopf"
+    }
+  },
+  "components": [
+    {
+      "name": "TITLE_FIELD",
+      "dataElement": "/TRBASE/REF_FIELD"
+    },
+    {
+      "name": "SUBTITLE_FIELD",
+      "dataElement": "/TRBASE/REF_FIELD"
+    },
+    {
+      "name": "DESCRIPTION_FIELD",
+      "dataElement": "/TRBASE/REF_FIELD"
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/HEADER_TEXTS"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "/TRFRONTEND/DETAIL_PAGE",
+  "texts": {
+    "en": {
+      "label": "Detail page"
+    },
+    "de": {
+      "label": "Detailseite"
+    }
+  },
+  "components": [
+    {
+      "name": "SECTIONS",
+      "arrayType": "/TRFRONTEND/DETAIL_SECTIONS"
+    },
+    {
+      "name": "GROUP_ADDITIONS",
+      "arrayType": "/TRFRONTEND/GROUP_ADDITIONS"
+    },
+    {
+      "name": "ACTIONS",
+      "arrayType": "/TRFRONTEND/ACTION_ENTRIES"
+    }
+  ]
+}

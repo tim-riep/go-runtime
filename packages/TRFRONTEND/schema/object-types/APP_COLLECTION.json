@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/APP_COLLECTION",
+  "description": {
+    "en": "App collection",
+    "de": "App-Sammlung"
+  },
+  "content": "/TRFRONTEND/APP_COLLECTION",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

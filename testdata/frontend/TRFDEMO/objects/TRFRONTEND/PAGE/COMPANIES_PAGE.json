@@ -1,0 +1,37 @@
+{
+  "name": "/TRFDEMO/COMPANIES_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "MAIN",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Daily work"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFDEMO/COMPANIES_TILE"
+          },
+          {
+            "TILE": "/TRFDEMO/ACTIVE_TILE"
+          },
+          {
+            "TILE": "/TRFDEMO/HELP_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

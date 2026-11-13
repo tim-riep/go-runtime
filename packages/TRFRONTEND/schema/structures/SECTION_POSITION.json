@@ -1,0 +1,21 @@
+{
+  "name": "/TRFRONTEND/SECTION_POSITION",
+  "texts": {
+    "en": {
+      "label": "Position relative to a section"
+    },
+    "de": {
+      "label": "Position relativ zu einem Abschnitt"
+    }
+  },
+  "components": [
+    {
+      "name": "BEFORE",
+      "dataElement": "/TRFRONTEND/ITEM_ID"
+    },
+    {
+      "name": "AFTER",
+      "dataElement": "/TRFRONTEND/ITEM_ID"
+    }
+  ]
+}

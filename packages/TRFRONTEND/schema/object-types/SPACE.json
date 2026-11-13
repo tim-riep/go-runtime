@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/SPACE",
+  "description": {
+    "en": "Space",
+    "de": "Space"
+  },
+  "content": "/TRFRONTEND/SPACE",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

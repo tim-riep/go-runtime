@@ -1,0 +1,23 @@
+{
+  "name": "/TRFRONTEND/COPY_REQUEST",
+  "texts": {
+    "en": {
+      "label": "Copy of a shipped entry"
+    },
+    "de": {
+      "label": "Kopie eines ausgelieferten Eintrags"
+    }
+  },
+  "components": [
+    {
+      "name": "SOURCE",
+      "dataElement": "/TRBASE/REF_OBJECT",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    }
+  ]
+}

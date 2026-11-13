@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/APP",
+  "description": {
+    "en": "App",
+    "de": "App"
+  },
+  "content": "/TRFRONTEND/APP",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

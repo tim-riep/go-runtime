@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/UNIT",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Unit",
+      "medium": "Unit",
+      "long": "Unit of a metric",
+      "heading": "Unit"
+    },
+    "de": {
+      "short": "Einheit",
+      "medium": "Einheit",
+      "long": "Einheit einer Kennzahl",
+      "heading": "Einheit"
+    }
+  }
+}

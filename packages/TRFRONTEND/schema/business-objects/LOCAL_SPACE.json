@@ -1,0 +1,62 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACE",
+  "description": {
+    "en": "Local space",
+    "de": "Lokaler Space"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFRONTEND/LOCAL_SPACES",
+  "behaviorClass": "/TRFRONTEND/LOCAL_SPACE_BEHAVIOR",
+  "entities": {
+    "/TRFRONTEND/LOCAL_SPACES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_SPACE",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "COPY_SPACE",
+          "instance": false,
+          "parameter": "/TRFRONTEND/COPY_REQUEST",
+          "result": "/TRFRONTEND/COPY_RESULT"
+        }
+      ]
+    },
+    "/TRFRONTEND/LOCAL_SPACE_TEXTS": {
+      "parent": "/TRFRONTEND/LOCAL_SPACES",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_SPACE_PAGES": {
+      "parent": "/TRFRONTEND/LOCAL_SPACES",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    }
+  }
+}

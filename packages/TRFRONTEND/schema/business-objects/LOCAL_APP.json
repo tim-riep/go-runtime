@@ -1,0 +1,62 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP",
+  "description": {
+    "en": "Local app",
+    "de": "Lokale App"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFRONTEND/LOCAL_APPS",
+  "behaviorClass": "/TRFRONTEND/LOCAL_APP_BEHAVIOR",
+  "entities": {
+    "/TRFRONTEND/LOCAL_APPS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_APP",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "COPY_APP",
+          "instance": false,
+          "parameter": "/TRFRONTEND/COPY_REQUEST",
+          "result": "/TRFRONTEND/COPY_RESULT"
+        }
+      ]
+    },
+    "/TRFRONTEND/LOCAL_APP_TEXTS": {
+      "parent": "/TRFRONTEND/LOCAL_APPS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_APP_PARAMETERS": {
+      "parent": "/TRFRONTEND/LOCAL_APPS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    }
+  }
+}

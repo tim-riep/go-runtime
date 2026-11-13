@@ -1,0 +1,21 @@
+{
+  "name": "/TRFRONTEND/FIELD_POSITION",
+  "texts": {
+    "en": {
+      "label": "Position relative to a field"
+    },
+    "de": {
+      "label": "Position relativ zu einem Feld"
+    }
+  },
+  "components": [
+    {
+      "name": "BEFORE",
+      "dataElement": "/TRBASE/REF_FIELD"
+    },
+    {
+      "name": "AFTER",
+      "dataElement": "/TRBASE/REF_FIELD"
+    }
+  ]
+}

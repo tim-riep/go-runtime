@@ -1,0 +1,16 @@
+{
+  "id": "TRFDEMO",
+  "version": "1.0.0",
+  "description": "Start page content for tests of TRFRONTEND",
+  "requires": [
+    {
+      "id": "TRBASE"
+    },
+    {
+      "id": "TRFRONTEND"
+    },
+    {
+      "id": "TRFIN"
+    }
+  ]
+}

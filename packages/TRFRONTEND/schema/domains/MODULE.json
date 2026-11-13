@@ -1,0 +1,6 @@
+{
+  "name": "/TRFRONTEND/MODULE",
+  "description": "Module that a remote exposes, e.g. ./OrdersPage",
+  "type": "CHAR",
+  "length": 128
+}

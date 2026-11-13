@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/APP_PARAMETERS",
+  "texts": {
+    "en": {
+      "label": "Start parameters"
+    },
+    "de": {
+      "label": "Startparameter"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/APP_PARAMETER"
+  },
+  "key": {
+    "fields": [
+      "NAME"
+    ],
+    "unique": true
+  }
+}

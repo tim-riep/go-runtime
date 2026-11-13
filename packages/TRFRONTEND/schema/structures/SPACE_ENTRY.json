@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/SPACE_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Space of a role"
+    },
+    "de": {
+      "label": "Space einer Rolle"
+    }
+  },
+  "components": [
+    {
+      "name": "SPACE",
+      "dataElement": "/TRFRONTEND/SPACE_NAME",
+      "notNull": true
+    }
+  ]
+}

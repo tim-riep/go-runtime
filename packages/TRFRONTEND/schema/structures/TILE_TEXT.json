@@ -1,0 +1,36 @@
+{
+  "name": "/TRFRONTEND/TILE_TEXT",
+  "texts": {
+    "en": {
+      "label": "Texts of a tile"
+    },
+    "de": {
+      "label": "Texte einer Kachel"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE"
+    },
+    {
+      "name": "SUBTITLE",
+      "dataElement": "/TRFRONTEND/SUBTITLE"
+    },
+    {
+      "name": "FOOTER",
+      "dataElement": "/TRFRONTEND/FOOTER"
+    },
+    {
+      "name": "UNIT",
+      "dataElement": "/TRFRONTEND/UNIT"
+    },
+    {
+      "name": "CONTENT",
+      "dataElement": "/TRFRONTEND/CONTENT"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "/TRFRONTEND/SECTION",
+  "texts": {
+    "en": {
+      "label": "Section of a page"
+    },
+    "de": {
+      "label": "Section einer Page"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TITLE_TEXTS"
+    },
+    {
+      "name": "TILES",
+      "arrayType": "/TRFRONTEND/TILE_ENTRIES"
+    }
+  ]
+}

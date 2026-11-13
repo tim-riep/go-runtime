@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/TILE_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "Tiles"
+    },
+    "de": {
+      "label": "Kacheln"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/TILE_ENTRY"
+  }
+}

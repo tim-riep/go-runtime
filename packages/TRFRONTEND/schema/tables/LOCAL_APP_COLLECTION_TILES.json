@@ -1,0 +1,39 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP_COLLECTION_TILES",
+  "description": "Tiles of local app collections",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "dataElement": "/TRFRONTEND/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "TILE",
+      "dataElement": "/TRFRONTEND/TILE_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_APP_COLLECTIONS",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

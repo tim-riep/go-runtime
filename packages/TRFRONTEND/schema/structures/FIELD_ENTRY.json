@@ -1,0 +1,22 @@
+{
+  "name": "/TRFRONTEND/FIELD_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Field"
+    },
+    "de": {
+      "label": "Feld"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/REF_FIELD",
+      "notNull": true
+    },
+    {
+      "name": "POSITION",
+      "structure": "/TRFRONTEND/FIELD_POSITION"
+    }
+  ]
+}

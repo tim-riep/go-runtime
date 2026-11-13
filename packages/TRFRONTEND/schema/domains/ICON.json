@@ -1,0 +1,6 @@
+{
+  "name": "/TRFRONTEND/ICON",
+  "description": "Name of an icon of TRUI in kebab case, e.g. purchase-order",
+  "type": "CHAR",
+  "length": 40
+}

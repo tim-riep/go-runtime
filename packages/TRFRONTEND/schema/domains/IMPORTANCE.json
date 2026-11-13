@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/IMPORTANCE",
+  "description": "Importance of a column on narrow screens",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "HIGH",
+      "description": "Always shown"
+    },
+    {
+      "value": "MEDIUM",
+      "description": "Shown on medium screens"
+    },
+    {
+      "value": "LOW",
+      "description": "Shown on wide screens"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "/TRFRONTEND/UI_ANNOTATIONS",
+  "texts": {
+    "en": {
+      "label": "UI annotations"
+    },
+    "de": {
+      "label": "UI-Annotationen"
+    }
+  },
+  "components": [
+    {
+      "name": "ENTITY",
+      "dataElement": "/TRBASE/REF_ENTITY",
+      "notNull": true
+    },
+    {
+      "name": "HEADER",
+      "structure": "/TRFRONTEND/HEADER"
+    },
+    {
+      "name": "LIST",
+      "structure": "/TRFRONTEND/LIST_PAGE"
+    },
+    {
+      "name": "DETAIL",
+      "structure": "/TRFRONTEND/DETAIL_PAGE"
+    }
+  ]
+}

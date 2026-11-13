@@ -1,0 +1,24 @@
+{
+  "name": "/TRFRONTEND/TONE",
+  "description": "Tone of a metric",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "NEUTRAL",
+      "description": "Neutral"
+    },
+    {
+      "value": "GOOD",
+      "description": "Good"
+    },
+    {
+      "value": "CRITICAL",
+      "description": "Critical"
+    },
+    {
+      "value": "BAD",
+      "description": "Bad"
+    }
+  ]
+}

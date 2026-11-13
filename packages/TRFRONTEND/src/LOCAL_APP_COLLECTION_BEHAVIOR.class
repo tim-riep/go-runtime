@@ -1,0 +1,65 @@
+# The behavior of the local app collections of the start page: local names,
+# references that exist and the local copy of a shipped entry.
+public class /TRFRONTEND/LOCAL_APP_COLLECTION_BEHAVIOR
+
+  public method CHECK_APP_COLLECTION(keys: array of key of /TRFRONTEND/LOCAL_APP_COLLECTIONS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      if not key.NAME.STARTS_WITH("/LOCAL/")
+        response.FIELD_ERROR(i, "NAME", "local entries are named /LOCAL/<NAME>")
+      end
+      var tiles = read business object /TRFRONTEND/LOCAL_APP_COLLECTION in local mode
+        /TRFRONTEND/LOCAL_APP_COLLECTION_TILES by parent fields all keys [key]
+      end
+      for t in tiles
+        try
+          if not /TRFRONTEND/LOCAL_ENTRIES.EXISTS("/TRFRONTEND/TILE", t.TILE)
+            response.ERROR(i, "the tile {t.TILE} does not exist")
+          end
+        catch e: /RT/EXCEPTION
+          response.ERROR(i, e.TEXT)
+        end
+      end
+    end
+  end
+
+  # Copies a shipped app collection with its texts and tiles.
+  public method COPY_APP_COLLECTION(parameter: /TRFRONTEND/COPY_REQUEST, response: /TRBASE/ENTITY_RESPONSE) returns /TRFRONTEND/COPY_RESULT
+    try
+      /TRFRONTEND/LOCAL_ENTRIES.LOCAL_NAME(parameter.NAME)
+      var collection = transform /TRFRONTEND/LOCAL_ENTRIES.SHIPPED(parameter.SOURCE, "/TRFRONTEND/APP_COLLECTION") using /TRBASE/JSON into /TRFRONTEND/APP_COLLECTION
+      var row: new of /TRFRONTEND/LOCAL_APP_COLLECTIONS
+      row.LINK = "c"
+      row.NAME = parameter.NAME
+      var texts: array of new of /TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS = []
+      for t in collection.TEXTS
+        var text: new of /TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS
+        text.PARENT_LINK = "c"
+        text.LANGUAGE = t.LANGUAGE
+        text.TITLE = t.TITLE
+        text.DESCRIPTION = t.DESCRIPTION
+        texts.APPEND(text)
+      end
+      var tiles: array of new of /TRFRONTEND/LOCAL_APP_COLLECTION_TILES = []
+      for i, t in collection.TILES default []
+        var tile: new of /TRFRONTEND/LOCAL_APP_COLLECTION_TILES
+        tile.PARENT_LINK = "c"
+        tile.POSITION = i as INT4
+        tile.TILE = t.TILE
+        tiles.APPEND(tile)
+      end
+      modify business object /TRFRONTEND/LOCAL_APP_COLLECTION in local mode
+        create /TRFRONTEND/LOCAL_APP_COLLECTIONS fields (NAME) from [row]
+        create /TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS by parent fields (LANGUAGE, TITLE, DESCRIPTION) from texts
+        create /TRFRONTEND/LOCAL_APP_COLLECTION_TILES by parent fields (POSITION, TILE) from tiles
+      end
+    catch e: /RT/EXCEPTION
+      # Static actions cannot fail; nothing is created, and the message
+      # tells why.
+      response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, e.TEXT)
+    end
+    var result: /TRFRONTEND/COPY_RESULT
+    result.NAME = parameter.NAME
+    return result
+  end
+
+end

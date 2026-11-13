@@ -1,0 +1,34 @@
+{
+  "name": "/TRFRONTEND/DETAIL_SECTION",
+  "texts": {
+    "en": {
+      "label": "Section of a detail page"
+    },
+    "de": {
+      "label": "Abschnitt einer Detailseite"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TITLE_TEXTS"
+    },
+    {
+      "name": "POSITION",
+      "structure": "/TRFRONTEND/SECTION_POSITION"
+    },
+    {
+      "name": "GROUPS",
+      "arrayType": "/TRFRONTEND/GROUPS"
+    },
+    {
+      "name": "TABLE",
+      "structure": "/TRFRONTEND/DETAIL_TABLE"
+    }
+  ]
+}

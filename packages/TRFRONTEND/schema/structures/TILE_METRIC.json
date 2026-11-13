@@ -1,0 +1,31 @@
+{
+  "name": "/TRFRONTEND/TILE_METRIC",
+  "texts": {
+    "en": {
+      "label": "Metric of a tile"
+    },
+    "de": {
+      "label": "Kennzahl einer Kachel"
+    }
+  },
+  "components": [
+    {
+      "name": "SERVICE",
+      "dataElement": "/TRBASE/REF_SERVICE",
+      "notNull": true
+    },
+    {
+      "name": "ENTITY_SET",
+      "dataElement": "/TRBASE/REF_ENTITY_SET",
+      "notNull": true
+    },
+    {
+      "name": "FILTER",
+      "dataElement": "/TRFRONTEND/FILTER"
+    },
+    {
+      "name": "TONE",
+      "dataElement": "/TRFRONTEND/TONE"
+    }
+  ]
+}

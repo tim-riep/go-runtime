@@ -1,0 +1,21 @@
+{
+  "name": "/TRFRONTEND/TITLE_TEXT",
+  "texts": {
+    "en": {
+      "label": "Title"
+    },
+    "de": {
+      "label": "Titel"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    }
+  ]
+}

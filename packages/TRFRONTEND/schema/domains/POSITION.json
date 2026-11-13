@@ -1,0 +1,5 @@
+{
+  "name": "/TRFRONTEND/POSITION",
+  "description": "Position in an ordered list",
+  "type": "INT4"
+}

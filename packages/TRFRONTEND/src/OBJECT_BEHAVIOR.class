@@ -1,0 +1,159 @@
+# The behavior of the object types of TRFRONTEND: rules beyond structure and
+# references, and the metadata of services when UI annotations change.
+public class /TRFRONTEND/OBJECT_BEHAVIOR implements /TRBASE/OBJECT_TYPE_BEHAVIOR
+
+  public method CHECK(changes: /TRBASE/OBJECT_CHANGE_ARRAY) returns /TRBASE/OBJECT_MESSAGE_ARRAY raises /RT/EXCEPTION
+    var messages = new array of /TRBASE/OBJECT_MESSAGE
+    for change in changes
+      if change.KIND = /TRBASE/OBJECT_CHANGE_KIND.DELETED
+        continue
+      end
+      var info = /TRBASE/OBJECTS.GET(change.NAME)
+      if info is null
+        continue
+      end
+      if change.TYPE = "/TRFRONTEND/APP"
+        messages = CHECK_APP(info, messages)
+      elseif change.TYPE = "/TRFRONTEND/TILE"
+        messages = CHECK_TILE(info, messages)
+      elseif change.TYPE = "/TRFRONTEND/ROLE_CONTENT"
+        messages = CHECK_ROLE_CONTENT(info, messages)
+      elseif change.TYPE = "/TRFRONTEND/UI_ANNOTATIONS"
+        messages = CHECK_UI_ANNOTATIONS(info, messages)
+      end
+    end
+    return messages
+  end
+
+  public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+    # The metadata of services carries the UI annotations.
+    for change in changes
+      if change.TYPE = "/TRFRONTEND/UI_ANNOTATIONS"
+        /TRBASE/ODATA_METADATA_CACHE.INVALIDATE(null, null)
+        return
+      end
+    end
+  end
+
+  private method ERROR(messages: array of /TRBASE/OBJECT_MESSAGE, name: STRING, pointer: STRING, text: STRING) returns array of /TRBASE/OBJECT_MESSAGE
+    var m: /TRBASE/OBJECT_MESSAGE
+    m.NAME = name
+    m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+    m.POINTER = pointer
+    m.TEXT = text
+    messages.APPEND(m)
+    return messages
+  end
+
+  private method WARNING(messages: array of /TRBASE/OBJECT_MESSAGE, name: STRING, pointer: STRING, text: STRING) returns array of /TRBASE/OBJECT_MESSAGE
+    var m: /TRBASE/OBJECT_MESSAGE
+    m.NAME = name
+    m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.WARNING
+    m.POINTER = pointer
+    m.TEXT = text
+    messages.APPEND(m)
+    return messages
+  end
+
+  # Icons are names of TRUI in kebab case; every launch target has what it
+  # needs to start.
+  private method CHECK_APP(info: /TRBASE/OBJECT_INFO, messages: array of /TRBASE/OBJECT_MESSAGE) returns array of /TRBASE/OBJECT_MESSAGE raises /RT/EXCEPTION
+    var app = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/APP
+    var icon = app.ICON
+    if icon is not null and (icon <> icon.LOWER() or icon.CONTAINS(" ") or icon.CONTAINS("/") or icon.STARTS_WITH("-"))
+      messages = ERROR(messages, info.NAME, "/ICON", "the icon {icon} is no name of an icon of TRUI in kebab case, such as purchase-order")
+    end
+    var target = app.TARGET
+    if target.KIND = /TRFRONTEND/TARGET_KIND.LIST and (target.SERVICE is null or target.ENTITY_SET is null)
+      messages = ERROR(messages, info.NAME, "/TARGET", "an app with the target LIST needs SERVICE and ENTITY_SET")
+    elseif target.KIND = /TRFRONTEND/TARGET_KIND.PAGE and (target.NODE is null or target.PATH is null)
+      messages = ERROR(messages, info.NAME, "/TARGET", "an app with the target PAGE needs NODE and PATH")
+    elseif target.KIND = /TRFRONTEND/TARGET_KIND.REMOTE and (target.NODE is null or target.PATH is null or target.MODULE is null)
+      messages = ERROR(messages, info.NAME, "/TARGET", "an app with the target REMOTE needs NODE, PATH and MODULE")
+    elseif target.KIND = /TRFRONTEND/TARGET_KIND.URL and target.URL is null
+      messages = ERROR(messages, info.NAME, "/TARGET", "an app with the target URL needs URL")
+    end
+    return messages
+  end
+
+  # Large tiles show content; metric tiles need a metric.
+  private method CHECK_TILE(info: /TRBASE/OBJECT_INFO, messages: array of /TRBASE/OBJECT_MESSAGE) returns array of /TRBASE/OBJECT_MESSAGE raises /RT/EXCEPTION
+    var tile = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/TILE
+    if tile.SIZE = /TRFRONTEND/TILE_SIZE.LARGE and tile.KIND <> /TRFRONTEND/TILE_KIND.CONTENT
+      messages = ERROR(messages, info.NAME, "/SIZE", "only content tiles are LARGE")
+    end
+    if tile.KIND = /TRFRONTEND/TILE_KIND.METRIC and tile.METRIC is null
+      messages = ERROR(messages, info.NAME, "/METRIC", "a metric tile needs METRIC")
+    end
+    if tile.KIND <> /TRFRONTEND/TILE_KIND.METRIC and tile.METRIC is not null
+      messages = WARNING(messages, info.NAME, "/METRIC", "the metric of a tile of the kind {tile.KIND.NAME()} is not shown")
+    end
+    return messages
+  end
+
+  # The tiles of the pages of the spaces of a role belong to the app
+  # collections of the role. The start page leaves the others out, so a
+  # mismatch is a warning: other packages and the local configuration can
+  # give the role the collections later.
+  private method CHECK_ROLE_CONTENT(info: /TRBASE/OBJECT_INFO, messages: array of /TRBASE/OBJECT_MESSAGE) returns array of /TRBASE/OBJECT_MESSAGE raises /RT/EXCEPTION
+    var content = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/ROLE_CONTENT
+    var tiles = new array of STRING
+    for other in /TRBASE/OBJECTS.BY_REFERENCE("/TRFRONTEND/ROLE_CONTENT", /TRBASE/REFERENCE_KIND.ROLE, content.ROLE, null)
+      var oc = transform other.CONTENT using /TRBASE/JSON into /TRFRONTEND/ROLE_CONTENT
+      for entry in oc.APP_COLLECTIONS default []
+        var ci = /TRBASE/OBJECTS.GET(entry.APP_COLLECTION)
+        if ci is not null
+          var collection = transform ci.CONTENT using /TRBASE/JSON into /TRFRONTEND/APP_COLLECTION
+          for t in collection.TILES default []
+            tiles.APPEND(t.TILE)
+          end
+        end
+      end
+    end
+    for space in content.SPACES default []
+      var si = /TRBASE/OBJECTS.GET(space.SPACE)
+      if si is null
+        continue
+      end
+      var sp = transform si.CONTENT using /TRBASE/JSON into /TRFRONTEND/SPACE
+      for page in sp.PAGES default []
+        var pi = /TRBASE/OBJECTS.GET(page.PAGE)
+        if pi is null
+          continue
+        end
+        var pg = transform pi.CONTENT using /TRBASE/JSON into /TRFRONTEND/PAGE
+        for section in pg.SECTIONS default []
+          for t in section.TILES default []
+            if not tiles.CONTAINS(t.TILE)
+              messages = WARNING(messages, info.NAME, "/SPACES", "the tile {t.TILE} of the page {page.PAGE} is in no app collection of the role {content.ROLE}; the start page leaves it out")
+            end
+          end
+        end
+      end
+    end
+    return messages
+  end
+
+  # Sections and groups that a package adds carry its namespace when they
+  # have one.
+  private method CHECK_UI_ANNOTATIONS(info: /TRBASE/OBJECT_INFO, messages: array of /TRBASE/OBJECT_MESSAGE) returns array of /TRBASE/OBJECT_MESSAGE raises /RT/EXCEPTION
+    var ui = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/UI_ANNOTATIONS
+    var own = "/" + info.PACKAGE_ID + "/"
+    var detail = ui.DETAIL
+    if detail is null
+      return messages
+    end
+    for i, section in detail.SECTIONS default []
+      if section.ID.STARTS_WITH("/") and not section.ID.STARTS_WITH(own)
+        messages = ERROR(messages, info.NAME, "/DETAIL/SECTIONS/{i - 1}/ID", "the section {section.ID} carries the namespace of another package; use {own}")
+      end
+      for j, group in section.GROUPS default []
+        if group.ID.STARTS_WITH("/") and not group.ID.STARTS_WITH(own)
+          messages = ERROR(messages, info.NAME, "/DETAIL/SECTIONS/{i - 1}/GROUPS/{j - 1}/ID", "the group {group.ID} carries the namespace of another package; use {own}")
+        end
+      end
+    end
+    return messages
+  end
+
+end

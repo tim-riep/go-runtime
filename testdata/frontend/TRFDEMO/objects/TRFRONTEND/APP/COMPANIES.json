@@ -1,0 +1,28 @@
+{
+  "name": "/TRFDEMO/COMPANIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies",
+        "SUBTITLE": "Maintain"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "ICON": "building",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies"
+    },
+    "PARAMETERS": [
+      {
+        "NAME": "mode",
+        "VALUE": "edit"
+      }
+    ]
+  }
+}

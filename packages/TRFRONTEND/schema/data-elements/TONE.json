@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/TONE",
+  "domain": "/TRFRONTEND/TONE",
+  "texts": {
+    "en": {
+      "short": "Tone",
+      "medium": "Tone",
+      "long": "Tone of the metric",
+      "heading": "Tone"
+    },
+    "de": {
+      "short": "Ton",
+      "medium": "Tonalität",
+      "long": "Tonalität der Kennzahl",
+      "heading": "Tonalität"
+    }
+  }
+}

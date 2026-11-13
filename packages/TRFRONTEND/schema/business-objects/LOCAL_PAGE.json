@@ -1,0 +1,82 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE",
+  "description": {
+    "en": "Local page",
+    "de": "Lokale Page"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFRONTEND/LOCAL_PAGES",
+  "behaviorClass": "/TRFRONTEND/LOCAL_PAGE_BEHAVIOR",
+  "entities": {
+    "/TRFRONTEND/LOCAL_PAGES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_PAGE",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "COPY_PAGE",
+          "instance": false,
+          "parameter": "/TRFRONTEND/COPY_REQUEST",
+          "result": "/TRFRONTEND/COPY_RESULT"
+        }
+      ]
+    },
+    "/TRFRONTEND/LOCAL_PAGE_TEXTS": {
+      "parent": "/TRFRONTEND/LOCAL_PAGES",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_PAGE_SECTIONS": {
+      "parent": "/TRFRONTEND/LOCAL_PAGES",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS": {
+      "parent": "/TRFRONTEND/LOCAL_PAGE_SECTIONS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_PAGE_SECTION_TILES": {
+      "parent": "/TRFRONTEND/LOCAL_PAGE_SECTIONS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "/TRFRONTEND/APP",
+  "texts": {
+    "en": {
+      "label": "App"
+    },
+    "de": {
+      "label": "App"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/APP_TEXTS",
+      "notNull": true
+    },
+    {
+      "name": "ICON",
+      "dataElement": "/TRFRONTEND/ICON"
+    },
+    {
+      "name": "TARGET",
+      "structure": "/TRFRONTEND/APP_TARGET",
+      "notNull": true
+    },
+    {
+      "name": "PARAMETERS",
+      "arrayType": "/TRFRONTEND/APP_PARAMETERS"
+    }
+  ]
+}

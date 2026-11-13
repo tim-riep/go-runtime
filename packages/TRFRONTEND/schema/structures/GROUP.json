@@ -1,0 +1,26 @@
+{
+  "name": "/TRFRONTEND/GROUP",
+  "texts": {
+    "en": {
+      "label": "Group of fields"
+    },
+    "de": {
+      "label": "Feldgruppe"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TITLE_TEXTS"
+    },
+    {
+      "name": "FIELDS",
+      "arrayType": "/TRFRONTEND/FIELD_ENTRIES"
+    }
+  ]
+}

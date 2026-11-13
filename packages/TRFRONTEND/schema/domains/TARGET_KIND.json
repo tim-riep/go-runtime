@@ -1,0 +1,24 @@
+{
+  "name": "/TRFRONTEND/TARGET_KIND",
+  "description": "How an app starts",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "LIST",
+      "description": "Generic list page over an entity set"
+    },
+    {
+      "value": "PAGE",
+      "description": "Page of an asset repository"
+    },
+    {
+      "value": "REMOTE",
+      "description": "Module loaded by module federation"
+    },
+    {
+      "value": "URL",
+      "description": "External address in a new window"
+    }
+  ]
+}

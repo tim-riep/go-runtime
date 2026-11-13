@@ -1,0 +1,62 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_CONTENT",
+  "description": {
+    "en": "Content of a role, local",
+    "de": "Inhalt einer Rolle, lokal"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+  "behaviorClass": "/TRFRONTEND/LOCAL_ROLE_CONTENT_BEHAVIOR",
+  "entities": {
+    "/TRFRONTEND/LOCAL_ROLE_CONTENTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_ROLE_CONTENT",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "COPY_ROLE_CONTENT",
+          "instance": false,
+          "parameter": "/TRFRONTEND/COPY_REQUEST",
+          "result": "/TRFRONTEND/COPY_RESULT"
+        }
+      ]
+    },
+    "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS": {
+      "parent": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    },
+    "/TRFRONTEND/LOCAL_ROLE_SPACES": {
+      "parent": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/DESCRIPTION",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Descr.",
+      "medium": "Description",
+      "long": "Description",
+      "heading": "Description"
+    },
+    "de": {
+      "short": "Beschr.",
+      "medium": "Beschreibung",
+      "long": "Beschreibung",
+      "heading": "Beschreibung"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APPS",
+  "description": "Local apps",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME"
+    },
+    {
+      "name": "ICON",
+      "dataElement": "/TRFRONTEND/ICON"
+    },
+    {
+      "name": "TARGET_KIND",
+      "dataElement": "/TRFRONTEND/TARGET_KIND",
+      "notNull": true,
+      "default": "LIST"
+    },
+    {
+      "name": "SERVICE",
+      "dataElement": "/TRBASE/REF_SERVICE"
+    },
+    {
+      "name": "ENTITY_SET",
+      "dataElement": "/TRBASE/REF_ENTITY_SET"
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRBASE/REF_HTTP_NODE"
+    },
+    {
+      "name": "PATH",
+      "dataElement": "/TRFRONTEND/PATH"
+    },
+    {
+      "name": "MODULE",
+      "dataElement": "/TRFRONTEND/MODULE"
+    },
+    {
+      "name": "URL",
+      "dataElement": "/TRFRONTEND/URL"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "NAME"
+  ],
+  "foreignKeys": []
+}

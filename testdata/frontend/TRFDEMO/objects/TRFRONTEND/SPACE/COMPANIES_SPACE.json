@@ -1,0 +1,16 @@
+{
+  "name": "/TRFDEMO/COMPANIES_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFDEMO/COMPANIES_PAGE"
+      }
+    ]
+  }
+}

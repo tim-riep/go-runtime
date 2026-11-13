@@ -1,0 +1,52 @@
+{
+  "name": "/TRFRONTEND/LOCAL_TILE",
+  "description": {
+    "en": "Local tile",
+    "de": "Lokale Kachel"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFRONTEND/LOCAL_TILES",
+  "behaviorClass": "/TRFRONTEND/LOCAL_TILE_BEHAVIOR",
+  "entities": {
+    "/TRFRONTEND/LOCAL_TILES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_TILE",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "COPY_TILE",
+          "instance": false,
+          "parameter": "/TRFRONTEND/COPY_REQUEST",
+          "result": "/TRFRONTEND/COPY_RESULT"
+        }
+      ]
+    },
+    "/TRFRONTEND/LOCAL_TILE_TEXTS": {
+      "parent": "/TRFRONTEND/LOCAL_TILES",
+      "foreignKey": "PARENT",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external"
+    }
+  }
+}

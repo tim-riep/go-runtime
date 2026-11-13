@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/ROLE_CONTENT",
+  "description": {
+    "en": "Content of a role",
+    "de": "Inhalt einer Rolle"
+  },
+  "content": "/TRFRONTEND/ROLE_CONTENT",
+  "behavior": "/TRFRONTEND/OBJECT_BEHAVIOR"
+}

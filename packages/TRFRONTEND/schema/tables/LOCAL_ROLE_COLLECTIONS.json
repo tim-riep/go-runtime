@@ -1,0 +1,34 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS",
+  "description": "App collections of roles, local",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "ROLE",
+      "dataElement": "/TRFRONTEND/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "APP_COLLECTION",
+      "dataElement": "/TRFRONTEND/APP_COLLECTION_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ROLE",
+    "APP_COLLECTION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+      "fields": [
+        {
+          "field": "ROLE",
+          "references": "ROLE"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "/TRFRONTEND/USER",
+  "texts": {
+    "en": {
+      "label": "User of the user interface",
+      "description": "Starts the shell and the start page service"
+    },
+    "de": {
+      "label": "Benutzer der Oberfläche",
+      "description": "Startet die Shell und den Startseiten-Dienst"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRFRONTEND"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/trfrontend/api"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    }
+  ]
+}

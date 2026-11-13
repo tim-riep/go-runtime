@@ -1,0 +1,72 @@
+# The behavior of the local role contents of the start page: local names,
+# references that exist and the local copy of a shipped entry.
+public class /TRFRONTEND/LOCAL_ROLE_CONTENT_BEHAVIOR
+
+  public method CHECK_ROLE_CONTENT(keys: array of key of /TRFRONTEND/LOCAL_ROLE_CONTENTS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var collections = read business object /TRFRONTEND/LOCAL_ROLE_CONTENT in local mode
+        /TRFRONTEND/LOCAL_ROLE_COLLECTIONS by parent fields all keys [key]
+      end
+      for c in collections
+        try
+          if not /TRFRONTEND/LOCAL_ENTRIES.EXISTS("/TRFRONTEND/APP_COLLECTION", c.APP_COLLECTION)
+            response.ERROR(i, "the app collection {c.APP_COLLECTION} does not exist")
+          end
+        catch e: /RT/EXCEPTION
+          response.ERROR(i, e.TEXT)
+        end
+      end
+      var spaces = read business object /TRFRONTEND/LOCAL_ROLE_CONTENT in local mode
+        /TRFRONTEND/LOCAL_ROLE_SPACES by parent fields all keys [key]
+      end
+      for s in spaces
+        try
+          if not /TRFRONTEND/LOCAL_ENTRIES.EXISTS("/TRFRONTEND/SPACE", s.SPACE)
+            response.ERROR(i, "the space {s.SPACE} does not exist")
+          end
+        catch e: /RT/EXCEPTION
+          response.ERROR(i, e.TEXT)
+        end
+      end
+    end
+  end
+
+  # Copies the shipped content of a role into the local content of the
+  # same role; the name of the request is the role.
+  public method COPY_ROLE_CONTENT(parameter: /TRFRONTEND/COPY_REQUEST, response: /TRBASE/ENTITY_RESPONSE) returns /TRFRONTEND/COPY_RESULT
+    try
+      var content = transform /TRFRONTEND/LOCAL_ENTRIES.SHIPPED(parameter.SOURCE, "/TRFRONTEND/ROLE_CONTENT") using /TRBASE/JSON into /TRFRONTEND/ROLE_CONTENT
+      var row: new of /TRFRONTEND/LOCAL_ROLE_CONTENTS
+      row.LINK = "r"
+      row.ROLE = content.ROLE
+      var collections: array of new of /TRFRONTEND/LOCAL_ROLE_COLLECTIONS = []
+      for c in content.APP_COLLECTIONS default []
+        var collection: new of /TRFRONTEND/LOCAL_ROLE_COLLECTIONS
+        collection.PARENT_LINK = "r"
+        collection.APP_COLLECTION = c.APP_COLLECTION
+        collections.APPEND(collection)
+      end
+      var spaces: array of new of /TRFRONTEND/LOCAL_ROLE_SPACES = []
+      for i, s in content.SPACES default []
+        var space: new of /TRFRONTEND/LOCAL_ROLE_SPACES
+        space.PARENT_LINK = "r"
+        space.POSITION = i as INT4
+        space.SPACE = s.SPACE
+        spaces.APPEND(space)
+      end
+      modify business object /TRFRONTEND/LOCAL_ROLE_CONTENT in local mode
+        create /TRFRONTEND/LOCAL_ROLE_CONTENTS fields (ROLE) from [row]
+        create /TRFRONTEND/LOCAL_ROLE_COLLECTIONS by parent fields (APP_COLLECTION) from collections
+        create /TRFRONTEND/LOCAL_ROLE_SPACES by parent fields (POSITION, SPACE) from spaces
+      end
+    catch e: /RT/EXCEPTION
+      # Static actions cannot fail; nothing is created, and the message
+      # tells why.
+      response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, e.TEXT)
+    end
+    var result: /TRFRONTEND/COPY_RESULT
+    result.NAME = parameter.NAME
+    return result
+  end
+
+end

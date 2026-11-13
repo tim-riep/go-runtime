@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/ACTION_ENTRIES",
+  "texts": {
+    "en": {
+      "label": "Actions"
+    },
+    "de": {
+      "label": "Aktionen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/ACTION_ENTRY"
+  }
+}

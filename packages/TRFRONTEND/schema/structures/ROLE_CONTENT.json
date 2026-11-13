@@ -1,0 +1,26 @@
+{
+  "name": "/TRFRONTEND/ROLE_CONTENT",
+  "texts": {
+    "en": {
+      "label": "Content of a role"
+    },
+    "de": {
+      "label": "Inhalt einer Rolle"
+    }
+  },
+  "components": [
+    {
+      "name": "ROLE",
+      "dataElement": "/TRBASE/REF_ROLE",
+      "notNull": true
+    },
+    {
+      "name": "APP_COLLECTIONS",
+      "arrayType": "/TRFRONTEND/COLLECTION_ENTRIES"
+    },
+    {
+      "name": "SPACES",
+      "arrayType": "/TRFRONTEND/SPACE_ENTRIES"
+    }
+  ]
+}

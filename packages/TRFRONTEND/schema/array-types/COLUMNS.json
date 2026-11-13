@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/COLUMNS",
+  "texts": {
+    "en": {
+      "label": "Columns"
+    },
+    "de": {
+      "label": "Spalten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/COLUMN"
+  }
+}

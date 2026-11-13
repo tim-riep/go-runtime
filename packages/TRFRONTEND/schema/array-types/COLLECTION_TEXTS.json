@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/COLLECTION_TEXTS",
+  "texts": {
+    "en": {
+      "label": "Texts of an app collection"
+    },
+    "de": {
+      "label": "Texte einer App-Sammlung"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/COLLECTION_TEXT"
+  },
+  "key": {
+    "fields": [
+      "LANGUAGE"
+    ],
+    "unique": true
+  }
+}

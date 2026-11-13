@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/TILE_KIND",
+  "domain": "/TRFRONTEND/TILE_KIND",
+  "texts": {
+    "en": {
+      "short": "Kind",
+      "medium": "Tile kind",
+      "long": "Kind of tile",
+      "heading": "Tile kind"
+    },
+    "de": {
+      "short": "Art",
+      "medium": "Kachelart",
+      "long": "Art der Kachel",
+      "heading": "Kachelart"
+    }
+  }
+}

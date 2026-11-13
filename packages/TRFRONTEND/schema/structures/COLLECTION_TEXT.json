@@ -1,0 +1,25 @@
+{
+  "name": "/TRFRONTEND/COLLECTION_TEXT",
+  "texts": {
+    "en": {
+      "label": "Texts of an app collection"
+    },
+    "de": {
+      "label": "Texte einer App-Sammlung"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRFRONTEND/DESCRIPTION"
+    }
+  ]
+}

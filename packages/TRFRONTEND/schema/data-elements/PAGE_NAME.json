@@ -1,0 +1,19 @@
+{
+  "name": "/TRFRONTEND/PAGE_NAME",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRFRONTEND/PAGE",
+  "texts": {
+    "en": {
+      "short": "Page",
+      "medium": "Page",
+      "long": "Page",
+      "heading": "Page"
+    },
+    "de": {
+      "short": "Page",
+      "medium": "Page",
+      "long": "Page",
+      "heading": "Page"
+    }
+  }
+}

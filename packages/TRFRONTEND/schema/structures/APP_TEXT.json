@@ -1,0 +1,25 @@
+{
+  "name": "/TRFRONTEND/APP_TEXT",
+  "texts": {
+    "en": {
+      "label": "Texts of an app"
+    },
+    "de": {
+      "label": "Texte einer App"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    },
+    {
+      "name": "SUBTITLE",
+      "dataElement": "/TRFRONTEND/SUBTITLE"
+    }
+  ]
+}

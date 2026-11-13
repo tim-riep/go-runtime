@@ -1,0 +1,42 @@
+{
+  "name": "/TRFRONTEND/APP_TARGET",
+  "texts": {
+    "en": {
+      "label": "Launch target"
+    },
+    "de": {
+      "label": "Startziel"
+    }
+  },
+  "components": [
+    {
+      "name": "KIND",
+      "dataElement": "/TRFRONTEND/TARGET_KIND",
+      "notNull": true
+    },
+    {
+      "name": "SERVICE",
+      "dataElement": "/TRBASE/REF_SERVICE"
+    },
+    {
+      "name": "ENTITY_SET",
+      "dataElement": "/TRBASE/REF_ENTITY_SET"
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRBASE/REF_HTTP_NODE"
+    },
+    {
+      "name": "PATH",
+      "dataElement": "/TRFRONTEND/PATH"
+    },
+    {
+      "name": "MODULE",
+      "dataElement": "/TRFRONTEND/MODULE"
+    },
+    {
+      "name": "URL",
+      "dataElement": "/TRFRONTEND/URL"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP_TEXTS",
+  "description": "Texts of local apps",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "include": "/TRFRONTEND/APP_TEXT"
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_APPS",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        }
+      ]
+    }
+  ]
+}

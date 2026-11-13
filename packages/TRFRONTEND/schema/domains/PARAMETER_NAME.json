@@ -1,0 +1,6 @@
+{
+  "name": "/TRFRONTEND/PARAMETER_NAME",
+  "description": "Name of a start parameter",
+  "type": "CHAR",
+  "length": 40
+}

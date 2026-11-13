@@ -1,0 +1,91 @@
+# The behavior of the local pages of the start page: local names,
+# references that exist and the local copy of a shipped entry.
+public class /TRFRONTEND/LOCAL_PAGE_BEHAVIOR
+
+  public method CHECK_PAGE(keys: array of key of /TRFRONTEND/LOCAL_PAGES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      if not key.NAME.STARTS_WITH("/LOCAL/")
+        response.FIELD_ERROR(i, "NAME", "local entries are named /LOCAL/<NAME>")
+      end
+      var sections = read business object /TRFRONTEND/LOCAL_PAGE in local mode
+        /TRFRONTEND/LOCAL_PAGE_SECTIONS by parent fields all keys [key]
+      end
+      for section in sections
+        var sk: key of /TRFRONTEND/LOCAL_PAGE_SECTIONS
+        sk.NAME = section.NAME
+        sk.SECTION = section.SECTION
+        var tiles = read business object /TRFRONTEND/LOCAL_PAGE in local mode
+          /TRFRONTEND/LOCAL_PAGE_SECTION_TILES by parent fields all keys [sk]
+        end
+        for t in tiles
+          try
+            if not /TRFRONTEND/LOCAL_ENTRIES.EXISTS("/TRFRONTEND/TILE", t.TILE)
+              response.ERROR(i, "the tile {t.TILE} does not exist")
+            end
+          catch e: /RT/EXCEPTION
+            response.ERROR(i, e.TEXT)
+          end
+        end
+      end
+    end
+  end
+
+  # Copies a shipped page with its sections and their tiles.
+  public method COPY_PAGE(parameter: /TRFRONTEND/COPY_REQUEST, response: /TRBASE/ENTITY_RESPONSE) returns /TRFRONTEND/COPY_RESULT
+    try
+      /TRFRONTEND/LOCAL_ENTRIES.LOCAL_NAME(parameter.NAME)
+      var page = transform /TRFRONTEND/LOCAL_ENTRIES.SHIPPED(parameter.SOURCE, "/TRFRONTEND/PAGE") using /TRBASE/JSON into /TRFRONTEND/PAGE
+      var row: new of /TRFRONTEND/LOCAL_PAGES
+      row.LINK = "p"
+      row.NAME = parameter.NAME
+      var texts: array of new of /TRFRONTEND/LOCAL_PAGE_TEXTS = []
+      for t in page.TEXTS
+        var text: new of /TRFRONTEND/LOCAL_PAGE_TEXTS
+        text.PARENT_LINK = "p"
+        text.LANGUAGE = t.LANGUAGE
+        text.TITLE = t.TITLE
+        texts.APPEND(text)
+      end
+      var sections: array of new of /TRFRONTEND/LOCAL_PAGE_SECTIONS = []
+      var sectiontexts: array of new of /TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS = []
+      var sectiontiles: array of new of /TRFRONTEND/LOCAL_PAGE_SECTION_TILES = []
+      for i, s in page.SECTIONS default []
+        var section: new of /TRFRONTEND/LOCAL_PAGE_SECTIONS
+        section.LINK = "s{i}"
+        section.PARENT_LINK = "p"
+        section.SECTION = s.ID
+        section.POSITION = i as INT4
+        sections.APPEND(section)
+        for t in s.TEXTS default []
+          var text: new of /TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS
+          text.PARENT_LINK = "s{i}"
+          text.LANGUAGE = t.LANGUAGE
+          text.TITLE = t.TITLE
+          sectiontexts.APPEND(text)
+        end
+        for j, t in s.TILES default []
+          var tile: new of /TRFRONTEND/LOCAL_PAGE_SECTION_TILES
+          tile.PARENT_LINK = "s{i}"
+          tile.POSITION = j as INT4
+          tile.TILE = t.TILE
+          sectiontiles.APPEND(tile)
+        end
+      end
+      modify business object /TRFRONTEND/LOCAL_PAGE in local mode
+        create /TRFRONTEND/LOCAL_PAGES fields (NAME) from [row]
+        create /TRFRONTEND/LOCAL_PAGE_TEXTS by parent fields (LANGUAGE, TITLE) from texts
+        create /TRFRONTEND/LOCAL_PAGE_SECTIONS by parent fields (SECTION, POSITION) from sections
+        create /TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS by parent fields (LANGUAGE, TITLE) from sectiontexts
+        create /TRFRONTEND/LOCAL_PAGE_SECTION_TILES by parent fields (POSITION, TILE) from sectiontiles
+      end
+    catch e: /RT/EXCEPTION
+      # Static actions cannot fail; nothing is created, and the message
+      # tells why.
+      response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, e.TEXT)
+    end
+    var result: /TRFRONTEND/COPY_RESULT
+    result.NAME = parameter.NAME
+    return result
+  end
+
+end

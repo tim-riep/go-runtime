@@ -1,0 +1,22 @@
+{
+  "name": "/TRFRONTEND/APP_COLLECTION",
+  "texts": {
+    "en": {
+      "label": "App collection"
+    },
+    "de": {
+      "label": "App-Sammlung"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/COLLECTION_TEXTS",
+      "notNull": true
+    },
+    {
+      "name": "TILES",
+      "arrayType": "/TRFRONTEND/TILE_ENTRIES"
+    }
+  ]
+}

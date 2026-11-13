@@ -1,0 +1,42 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS",
+  "description": "Titles of sections of local pages",
+  "tenantSpecific": false,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "SECTION",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "include": "/TRFRONTEND/TITLE_TEXT"
+    }
+  ],
+  "primaryKey": [
+    "NAME",
+    "SECTION",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARENT",
+      "table": "/TRFRONTEND/LOCAL_PAGE_SECTIONS",
+      "fields": [
+        {
+          "field": "NAME",
+          "references": "NAME"
+        },
+        {
+          "field": "SECTION",
+          "references": "SECTION"
+        }
+      ]
+    }
+  ]
+}

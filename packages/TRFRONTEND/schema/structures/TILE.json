@@ -1,0 +1,38 @@
+{
+  "name": "/TRFRONTEND/TILE",
+  "texts": {
+    "en": {
+      "label": "Tile"
+    },
+    "de": {
+      "label": "Kachel"
+    }
+  },
+  "components": [
+    {
+      "name": "APP",
+      "dataElement": "/TRFRONTEND/APP_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFRONTEND/TILE_KIND",
+      "notNull": true,
+      "default": "SIMPLE"
+    },
+    {
+      "name": "SIZE",
+      "dataElement": "/TRFRONTEND/TILE_SIZE",
+      "notNull": true,
+      "default": "SMALL"
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRFRONTEND/TILE_TEXTS"
+    },
+    {
+      "name": "METRIC",
+      "structure": "/TRFRONTEND/TILE_METRIC"
+    }
+  ]
+}

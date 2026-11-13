@@ -1,0 +1,22 @@
+{
+  "name": "/TRFRONTEND/APP_PARAMETER",
+  "texts": {
+    "en": {
+      "label": "Start parameter"
+    },
+    "de": {
+      "label": "Startparameter"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/PARAMETER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "VALUE",
+      "dataElement": "/TRFRONTEND/PARAMETER_VALUE"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/GROUP_ADDITIONS",
+  "texts": {
+    "en": {
+      "label": "Fields added to groups"
+    },
+    "de": {
+      "label": "Felder für Gruppen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/GROUP_ADDITION"
+  }
+}

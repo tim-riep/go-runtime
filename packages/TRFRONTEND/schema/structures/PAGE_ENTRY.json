@@ -1,0 +1,18 @@
+{
+  "name": "/TRFRONTEND/PAGE_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Page in a space"
+    },
+    "de": {
+      "label": "Page in einem Space"
+    }
+  },
+  "components": [
+    {
+      "name": "PAGE",
+      "dataElement": "/TRFRONTEND/PAGE_NAME",
+      "notNull": true
+    }
+  ]
+}
