@@ -1,0 +1,60 @@
+{
+  "name": "/TRADMIN/ADMIN",
+  "texts": {
+    "en": {
+      "label": "Role administration"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/ROLE_ADMIN",
+      "fields": {
+        "ROLE_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ROLE_ASSIGNMENT",
+      "fields": {
+        "ROLE_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "TENANT": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/USER_ADMIN",
+      "fields": {
+        "USER_NAME": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

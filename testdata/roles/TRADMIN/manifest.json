@@ -1,0 +1,11 @@
+{
+  "id": "TRADMIN",
+  "version": "1.0.0",
+  "description": "Tests of the role administration in code",
+  "languageVersion": 1,
+  "requires": [
+    {
+      "id": "TRBASE"
+    }
+  ]
+}

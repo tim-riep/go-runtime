@@ -1,0 +1,51 @@
+{
+  "name": "/TRBASE/ROLE_ASSIGNMENT_INFO",
+  "texts": {
+    "en": {
+      "label": "Role assignment"
+    },
+    "de": {
+      "label": "Rollenzuordnung"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRBASE/ASSIGNMENT_ID",
+      "notNull": true
+    },
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "dataElement": "/TRBASE/TENANT",
+      "notNull": true
+    },
+    {
+      "name": "VALID_FROM",
+      "dataElement": "/TRBASE/VALID_FROM"
+    },
+    {
+      "name": "VALID_TO",
+      "dataElement": "/TRBASE/VALID_TO"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CREATED_BY",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    }
+  ]
+}

@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/tim-riep/go-runtime/internal/kernelschema"
@@ -96,7 +97,9 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 			t.Fatalf("expected ConfirmationRequired, got %v", err)
 		}
 		dry, err := k.Languages().Remove(ctx, "de", kernel.Options{DryRun: true})
-		if err != nil || dry.Changes[0].Detail != "98 texts" {
+		// The number grows with the texts of TRBASE; the first change
+		// deletes the texts of data elements.
+		if err != nil || dry.Changes[0].Table != "/RT/DATA_ELEMENT_TEXTS" || !strings.HasSuffix(dry.Changes[0].Detail, " texts") {
 			t.Fatalf("dry run: %v %+v", err, dry)
 		}
 		if _, err := k.Languages().Remove(ctx, "de", kernel.Options{Confirm: true}); err != nil {

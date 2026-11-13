@@ -10,4 +10,9 @@ public class /TRBASE/CONTEXT
 
   public static method LANGUAGE() returns STRING executed by kernel
 
+  # The roles of the user in the tenant today: the assigned roles valid
+  # today and the members of assigned composite roles, which name the
+  # composite role. Empty without user or tenant.
+  public static method ROLES() returns /TRBASE/EFFECTIVE_ROLE_ARRAY executed by kernel
+
 end

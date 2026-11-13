@@ -1,0 +1,21 @@
+{
+  "name": "/TRADMIN/THING",
+  "texts": {
+    "en": {
+      "label": "Things"
+    }
+  },
+  "fields": [
+    {
+      "name": "KIND",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "UPDATE"
+  ]
+}

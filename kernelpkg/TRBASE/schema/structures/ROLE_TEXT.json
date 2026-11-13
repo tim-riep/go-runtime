@@ -1,0 +1,25 @@
+{
+  "name": "/TRBASE/ROLE_TEXT",
+  "texts": {
+    "en": {
+      "label": "Text of a role"
+    },
+    "de": {
+      "label": "Text einer Rolle"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/TEXT_LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/OBJECT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "dataElement": "/TRBASE/OBJECT_DESCRIPTION"
+    }
+  ]
+}

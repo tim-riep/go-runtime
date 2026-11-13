@@ -1,0 +1,36 @@
+{
+  "name": "/TRBASE/ROLE_DEFINITION",
+  "texts": {
+    "en": {
+      "label": "Definition of a role"
+    },
+    "de": {
+      "label": "Definition einer Rolle"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "COMPOSITE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRBASE/ROLE_TEXT_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ROLES",
+      "arrayType": "/TRBASE/ROLE_NAME_ARRAY"
+    },
+    {
+      "name": "AUTHORIZATIONS",
+      "arrayType": "/TRBASE/ROLE_AUTHORIZATION_ARRAY"
+    }
+  ]
+}

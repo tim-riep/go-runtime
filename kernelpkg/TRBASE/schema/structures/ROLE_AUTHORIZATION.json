@@ -1,0 +1,31 @@
+{
+  "name": "/TRBASE/ROLE_AUTHORIZATION",
+  "texts": {
+    "en": {
+      "label": "Authorization of a role"
+    },
+    "de": {
+      "label": "Berechtigung einer Rolle"
+    }
+  },
+  "components": [
+    {
+      "name": "OBJECT",
+      "dataElement": "/TRBASE/AUTHORIZATION_OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "FIELDS",
+      "arrayType": "/TRBASE/ROLE_FIELD_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    },
+    {
+      "name": "COMPOSITE",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    }
+  ]
+}

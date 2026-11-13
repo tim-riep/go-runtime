@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_AUTHORIZATION_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Authorizations of a role"
+    },
+    "de": {
+      "label": "Berechtigungen einer Rolle"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_AUTHORIZATION"
+  }
+}

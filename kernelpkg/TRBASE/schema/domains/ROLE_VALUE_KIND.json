@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ROLE_VALUE_KIND",
+  "description": "Kind of an entry of values that a role grants for a field",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "value",
+      "name": "VALUE",
+      "description": "One value"
+    },
+    {
+      "value": "range",
+      "name": "RANGE",
+      "description": "From LOW to HIGH, both included"
+    },
+    {
+      "value": "pattern",
+      "name": "PATTERN",
+      "description": "* for all values, or a prefix and *"
+    }
+  ]
+}

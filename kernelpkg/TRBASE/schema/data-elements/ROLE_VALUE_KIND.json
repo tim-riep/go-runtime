@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ROLE_VALUE_KIND",
+  "domain": "/TRBASE/ROLE_VALUE_KIND",
+  "texts": {
+    "en": {
+      "short": "Kind",
+      "medium": "Value kind",
+      "long": "Kind of granted values",
+      "heading": "Value kind"
+    },
+    "de": {
+      "short": "Art",
+      "medium": "Werteart",
+      "long": "Art der Werte",
+      "heading": "Werteart"
+    }
+  }
+}

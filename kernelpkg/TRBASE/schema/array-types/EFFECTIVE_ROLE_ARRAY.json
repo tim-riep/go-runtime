@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/EFFECTIVE_ROLE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Effective roles"
+    },
+    "de": {
+      "label": "Wirksame Rollen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/EFFECTIVE_ROLE"
+  }
+}

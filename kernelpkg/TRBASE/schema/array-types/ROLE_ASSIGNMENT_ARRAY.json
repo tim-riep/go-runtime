@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_ASSIGNMENT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Role assignments"
+    },
+    "de": {
+      "label": "Rollenzuordnungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_ASSIGNMENT_INFO"
+  }
+}

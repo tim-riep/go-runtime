@@ -1,0 +1,57 @@
+{
+  "name": "/TRBASE/ROLE_CHANGE",
+  "texts": {
+    "en": {
+      "label": "Change of roles"
+    },
+    "de": {
+      "label": "Änderung von Rollen"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRBASE/ASSIGNMENT_ID",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "domain": "/TRBASE/NAME",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    },
+    {
+      "name": "TENANT",
+      "dataElement": "/TRBASE/TENANT"
+    },
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME"
+    },
+    {
+      "name": "ASSIGNMENT",
+      "dataElement": "/TRBASE/ASSIGNMENT_ID"
+    },
+    {
+      "name": "OLD_STATE",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "NEW_STATE",
+      "domain": "/TRBASE/TEXT"
+    }
+  ]
+}

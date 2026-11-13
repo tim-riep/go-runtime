@@ -1,0 +1,8 @@
+# The users of the kernel for code, without passwords and tokens. It checks
+# /TRBASE/USER_ADMIN for the user of the execution in its tenant.
+public class /TRBASE/USER_ADMINISTRATION
+
+  # The users that the user of the execution may read, ordered by name.
+  public static method USERS() returns /TRBASE/USER_INFO_ARRAY executed by kernel
+
+end

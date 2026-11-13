@@ -1,0 +1,30 @@
+{
+  "name": "/TRBASE/EFFECTIVE_ROLE",
+  "texts": {
+    "en": {
+      "label": "Effective role"
+    },
+    "de": {
+      "label": "Wirksame Rolle"
+    }
+  },
+  "components": [
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "COMPOSITE",
+      "dataElement": "/TRBASE/ROLE_NAME"
+    },
+    {
+      "name": "VALID_FROM",
+      "dataElement": "/TRBASE/VALID_FROM"
+    },
+    {
+      "name": "VALID_TO",
+      "dataElement": "/TRBASE/VALID_TO"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "/TRBASE/USER_INFO",
+  "texts": {
+    "en": {
+      "label": "User"
+    },
+    "de": {
+      "label": "Benutzer"
+    }
+  },
+  "components": [
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME"
+    },
+    {
+      "name": "STATUS",
+      "dataElement": "/TRBASE/USER_STATUS",
+      "notNull": true
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "DEFAULT_TENANT",
+      "dataElement": "/TRBASE/TENANT"
+    },
+    {
+      "name": "TENANTS",
+      "arrayType": "/TRBASE/TENANT_ARRAY",
+      "notNull": true
+    }
+  ]
+}

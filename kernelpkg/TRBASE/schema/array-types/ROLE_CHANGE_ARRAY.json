@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_CHANGE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Changes of roles"
+    },
+    "de": {
+      "label": "Änderungen von Rollen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_CHANGE"
+  }
+}

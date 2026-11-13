@@ -1,0 +1,111 @@
+# Calls the role and user functions of the kernel for tests.
+public class /TRADMIN/ROLES
+
+  public static method MINE() returns array of STRING
+    var out = new array of STRING
+    for r in /TRBASE/CONTEXT.ROLES()
+      out.APPEND(r.ROLE_NAME + " via " + (r.COMPOSITE default "-"))
+    end
+    return out
+  end
+
+  public static method NAMES() returns array of STRING
+    var out = new array of STRING
+    for r in /TRBASE/ROLE_ADMINISTRATION.ROLES()
+      out.APPEND(r.NAME + " " + (r.PACKAGE_ID default "local"))
+    end
+    return out
+  end
+
+  public static method CREATE(name: STRING, fail: BOOL) raises /RT/EXCEPTION
+    var text: /TRBASE/ROLE_TEXT
+    text.LANGUAGE = "en"
+    text.LABEL = "Readers of B"
+    var value: /TRBASE/ROLE_VALUE
+    value.KIND = /TRBASE/ROLE_VALUE_KIND.VALUE
+    value.LOW = "B"
+    var kind: /TRBASE/ROLE_FIELD
+    kind.FIELD = "KIND"
+    kind.VALUES = [value]
+    var read: /TRBASE/ROLE_VALUE
+    read.KIND = /TRBASE/ROLE_VALUE_KIND.VALUE
+    read.LOW = "READ"
+    var activity: /TRBASE/ROLE_FIELD
+    activity.FIELD = "ACTIVITY"
+    activity.VALUES = [read]
+    var auth: /TRBASE/ROLE_AUTHORIZATION
+    auth.OBJECT = "/TRADMIN/THING"
+    auth.FIELDS = [kind, activity]
+    var role: /TRBASE/ROLE_DEFINITION
+    role.NAME = name
+    role.COMPOSITE = false
+    role.TEXTS = [text]
+    role.AUTHORIZATIONS = [auth]
+    /TRBASE/ROLE_ADMINISTRATION.CREATE(role)
+    if fail
+      raise /TRBASE/ROLE_ERROR with "failed after the creation"
+    end
+  end
+
+  public static method EFFECT(name: STRING) returns array of STRING raises /TRBASE/ROLE_ERROR
+    var out = new array of STRING
+    var d = /TRBASE/ROLE_ADMINISTRATION.ROLE(name)
+    for a in d.EFFECT
+      out.APPEND(a.OBJECT + " from " + (a.ROLE_NAME default "-"))
+    end
+    return out
+  end
+
+  public static method DELETE(name: STRING, confirm: BOOL) returns STRING
+    try
+      /TRBASE/ROLE_ADMINISTRATION.DELETE(name, confirm)
+      return "deleted"
+    catch e: /TRBASE/ROLE_CONFIRMATION_REQUIRED
+      return "confirm"
+    catch e: /TRBASE/ROLE_ERROR
+      return "error: " + e.TEXT
+    end
+  end
+
+  public static method ASSIGN(user: STRING, role: STRING, tenant: STRING) returns STRING raises /TRBASE/ROLE_ERROR
+    return /TRBASE/ROLE_ADMINISTRATION.ASSIGN(user, role, tenant, null, null).ASSIGNMENT.ID
+  end
+
+  public static method ASSIGNED(user: STRING) returns array of STRING
+    var out = new array of STRING
+    for a in /TRBASE/ROLE_ADMINISTRATION.ASSIGNMENTS(user, null, null)
+      out.APPEND(a.ROLE_NAME + " in " + a.TENANT)
+    end
+    return out
+  end
+
+  public static method UNASSIGN(id: STRING) raises /TRBASE/ROLE_ERROR
+    /TRBASE/ROLE_ADMINISTRATION.UNASSIGN(id, false)
+  end
+
+  public static method OBJECTS(user: STRING, tenant: STRING) returns array of STRING raises /TRBASE/ROLE_ERROR
+    var out = new array of STRING
+    var e = /TRBASE/ROLE_ADMINISTRATION.AUTHORIZATIONS(user, tenant, null)
+    for a in e.AUTHORIZATIONS
+      out.APPEND(a.OBJECT + " from " + (a.ROLE_NAME default "-") + " via " + (a.COMPOSITE default "-"))
+    end
+    return out
+  end
+
+  public static method HISTORY(role: STRING) returns array of STRING
+    var out = new array of STRING
+    for h in /TRBASE/ROLE_ADMINISTRATION.HISTORY(role, null)
+      out.APPEND(h.KIND + " by " + h.CHANGED_BY)
+    end
+    return out
+  end
+
+  public static method USERS() returns array of STRING
+    var out = new array of STRING
+    for u in /TRBASE/USER_ADMINISTRATION.USERS()
+      out.APPEND("{u.USER_NAME} {u.TENANTS.LENGTH()}")
+    end
+    return out
+  end
+
+end

@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/ASSIGNMENT_ID",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Assignment",
+      "medium": "Assignment",
+      "long": "Role assignment",
+      "heading": "Assignment"
+    },
+    "de": {
+      "short": "Zuordnung",
+      "medium": "Zuordnung",
+      "long": "Rollenzuordnung",
+      "heading": "Zuordnung"
+    }
+  }
+}

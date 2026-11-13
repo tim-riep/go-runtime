@@ -1,0 +1,20 @@
+{
+  "name": "/TRBASE/ROLE_TEXT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Texts of a role"
+    },
+    "de": {
+      "label": "Texte einer Rolle"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_TEXT"
+  },
+  "key": {
+    "fields": [
+      "LANGUAGE"
+    ],
+    "unique": true
+  }
+}

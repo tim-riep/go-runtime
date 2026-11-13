@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_VALUE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Granted values"
+    },
+    "de": {
+      "label": "Gewährte Werte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_VALUE"
+  }
+}

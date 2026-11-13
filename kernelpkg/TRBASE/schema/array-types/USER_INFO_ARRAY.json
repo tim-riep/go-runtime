@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/USER_INFO_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Users"
+    },
+    "de": {
+      "label": "Benutzer"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/USER_INFO"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "/TRADMIN/EMPTY",
+  "texts": {
+    "en": {
+      "label": "Without authorizations"
+    }
+  },
+  "authorizations": []
+}

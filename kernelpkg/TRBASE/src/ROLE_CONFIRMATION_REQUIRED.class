@@ -1,0 +1,10 @@
+# A change of roles removes more than asked for: assignments and memberships
+# of a deleted role, or the last user with all authorizations. Calling it
+# again with confirm true makes the change.
+public class /TRBASE/ROLE_CONFIRMATION_REQUIRED extends /TRBASE/ROLE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

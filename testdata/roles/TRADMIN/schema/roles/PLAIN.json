@@ -1,0 +1,25 @@
+{
+  "name": "/TRADMIN/PLAIN",
+  "texts": {
+    "en": {
+      "label": "Plain"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRADMIN/THING",
+      "fields": {
+        "KIND": [
+          {
+            "value": "A"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

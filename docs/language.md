@@ -804,10 +804,36 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/ZIP_ARCHIVE` | native class: zip archives, see [Zip archives and gzip](#zip-archives-and-gzip) |
 | `/TRBASE/GZIP` | `COMPRESS`, `DECOMPRESS` and more, see [Zip archives and gzip](#zip-archives-and-gzip) |
 | `/TRBASE/XLSX_WORKBOOK` | native class: workbooks in xlsx format cell by cell, see [Workbooks](#workbooks) |
+| `/TRBASE/ROLE_ADMINISTRATION` | roles, composite roles and their assignments, see [Roles and users](#roles-and-users) |
+| `/TRBASE/USER_ADMINISTRATION` | `USERS()`: the users without passwords and tokens |
 | `/TRBASE/OBJECTS` | objects of package-defined types, see [Objects of package-defined types](#objects-of-package-defined-types) |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
 `LINE_NO`, the line in the stylesheet or `null`.
+
+## Roles and users
+
+`/TRBASE/ROLE_ADMINISTRATION` gives code the role functions of the kernel for the user of
+the execution in its tenant, with the checks of `/TRBASE/ROLE_ADMIN` and
+`/TRBASE/ROLE_ASSIGNMENT`; without user every method raises `/RT/NOT_AUTHORIZED`:
+
+- `ROLES()` lists the roles the user may read, `ROLE(name)` describes one with its own
+  authorizations, the authorizations of its members (`EFFECT`), the composite roles it
+  belongs to (`USED_BY`) and its number of assignments.
+- `CREATE(role)`, `UPDATE(role)` and `DELETE(name, confirm)` maintain local roles named
+  `/LOCAL/<NAME>`; package roles change only with their package. Values in `LOW` and
+  `HIGH` are written in the text form of role files.
+- `ASSIGNMENTS(user, role, tenant)`, `ASSIGN(user, role, tenant, first, last)` and
+  `UNASSIGN(id, confirm)` read and change assignments; the role with all authorizations is
+  assigned only on the command line.
+- `AUTHORIZATIONS(user, tenant, day)` gives the roles of a user and the authorizations of
+  each, `HISTORY(role, user)` the changes.
+
+Changes are written in the transaction of the default session: they are committed and
+rolled back with it and are not allowed in executions that only read. A change that would
+remove more than asked for raises `/TRBASE/ROLE_CONFIRMATION_REQUIRED`, other problems
+`/TRBASE/ROLE_ERROR` with the reason. `/TRBASE/USER_ADMINISTRATION.USERS()` lists the users
+with status, language, default tenant and tenants as far as `/TRBASE/USER_ADMIN` allows.
 
 ## Objects of package-defined types
 
@@ -1288,6 +1314,9 @@ about the commit: below 400 the changes of the request are committed, otherwise 
 
 `/TRBASE/CONTEXT.USER()` is the signed-in user, `null` for anonymous requests and in
 `rt run`; `TENANT()` the tenant or `null`, and `LANGUAGE()` the language of the execution.
+`ROLES()` are the roles of the user in the tenant today: the assignments valid today and the
+members of assigned composite roles, which name the composite role in `COMPOSITE`, also
+roles without authorizations; empty without user or tenant and for locked users.
 Without tenant, statements on tenant-specific tables raise `/RT/SESSION_ERROR`. Log
 statements of requests go to the log of the server with the node.
 

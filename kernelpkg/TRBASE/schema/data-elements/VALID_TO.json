@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/VALID_TO",
+  "domain": "/TRBASE/DATE",
+  "texts": {
+    "en": {
+      "short": "Valid to",
+      "medium": "Valid to",
+      "long": "Last day of validity",
+      "heading": "Valid to"
+    },
+    "de": {
+      "short": "Gültig bis",
+      "medium": "Gültig bis",
+      "long": "Letzter Tag der Gültigkeit",
+      "heading": "Gültig bis"
+    }
+  }
+}

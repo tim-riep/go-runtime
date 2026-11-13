@@ -43,7 +43,7 @@ const (
 func (u *Users) As(a Actor) *Users { return &Users{k: u.k, actor: &a} }
 
 // As returns the role functions on behalf of an actor.
-func (r *Roles) As(a Actor) *Roles { return &Roles{k: r.k, actor: &a} }
+func (r *Roles) As(a Actor) *Roles { return &Roles{k: r.k, actor: &a, q: r.q} }
 
 // effective returns the effective authorizations of an actor, nil
 // without actor.

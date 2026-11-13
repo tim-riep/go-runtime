@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ROLE_FIELD",
+  "texts": {
+    "en": {
+      "label": "Field of an authorization"
+    },
+    "de": {
+      "label": "Feld einer Berechtigung"
+    }
+  },
+  "components": [
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "VALUES",
+      "arrayType": "/TRBASE/ROLE_VALUE_ARRAY",
+      "notNull": true
+    }
+  ]
+}

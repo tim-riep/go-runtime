@@ -1,0 +1,12 @@
+{
+  "name": "/TRADMIN/BUNDLE",
+  "texts": {
+    "en": {
+      "label": "Bundle"
+    }
+  },
+  "roles": [
+    "/TRADMIN/PLAIN",
+    "/TRADMIN/EMPTY"
+  ]
+}

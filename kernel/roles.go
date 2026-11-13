@@ -282,6 +282,37 @@ func RoleJSON(s *model.Schema, r *model.Role) ([]byte, error) {
 type Roles struct {
 	k     *Kernel
 	actor *Actor // nil: unchecked
+	// q is the transaction the functions work in; nil: their own.
+	q dialect.Querier
+}
+
+// in returns the role functions in the transaction q of an execution,
+// whose end commits or rolls back their changes.
+func (r *Roles) in(q dialect.Querier) *Roles { return &Roles{k: r.k, actor: r.actor, q: q} }
+
+// db returns what the role functions read from.
+func (r *Roles) db() dialect.Querier {
+	if r.q != nil {
+		return r.q
+	}
+	return r.k.db
+}
+
+// transact runs fn in the transaction of the role functions, or in a new
+// one.
+func (r *Roles) transact(ctx context.Context, fn func(tx dialect.Querier) error) error {
+	if r.q != nil {
+		return fn(r.q)
+	}
+	return r.k.d.Transact(ctx, r.k.db, dialect.TxOptions{}, func(tx *sql.Tx) error { return fn(tx) })
+}
+
+// schema returns the installed schema as the role functions see it.
+func (r *Roles) schema(ctx context.Context) (*model.Schema, error) {
+	if r.q != nil {
+		return r.k.repo.Load(ctx, r.q)
+	}
+	return r.k.Schema(ctx)
 }
 
 // authorize checks an activity of the actor on a role.
@@ -329,7 +360,7 @@ type RoleSummary struct {
 
 // List returns the roles ordered by name.
 func (r *Roles) List(ctx context.Context) ([]RoleSummary, error) {
-	s, err := r.k.Schema(ctx)
+	s, err := r.schema(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +416,7 @@ func (r *Roles) Get(ctx context.Context, name string) (*RoleDetail, error) {
 	if err := r.authorize(ctx, "READ", name, "Roles.Get"); err != nil {
 		return nil, err
 	}
-	s, err := r.k.Schema(ctx)
+	s, err := r.schema(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +464,7 @@ func (r *Roles) Get(ctx context.Context, name string) (*RoleDetail, error) {
 			d.UsedBy = append(d.UsedBy, other)
 		}
 	}
-	as, err := r.k.repo.RoleAssignments(ctx, r.k.db, repo.AssignmentFilter{Role: name})
+	as, err := r.k.repo.RoleAssignments(ctx, r.db(), repo.AssignmentFilter{Role: name})
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +477,7 @@ func (r *Roles) Export(ctx context.Context, name string) ([]byte, error) {
 	if err := r.authorize(ctx, "EXPORT", name, "Roles.Export"); err != nil {
 		return nil, err
 	}
-	s, err := r.k.Schema(ctx)
+	s, err := r.schema(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +528,7 @@ func (r *Roles) save(ctx context.Context, role *model.Role, opts RoleOptions, mo
 	if !strings.HasPrefix(role.Name, model.LocalNamespace) {
 		return &rterr.InvalidArgument{Argument: "role", Message: "local roles are named " + model.LocalNamespace + "<NAME>, not " + role.Name}
 	}
-	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+	return r.transact(ctx, func(tx dialect.Querier) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
 		}
@@ -551,7 +582,7 @@ func (r *Roles) Delete(ctx context.Context, name string, opts RoleOptions) error
 	}
 	opts.By = opts.byActor(r.actor)
 	k := r.k
-	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+	return r.transact(ctx, func(tx dialect.Querier) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
 		}
@@ -631,10 +662,10 @@ func (r *Roles) deleteRole(ctx context.Context, q dialect.Querier, s *model.Sche
 
 // History returns the changes of a role, of a user, or all for "", by time.
 func (r *Roles) History(ctx context.Context, role, user string) ([]RoleChange, error) {
-	if err := r.k.requireInit(ctx, r.k.db); err != nil {
+	if err := r.k.requireInit(ctx, r.db()); err != nil {
 		return nil, err
 	}
-	return r.k.repo.RoleChanges(ctx, r.k.db, role, user)
+	return r.k.repo.RoleChanges(ctx, r.db(), role, user)
 }
 
 // Assignment describes a role assignment to create.
@@ -666,7 +697,7 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 			return out, nil, &rterr.InvalidArgument{Argument: "validity", Message: "the last day is before the first day"}
 		}
 	}
-	err := k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+	err := r.transact(ctx, func(tx dialect.Querier) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
 		}
@@ -716,10 +747,10 @@ func (r *Roles) Assign(ctx context.Context, a Assignment, opts RoleOptions) (Rol
 func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error {
 	k := r.k
 	if r.actor != nil {
-		if err := k.requireInit(ctx, k.db); err != nil {
+		if err := k.requireInit(ctx, r.db()); err != nil {
 			return err
 		}
-		list, err := k.repo.RoleAssignments(ctx, k.db, repo.AssignmentFilter{ID: id})
+		list, err := k.repo.RoleAssignments(ctx, r.db(), repo.AssignmentFilter{ID: id})
 		if err != nil {
 			return err
 		}
@@ -731,7 +762,7 @@ func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error
 		}
 		opts.By = opts.byActor(r.actor)
 	}
-	return k.d.Transact(ctx, k.db, dialect.TxOptions{}, func(tx *sql.Tx) error {
+	return r.transact(ctx, func(tx dialect.Querier) error {
 		if err := k.requireInit(ctx, tx); err != nil {
 			return err
 		}
@@ -756,10 +787,10 @@ func (r *Roles) Unassign(ctx context.Context, id string, opts RoleOptions) error
 // Assignments returns the role assignments of a user, in one tenant or
 // in all for "".
 func (r *Roles) Assignments(ctx context.Context, user, tenant string) ([]RoleAssignment, error) {
-	if err := r.k.requireInit(ctx, r.k.db); err != nil {
+	if err := r.k.requireInit(ctx, r.db()); err != nil {
 		return nil, err
 	}
-	list, err := r.k.repo.RoleAssignments(ctx, r.k.db, repo.AssignmentFilter{User: user, Tenant: tenant})
+	list, err := r.k.repo.RoleAssignments(ctx, r.db(), repo.AssignmentFilter{User: user, Tenant: tenant})
 	if err != nil || r.actor == nil {
 		return list, err
 	}

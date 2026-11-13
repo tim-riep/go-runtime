@@ -18,6 +18,7 @@ package natives
 
 import (
 	"github.com/tim-riep/go-runtime/model"
+	"github.com/tim-riep/go-runtime/native"
 	"time"
 )
 
@@ -77,6 +78,25 @@ const (
 	ReferenceKindHttpNode        ReferenceKind = "httpNode"
 	ReferenceKindAssetRepository ReferenceKind = "assetRepository"
 	ReferenceKindObject          ReferenceKind = "object"
+)
+
+// RoleValueKind is the enum /TRBASE/ROLE_VALUE_KIND.
+type RoleValueKind string
+
+// Fixed values of /TRBASE/ROLE_VALUE_KIND.
+const (
+	RoleValueKindValue   RoleValueKind = "value"
+	RoleValueKindRange   RoleValueKind = "range"
+	RoleValueKindPattern RoleValueKind = "pattern"
+)
+
+// UserStatus is the enum /TRBASE/USER_STATUS.
+type UserStatus string
+
+// Fixed values of /TRBASE/USER_STATUS.
+const (
+	UserStatusActive UserStatus = "active"
+	UserStatusLocked UserStatus = "locked"
 )
 
 // ValueKind is the enum /TRBASE/VALUE_KIND.
@@ -168,6 +188,25 @@ type AuthorizationObject struct {
 	ActivityCodes []Activity             `rt:"ACTIVITY_CODES"`
 }
 
+// EffectiveAuthorizations is the structure /TRBASE/EFFECTIVE_AUTHORIZATIONS.
+type EffectiveAuthorizations struct {
+	UserName       string              `rt:"USER_NAME"`
+	Tenant         string              `rt:"TENANT"`
+	Day            native.Date         `rt:"DAY"`
+	All            bool                `rt:"ALL"`
+	Locked         bool                `rt:"LOCKED"`
+	Roles          []EffectiveRole     `rt:"ROLES"`
+	Authorizations []RoleAuthorization `rt:"AUTHORIZATIONS"`
+}
+
+// EffectiveRole is the structure /TRBASE/EFFECTIVE_ROLE.
+type EffectiveRole struct {
+	RoleName  string                      `rt:"ROLE_NAME"`
+	Composite model.Optional[string]      `rt:"COMPOSITE"`
+	ValidFrom model.Optional[native.Date] `rt:"VALID_FROM"`
+	ValidTo   model.Optional[native.Date] `rt:"VALID_TO"`
+}
+
 // ExtensionFilter is the structure /TRBASE/EXTENSION_FILTER.
 type ExtensionFilter struct {
 	Name        string                 `rt:"NAME"`
@@ -230,6 +269,108 @@ type ObjectInfo struct {
 	PackageID string `rt:"PACKAGE_ID"`
 	Hash      string `rt:"HASH"`
 	Content   string `rt:"CONTENT"`
+}
+
+// RoleAssignmentInfo is the structure /TRBASE/ROLE_ASSIGNMENT_INFO.
+type RoleAssignmentInfo struct {
+	ID        string                      `rt:"ID"`
+	UserName  string                      `rt:"USER_NAME"`
+	RoleName  string                      `rt:"ROLE_NAME"`
+	Tenant    string                      `rt:"TENANT"`
+	ValidFrom model.Optional[native.Date] `rt:"VALID_FROM"`
+	ValidTo   model.Optional[native.Date] `rt:"VALID_TO"`
+	CreatedAt time.Time                   `rt:"CREATED_AT"`
+	CreatedBy string                      `rt:"CREATED_BY"`
+}
+
+// RoleAssignResult is the structure /TRBASE/ROLE_ASSIGN_RESULT.
+type RoleAssignResult struct {
+	Assignment RoleAssignmentInfo   `rt:"ASSIGNMENT"`
+	Overlaps   []RoleAssignmentInfo `rt:"OVERLAPS"`
+}
+
+// RoleAuthorization is the structure /TRBASE/ROLE_AUTHORIZATION.
+type RoleAuthorization struct {
+	Object    string                 `rt:"OBJECT"`
+	Fields    []RoleField            `rt:"FIELDS"`
+	RoleName  model.Optional[string] `rt:"ROLE_NAME"`
+	Composite model.Optional[string] `rt:"COMPOSITE"`
+}
+
+// RoleChange is the structure /TRBASE/ROLE_CHANGE.
+type RoleChange struct {
+	ID         string                 `rt:"ID"`
+	ChangedAt  time.Time              `rt:"CHANGED_AT"`
+	ChangedBy  string                 `rt:"CHANGED_BY"`
+	Kind       string                 `rt:"KIND"`
+	RoleName   model.Optional[string] `rt:"ROLE_NAME"`
+	Tenant     model.Optional[string] `rt:"TENANT"`
+	UserName   model.Optional[string] `rt:"USER_NAME"`
+	Assignment model.Optional[string] `rt:"ASSIGNMENT"`
+	OldState   model.Optional[string] `rt:"OLD_STATE"`
+	NewState   model.Optional[string] `rt:"NEW_STATE"`
+}
+
+// RoleDefinition is the structure /TRBASE/ROLE_DEFINITION.
+type RoleDefinition struct {
+	Name           string                              `rt:"NAME"`
+	Composite      bool                                `rt:"COMPOSITE"`
+	Texts          []RoleText                          `rt:"TEXTS"`
+	Roles          model.Optional[[]string]            `rt:"ROLES"`
+	Authorizations model.Optional[[]RoleAuthorization] `rt:"AUTHORIZATIONS"`
+}
+
+// RoleDetail is the structure /TRBASE/ROLE_DETAIL.
+type RoleDetail struct {
+	Name           string                              `rt:"NAME"`
+	Composite      bool                                `rt:"COMPOSITE"`
+	Texts          []RoleText                          `rt:"TEXTS"`
+	Roles          model.Optional[[]string]            `rt:"ROLES"`
+	Authorizations model.Optional[[]RoleAuthorization] `rt:"AUTHORIZATIONS"`
+	PackageID      model.Optional[string]              `rt:"PACKAGE_ID"`
+	All            bool                                `rt:"ALL"`
+	Effect         []RoleAuthorization                 `rt:"EFFECT"`
+	UsedBy         []string                            `rt:"USED_BY"`
+	Assignments    int64                               `rt:"ASSIGNMENTS"`
+}
+
+// RoleField is the structure /TRBASE/ROLE_FIELD.
+type RoleField struct {
+	Field  string      `rt:"FIELD"`
+	Values []RoleValue `rt:"VALUES"`
+}
+
+// RoleInfo is the structure /TRBASE/ROLE_INFO.
+type RoleInfo struct {
+	Name       string                 `rt:"NAME"`
+	PackageID  model.Optional[string] `rt:"PACKAGE_ID"`
+	Composite  bool                   `rt:"COMPOSITE"`
+	Label      model.Optional[string] `rt:"LABEL"`
+	Incomplete int64                  `rt:"INCOMPLETE"`
+}
+
+// RoleText is the structure /TRBASE/ROLE_TEXT.
+type RoleText struct {
+	Language    string                 `rt:"LANGUAGE"`
+	Label       string                 `rt:"LABEL"`
+	Description model.Optional[string] `rt:"DESCRIPTION"`
+}
+
+// RoleValue is the structure /TRBASE/ROLE_VALUE.
+type RoleValue struct {
+	Kind RoleValueKind          `rt:"KIND"`
+	Low  string                 `rt:"LOW"`
+	High model.Optional[string] `rt:"HIGH"`
+}
+
+// UserInfo is the structure /TRBASE/USER_INFO.
+type UserInfo struct {
+	UserName      string                 `rt:"USER_NAME"`
+	Name          model.Optional[string] `rt:"NAME"`
+	Status        UserStatus             `rt:"STATUS"`
+	Language      model.Optional[string] `rt:"LANGUAGE"`
+	DefaultTenant model.Optional[string] `rt:"DEFAULT_TENANT"`
+	Tenants       []string               `rt:"TENANTS"`
 }
 
 // XlsxDimension is the structure /TRBASE/XLSX_DIMENSION.

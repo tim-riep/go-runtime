@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_INFO_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Roles"
+    },
+    "de": {
+      "label": "Rollen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_INFO"
+  }
+}

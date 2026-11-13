@@ -1,0 +1,27 @@
+{
+  "name": "/TRBASE/ROLE_VALUE",
+  "texts": {
+    "en": {
+      "label": "Granted values"
+    },
+    "de": {
+      "label": "Gewährte Werte"
+    }
+  },
+  "components": [
+    {
+      "name": "KIND",
+      "dataElement": "/TRBASE/ROLE_VALUE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "LOW",
+      "dataElement": "/TRBASE/RAW_VALUE",
+      "notNull": true
+    },
+    {
+      "name": "HIGH",
+      "dataElement": "/TRBASE/RAW_VALUE"
+    }
+  ]
+}

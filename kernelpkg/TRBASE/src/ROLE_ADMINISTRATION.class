@@ -1,0 +1,46 @@
+# The roles of the kernel for code: package roles and local roles, their
+# assignments to users and the history of changes. Every method checks the
+# authorizations of the user of the execution in its tenant with
+# /TRBASE/ROLE_ADMIN and /TRBASE/ROLE_ASSIGNMENT; without user it raises
+# /RT/NOT_AUTHORIZED. Changes are written in the transaction of the default
+# session and are committed or rolled back with it. The role with all
+# authorizations is assigned only on the command line.
+public class /TRBASE/ROLE_ADMINISTRATION
+
+  # The roles the user may read, ordered by name.
+  public static method ROLES() returns /TRBASE/ROLE_INFO_ARRAY executed by kernel
+
+  # A role with its own authorizations, the authorizations of its members
+  # (EFFECT), the composite roles it belongs to and its number of
+  # assignments.
+  public static method ROLE(name: STRING) returns /TRBASE/ROLE_DETAIL raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # Creates a local role, named /LOCAL/<NAME>.
+  public static method CREATE(role: /TRBASE/ROLE_DEFINITION) raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # Replaces a local role.
+  public static method UPDATE(role: /TRBASE/ROLE_DEFINITION) raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # Deletes a local role; one with assignments or in composite roles
+  # needs confirm.
+  public static method DELETE(name: STRING, confirm: BOOL) raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # The assignments of a user, of a role and in a tenant; null selects all.
+  public static method ASSIGNMENTS(user: STRING?, role: STRING?, tenant: STRING?) returns /TRBASE/ROLE_ASSIGNMENT_ARRAY executed by kernel
+
+  # Assigns a role to a user in a tenant from the first to the last day,
+  # null for open, and returns the overlapping assignments.
+  public static method ASSIGN(user: STRING, role: STRING, tenant: STRING, first: DATE?, last: DATE?) returns /TRBASE/ROLE_ASSIGN_RESULT raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # Removes an assignment; removing the last user with all authorizations
+  # needs confirm.
+  public static method UNASSIGN(id: STRING, confirm: BOOL) raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # The roles and authorizations of a user in a tenant on a day, today for
+  # null.
+  public static method AUTHORIZATIONS(user: STRING, tenant: STRING, day: DATE?) returns /TRBASE/EFFECTIVE_AUTHORIZATIONS raises /TRBASE/ROLE_ERROR executed by kernel
+
+  # The changes of a role, of a user or of both, the newest last.
+  public static method HISTORY(role: STRING?, user: STRING?) returns /TRBASE/ROLE_CHANGE_ARRAY executed by kernel
+
+end

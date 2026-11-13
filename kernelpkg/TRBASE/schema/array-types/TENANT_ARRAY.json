@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/TENANT_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Tenants"
+    },
+    "de": {
+      "label": "Mandanten"
+    }
+  },
+  "rowType": {
+    "dataElement": "/TRBASE/TENANT"
+  }
+}

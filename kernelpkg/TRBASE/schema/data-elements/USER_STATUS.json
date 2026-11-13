@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/USER_STATUS",
+  "domain": "/TRBASE/USER_STATUS",
+  "texts": {
+    "en": {
+      "short": "Status",
+      "medium": "User status",
+      "long": "Status of the user",
+      "heading": "User status"
+    },
+    "de": {
+      "short": "Status",
+      "medium": "Benutzerstatus",
+      "long": "Status des Benutzers",
+      "heading": "Benutzerstatus"
+    }
+  }
+}

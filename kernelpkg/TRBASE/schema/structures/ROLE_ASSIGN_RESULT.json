@@ -1,0 +1,23 @@
+{
+  "name": "/TRBASE/ROLE_ASSIGN_RESULT",
+  "texts": {
+    "en": {
+      "label": "Result of a role assignment"
+    },
+    "de": {
+      "label": "Ergebnis einer Rollenzuordnung"
+    }
+  },
+  "components": [
+    {
+      "name": "ASSIGNMENT",
+      "structure": "/TRBASE/ROLE_ASSIGNMENT_INFO",
+      "notNull": true
+    },
+    {
+      "name": "OVERLAPS",
+      "arrayType": "/TRBASE/ROLE_ASSIGNMENT_ARRAY",
+      "notNull": true
+    }
+  ]
+}

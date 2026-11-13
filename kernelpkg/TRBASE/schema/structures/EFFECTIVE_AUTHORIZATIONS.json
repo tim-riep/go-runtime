@@ -1,0 +1,48 @@
+{
+  "name": "/TRBASE/EFFECTIVE_AUTHORIZATIONS",
+  "texts": {
+    "en": {
+      "label": "Effective authorizations"
+    },
+    "de": {
+      "label": "Wirksame Berechtigungen"
+    }
+  },
+  "components": [
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "dataElement": "/TRBASE/TENANT",
+      "notNull": true
+    },
+    {
+      "name": "DAY",
+      "domain": "/TRBASE/DATE",
+      "notNull": true
+    },
+    {
+      "name": "ALL",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "LOCKED",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ROLES",
+      "arrayType": "/TRBASE/EFFECTIVE_ROLE_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "AUTHORIZATIONS",
+      "arrayType": "/TRBASE/ROLE_AUTHORIZATION_ARRAY",
+      "notNull": true
+    }
+  ]
+}

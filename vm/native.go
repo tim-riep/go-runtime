@@ -273,15 +273,17 @@ func (m *Machine) toNativeDesc(p *Program, d *TypeDesc, v Value, gt reflect.Type
 		r := v.record()
 		out := reflect.New(gt).Elem()
 		fields := structFields(gt)
+		// The types of the fields belong to the program of the record,
+		// which may be that of another package.
 		for _, f := range r.Layout.Fields {
-			out.Field(fields[f.Name]).Set(m.toNative(p, f.Type, m.getField(r, f), gt.Field(fields[f.Name]).Type))
+			out.Field(fields[f.Name]).Set(m.toNative(r.P, f.Type, m.getField(r, f), gt.Field(fields[f.Name]).Type))
 		}
 		return out
 	case TArray:
 		a := v.array()
 		out := reflect.MakeSlice(gt, a.Len(), a.Len())
 		for i := range a.Len() {
-			out.Index(i).Set(m.toNative(p, d.Elem, a.Get(i), gt.Elem()))
+			out.Index(i).Set(m.toNative(a.P, a.Elem, a.Get(i), gt.Elem()))
 		}
 		return out
 	case TObject:

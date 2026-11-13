@@ -1,0 +1,10 @@
+# A change of roles or role assignments failed, e.g. because a role does
+# not exist, a package role cannot change or a role does not fit its
+# authorization objects.
+public open class /TRBASE/ROLE_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

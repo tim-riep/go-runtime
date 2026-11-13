@@ -1,0 +1,40 @@
+{
+  "name": "/TRBASE/ROLE_DETAIL",
+  "texts": {
+    "en": {
+      "label": "Role with its effect"
+    },
+    "de": {
+      "label": "Rolle mit Wirkung"
+    }
+  },
+  "components": [
+    {
+      "include": "/TRBASE/ROLE_DEFINITION"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID"
+    },
+    {
+      "name": "ALL",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "EFFECT",
+      "arrayType": "/TRBASE/ROLE_AUTHORIZATION_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "USED_BY",
+      "arrayType": "/TRBASE/ROLE_NAME_ARRAY",
+      "notNull": true
+    },
+    {
+      "name": "ASSIGNMENTS",
+      "domain": "/TRBASE/COUNTER",
+      "notNull": true
+    }
+  ]
+}

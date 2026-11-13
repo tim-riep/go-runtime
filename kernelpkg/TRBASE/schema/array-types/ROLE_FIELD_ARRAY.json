@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/ROLE_FIELD_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Fields of an authorization"
+    },
+    "de": {
+      "label": "Felder einer Berechtigung"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/ROLE_FIELD"
+  }
+}
