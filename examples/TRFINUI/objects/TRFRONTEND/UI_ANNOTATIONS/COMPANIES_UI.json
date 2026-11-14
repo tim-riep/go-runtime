@@ -1,0 +1,162 @@
+{
+  "name": "/TRFINUI/COMPANIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANIES",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "SUBTITLE_FIELD": "COMPANY_ID",
+      "DESCRIPTION_FIELD": "CITY",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Company",
+          "TYPE_NAME_PLURAL": "Companies"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Firma",
+          "TYPE_NAME_PLURAL": "Firmen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY_ID",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "NAME",
+          "WIDTH": 16
+        },
+        {
+          "FIELD": "CITY",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "COUNTRY",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "STATUS",
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "COUNTRY"
+        },
+        {
+          "FIELD": "STATUS"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "BLOCK"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Company"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Firma"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY_ID"
+                },
+                {
+                  "FIELD": "NAME"
+                },
+                {
+                  "FIELD": "STATUS"
+                },
+                {
+                  "FIELD": "FOUNDED_ON"
+                }
+              ]
+            },
+            {
+              "ID": "ADDRESS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Address"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Adresse"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "STREET"
+                },
+                {
+                  "FIELD": "POSTAL_CODE"
+                },
+                {
+                  "FIELD": "CITY"
+                },
+                {
+                  "FIELD": "COUNTRY"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "CONTACTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Contacts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kontakte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/CONTACTS"
+          }
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "BLOCK"
+        }
+      ]
+    }
+  }
+}

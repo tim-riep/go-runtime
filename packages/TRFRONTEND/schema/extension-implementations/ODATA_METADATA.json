@@ -1,0 +1,9 @@
+{
+  "name": "/TRFRONTEND/ODATA_METADATA",
+  "description": {
+    "en": "UI annotations in the metadata of all services",
+    "de": "UI-Annotationen in den Metadaten aller Dienste"
+  },
+  "extensionPoint": "/TRBASE/ODATA_METADATA",
+  "class": "/TRFRONTEND/ODATA_METADATA"
+}

@@ -1,0 +1,166 @@
+{
+  "$Version": "4.01",
+  "$Reference": {
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.json": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Core.V1",
+          "$Alias": "Core"
+        }
+      ]
+    }
+  },
+  "TRFRONTEND.UI": {
+    "$Alias": "Frontend",
+    "@Core.Description": "How the generic pages of TRFRONTEND show the entities of a service. Packages describe them with objects of the type /TRFRONTEND/UI_ANNOTATIONS; TRFRONTEND combines those of all packages for an entity and writes them into the metadata of every service that offers it.",
+    "Header": {
+      "$Kind": "Term",
+      "$Type": "Frontend.HeaderType",
+      "$AppliesTo": [
+        "EntityType"
+      ],
+      "@Core.Description": "Head of a detail page and names of the type"
+    },
+    "ListPage": {
+      "$Kind": "Term",
+      "$Type": "Frontend.ListPageType",
+      "$AppliesTo": [
+        "EntityType"
+      ],
+      "@Core.Description": "Columns, filters, order and actions of a list page"
+    },
+    "DetailPage": {
+      "$Kind": "Term",
+      "$Type": "Frontend.DetailPageType",
+      "$AppliesTo": [
+        "EntityType"
+      ],
+      "@Core.Description": "Sections, groups of fields, tables and actions of a detail page"
+    },
+    "HeaderType": {
+      "$Kind": "ComplexType",
+      "TypeName": {
+        "$Nullable": true,
+        "@Core.Description": "Name of one instance in the language of the metadata"
+      },
+      "TypeNamePlural": {
+        "$Nullable": true,
+        "@Core.Description": "Name of several instances"
+      },
+      "Title": {
+        "$Type": "Edm.PropertyPath",
+        "$Nullable": true,
+        "@Core.Description": "Property with the title of an instance"
+      },
+      "Subtitle": {
+        "$Type": "Edm.PropertyPath",
+        "$Nullable": true,
+        "@Core.Description": "Property with the subtitle"
+      },
+      "Description": {
+        "$Type": "Edm.PropertyPath",
+        "$Nullable": true,
+        "@Core.Description": "Property with a description"
+      }
+    },
+    "ListPageType": {
+      "$Kind": "ComplexType",
+      "Columns": {
+        "$Type": "Frontend.ColumnType",
+        "$Collection": true,
+        "@Core.Description": "Columns in their order"
+      },
+      "FilterFields": {
+        "$Type": "Edm.PropertyPath",
+        "$Collection": true,
+        "@Core.Description": "Properties of the filter bar"
+      },
+      "SortOrder": {
+        "$Type": "Frontend.SortType",
+        "$Collection": true,
+        "@Core.Description": "Default order"
+      },
+      "Actions": {
+        "$Collection": true,
+        "@Core.Description": "Qualified names of actions in the toolbar"
+      },
+      "MergeSet": {
+        "$Nullable": true,
+        "@Core.Description": "An entity set of the service with the same properties whose entities the list shows as well, such as shipped entries beside local ones"
+      }
+    },
+    "ColumnType": {
+      "$Kind": "ComplexType",
+      "Property": {
+        "$Type": "Edm.PropertyPath",
+        "@Core.Description": "Property of the column"
+      },
+      "Width": {
+        "$Type": "Edm.Int32",
+        "$Nullable": true,
+        "@Core.Description": "Width in rem"
+      },
+      "Importance": {
+        "@Core.Description": "HIGH, MEDIUM or LOW: on narrow screens the less important columns go first"
+      }
+    },
+    "SortType": {
+      "$Kind": "ComplexType",
+      "Property": {
+        "$Type": "Edm.PropertyPath",
+        "@Core.Description": "Property to sort by"
+      },
+      "Descending": {
+        "$Type": "Edm.Boolean",
+        "@Core.Description": "Sorted descending"
+      }
+    },
+    "DetailPageType": {
+      "$Kind": "ComplexType",
+      "Sections": {
+        "$Type": "Frontend.SectionType",
+        "$Collection": true,
+        "@Core.Description": "Sections in their order"
+      },
+      "Actions": {
+        "$Collection": true,
+        "@Core.Description": "Qualified names of actions of the page"
+      }
+    },
+    "SectionType": {
+      "$Kind": "ComplexType",
+      "Id": {
+        "@Core.Description": "ID of the section; those that other packages add carry their namespace"
+      },
+      "Title": {
+        "$Nullable": true,
+        "@Core.Description": "Title in the language of the metadata"
+      },
+      "Groups": {
+        "$Type": "Frontend.GroupType",
+        "$Collection": true,
+        "@Core.Description": "Groups of fields"
+      },
+      "Table": {
+        "$Type": "Edm.NavigationPropertyPath",
+        "$Nullable": true,
+        "@Core.Description": "Navigation to dependent entities shown as table with the columns of their list page"
+      }
+    },
+    "GroupType": {
+      "$Kind": "ComplexType",
+      "Id": {
+        "@Core.Description": "ID of the group"
+      },
+      "Title": {
+        "$Nullable": true,
+        "@Core.Description": "Title in the language of the metadata"
+      },
+      "Fields": {
+        "$Type": "Edm.PropertyPath",
+        "$Collection": true,
+        "@Core.Description": "Properties in their order"
+      }
+    }
+  }
+}

@@ -1,0 +1,189 @@
+# Combines the UI annotations of the packages for one entity: the first
+# one in the dependency order of the packages is the base, the others add
+# columns, fields, sections, groups and actions before or after an existing
+# one, or at the end.
+public class /TRFRONTEND/UI_MERGE
+
+  # The UI annotations of an entity combined, null if there are none.
+  public static method OF(entity: STRING) returns /TRFRONTEND/UI_ANNOTATIONS? raises /RT/EXCEPTION
+    var merged: /TRFRONTEND/UI_ANNOTATIONS? = null
+    var additions = new array of /TRFRONTEND/GROUP_ADDITION
+    for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRFRONTEND/UI_ANNOTATIONS", /TRBASE/REFERENCE_KIND.ENTITY, entity, null)
+      var ui = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/UI_ANNOTATIONS
+      if ui.ENTITY <> entity
+        continue
+      end
+      var detail = ui.DETAIL
+      if detail is not null
+        for a in detail.GROUP_ADDITIONS default []
+          additions.APPEND(a)
+        end
+      end
+      if merged is null
+        merged = ui
+      else
+        merged = ADD(merged, ui)
+      end
+    end
+    if merged is null
+      return null
+    end
+    var result = merged
+    var detail = result.DETAIL
+    if detail is not null
+      var sections = detail.SECTIONS default []
+      for a in additions
+        for i, s in sections
+          if s.ID <> a.SECTION
+            continue
+          end
+          var groups = s.GROUPS default []
+          for j, g in groups
+            if g.ID = a.GROUP
+              var fields = g.FIELDS default []
+              for f in a.FIELDS
+                fields = FIELD(fields, f)
+              end
+              g.FIELDS = fields
+              groups[j] = g
+            end
+          end
+          s.GROUPS = groups
+          sections[i] = s
+        end
+      end
+      detail.SECTIONS = sections
+      detail.GROUP_ADDITIONS = null
+      result.DETAIL = detail
+    end
+    return result
+  end
+
+  private static method ADD(base: /TRFRONTEND/UI_ANNOTATIONS, more: /TRFRONTEND/UI_ANNOTATIONS) returns /TRFRONTEND/UI_ANNOTATIONS
+    var out = base
+    var bh = out.HEADER
+    var mh = more.HEADER
+    if bh is null
+      out.HEADER = mh
+    elseif mh is not null
+      bh.TITLE_FIELD = bh.TITLE_FIELD default mh.TITLE_FIELD
+      bh.SUBTITLE_FIELD = bh.SUBTITLE_FIELD default mh.SUBTITLE_FIELD
+      bh.DESCRIPTION_FIELD = bh.DESCRIPTION_FIELD default mh.DESCRIPTION_FIELD
+      bh.TEXTS = bh.TEXTS default mh.TEXTS
+      out.HEADER = bh
+    end
+    var bl = out.LIST
+    var ml = more.LIST
+    if bl is null
+      out.LIST = ml
+    elseif ml is not null
+      var columns = bl.COLUMNS default []
+      for c in ml.COLUMNS default []
+        columns = COLUMN(columns, c)
+      end
+      bl.COLUMNS = columns
+      var filters = bl.FILTER_FIELDS default []
+      for f in ml.FILTER_FIELDS default []
+        filters = FIELD(filters, f)
+      end
+      bl.FILTER_FIELDS = filters
+      if (bl.SORT default []).LENGTH() = 0
+        bl.SORT = ml.SORT
+      end
+      var actions = bl.ACTIONS default []
+      for a in ml.ACTIONS default []
+        actions.APPEND(a)
+      end
+      bl.ACTIONS = actions
+      bl.MERGE_SET = bl.MERGE_SET default ml.MERGE_SET
+      out.LIST = bl
+    end
+    var bd = out.DETAIL
+    var md = more.DETAIL
+    if bd is null
+      if md is not null
+        md.GROUP_ADDITIONS = null
+      end
+      out.DETAIL = md
+    elseif md is not null
+      var sections = bd.SECTIONS default []
+      for s in md.SECTIONS default []
+        sections = SECTION(sections, s)
+      end
+      bd.SECTIONS = sections
+      var actions = bd.ACTIONS default []
+      for a in md.ACTIONS default []
+        actions.APPEND(a)
+      end
+      bd.ACTIONS = actions
+      out.DETAIL = bd
+    end
+    return out
+  end
+
+  # Inserts a column before or after the column of a field, or at the end.
+  public static method COLUMN(columns: /TRFRONTEND/COLUMNS, c: /TRFRONTEND/COLUMN) returns /TRFRONTEND/COLUMNS
+    var out = columns
+    var at = out.LENGTH() + 1
+    var position = c.POSITION
+    if position is not null
+      for i, x in out
+        if x.FIELD = (position.BEFORE default "")
+          at = i
+        elseif x.FIELD = (position.AFTER default "")
+          at = i + 1
+        end
+      end
+    end
+    out.INSERT(at, c)
+    return out
+  end
+
+  # Inserts a field before or after another field, or at the end.
+  public static method FIELD(fields: /TRFRONTEND/FIELD_ENTRIES, f: /TRFRONTEND/FIELD_ENTRY) returns /TRFRONTEND/FIELD_ENTRIES
+    var out = fields
+    var at = out.LENGTH() + 1
+    var position = f.POSITION
+    if position is not null
+      for i, x in out
+        if x.FIELD = (position.BEFORE default "")
+          at = i
+        elseif x.FIELD = (position.AFTER default "")
+          at = i + 1
+        end
+      end
+    end
+    out.INSERT(at, f)
+    return out
+  end
+
+  # Adds a section, or the groups of a section with an existing ID.
+  private static method SECTION(sections: /TRFRONTEND/DETAIL_SECTIONS, s: /TRFRONTEND/DETAIL_SECTION) returns /TRFRONTEND/DETAIL_SECTIONS
+    var out = sections
+    for i, x in out
+      if x.ID = s.ID
+        var groups = x.GROUPS default []
+        for g in s.GROUPS default []
+          groups.APPEND(g)
+        end
+        x.GROUPS = groups
+        out[i] = x
+        return out
+      end
+    end
+    var at = out.LENGTH() + 1
+    var position = s.POSITION
+    if position is not null
+      for i, x in out
+        if x.ID = (position.BEFORE default "")
+          at = i
+        elseif x.ID = (position.AFTER default "")
+          at = i + 1
+        end
+      end
+    end
+    out.INSERT(at, s)
+    return out
+  end
+
+end

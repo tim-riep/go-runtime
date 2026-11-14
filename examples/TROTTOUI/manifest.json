@@ -1,0 +1,23 @@
+{
+  "id": "TROTTOUI",
+  "version": "1.0.0",
+  "description": "The partner ID of OTTO in the pages of companies",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.10.0"
+    },
+    {
+      "id": "TRFRONTEND",
+      "version": "^1.0.0"
+    },
+    {
+      "id": "TRFIN",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "TROTTO",
+      "version": ">=1.0.0"
+    }
+  ]
+}

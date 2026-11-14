@@ -213,3 +213,104 @@ func TestFrontendLocalConfiguration(t *testing.T) {
 		}
 	})
 }
+
+// uiPackages are TRFRONTEND with TRFIN and TROTTO and their UI annotations.
+func uiPackages(t *testing.T) []*model.Package {
+	t.Helper()
+	root := testutil.ModuleRoot(t)
+	return []*model.Package{
+		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRUI")),
+		testutil.LoadDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
+		testutil.Example(t, "TRFIN"),
+		testutil.Example(t, "TROTTO"),
+		testutil.Example(t, "TRFINUI"),
+		testutil.Example(t, "TROTTOUI"),
+	}
+}
+
+// annotation returns the value of a term of a target in a metadata
+// document in JSON.
+func annotation(t *testing.T, doc []byte, target, term string) any {
+	t.Helper()
+	var md map[string]any
+	if err := json.Unmarshal(doc, &md); err != nil {
+		t.Fatal(err)
+	}
+	ns, _ := md["TRFIN"].(map[string]any)
+	ann, _ := ns["$Annotations"].(map[string]any)
+	targets, _ := ann[target].(map[string]any)
+	return targets["@"+term]
+}
+
+func TestFrontendMetadata(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, uiPackages(t), kernel.Options{}); err != nil {
+			t.Fatalf("%v\n%s", err, objectErrors(err))
+		}
+		meta := func(lang string) []byte {
+			t.Helper()
+			doc, err := k.ServiceMetadata(ctx, "/TRFIN/COMPANY_SERVICE", kernel.ServiceMetadataOptions{Language: lang, Format: "json"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return doc
+		}
+		doc := meta("en")
+		if !strings.Contains(string(doc), `"$Alias": "Frontend"`) && !strings.Contains(string(doc), `"$Alias":"Frontend"`) {
+			t.Errorf("no reference to the vocabulary: %s", doc)
+		}
+		list, _ := annotation(t, doc, "TRFIN.TRFIN_COMPANIES", "Frontend.ListPage").(map[string]any)
+		var columns []string
+		for _, c := range list["Columns"].([]any) {
+			columns = append(columns, c.(map[string]any)["Property"].(map[string]any)["$PropertyPath"].(string))
+		}
+		if strings.Join(columns, " ") != "COMPANY_ID NAME TROTTO_OTTO_ID CITY COUNTRY STATUS" {
+			t.Errorf("columns: %v", columns)
+		}
+		if fmt := list["Actions"].([]any); len(fmt) != 2 || fmt[0] != "TRFIN.BLOCK" || fmt[1] != "TRFIN.TROTTO_SYNC" {
+			t.Errorf("actions: %v", list["Actions"])
+		}
+		detail, _ := annotation(t, doc, "TRFIN.TRFIN_COMPANIES", "Frontend.DetailPage").(map[string]any)
+		var sections []string
+		var main []string
+		table := ""
+		for _, s := range detail["Sections"].([]any) {
+			sec := s.(map[string]any)
+			sections = append(sections, sec["Id"].(string))
+			if sec["Id"] == "GENERAL" {
+				for _, f := range sec["Groups"].([]any)[0].(map[string]any)["Fields"].([]any) {
+					main = append(main, f.(map[string]any)["$PropertyPath"].(string))
+				}
+			}
+			if nav, ok := sec["Table"].(map[string]any); ok {
+				table = nav["$NavigationPropertyPath"].(string)
+			}
+		}
+		if strings.Join(sections, " ") != "GENERAL /TROTTOUI/MARKETPLACE CONTACTS" || strings.Join(main, " ") != "COMPANY_ID NAME TROTTO_OTTO_ID STATUS FOUNDED_ON" ||
+			table == "" {
+			t.Errorf("detail: sections %v, fields %v, table %q", sections, main, table)
+		}
+		header, _ := annotation(t, meta("de"), "TRFIN.TRFIN_COMPANIES", "Frontend.Header").(map[string]any)
+		if header["TypeNamePlural"] != "Firmen" || header["Title"].(map[string]any)["$PropertyPath"] != "NAME" {
+			t.Errorf("header in German: %v", header)
+		}
+
+		// A changed annotation reaches the metadata at once.
+		dir := testutil.CopyExample(t, "TROTTOUI")
+		file := filepath.Join(dir, "objects", "TRFRONTEND", "UI_ANNOTATIONS", "COMPANIES_UI.json")
+		data, _ := os.ReadFile(file)
+		testutil.WriteFile(t, dir, "objects/TRFRONTEND/UI_ANNOTATIONS/COMPANIES_UI.json", []byte(strings.Replace(string(data), `"WIDTH": 10`, `"WIDTH": 12`, 1)))
+		testutil.WriteFile(t, dir, "manifest.json", []byte(strings.Replace(string(mustRead(t, filepath.Join(dir, "manifest.json"))), `"1.0.0"`, `"1.0.1"`, 1)))
+		if _, err := k.Upgrade(ctx, testutil.LoadDir(t, dir), kernel.Options{}); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(meta("en")), `"Width": 12`) && !strings.Contains(string(meta("en")), `"Width":12`) {
+			t.Errorf("metadata after the upgrade: %s", meta("en"))
+		}
+		if n := scalar(t, k, "/RT/METADATA_GENERATIONS", "GENERATION", where(k, "SERVICE_NAME"), "*"); n.(int64) < 2 {
+			t.Errorf("metadata discarded %v times", n)
+		}
+	})
+}

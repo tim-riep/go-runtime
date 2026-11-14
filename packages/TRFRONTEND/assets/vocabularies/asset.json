@@ -1,0 +1,14 @@
+{
+  "description": {
+    "en": "Vocabularies of the metadata of services",
+    "de": "Vokabulare der Metadaten von Diensten"
+  },
+  "files": {
+    "TRFRONTEND.UI.json": {
+      "description": {
+        "en": "How lists and detail pages show the entities of a service",
+        "de": "Wie Listen und Detailseiten die Entitäten eines Dienstes zeigen"
+      }
+    }
+  }
+}

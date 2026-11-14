@@ -1,0 +1,51 @@
+# Builds the tree of values of an annotation of the metadata of services:
+# records, collections and simple values, each under its parent.
+public class /TRFRONTEND/VALUES
+
+  public attribute ROWS: /TRBASE/ODATA_VALUE_ARRAY = []
+
+  public constructor()
+  end
+
+  private method ADD(parent: /TRBASE/COUNTER?, member: STRING?, kind: /TRBASE/ODATA_VALUE_KIND, text: STRING?) returns /TRBASE/COUNTER
+    var v: /TRBASE/ODATA_VALUE
+    v.ID = ROWS.LENGTH() + 1
+    v.PARENT = parent
+    v.MEMBER = member
+    v.KIND = kind
+    v.TEXT = text
+    ROWS.APPEND(v)
+    return v.ID
+  end
+
+  # A record as the root, a member of a record (member set) or an item of a
+  # collection (member null).
+  public method RECORD(parent: /TRBASE/COUNTER?, member: STRING?) returns /TRBASE/COUNTER
+    return ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.RECORD, null)
+  end
+
+  public method COLLECTION(parent: /TRBASE/COUNTER?, member: STRING?) returns /TRBASE/COUNTER
+    return ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.COLLECTION, null)
+  end
+
+  public method STRING(parent: /TRBASE/COUNTER?, member: STRING?, text: STRING)
+    ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.STRING, text)
+  end
+
+  public method INTEGER(parent: /TRBASE/COUNTER?, member: STRING?, n: INT8)
+    ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.INTEGER, "{n}")
+  end
+
+  public method BOOLEAN(parent: /TRBASE/COUNTER?, member: STRING?, b: BOOL)
+    ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.BOOLEAN, "{b}")
+  end
+
+  public method PROPERTY_PATH(parent: /TRBASE/COUNTER?, member: STRING?, path: STRING)
+    ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.PROPERTY_PATH, path)
+  end
+
+  public method NAVIGATION_PATH(parent: /TRBASE/COUNTER?, member: STRING?, path: STRING)
+    ADD(parent, member, /TRBASE/ODATA_VALUE_KIND.NAVIGATION_PATH, path)
+  end
+
+end

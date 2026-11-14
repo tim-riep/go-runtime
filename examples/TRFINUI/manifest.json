@@ -1,0 +1,19 @@
+{
+  "id": "TRFINUI",
+  "version": "1.0.0",
+  "description": "Start page content and UI annotations for the companies of TRFIN",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.10.0"
+    },
+    {
+      "id": "TRFRONTEND",
+      "version": "^1.0.0"
+    },
+    {
+      "id": "TRFIN",
+      "version": ">=1.0.0"
+    }
+  ]
+}

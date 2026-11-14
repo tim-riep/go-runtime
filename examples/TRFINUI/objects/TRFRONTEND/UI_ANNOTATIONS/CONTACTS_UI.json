@@ -1,0 +1,61 @@
+{
+  "name": "/TRFINUI/CONTACTS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/CONTACTS",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Contact",
+          "TYPE_NAME_PLURAL": "Contacts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kontakt",
+          "TYPE_NAME_PLURAL": "Kontakte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "EMAIL"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "CONTACT",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Contact"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kontakt"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                },
+                {
+                  "FIELD": "EMAIL"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

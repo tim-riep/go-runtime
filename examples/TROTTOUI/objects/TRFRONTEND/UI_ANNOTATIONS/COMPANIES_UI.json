@@ -1,0 +1,81 @@
+{
+  "name": "/TROTTOUI/COMPANIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANIES",
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "/TROTTO/OTTO_ID",
+          "POSITION": {
+            "AFTER": "NAME"
+          },
+          "WIDTH": 10
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "/TROTTO/OTTO_ID"
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "/TROTTO/SYNC"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "/TROTTOUI/MARKETPLACE",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Marketplace"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Marktplatz"
+            }
+          ],
+          "POSITION": {
+            "BEFORE": "CONTACTS"
+          },
+          "GROUPS": [
+            {
+              "ID": "/TROTTOUI/OTTO",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "OTTO"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "OTTO"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "/TROTTO/OTTO_ID"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "GROUP_ADDITIONS": [
+        {
+          "SECTION": "GENERAL",
+          "GROUP": "MAIN",
+          "FIELDS": [
+            {
+              "FIELD": "/TROTTO/OTTO_ID",
+              "POSITION": {
+                "AFTER": "NAME"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,238 @@
+# Writes the UI annotations of the entities of every service into its
+# metadata with the vocabulary TRFRONTEND.UI: Frontend.Header,
+# Frontend.ListPage and Frontend.DetailPage on the entity types. Fields,
+# navigations and actions appear by their public names, and only those the
+# service offers. Labels, fixed values, mandatory fields and value helps
+# stay those of the kernel.
+public class /TRFRONTEND/ODATA_METADATA implements /TRBASE/ODATA_METADATA_EXTENSION
+
+  public method ADJUST(metadata: /TRBASE/ODATA_METADATA) returns /TRBASE/ODATA_METADATA
+    var used = false
+    for t in metadata.ENTITY_TYPES
+      var ui: /TRFRONTEND/UI_ANNOTATIONS? = null
+      try
+        ui = /TRFRONTEND/UI_MERGE.OF(t.TECHNICAL_NAME)
+      catch e: /RT/EXCEPTION
+        # Objects that do not fit their type cannot be installed; this only
+        # happens when TRFRONTEND may not read them.
+        log error "UI annotations of {t.TECHNICAL_NAME}: {e.TEXT}"
+      end
+      if ui is null
+        continue
+      end
+      used = true
+      var target = metadata.NAMESPACE + "." + t.NAME
+      var header = ui.HEADER
+      if header is not null
+        metadata.ANNOTATIONS.APPEND(HEADER(metadata, t, target, header))
+      end
+      var list = ui.LIST
+      if list is not null
+        metadata.ANNOTATIONS.APPEND(LIST(metadata, t, target, list))
+      end
+      var detail = ui.DETAIL
+      if detail is not null
+        metadata.ANNOTATIONS.APPEND(DETAIL(metadata, t, target, detail))
+      end
+    end
+    if used
+      var vocabulary: /TRBASE/ODATA_REFERENCE
+      vocabulary.URI = "/trfrontend/vocabularies/TRFRONTEND.UI.json"
+      vocabulary.NAMESPACE = "TRFRONTEND.UI"
+      vocabulary.ALIAS = "Frontend"
+      metadata.REFERENCES.APPEND(vocabulary)
+    end
+    return metadata
+  end
+
+  # The public name of a field of a type, null if the service does not
+  # offer it.
+  private static method PROPERTY(t: /TRBASE/ODATA_ENTITY_TYPE, field: STRING?) returns STRING?
+    if field is null
+      return null
+    end
+    for p in t.PROPERTIES
+      if (p.TECHNICAL_NAME default "") = field
+        return p.NAME
+      end
+    end
+    return null
+  end
+
+  # The qualified public name of an action bound to a type.
+  private static method ACTION(metadata: /TRBASE/ODATA_METADATA, target: STRING, action: STRING) returns STRING?
+    for a in metadata.ACTIONS
+      if a.TECHNICAL_NAME = action and (a.BOUND_TO default "") = target
+        return metadata.NAMESPACE + "." + a.NAME
+      end
+    end
+    return null
+  end
+
+  # The text of a language, else English.
+  private static method TEXT(texts: /TRFRONTEND/TITLE_TEXTS?, language: STRING) returns STRING?
+    var found: STRING? = null
+    for t in texts default []
+      if t.LANGUAGE = language
+        return t.TITLE
+      end
+      if t.LANGUAGE = "en"
+        found = t.TITLE
+      end
+    end
+    return found
+  end
+
+  private method ANNOTATION(target: STRING, term: STRING, values: /TRFRONTEND/VALUES) returns /TRBASE/ODATA_ANNOTATION
+    var a: /TRBASE/ODATA_ANNOTATION
+    a.TARGET = target
+    a.TERM = term
+    a.VALUE = values.ROWS
+    return a
+  end
+
+  private method HEADER(metadata: /TRBASE/ODATA_METADATA, t: /TRBASE/ODATA_ENTITY_TYPE, target: STRING, header: /TRFRONTEND/HEADER) returns /TRBASE/ODATA_ANNOTATION
+    var v = new /TRFRONTEND/VALUES()
+    var root = v.RECORD(null, null)
+    var name: STRING? = null
+    var plural: STRING? = null
+    for x in header.TEXTS default []
+      if x.LANGUAGE = metadata.LANGUAGE or x.LANGUAGE = "en" and name is null
+        name = x.TYPE_NAME
+        plural = x.TYPE_NAME_PLURAL
+      end
+    end
+    if name is not null
+      v.STRING(root, "TypeName", name)
+    end
+    if plural is not null
+      v.STRING(root, "TypeNamePlural", plural)
+    end
+    var title = PROPERTY(t, header.TITLE_FIELD)
+    if title is not null
+      v.PROPERTY_PATH(root, "Title", title)
+    end
+    var subtitle = PROPERTY(t, header.SUBTITLE_FIELD)
+    if subtitle is not null
+      v.PROPERTY_PATH(root, "Subtitle", subtitle)
+    end
+    var description = PROPERTY(t, header.DESCRIPTION_FIELD)
+    if description is not null
+      v.PROPERTY_PATH(root, "Description", description)
+    end
+    return ANNOTATION(target, "Frontend.Header", v)
+  end
+
+  private method LIST(metadata: /TRBASE/ODATA_METADATA, t: /TRBASE/ODATA_ENTITY_TYPE, target: STRING, list: /TRFRONTEND/LIST_PAGE) returns /TRBASE/ODATA_ANNOTATION
+    var v = new /TRFRONTEND/VALUES()
+    var root = v.RECORD(null, null)
+    var columns = v.COLLECTION(root, "Columns")
+    for c in list.COLUMNS default []
+      var name = PROPERTY(t, c.FIELD)
+      if name is null
+        continue
+      end
+      var col = v.RECORD(columns, null)
+      v.PROPERTY_PATH(col, "Property", name)
+      var width = c.WIDTH
+      if width is not null
+        v.INTEGER(col, "Width", width)
+      end
+      v.STRING(col, "Importance", c.IMPORTANCE.NAME())
+    end
+    var filters = v.COLLECTION(root, "FilterFields")
+    for f in list.FILTER_FIELDS default []
+      var name = PROPERTY(t, f.FIELD)
+      if name is not null
+        v.PROPERTY_PATH(filters, null, name)
+      end
+    end
+    var sort = v.COLLECTION(root, "SortOrder")
+    for s in list.SORT default []
+      var name = PROPERTY(t, s.FIELD)
+      if name is not null
+        var entry = v.RECORD(sort, null)
+        v.PROPERTY_PATH(entry, "Property", name)
+        v.BOOLEAN(entry, "Descending", s.DESCENDING)
+      end
+    end
+    var actions = v.COLLECTION(root, "Actions")
+    for a in list.ACTIONS default []
+      var name = ACTION(metadata, target, a.ACTION)
+      if name is not null
+        v.STRING(actions, null, name)
+      end
+    end
+    var merge = list.MERGE_SET
+    if merge is not null
+      v.STRING(root, "MergeSet", merge)
+    end
+    return ANNOTATION(target, "Frontend.ListPage", v)
+  end
+
+  private method DETAIL(metadata: /TRBASE/ODATA_METADATA, t: /TRBASE/ODATA_ENTITY_TYPE, target: STRING, detail: /TRFRONTEND/DETAIL_PAGE) returns /TRBASE/ODATA_ANNOTATION
+    var v = new /TRFRONTEND/VALUES()
+    var root = v.RECORD(null, null)
+    var sections = v.COLLECTION(root, "Sections")
+    for s in detail.SECTIONS default []
+      var section = v.RECORD(sections, null)
+      v.STRING(section, "Id", s.ID)
+      var title = TEXT(s.TEXTS, metadata.LANGUAGE)
+      if title is not null
+        v.STRING(section, "Title", title)
+      end
+      var groups = v.COLLECTION(section, "Groups")
+      for g in s.GROUPS default []
+        var group = v.RECORD(groups, null)
+        v.STRING(group, "Id", g.ID)
+        var gt = TEXT(g.TEXTS, metadata.LANGUAGE)
+        if gt is not null
+          v.STRING(group, "Title", gt)
+        end
+        var fields = v.COLLECTION(group, "Fields")
+        for f in g.FIELDS default []
+          var name = PROPERTY(t, f.FIELD)
+          if name is not null
+            v.PROPERTY_PATH(fields, null, name)
+          end
+        end
+      end
+      var table = s.TABLE
+      if table is not null
+        var nav = NAVIGATION(metadata, t, table.ENTITY)
+        if nav is not null
+          v.NAVIGATION_PATH(section, "Table", nav)
+        end
+      end
+    end
+    var actions = v.COLLECTION(root, "Actions")
+    for a in detail.ACTIONS default []
+      var name = ACTION(metadata, target, a.ACTION)
+      if name is not null
+        v.STRING(actions, null, name)
+      end
+    end
+    return ANNOTATION(target, "Frontend.DetailPage", v)
+  end
+
+  # The navigation of a type to the type of a dependent entity, null if the
+  # service offers none.
+  private static method NAVIGATION(metadata: /TRBASE/ODATA_METADATA, t: /TRBASE/ODATA_ENTITY_TYPE, entity: STRING) returns STRING?
+    var name: STRING? = null
+    for other in metadata.ENTITY_TYPES
+      if other.TECHNICAL_NAME = entity
+        name = metadata.NAMESPACE + "." + other.NAME
+      end
+    end
+    if name is null
+      return null
+    end
+    for n in t.NAVIGATIONS
+      if n.TYPE = name or n.TYPE = "Collection(" + name + ")"
+        return n.NAME
+      end
+    end
+    return null
+  end
+
+end

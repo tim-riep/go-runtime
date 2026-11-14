@@ -1,0 +1,29 @@
+{
+  "path": "vocabularies",
+  "texts": {
+    "en": {
+      "label": "Vocabularies"
+    },
+    "de": {
+      "label": "Vokabulare"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRBASE/ASSET_HANDLER",
+      "parameters": [
+        {
+          "name": "package",
+          "value": "TRFRONTEND"
+        },
+        {
+          "name": "repository",
+          "value": "vocabularies"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "anonymous": true
+  }
+}
