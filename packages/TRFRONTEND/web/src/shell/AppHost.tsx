@@ -15,6 +15,7 @@
 
 import { Banner, Spinner } from '@tim-riep/trui';
 import { type ComponentType, useEffect, useState } from 'react';
+import { ListApp } from '../pages/ListApp.tsx';
 import type { HomeApp } from './api.ts';
 import { loadRemoteApp } from './remote.ts';
 import type { TextKey } from './texts.ts';
@@ -24,6 +25,8 @@ export interface AppHostProps {
   params: Record<string, string>;
   entity: string | null;
   texts: Record<TextKey, string>;
+  onNavigate: (entity: string | null) => void;
+  onSignedOut: () => void;
 }
 
 /** The parameters of an app with those of the address, which win. */
@@ -74,13 +77,13 @@ function Remote({ app, params, texts }: { app: HomeApp; params: Record<string, s
 }
 
 /** The content area of an opened app by the kind of its target. */
-export function AppHost({ app, params, texts }: AppHostProps) {
+export function AppHost({ app, params, entity, texts, onNavigate, onSignedOut }: AppHostProps) {
   if (!app) {
     return <Banner tone="warning">{texts.appUnknown}</Banner>;
   }
   switch (app.TARGET.KIND) {
     case 'LIST':
-      return <Banner tone="information">{texts.listPending}</Banner>;
+      return <ListApp app={app} entity={entity} params={params} texts={texts} onNavigate={onNavigate} onSignedOut={onSignedOut} />;
     case 'PAGE':
       return <iframe className="trfrontend-page" title={app.TITLE} src={pageUrl(app, params)} />;
     case 'REMOTE':

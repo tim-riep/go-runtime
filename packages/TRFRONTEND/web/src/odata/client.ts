@@ -165,7 +165,11 @@ export class ODataClient {
 
   /** Reads an entity with its ETag. */
   async read(set: string, key: Entity, expand: string[] = []): Promise<Read> {
-    const path = await this.entityPath(set, key);
+    return this.readPath(await this.entityPath(set, key), expand);
+  }
+
+  /** Reads the entity at a path such as Companies('C1') with its ETag. */
+  async readPath(path: string, expand: string[] = []): Promise<Read> {
     const resp = await this.send('GET', expand.length ? `${path}?$expand=${expand.map(encodeURIComponent).join(',')}` : path);
     const entity = (await resp.json()) as Entity;
     return { entity: strip(entity), etag: resp.headers.get('ETag') ?? (entity['@odata.etag'] as string | undefined) ?? null };

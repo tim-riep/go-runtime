@@ -264,7 +264,15 @@ export function App() {
         {...defined({
           app:
             route.kind === 'app' && home ? (
-              <AppHost key={route.app} app={app} params={route.params} entity={route.entity} texts={texts} />
+              <AppHost
+                key={route.app}
+                app={app}
+                params={route.params}
+                entity={route.entity}
+                texts={texts}
+                onNavigate={(e) => navigate({ kind: 'app', app: route.app, params: route.params, entity: e })}
+                onSignedOut={() => failed(new RequestError(401, 'session-expired', ''))}
+              />
             ) : undefined,
         })}
       />

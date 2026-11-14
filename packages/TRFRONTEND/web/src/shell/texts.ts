@@ -44,8 +44,35 @@ const en = {
   appUnknown: 'This app does not exist or you may not start it.',
   remoteFailed: 'The app could not be loaded.',
   opened: 'The app opened in a new window.',
-  listPending: 'The list of this app is not available yet.',
   checked: 'Selected',
+  create: 'Create',
+  edit: 'Edit',
+  save: 'Save',
+  cancel: 'Cancel',
+  delete: 'Delete',
+  go: 'Go',
+  clearFilter: 'Clear',
+  filters: 'Filters',
+  actions: 'Actions',
+  run: 'Run',
+  yes: 'Yes',
+  no: 'No',
+  shipped: 'Shipped',
+  local: 'Local',
+  noEntries: 'There are no entries.',
+  saved: 'Saved.',
+  created: 'Created.',
+  deleted: 'Deleted.',
+  actionDone: 'Done.',
+  confirmDelete: 'Delete {count} entries? This cannot be undone.',
+  confirmDeleteOne: 'Delete this entry? This cannot be undone.',
+  conflict: 'Someone else changed this entry since you read it. Reload it and make your changes again.',
+  reload: 'Reload',
+  notFound: 'This entry does not exist or you may not read it.',
+  failed: 'The request failed.',
+  truncated: 'Only the first {count} entries are shown; narrow the filter.',
+  newEntry: 'New entry',
+  readOnlyShipped: 'Shipped entries cannot be changed. Copy one to change it locally.',
 } as const;
 
 export type TextKey = keyof typeof en;
@@ -77,8 +104,35 @@ const de: Record<TextKey, string> = {
   appUnknown: 'Diese App gibt es nicht, oder Sie dürfen sie nicht starten.',
   remoteFailed: 'Die App konnte nicht geladen werden.',
   opened: 'Die App wurde in einem neuen Fenster geöffnet.',
-  listPending: 'Die Liste dieser App ist noch nicht verfügbar.',
   checked: 'Ausgewählt',
+  create: 'Anlegen',
+  edit: 'Bearbeiten',
+  save: 'Sichern',
+  cancel: 'Abbrechen',
+  delete: 'Löschen',
+  go: 'Start',
+  clearFilter: 'Zurücksetzen',
+  filters: 'Filter',
+  actions: 'Aktionen',
+  run: 'Ausführen',
+  yes: 'Ja',
+  no: 'Nein',
+  shipped: 'Ausgeliefert',
+  local: 'Lokal',
+  noEntries: 'Es gibt keine Einträge.',
+  saved: 'Gesichert.',
+  created: 'Angelegt.',
+  deleted: 'Gelöscht.',
+  actionDone: 'Erledigt.',
+  confirmDelete: '{count} Einträge löschen? Das lässt sich nicht rückgängig machen.',
+  confirmDeleteOne: 'Diesen Eintrag löschen? Das lässt sich nicht rückgängig machen.',
+  conflict: 'Jemand anderes hat diesen Eintrag geändert, seit Sie ihn gelesen haben. Laden Sie ihn neu und ändern Sie ihn erneut.',
+  reload: 'Neu laden',
+  notFound: 'Diesen Eintrag gibt es nicht, oder Sie dürfen ihn nicht lesen.',
+  failed: 'Die Anfrage ist gescheitert.',
+  truncated: 'Nur die ersten {count} Einträge werden gezeigt; schränken Sie den Filter ein.',
+  newEntry: 'Neuer Eintrag',
+  readOnlyShipped: 'Ausgelieferte Einträge lassen sich nicht ändern. Kopieren Sie einen, um ihn lokal zu ändern.',
 };
 
 const packages: Record<string, Record<TextKey, string>> = { en, de };
@@ -86,4 +140,9 @@ const packages: Record<string, Record<TextKey, string>> = { en, de };
 /** The texts of a language, English for others. */
 export function textsOf(language: string | null | undefined): Record<TextKey, string> {
   return packages[(language ?? 'en').toLowerCase()] ?? en;
+}
+
+/** A text with {name} replaced by its parameter. */
+export function format(text: string, params: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (all, name: string) => (name in params ? String(params[name]) : all));
 }
