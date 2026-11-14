@@ -1435,6 +1435,9 @@ representation.
 go install github.com/tim-riep/go-runtime/cmd/rt@latest
 ```
 
+Each release `v<version>` of the repository also carries `rt` built for Linux, macOS and
+Windows; a tag `v<version>` releases it with `.github/workflows/rt-release.yml`.
+
 ```bash
 export RT_DATABASE=sqlite:app.db
 rt init
