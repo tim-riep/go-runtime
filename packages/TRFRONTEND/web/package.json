@@ -1,0 +1,39 @@
+{
+  "name": "@tim-riep/trfrontend-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "The user interface of the go-runtime package TRFRONTEND: shell, start page and generic pages",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "vite build && node scripts/build-package.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --project unit --project browser",
+    "test:unit": "vitest run --project unit",
+    "test:e2e": "vitest run -c vitest.e2e.config.ts",
+    "check:headers": "node scripts/check-headers.mjs"
+  },
+  "dependencies": {
+    "@module-federation/runtime": "2.9.3"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@tim-riep/trui": "https://github.com/tim-riep/trui/releases/download/v0.1.0/tim-riep-trui-0.1.0.tgz",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "@vitest/browser-playwright": "5.1.0",
+    "axe-core": "4.14.0",
+    "playwright": "1.65.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  }
+}

@@ -502,3 +502,34 @@ func (l *loader) extension(file string, doc *extensionDoc) model.Extension {
 // TopLevel are the entries a package has at its root; the archives of
 // repositories may have other files beside them, such as README.md.
 var TopLevel = []string{ManifestFile, SchemaDir, SourceDir, AssetsDir, TransformationsDir, ObjectsDir}
+
+// TopLevelOnly returns a file system that shows only the entries of a
+// package (TopLevel) at the root of fsys, so that a directory with other
+// things beside the package, such as the sources of a user interface,
+// loads as the package alone.
+func TopLevelOnly(fsys fs.FS) fs.FS { return topLevelFS{fsys} }
+
+type topLevelFS struct{ fs.FS }
+
+func (f topLevelFS) keep(name string) bool {
+	first, _, _ := strings.Cut(name, "/")
+	return name == "." || slices.Contains(TopLevel, first)
+}
+
+func (f topLevelFS) Open(name string) (fs.File, error) {
+	if !f.keep(name) {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
+	}
+	return f.FS.Open(name)
+}
+
+func (f topLevelFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if !f.keep(name) {
+		return nil, &fs.PathError{Op: "readdir", Path: name, Err: fs.ErrNotExist}
+	}
+	entries, err := fs.ReadDir(f.FS, name)
+	if name != "." {
+		return entries, err
+	}
+	return slices.DeleteFunc(entries, func(e fs.DirEntry) bool { return !f.keep(e.Name()) }), err
+}

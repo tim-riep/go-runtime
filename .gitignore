@@ -3,3 +3,6 @@
 *.db-wal
 *.db-shm
 /dist/
+
+# Built package of TRFRONTEND
+packages/TRFRONTEND/dist/

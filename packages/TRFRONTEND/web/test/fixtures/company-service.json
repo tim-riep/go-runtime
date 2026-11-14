@@ -1,0 +1,859 @@
+{
+  "$Version": "4.01",
+  "$EntityContainer": "TRFIN.Container",
+  "$Reference": {
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Core.V1",
+          "$Alias": "Core"
+        }
+      ]
+    },
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Validation.V1",
+          "$Alias": "Validation"
+        }
+      ]
+    },
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml": {
+      "$Include": [
+        {
+          "$Namespace": "Org.OData.Capabilities.V1",
+          "$Alias": "Capabilities"
+        }
+      ]
+    },
+    "../../$vocabularies/RT.Fields.xml": {
+      "$Include": [
+        {
+          "$Namespace": "RT.Fields",
+          "$Alias": "RT"
+        }
+      ]
+    },
+    "/trfrontend/vocabularies/TRFRONTEND.UI.json": {
+      "$Include": [
+        {
+          "$Namespace": "TRFRONTEND.UI",
+          "$Alias": "Frontend"
+        }
+      ]
+    },
+    "urn:trotto:vocabularies:TROTTO.Marketplace": {
+      "$Include": [
+        {
+          "$Namespace": "TROTTO.Marketplace",
+          "$Alias": "Marketplace"
+        }
+      ]
+    }
+  },
+  "TRFIN": {
+    "TRFIN_COMPANIES": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "COMPANY_ID"
+      ],
+      "COMPANY_ID": {
+        "$MaxLength": 10
+      },
+      "NAME": {
+        "$MaxLength": 80
+      },
+      "STREET": {
+        "$Nullable": true,
+        "$MaxLength": 60
+      },
+      "POSTAL_CODE": {
+        "$Nullable": true,
+        "$MaxLength": 10
+      },
+      "CITY": {
+        "$Nullable": true,
+        "$MaxLength": 40
+      },
+      "COUNTRY": {
+        "$Nullable": true,
+        "$MaxLength": 2
+      },
+      "TROTTO_PICKUP_POINT": {
+        "$Nullable": true,
+        "$MaxLength": 20
+      },
+      "STATUS": {
+        "$MaxLength": 10
+      },
+      "CAPITAL": {
+        "$Type": "Edm.Decimal",
+        "$Nullable": true,
+        "$Precision": 15,
+        "$Scale": 2
+      },
+      "FOUNDED_ON": {
+        "$Type": "Edm.Date",
+        "$Nullable": true
+      },
+      "CREATED_BY": {
+        "$Nullable": true,
+        "$MaxLength": 80
+      },
+      "CREATED_AT": {
+        "$Type": "Edm.DateTimeOffset",
+        "$Nullable": true,
+        "$Precision": 6
+      },
+      "CHANGED_BY": {
+        "$Nullable": true,
+        "$MaxLength": 80
+      },
+      "CHANGED_AT": {
+        "$Type": "Edm.DateTimeOffset",
+        "$Nullable": true,
+        "$Precision": 6
+      },
+      "TROTTO_OTTO_ID": {
+        "$Nullable": true,
+        "$MaxLength": 20
+      },
+      "Contacts": {
+        "$Kind": "NavigationProperty",
+        "$Collection": true,
+        "$Type": "TRFIN.TRFIN_CONTACTS",
+        "$Partner": "Companies"
+      },
+      "TROTTO_COMPANY_CHANNELS": {
+        "$Kind": "NavigationProperty",
+        "$Collection": true,
+        "$Type": "TRFIN.TROTTO_COMPANY_CHANNELS",
+        "$ContainsTarget": true
+      },
+      "Country": {
+        "$Kind": "NavigationProperty",
+        "$Type": "TRFIN.TRFIN_COUNTRIES",
+        "$Nullable": true,
+        "$ReferentialConstraint": {
+          "COUNTRY": "COUNTRY_CODE"
+        }
+      }
+    },
+    "TRFIN_CONTACTS": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "CONTACT_ID"
+      ],
+      "CONTACT_ID": {
+        "$Type": "Edm.Guid"
+      },
+      "COMPANY_ID": {
+        "$MaxLength": 10
+      },
+      "NAME": {
+        "$Nullable": true,
+        "$MaxLength": 80
+      },
+      "EMAIL": {
+        "$Nullable": true
+      },
+      "Companies": {
+        "$Kind": "NavigationProperty",
+        "$Type": "TRFIN.TRFIN_COMPANIES",
+        "$Partner": "Contacts",
+        "$ReferentialConstraint": {
+          "COMPANY_ID": "COMPANY_ID"
+        }
+      }
+    },
+    "TRFIN_COUNTRIES": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "COUNTRY_CODE"
+      ],
+      "COUNTRY_CODE": {
+        "$MaxLength": 2
+      },
+      "NAME": {
+        "$MaxLength": 80
+      },
+      "CURRENCY": {
+        "$Nullable": true,
+        "$MaxLength": 3
+      }
+    },
+    "TRFIN_EXCHANGE_RATES": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "FROM_CURRENCY",
+        "TO_CURRENCY",
+        "VALID_FROM"
+      ],
+      "FROM_CURRENCY": {
+        "$MaxLength": 3
+      },
+      "TO_CURRENCY": {
+        "$MaxLength": 3
+      },
+      "VALID_FROM": {
+        "$Type": "Edm.Date"
+      },
+      "RATE": {
+        "$Type": "Edm.Decimal",
+        "$Precision": 15,
+        "$Scale": 6
+      }
+    },
+    "TROTTO_COMPANY_CHANNELS": {
+      "$Kind": "EntityType",
+      "$Key": [
+        "CHANNEL_ID"
+      ],
+      "CHANNEL_ID": {
+        "$Type": "Edm.Guid"
+      },
+      "COMPANY_ID": {
+        "$MaxLength": 10
+      },
+      "CHANNEL": {}
+    },
+    "BLOCK": [
+      {
+        "$Kind": "Action",
+        "$IsBound": true,
+        "$EntitySetPath": "_it",
+        "$Parameter": [
+          {
+            "$Name": "_it",
+            "$Type": "TRFIN.TRFIN_COMPANIES"
+          },
+          {
+            "$Name": "TEXT",
+            "$Nullable": true
+          }
+        ],
+        "$ReturnType": {
+          "$Type": "TRFIN.TRFIN_COMPANIES"
+        }
+      }
+    ],
+    "TROTTO_SYNC": [
+      {
+        "$Kind": "Action",
+        "$IsBound": true,
+        "$EntitySetPath": "_it",
+        "$Parameter": [
+          {
+            "$Name": "_it",
+            "$Type": "TRFIN.TRFIN_COMPANIES"
+          }
+        ],
+        "$ReturnType": {
+          "$Type": "TRFIN.TRFIN_COMPANIES"
+        }
+      }
+    ],
+    "Container": {
+      "$Kind": "EntityContainer",
+      "Companies": {
+        "$Collection": true,
+        "$Type": "TRFIN.TRFIN_COMPANIES",
+        "$NavigationPropertyBinding": {
+          "Contacts": "Contacts",
+          "Country": "Countries"
+        }
+      },
+      "Contacts": {
+        "$Collection": true,
+        "$Type": "TRFIN.TRFIN_CONTACTS",
+        "$NavigationPropertyBinding": {
+          "Companies": "Companies"
+        }
+      },
+      "Countries": {
+        "$Collection": true,
+        "$Type": "TRFIN.TRFIN_COUNTRIES"
+      },
+      "ExchangeRates": {
+        "$Collection": true,
+        "$Type": "TRFIN.TRFIN_EXCHANGE_RATES"
+      }
+    },
+    "$Annotations": {
+      "TRFIN.Container": {
+        "@Core.Description": "Companies"
+      },
+      "TRFIN.TRFIN_COMPANIES/COMPANY_ID": {
+        "@Core.Description": "Company",
+        "@Core.LongDescription": "Company ID",
+        "@RT.ShortLabel": "Company",
+        "@RT.MediumLabel": "Company",
+        "@RT.LongLabel": "Company ID",
+        "@RT.Heading": "Company",
+        "@Core.Immutable": true
+      },
+      "TRFIN.TRFIN_COMPANIES/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name",
+        "@RT.Heading": "Name",
+        "@RT.Mandatory": true
+      },
+      "TRFIN.TRFIN_COMPANIES/STREET": {
+        "@Core.Description": "Street",
+        "@Core.LongDescription": "Street and house number",
+        "@RT.ShortLabel": "Street",
+        "@RT.MediumLabel": "Street",
+        "@RT.LongLabel": "Street and house number",
+        "@RT.Heading": "Street"
+      },
+      "TRFIN.TRFIN_COMPANIES/POSTAL_CODE": {
+        "@Core.Description": "Postal code",
+        "@Core.LongDescription": "Postal code",
+        "@RT.ShortLabel": "Postcode",
+        "@RT.MediumLabel": "Postal code",
+        "@RT.LongLabel": "Postal code",
+        "@RT.Heading": "Postcode"
+      },
+      "TRFIN.TRFIN_COMPANIES/CITY": {
+        "@Core.Description": "City",
+        "@Core.LongDescription": "City",
+        "@RT.ShortLabel": "City",
+        "@RT.MediumLabel": "City",
+        "@RT.LongLabel": "City",
+        "@RT.Heading": "City"
+      },
+      "TRFIN.TRFIN_COMPANIES/COUNTRY": {
+        "@Core.Description": "Country",
+        "@Core.LongDescription": "ISO 3166-1 alpha-2 code",
+        "@RT.ShortLabel": "Country",
+        "@RT.MediumLabel": "Country",
+        "@RT.LongLabel": "Country key",
+        "@RT.Heading": "Country",
+        "@RT.ValueList": {
+          "EntitySet": "Countries",
+          "Parameters": [
+            {
+              "LocalProperty": {
+                "$PropertyPath": "COUNTRY"
+              },
+              "ValueListProperty": "COUNTRY_CODE"
+            }
+          ]
+        }
+      },
+      "TRFIN.TRFIN_COMPANIES/TROTTO_PICKUP_POINT": {
+        "@Core.Description": "Pickup point",
+        "@Core.LongDescription": "Marketplace pickup point",
+        "@RT.ShortLabel": "Pickup",
+        "@RT.MediumLabel": "Pickup point",
+        "@RT.LongLabel": "Marketplace pickup point",
+        "@RT.Heading": "Pickup",
+        "@Marketplace.PickupPoint": true
+      },
+      "TRFIN.TRFIN_COMPANIES/STATUS": {
+        "@Core.Computed": true,
+        "@Validation.AllowedValues": [
+          {
+            "Value": "ACTIVE",
+            "@Core.Description": "Active"
+          },
+          {
+            "Value": "BLOCKED",
+            "@Core.Description": "Blocked for postings"
+          },
+          {
+            "Value": "CLOSED",
+            "@Core.Description": "Closed"
+          }
+        ]
+      },
+      "TRFIN.TRFIN_COMPANIES/CREATED_BY": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TRFIN_COMPANIES/CREATED_AT": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TRFIN_COMPANIES/CHANGED_BY": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TRFIN_COMPANIES/CHANGED_AT": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TRFIN_COMPANIES/TROTTO_OTTO_ID": {
+        "@Core.Description": "OTTO partner",
+        "@Core.LongDescription": "Partner ID on OTTO",
+        "@RT.ShortLabel": "Partner",
+        "@RT.MediumLabel": "OTTO partner",
+        "@RT.LongLabel": "Partner ID on OTTO",
+        "@RT.Heading": "OTTO partner",
+        "@Core.Computed": true,
+        "@Marketplace.PartnerId": true
+      },
+      "TRFIN.TRFIN_COMPANIES": {
+        "@Core.Description": "Company",
+        "@RT.DataClass": "application",
+        "@Frontend.Header": {
+          "TypeName": "Company",
+          "TypeNamePlural": "Companies",
+          "Title": {
+            "$PropertyPath": "NAME"
+          },
+          "Subtitle": {
+            "$PropertyPath": "COMPANY_ID"
+          },
+          "Description": {
+            "$PropertyPath": "CITY"
+          }
+        },
+        "@Frontend.ListPage": {
+          "Columns": [
+            {
+              "Property": {
+                "$PropertyPath": "COMPANY_ID"
+              },
+              "Width": 8,
+              "Importance": "HIGH"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "NAME"
+              },
+              "Width": 16,
+              "Importance": "HIGH"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "TROTTO_OTTO_ID"
+              },
+              "Width": 10,
+              "Importance": "HIGH"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "CITY"
+              },
+              "Importance": "MEDIUM"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "COUNTRY"
+              },
+              "Width": 6,
+              "Importance": "HIGH"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "STATUS"
+              },
+              "Importance": "LOW"
+            }
+          ],
+          "FilterFields": [
+            {
+              "$PropertyPath": "NAME"
+            },
+            {
+              "$PropertyPath": "COUNTRY"
+            },
+            {
+              "$PropertyPath": "STATUS"
+            },
+            {
+              "$PropertyPath": "TROTTO_OTTO_ID"
+            }
+          ],
+          "SortOrder": [
+            {
+              "Property": {
+                "$PropertyPath": "NAME"
+              },
+              "Descending": false
+            }
+          ],
+          "Actions": [
+            "TRFIN.BLOCK",
+            "TRFIN.TROTTO_SYNC"
+          ]
+        },
+        "@Frontend.DetailPage": {
+          "Sections": [
+            {
+              "Id": "GENERAL",
+              "Title": "General",
+              "Groups": [
+                {
+                  "Id": "MAIN",
+                  "Title": "Company",
+                  "Fields": [
+                    {
+                      "$PropertyPath": "COMPANY_ID"
+                    },
+                    {
+                      "$PropertyPath": "NAME"
+                    },
+                    {
+                      "$PropertyPath": "TROTTO_OTTO_ID"
+                    },
+                    {
+                      "$PropertyPath": "STATUS"
+                    },
+                    {
+                      "$PropertyPath": "FOUNDED_ON"
+                    }
+                  ]
+                },
+                {
+                  "Id": "ADDRESS",
+                  "Title": "Address",
+                  "Fields": [
+                    {
+                      "$PropertyPath": "STREET"
+                    },
+                    {
+                      "$PropertyPath": "POSTAL_CODE"
+                    },
+                    {
+                      "$PropertyPath": "CITY"
+                    },
+                    {
+                      "$PropertyPath": "COUNTRY"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Id": "/TROTTOUI/MARKETPLACE",
+              "Title": "Marketplace",
+              "Groups": [
+                {
+                  "Id": "/TROTTOUI/OTTO",
+                  "Title": "OTTO",
+                  "Fields": [
+                    {
+                      "$PropertyPath": "TROTTO_OTTO_ID"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Id": "CONTACTS",
+              "Title": "Contacts",
+              "Groups": [],
+              "Table": {
+                "$NavigationPropertyPath": "Contacts"
+              }
+            }
+          ],
+          "Actions": [
+            "TRFIN.BLOCK"
+          ]
+        }
+      },
+      "TRFIN.TRFIN_CONTACTS/CONTACT_ID": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TRFIN_CONTACTS/COMPANY_ID": {
+        "@Core.Description": "Company",
+        "@Core.LongDescription": "Company ID",
+        "@RT.ShortLabel": "Company",
+        "@RT.MediumLabel": "Company",
+        "@RT.LongLabel": "Company ID",
+        "@RT.Heading": "Company",
+        "@Core.Immutable": true,
+        "@RT.ValueList": {
+          "EntitySet": "Companies",
+          "Parameters": [
+            {
+              "LocalProperty": {
+                "$PropertyPath": "COMPANY_ID"
+              },
+              "ValueListProperty": "COMPANY_ID"
+            }
+          ]
+        }
+      },
+      "TRFIN.TRFIN_CONTACTS/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name",
+        "@RT.Heading": "Name",
+        "@RT.Mandatory": true
+      },
+      "TRFIN.TRFIN_CONTACTS": {
+        "@Core.Description": "Company",
+        "@RT.DataClass": "application",
+        "@Frontend.Header": {
+          "TypeName": "Contact",
+          "TypeNamePlural": "Contacts",
+          "Title": {
+            "$PropertyPath": "NAME"
+          }
+        },
+        "@Frontend.ListPage": {
+          "Columns": [
+            {
+              "Property": {
+                "$PropertyPath": "NAME"
+              },
+              "Importance": "HIGH"
+            },
+            {
+              "Property": {
+                "$PropertyPath": "EMAIL"
+              },
+              "Importance": "HIGH"
+            }
+          ],
+          "FilterFields": [],
+          "SortOrder": [],
+          "Actions": []
+        },
+        "@Frontend.DetailPage": {
+          "Sections": [
+            {
+              "Id": "CONTACT",
+              "Title": "Contact",
+              "Groups": [
+                {
+                  "Id": "MAIN",
+                  "Fields": [
+                    {
+                      "$PropertyPath": "NAME"
+                    },
+                    {
+                      "$PropertyPath": "EMAIL"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "Actions": []
+        }
+      },
+      "TRFIN.TRFIN_COUNTRIES/COUNTRY_CODE": {
+        "@Core.Description": "Country",
+        "@Core.LongDescription": "ISO 3166-1 alpha-2 code",
+        "@RT.ShortLabel": "Country",
+        "@RT.MediumLabel": "Country",
+        "@RT.LongLabel": "Country key",
+        "@RT.Heading": "Country",
+        "@Core.Immutable": true
+      },
+      "TRFIN.TRFIN_COUNTRIES/NAME": {
+        "@Core.Description": "Name",
+        "@Core.LongDescription": "Name",
+        "@RT.ShortLabel": "Name",
+        "@RT.MediumLabel": "Name",
+        "@RT.LongLabel": "Name",
+        "@RT.Heading": "Name",
+        "@RT.Mandatory": true
+      },
+      "TRFIN.TRFIN_COUNTRIES/CURRENCY": {
+        "@Core.Description": "Currency",
+        "@Core.LongDescription": "ISO 4217 code",
+        "@RT.ShortLabel": "Currency",
+        "@RT.MediumLabel": "Currency",
+        "@RT.LongLabel": "Currency key",
+        "@RT.Heading": "Currency"
+      },
+      "TRFIN.TRFIN_COUNTRIES": {
+        "@Core.Description": "Country",
+        "@RT.DataClass": "configuration"
+      },
+      "TRFIN.TRFIN_EXCHANGE_RATES": {
+        "@Core.Description": "Exchange rates, maintained during operation",
+        "@RT.DataClass": "runtimeConfiguration"
+      },
+      "TRFIN.TROTTO_COMPANY_CHANNELS/CHANNEL_ID": {
+        "@Core.Computed": true
+      },
+      "TRFIN.TROTTO_COMPANY_CHANNELS/COMPANY_ID": {
+        "@Core.Description": "Company",
+        "@Core.LongDescription": "Company ID",
+        "@RT.ShortLabel": "Company",
+        "@RT.MediumLabel": "Company",
+        "@RT.LongLabel": "Company ID",
+        "@RT.Heading": "Company",
+        "@Core.Computed": true
+      },
+      "TRFIN.TROTTO_COMPANY_CHANNELS": {
+        "@Core.Description": "Company",
+        "@RT.DataClass": "application"
+      },
+      "TRFIN.Container/Companies": {
+        "@Core.OptimisticConcurrency": [
+          {
+            "$PropertyPath": "CHANGED_AT"
+          }
+        ],
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": true
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": true
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": true
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": true,
+          "ContentIDSupported": false
+        },
+        "@Capabilities.NavigationRestrictions": {
+          "RestrictedProperties": [
+            {
+              "NavigationProperty": {
+                "$NavigationPropertyPath": "TROTTO_COMPANY_CHANNELS"
+              },
+              "InsertRestrictions": {
+                "Insertable": true
+              },
+              "UpdateRestrictions": {
+                "Updatable": true
+              },
+              "DeleteRestrictions": {
+                "Deletable": true
+              }
+            }
+          ]
+        }
+      },
+      "TRFIN.Container/Contacts": {
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": true
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": true
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": true
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": true,
+          "ContentIDSupported": false
+        }
+      },
+      "TRFIN.Container/Countries": {
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": false
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": false
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": false
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": false,
+          "ContentIDSupported": false
+        }
+      },
+      "TRFIN.Container/ExchangeRates": {
+        "@Capabilities.InsertRestrictions": {
+          "Insertable": false
+        },
+        "@Capabilities.UpdateRestrictions": {
+          "Updatable": false
+        },
+        "@Capabilities.DeleteRestrictions": {
+          "Deletable": false
+        },
+        "@Capabilities.FilterRestrictions": {
+          "Filterable": true,
+          "NonFilterableProperties": []
+        },
+        "@Capabilities.SortRestrictions": {
+          "Sortable": true,
+          "NonSortableProperties": []
+        },
+        "@Capabilities.TopSupported": true,
+        "@Capabilities.SkipSupported": true,
+        "@Capabilities.CountRestrictions": {
+          "Countable": true
+        },
+        "@Capabilities.ExpandRestrictions": {
+          "Expandable": true,
+          "MaxLevels": 1
+        },
+        "@Capabilities.SearchRestrictions": {
+          "Searchable": false
+        },
+        "@Capabilities.DeepInsertSupport": {
+          "Supported": false,
+          "ContentIDSupported": false
+        }
+      },
+      "TRFIN.TROTTO_SYNC": {
+        "@Core.Description": "Gives the company a partner ID at OTTO"
+      }
+    }
+  }
+}

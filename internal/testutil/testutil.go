@@ -191,3 +191,15 @@ func ZipDir(t testing.TB, src, prefix string) []byte {
 	}
 	return buf.Bytes()
 }
+
+// LoadPackageDir loads the package in a directory that holds other things
+// beside it, such as packages/TRFRONTEND with the sources of its user
+// interface.
+func LoadPackageDir(t testing.TB, dir string) *model.Package {
+	t.Helper()
+	pkg, err := pkgload.Load(pkgload.TopLevelOnly(os.DirFS(dir)), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pkg
+}

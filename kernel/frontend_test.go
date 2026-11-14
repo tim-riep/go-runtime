@@ -38,7 +38,7 @@ func frontendPackages(t *testing.T) []*model.Package {
 	root := testutil.ModuleRoot(t)
 	return []*model.Package{
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRUI")),
-		testutil.LoadDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
+		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
 		testutil.Example(t, "TRFIN"),
 		testutil.Example(t, "TROTTO"),
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRFDEMO")),
@@ -220,7 +220,7 @@ func uiPackages(t *testing.T) []*model.Package {
 	root := testutil.ModuleRoot(t)
 	return []*model.Package{
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRUI")),
-		testutil.LoadDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
+		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
 		testutil.Example(t, "TRFIN"),
 		testutil.Example(t, "TROTTO"),
 		testutil.Example(t, "TRFINUI"),
