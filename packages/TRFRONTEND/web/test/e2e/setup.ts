@@ -69,7 +69,8 @@ export async function setup(project: TestProject) {
   }
 
   const port = await freePort();
-  server = spawn(rt, ['serve', '--addr', `127.0.0.1:${port}`, '--insecure-session-cookie'], { cwd: repo, env, stdio: ['ignore', 'ignore', 'pipe'] });
+  // The log is not read: a pipe nobody reads fills up and blocks the server.
+  server = spawn(rt, ['serve', '--addr', `127.0.0.1:${port}`, '--insecure-session-cookie'], { cwd: repo, env, stdio: 'ignore' });
   const url = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i++) {
     try {
