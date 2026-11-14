@@ -1,0 +1,34 @@
+{
+  "path": "",
+  "texts": {
+    "en": {
+      "label": "Shell",
+      "description": "The start page and the apps in the browser"
+    },
+    "de": {
+      "label": "Shell",
+      "description": "Die Startseite und die Apps im Browser"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRFRONTEND/SHELL_HANDLER"
+    },
+    {
+      "class": "/TRBASE/ASSET_HANDLER",
+      "parameters": [
+        {
+          "name": "package",
+          "value": "TRFRONTEND"
+        },
+        {
+          "name": "repository",
+          "value": "shell"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "anonymous": true
+  }
+}

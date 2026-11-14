@@ -1,0 +1,26 @@
+# Answers the path of the node /trfrontend itself with the page of the
+# shell; the files below it come from the next handler, the asset handler.
+public class /TRFRONTEND/SHELL_HANDLER implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var verb = request.METHOD()
+    var rest = request.REST_PATH()
+    if verb <> "GET" and verb <> "HEAD" or rest <> "" and rest <> "index.html"
+      return false
+    end
+    try
+      response.SET_HEADER("Cache-Control", "no-cache")
+      response.SEND_ASSET(request, /TRBASE/ASSET_REPOSITORY.OPEN("TRFRONTEND", "shell"), "index.html")
+    catch e: /TRBASE/ASSET_NOT_FOUND
+      return false
+    catch e: /TRBASE/ASSET_PATH_INVALID
+      return false
+    catch e: /TRBASE/ASSET_REPOSITORY_NOT_FOUND
+      return false
+    catch e: /TRBASE/ASSET_ACCESS_DENIED
+      return false
+    end
+    return true
+  end
+
+end

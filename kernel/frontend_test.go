@@ -462,3 +462,39 @@ func TestFrontendStartPage(t *testing.T) {
 		}
 	})
 }
+
+func TestFrontendShell(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		c := homeKernel(t, k)
+		// The page of the shell needs no sign-in, at the node and as index.html.
+		for _, p := range []string{"/trfrontend", "/trfrontend/", "/trfrontend/index.html"} {
+			a := c.do("GET", p, nil, "")
+			if a.status != 200 || !strings.Contains(a.body, `<script type="importmap">`) || !strings.HasPrefix(a.header.Get("Content-Type"), "text/html") {
+				t.Errorf("%s: %d %s %s", p, a.status, a.header.Get("Content-Type"), a.body)
+			}
+		}
+		if a := c.do("POST", "/trfrontend/", nil, "x"); a.status == 200 {
+			t.Errorf("POST to the shell: %d", a.status)
+		}
+		if a := c.do("GET", "/trfrontend/missing.js", nil, ""); a.status != 404 {
+			t.Errorf("missing file: %d", a.status)
+		}
+
+		// The shell signs in at /rt/session and reads the start page with the cookie.
+		a := c.do("POST", "/rt/session", func(r *http.Request) { r.Header.Set("Content-Type", "application/json") }, `{"user":"clara","password":"secret","language":"de"}`)
+		if a.status != 200 {
+			t.Fatalf("sign-in: %d %s", a.status, a.body)
+		}
+		var cookie string
+		for _, sc := range a.header.Values("Set-Cookie") {
+			if strings.HasPrefix(sc, "rt_session=") {
+				cookie = strings.SplitN(sc, ";", 2)[0]
+			}
+		}
+		withCookie := func(r *http.Request) { r.Header.Set("Cookie", cookie) }
+		h := c.do("GET", "/trfrontend/api/home", withCookie, "")
+		if h.status != 200 || !strings.Contains(h.body, `"TITLE":"Firmen"`) {
+			t.Errorf("start page with the session: %d %s", h.status, h.body)
+		}
+	})
+}
