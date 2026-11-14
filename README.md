@@ -1392,7 +1392,7 @@ German texts, hence `rt language add de`. `/TRFIN/COMPANY_CLERK` gives clara the
 of companies, `/TRFIN/COMPANY_ADMIN` lets her create them. `rt install` of TRFRONTEND brings
 TRUI from GitHub along, since the manifest names its
 source. Instead of `make trfrontend`, a release of TRFRONTEND installs directly:
-`rt install github.com/tim-riep/go-runtime/packages/TRFRONTEND@1.0.1`. Then open
+`rt install github.com/tim-riep/go-runtime/packages/TRFRONTEND@1.0.2`. Then open
 `http://localhost:8080/trfrontend/` and sign in as `clara` or `admin`.
 `--insecure-session-cookie` lets the session cookie travel without TLS and is meant for
 development only.

@@ -20,10 +20,9 @@
 
 import { Checkbox, DatePicker, LookupField, NumberField, Select, TextField } from '@tim-riep/trui';
 import type { ODataClient, Value } from '../odata/index.ts';
-import { literal } from '../odata/index.ts';
 import { defined } from '../shell/defined.ts';
 import type { TextKey } from '../shell/texts.ts';
-import type { Field } from './view.ts';
+import { type Field, valueHelpFilter } from './view.ts';
 
 const integers = new Set(['Edm.Int16', 'Edm.Int32', 'Edm.Byte', 'Edm.SByte']);
 const numbers = new Set([...integers, 'Edm.Int64', 'Edm.Decimal', 'Edm.Double', 'Edm.Single']);
@@ -75,7 +74,7 @@ export function FieldEditor({ field, value, onChange, id, readOnly, client, erro
   if (field.valueHelp) {
     const help = field.valueHelp;
     const fetchItems = async ({ query, offset, limit }: { query: string; offset: number; limit: number }) => {
-      const filter = query ? `contains(${help.property},${literal(query, 'Edm.String')})` : undefined;
+      const filter = query ? valueHelpFilter(help, query) : undefined;
       const page = await client.query(help.set, defined({ filter, top: limit, skip: offset, count: true, orderby: help.property }));
       return {
         items: page.value.map((e) => ({ value: String(e[help.property] ?? ''), label: String(e[help.property] ?? ''), description: describe(e, help.property) })),

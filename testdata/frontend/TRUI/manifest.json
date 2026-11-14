@@ -1,6 +1,6 @@
 {
   "id": "TRUI",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Stand-in for the package TRUI of tim-riep/trui in tests",
   "requires": [{ "id": "TRBASE", "version": ">=1.0.0" }]
 }

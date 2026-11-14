@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseMetadata } from '../odata/index.ts';
 import { filterOf, matches } from './filter.ts';
-import { actionLabel, detailView, listView, mergedDetailView } from './view.ts';
+import { actionLabel, detailView, listView, mergedDetailView, valueHelpFilter } from './view.ts';
 
 const m = parseMetadata(JSON.parse(readFileSync(new URL('../../test/fixtures/company-service.json', import.meta.url), 'utf8')));
 
@@ -40,7 +40,11 @@ describe('list view', () => {
     expect(status?.computed).toBe(true);
     expect(status?.fixedValues?.[1]).toEqual({ value: 'BLOCKED', label: 'Blocked for postings' });
     const country = v.filterFields.find((f) => f.name === 'COUNTRY');
-    expect(country?.valueHelp).toEqual({ set: 'Countries', property: 'COUNTRY_CODE' });
+    expect(country?.valueHelp).toEqual({ set: 'Countries', property: 'COUNTRY_CODE', search: ['COUNTRY_CODE', 'NAME', 'CURRENCY'] });
+    if (!country?.valueHelp) throw new Error('no value help');
+    expect(valueHelpFilter(country.valueHelp, "Côte d'I")).toBe(
+      "contains(tolower(COUNTRY_CODE),'côte d''i') or contains(tolower(NAME),'côte d''i') or contains(tolower(CURRENCY),'côte d''i')",
+    );
     expect(country?.label).toBe('Country');
     const id = v.columns[0]?.field;
     expect(id).toMatchObject({ key: true, immutable: true, label: 'Company' });

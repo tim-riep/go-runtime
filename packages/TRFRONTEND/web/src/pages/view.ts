@@ -20,7 +20,7 @@
 // fields. Without annotations of TRFRONTEND a page shows the key and all
 // fields.
 
-import { type AnnotationValue, type Annotations, annotation, type EntitySet, type Property, type ServiceModel } from '../odata/index.ts';
+import { type AnnotationValue, type Annotations, annotation, type EntitySet, literal, type Property, type ServiceModel } from '../odata/index.ts';
 
 export interface FixedValue {
   value: string;
@@ -32,6 +32,8 @@ export interface ValueHelp {
   set: string;
   /** The property of that set whose value the field takes. */
   property: string;
+  /** The text properties of that set that a search looks in: the property first. */
+  search: string[];
 }
 
 /** A field of an entity with what the pages need to show and edit it. */
@@ -162,7 +164,9 @@ export function fieldOf(m: ServiceModel, set: EntitySet, p: Property): Field {
     const param = list(vl.Parameters)
       .map(record)
       .find((x) => path(x.LocalProperty) === p.name);
-    valueHelp = { set: vl.EntitySet, property: str(param?.ValueListProperty) ?? p.name };
+    const property = str(param?.ValueListProperty) ?? p.name;
+    const texts = (m.entitySets[vl.EntitySet]?.type.properties ?? []).filter((x) => x.type === 'Edm.String').map((x) => x.name);
+    valueHelp = { set: vl.EntitySet, property, search: [property, ...texts.filter((x) => x !== property)] };
   }
   return {
     name: p.name,
@@ -301,6 +305,15 @@ export function detailView(m: ServiceModel, setName: string): DetailView {
 }
 
 /** The label of an action, from Core.Description or its name. */
+/**
+ * The filter of a search in a value help: any of its text properties
+ * contains the query, regardless of case.
+ */
+export function valueHelpFilter(help: ValueHelp, query: string): string {
+  const q = literal(query.toLowerCase(), 'Edm.String');
+  return help.search.map((p) => `contains(tolower(${p}),${q})`).join(' or ');
+}
+
 /**
  * The detail view of a list for an entry of its second set, e.g. a shipped
  * entry shown with the view of the local ones: tables through navigations

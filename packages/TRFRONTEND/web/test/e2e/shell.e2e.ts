@@ -94,6 +94,20 @@ for (const name of names) {
       await context.close();
     });
 
+    it('finds a country by its name in the value help, regardless of case', async () => {
+      const context = await browser.newContext({ locale: 'en-US' });
+      const page = await context.newPage();
+      await signIn(page, 'clara');
+      await page.locator('[data-tile-id="/TRFINUI/COMPANIES_TILE"]').click();
+      await page.getByRole('button', { name: 'Create' }).click();
+      await page.getByRole('button', { name: 'Open value help' }).click();
+      const dialog = page.getByRole('dialog');
+      await dialog.getByRole('searchbox', { name: 'Search' }).fill('germ');
+      await dialog.getByText('Germany').click();
+      await expect.poll(() => page.getByRole('textbox', { name: /^Country/ }).inputValue()).toBe('DE');
+      await context.close();
+    });
+
     it('lets the administrator open the role page', async () => {
       const context = await browser.newContext({ locale: 'en-US' });
       const page = await context.newPage();

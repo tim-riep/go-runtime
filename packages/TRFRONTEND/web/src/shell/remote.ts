@@ -29,7 +29,7 @@ import * as TruiIcons from '@tim-riep/trui/icons';
 import type { ComponentType } from 'react';
 
 const reactVersion = React.version;
-const truiVersion = '0.1.0';
+const truiVersion = '0.2.0';
 
 function share(lib: unknown, version: string, requiredVersion: string) {
   return {
