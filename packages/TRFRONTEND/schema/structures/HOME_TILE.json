@@ -1,0 +1,62 @@
+{
+  "name": "/TRFRONTEND/HOME_TILE",
+  "texts": {
+    "en": {
+      "label": "Tile on the start page"
+    },
+    "de": {
+      "label": "Kachel auf der Startseite"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "APP",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFRONTEND/TILE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "SIZE",
+      "dataElement": "/TRFRONTEND/TILE_SIZE",
+      "notNull": true
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    },
+    {
+      "name": "SUBTITLE",
+      "dataElement": "/TRFRONTEND/SUBTITLE"
+    },
+    {
+      "name": "FOOTER",
+      "dataElement": "/TRFRONTEND/FOOTER"
+    },
+    {
+      "name": "UNIT",
+      "dataElement": "/TRFRONTEND/UNIT"
+    },
+    {
+      "name": "CONTENT",
+      "dataElement": "/TRFRONTEND/CONTENT"
+    },
+    {
+      "name": "ICON",
+      "dataElement": "/TRFRONTEND/ICON"
+    },
+    {
+      "name": "TONE",
+      "dataElement": "/TRFRONTEND/TONE"
+    }
+  ]
+}

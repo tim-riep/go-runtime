@@ -1,0 +1,34 @@
+{
+  "name": "/TRFRONTEND/HOME_TARGET",
+  "texts": {
+    "en": {
+      "label": "Launch target on the start page"
+    },
+    "de": {
+      "label": "Startziel auf der Startseite"
+    }
+  },
+  "components": [
+    {
+      "name": "KIND",
+      "dataElement": "/TRFRONTEND/TARGET_KIND",
+      "notNull": true
+    },
+    {
+      "name": "SERVICE",
+      "dataElement": "/TRBASE/REF_SERVICE"
+    },
+    {
+      "name": "ENTITY_SET",
+      "dataElement": "/TRBASE/REF_ENTITY_SET"
+    },
+    {
+      "name": "URL",
+      "dataElement": "/TRFRONTEND/URL"
+    },
+    {
+      "name": "MODULE",
+      "dataElement": "/TRFRONTEND/MODULE"
+    }
+  ]
+}

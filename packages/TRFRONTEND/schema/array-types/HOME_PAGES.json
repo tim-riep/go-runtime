@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/HOME_PAGES",
+  "texts": {
+    "en": {
+      "label": "Pages"
+    },
+    "de": {
+      "label": "Pages"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HOME_PAGE"
+  }
+}

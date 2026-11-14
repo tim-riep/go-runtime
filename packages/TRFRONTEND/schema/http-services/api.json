@@ -1,0 +1,21 @@
+{
+  "path": "api",
+  "texts": {
+    "en": {
+      "label": "Services of the user interface",
+      "description": "Start page and administration of roles as JSON"
+    },
+    "de": {
+      "label": "Dienste der Oberfläche",
+      "description": "Startseite und Rollenpflege als JSON"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRFRONTEND/HOME_API"
+    }
+  ],
+  "settings": {
+    "anonymous": false
+  }
+}

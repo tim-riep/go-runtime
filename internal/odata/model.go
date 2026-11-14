@@ -396,7 +396,7 @@ func (b *builder) entityType(bo *model.BusinessObject, e *model.Entity, def *mod
 	}
 	for i := range tab.Fields {
 		f := &tab.Fields[i]
-		if f.Origin == model.OriginTenant || (f.Owner != owner && !offered(f.Owner)) {
+		if f.Origin == model.OriginTenant || (f.Owner != owner && !offered(f.Owner) && !b.declaredByInclude(f)) {
 			continue
 		}
 		p := &Property{Name: model.PublicName(f.Name), Field: f, Domain: b.phys.Domain(f), Nullable: !f.NotNull,
@@ -605,4 +605,16 @@ func withoutTenant(pairs []model.ColumnPair) []model.ColumnPair {
 		}
 	}
 	return out
+}
+
+// declaredByInclude reports whether a column comes from a structure or table
+// that the table includes, with the owner of that structure: part of the
+// layout of the table, not an extension of another package.
+func (b *builder) declaredByInclude(f *model.Field) bool {
+	src, ok := f.Source.Get()
+	if f.Origin != model.OriginInclude || !ok {
+		return false
+	}
+	owner, ok := b.s.TypeOwner(src)
+	return ok && owner == f.Owner
 }

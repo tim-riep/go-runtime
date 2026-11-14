@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/NAMES",
+  "texts": {
+    "en": {
+      "label": "Names"
+    },
+    "de": {
+      "label": "Namen"
+    }
+  },
+  "rowType": {
+    "dataElement": "/TRFRONTEND/LOCAL_NAME"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/HOME_TILES",
+  "texts": {
+    "en": {
+      "label": "Tiles on the start page"
+    },
+    "de": {
+      "label": "Kacheln auf der Startseite"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HOME_TILE"
+  }
+}

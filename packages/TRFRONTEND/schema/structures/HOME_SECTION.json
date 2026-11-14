@@ -1,0 +1,27 @@
+{
+  "name": "/TRFRONTEND/HOME_SECTION",
+  "texts": {
+    "en": {
+      "label": "Section on the start page"
+    },
+    "de": {
+      "label": "Section auf der Startseite"
+    }
+  },
+  "components": [
+    {
+      "name": "ID",
+      "dataElement": "/TRFRONTEND/ITEM_ID",
+      "notNull": true
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE"
+    },
+    {
+      "name": "TILES",
+      "arrayType": "/TRFRONTEND/NAMES",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "/TRFRONTEND/HOME_APP",
+  "texts": {
+    "en": {
+      "label": "App on the start page"
+    },
+    "de": {
+      "label": "App auf der Startseite"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    },
+    {
+      "name": "SUBTITLE",
+      "dataElement": "/TRFRONTEND/SUBTITLE"
+    },
+    {
+      "name": "ICON",
+      "dataElement": "/TRFRONTEND/ICON"
+    },
+    {
+      "name": "TARGET",
+      "structure": "/TRFRONTEND/HOME_TARGET",
+      "notNull": true
+    },
+    {
+      "name": "PARAMETERS",
+      "arrayType": "/TRFRONTEND/APP_PARAMETERS",
+      "notNull": true
+    }
+  ]
+}

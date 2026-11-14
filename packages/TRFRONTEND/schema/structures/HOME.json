@@ -1,0 +1,28 @@
+{
+  "name": "/TRFRONTEND/HOME",
+  "texts": {
+    "en": {
+      "label": "Start page of a user"
+    },
+    "de": {
+      "label": "Startseite eines Benutzers"
+    }
+  },
+  "components": [
+    {
+      "name": "SPACES",
+      "arrayType": "/TRFRONTEND/HOME_SPACES",
+      "notNull": true
+    },
+    {
+      "name": "TILES",
+      "arrayType": "/TRFRONTEND/HOME_TILES",
+      "notNull": true
+    },
+    {
+      "name": "APPS",
+      "arrayType": "/TRFRONTEND/HOME_APPS",
+      "notNull": true
+    }
+  ]
+}

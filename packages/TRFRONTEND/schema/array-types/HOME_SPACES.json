@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/HOME_SPACES",
+  "texts": {
+    "en": {
+      "label": "Spaces"
+    },
+    "de": {
+      "label": "Spaces"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HOME_SPACE"
+  }
+}

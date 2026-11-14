@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/HOME_APPS",
+  "texts": {
+    "en": {
+      "label": "Apps on the start page"
+    },
+    "de": {
+      "label": "Apps auf der Startseite"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HOME_APP"
+  }
+}

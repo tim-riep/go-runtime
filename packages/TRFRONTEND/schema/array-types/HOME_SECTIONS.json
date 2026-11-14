@@ -1,0 +1,14 @@
+{
+  "name": "/TRFRONTEND/HOME_SECTIONS",
+  "texts": {
+    "en": {
+      "label": "Sections"
+    },
+    "de": {
+      "label": "Sections"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFRONTEND/HOME_SECTION"
+  }
+}

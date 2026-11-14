@@ -1,0 +1,33 @@
+{
+  "name": "/TRFRONTEND/HOME_SPACE",
+  "texts": {
+    "en": {
+      "label": "Space on the start page"
+    },
+    "de": {
+      "label": "Space auf der Startseite"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TITLE",
+      "dataElement": "/TRFRONTEND/TITLE",
+      "notNull": true
+    },
+    {
+      "name": "SHIPPED",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "PAGES",
+      "arrayType": "/TRFRONTEND/HOME_PAGES",
+      "notNull": true
+    }
+  ]
+}

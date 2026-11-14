@@ -314,3 +314,151 @@ func TestFrontendMetadata(t *testing.T) {
 		}
 	})
 }
+
+// homeKernel serves the frontend with the demo content: clara has the
+// role of the company clerk and may start the service of companies, nora
+// has the role but not the service. ACME has companies in Germany, Austria
+// and the United States, one of them blocked.
+func homeKernel(t *testing.T, k *kernel.Kernel) client {
+	t.Helper()
+	ctx := context.Background()
+	c := frontendServer(t, k)
+	for _, path := range []string{"/trfrontend"} {
+		if err := k.ActivateHTTPService(ctx, path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := k.ActivateService(ctx, "/TRFIN/COMPANY_SERVICE", "test"); err != nil {
+		t.Fatal(err)
+	}
+	users := map[string][]string{
+		"clara": {"/TRFIN/COMPANY_CLERK", "/TRFIN/ODATA_USER", "/TRFRONTEND/USER"},
+		"nora":  {"/TRFIN/COMPANY_CLERK", "/TRFRONTEND/USER"},
+	}
+	for user, roles := range users {
+		if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		for _, role := range roles {
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: user, Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	for _, country := range []string{"DE", "AT", "US"} {
+		mustInsert(t, k, "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": country, "NAME": country})
+	}
+	for i, x := range []struct{ id, country, status string }{{"C1", "DE", "ACTIVE"}, {"C2", "AT", "ACTIVE"}, {"C3", "DE", "BLOCKED"}, {"C4", "US", "ACTIVE"}} {
+		mustInsert(t, k, "/TRFIN/COMPANIES", values{"/RT/TENANT": "ACME", "COMPANY_ID": x.id, "NAME": "Company " + string(rune('A'+i)),
+			"COUNTRY": x.country, "STATUS": x.status})
+	}
+	return c
+}
+
+// home is the start page as the shell reads it.
+type home struct {
+	Spaces []struct {
+		Name, Title string
+		Pages       []struct {
+			Name, Title string
+			Sections    []struct {
+				ID, Title string
+				Tiles     []string
+			}
+		}
+	}
+	Tiles []struct{ Name, App, Kind, Title string }
+	Apps  []struct {
+		Name, Title string
+		Target      struct{ Kind, URL, Entity_Set string }
+	}
+}
+
+func readHome(t *testing.T, c client, user func(*http.Request), lang string) home {
+	t.Helper()
+	a := c.do("GET", "/trfrontend/api/home?lang="+lang, user, "")
+	var h home
+	if a.status != 200 || json.Unmarshal([]byte(a.body), &h) != nil {
+		t.Fatalf("home: %d %s", a.status, a.body)
+	}
+	return h
+}
+
+func TestFrontendStartPage(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		c := homeKernel(t, k)
+		clara, nora := basicAuth("clara", "secret"), basicAuth("nora", "secret")
+
+		h := readHome(t, c, clara, "de")
+		if len(h.Spaces) != 1 || h.Spaces[0].Name != "/TRFDEMO/COMPANIES_SPACE" || h.Spaces[0].Pages[0].Title != "Firmen" {
+			t.Fatalf("spaces: %+v", h.Spaces)
+		}
+		// The tile of the help is in no app collection of the role.
+		if tiles := h.Spaces[0].Pages[0].Sections[0].Tiles; strings.Join(tiles, " ") != "/TRFDEMO/COMPANIES_TILE /TRFDEMO/ACTIVE_TILE" {
+			t.Errorf("tiles of the section: %v", tiles)
+		}
+		if len(h.Apps) != 1 || h.Apps[0].Title != "Firmen" || h.Apps[0].Target.URL != "/rt/odata/trfin/company_service/" || h.Apps[0].Target.Kind != "LIST" {
+			t.Errorf("apps: %+v", h.Apps)
+		}
+		// Without the start of the service, the app and its tiles are gone.
+		if h := readHome(t, c, nora, "en"); len(h.Apps) != 0 || len(h.Tiles) != 0 || len(h.Spaces[0].Pages[0].Sections) != 0 {
+			t.Errorf("start page of nora: %+v", h)
+		}
+		// The metric counts what the user may read: active companies in
+		// Germany, Austria and Poland to Slovakia.
+		a := c.do("GET", "/trfrontend/api/tile-value?name="+url.QueryEscape("/TRFDEMO/ACTIVE_TILE"), clara, "")
+		if a.status != 200 || !strings.Contains(a.body, `"VALUE":2`) {
+			t.Errorf("metric: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/tile-value?name="+url.QueryEscape("/TRFDEMO/ACTIVE_TILE"), nora, ""); a.status != 404 {
+			t.Errorf("metric of a tile nora does not see: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/app?name="+url.QueryEscape("/TRFDEMO/COMPANIES"), clara, ""); a.status != 200 || !strings.Contains(a.body, `"PARAMETERS":[{"NAME":"mode"`) {
+			t.Errorf("app: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/app?name="+url.QueryEscape("/TRFDEMO/HELP"), clara, ""); a.status != 404 {
+			t.Errorf("app outside the collections: %d", a.status)
+		}
+		if a := c.do("GET", "/trfrontend/api/home", nil, ""); a.status != 401 {
+			t.Errorf("without sign-in: %d", a.status)
+		}
+
+		// Local entries join the shipped ones.
+		adam := func(r *http.Request) {
+			basicAuth("adam", "secret")(r)
+			r.Header.Set("Content-Type", "application/json")
+		}
+		for _, x := range []struct{ set, body string }{
+			{"LocalApps", `{"NAME":"/LOCAL/WIKI","TARGET_KIND":"URL","URL":"https://example.org/wiki","LocalAppTexts":[{"LANGUAGE":"en","TITLE":"Wiki"}]}`},
+			{"LocalTiles", `{"NAME":"/LOCAL/WIKI_TILE","APP":"/LOCAL/WIKI","SIZE":"WIDE"}`},
+			{"LocalAppCollections", `{"NAME":"/LOCAL/TOOLS","LocalAppCollectionTexts":[{"LANGUAGE":"en","TITLE":"Tools"}],
+				"LocalAppCollectionTiles":[{"POSITION":1,"TILE":"/LOCAL/WIKI_TILE"},{"POSITION":2,"TILE":"/TRFDEMO/HELP_TILE"}]}`},
+			{"LocalPages", `{"NAME":"/LOCAL/TOOLS_PAGE","LocalPageTexts":[{"LANGUAGE":"en","TITLE":"Tools"}],
+				"LocalPageSections":[{"SECTION":"MAIN","POSITION":1,"LocalPageSectionTiles":[{"POSITION":1,"TILE":"/LOCAL/WIKI_TILE"},{"POSITION":2,"TILE":"/TRFDEMO/ACTIVE_TILE"}]}]}`},
+			{"LocalSpaces", `{"NAME":"/LOCAL/TOOLS_SPACE","LocalSpaceTexts":[{"LANGUAGE":"en","TITLE":"Tools"}],"LocalSpacePages":[{"POSITION":1,"PAGE":"/LOCAL/TOOLS_PAGE"}]}`},
+			{"LocalRoleContents", `{"ROLE":"/TRFIN/COMPANY_CLERK","LocalRoleCollections":[{"APP_COLLECTION":"/LOCAL/TOOLS"}],
+				"LocalRoleSpaces":[{"POSITION":1,"SPACE":"/LOCAL/TOOLS_SPACE"}]}`},
+		} {
+			if a := c.do("POST", configRoot+x.set, adam, x.body); a.status != 201 {
+				t.Fatalf("%s: %d %s", x.set, a.status, a.body)
+			}
+		}
+		h = readHome(t, c, clara, "en")
+		var spaces, apps []string
+		for _, s := range h.Spaces {
+			spaces = append(spaces, s.Name)
+		}
+		for _, a := range h.Apps {
+			apps = append(apps, a.Name)
+		}
+		if strings.Join(spaces, " ") != "/TRFDEMO/COMPANIES_SPACE /LOCAL/TOOLS_SPACE" || strings.Join(apps, " ") != "/TRFDEMO/COMPANIES /LOCAL/WIKI /TRFDEMO/HELP" {
+			t.Errorf("with local entries: spaces %v, apps %v", spaces, apps)
+		}
+		if tiles := h.Spaces[0].Pages[0].Sections[0].Tiles; len(tiles) != 3 {
+			t.Errorf("the help tile is in a collection of the role now: %v", tiles)
+		}
+		if tiles := h.Spaces[1].Pages[0].Sections[0].Tiles; strings.Join(tiles, " ") != "/LOCAL/WIKI_TILE /TRFDEMO/ACTIVE_TILE" {
+			t.Errorf("local page: %v", tiles)
+		}
+	})
+}

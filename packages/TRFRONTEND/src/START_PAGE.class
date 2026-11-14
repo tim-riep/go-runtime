@@ -1,0 +1,437 @@
+# The start page of the signed-in user in the tenant of the request: the
+# spaces with their pages, sections and tiles, and the apps of the app
+# collections of the roles of the user, shipped and local entries
+# together. Tiles of apps the user may not start, and tiles in no app
+# collection of the roles, are left out. Texts are in the language of the
+# request, else English.
+public class /TRFRONTEND/START_PAGE
+
+  public static method BUILD() returns /TRFRONTEND/HOME raises /RT/EXCEPTION
+    var lang = /TRBASE/CONTEXT.LANGUAGE()
+    var roles = new array of STRING
+    for r in /TRBASE/CONTEXT.ROLES()
+      roles.APPEND(r.ROLE_NAME)
+    end
+    var collections = new array of STRING
+    var spaces = new array of STRING
+    for info in /TRBASE/OBJECTS.OF_TYPE("/TRFRONTEND/ROLE_CONTENT", null)
+      var content = transform info.CONTENT using /TRBASE/JSON into /TRFRONTEND/ROLE_CONTENT
+      if not roles.CONTAINS(content.ROLE)
+        continue
+      end
+      for c in content.APP_COLLECTIONS default []
+        if not collections.CONTAINS(c.APP_COLLECTION)
+          collections.APPEND(c.APP_COLLECTION)
+        end
+      end
+      for s in content.SPACES default []
+        if not spaces.CONTAINS(s.SPACE)
+          spaces.APPEND(s.SPACE)
+        end
+      end
+    end
+    for row in select from /TRFRONTEND/LOCAL_ROLE_COLLECTIONS where ROLE in roles order by ROLE, APP_COLLECTION
+      if not collections.CONTAINS(row.APP_COLLECTION)
+        collections.APPEND(row.APP_COLLECTION)
+      end
+    end
+    for row in select from /TRFRONTEND/LOCAL_ROLE_SPACES where ROLE in roles order by ROLE, POSITION
+      if not spaces.CONTAINS(row.SPACE)
+        spaces.APPEND(row.SPACE)
+      end
+    end
+
+    var home: /TRFRONTEND/HOME
+    home.SPACES = []
+    home.TILES = []
+    home.APPS = []
+    var names = new array of STRING
+    for c in collections
+      var collection = COLLECTION(c)
+      if collection is null
+        continue
+      end
+      for entry in collection.TILES default []
+        if names.CONTAINS(entry.TILE)
+          continue
+        end
+        var tile = TILE(entry.TILE)
+        if tile is null
+          continue
+        end
+        var app = HOME_APP(tile.APP, lang)
+        if app is null
+          continue
+        end
+        names.APPEND(entry.TILE)
+        home.TILES.APPEND(HOME_TILE(entry.TILE, tile, app, lang))
+        var appname = app.NAME
+        if not home.APPS.ANY(function (a: /TRFRONTEND/HOME_APP) => a.NAME = appname)
+          home.APPS.APPEND(app)
+        end
+      end
+    end
+    for s in spaces
+      var space = SPACE(s)
+      if space is null
+        continue
+      end
+      var hs: /TRFRONTEND/HOME_SPACE
+      hs.NAME = s
+      hs.TITLE = TITLE(space.TEXTS, lang) default s
+      hs.SHIPPED = not s.STARTS_WITH("/LOCAL/")
+      hs.PAGES = []
+      for entry in space.PAGES default []
+        var page = PAGE(entry.PAGE)
+        if page is null
+          continue
+        end
+        var hp: /TRFRONTEND/HOME_PAGE
+        hp.NAME = entry.PAGE
+        hp.TITLE = TITLE(page.TEXTS, lang) default entry.PAGE
+        hp.SECTIONS = []
+        for section in page.SECTIONS default []
+          var sec: /TRFRONTEND/HOME_SECTION
+          sec.ID = section.ID
+          sec.TITLE = TITLE(section.TEXTS, lang)
+          sec.TILES = []
+          for t in section.TILES default []
+            if names.CONTAINS(t.TILE)
+              sec.TILES.APPEND(t.TILE)
+            end
+          end
+          if sec.TILES.LENGTH() > 0
+            hp.SECTIONS.APPEND(sec)
+          end
+        end
+        hs.PAGES.APPEND(hp)
+      end
+      home.SPACES.APPEND(hs)
+    end
+    return home
+  end
+
+  # The metric of a tile on the start page of the user, null if the user
+  # does not see the tile or it has none.
+  public static method METRIC(name: STRING) returns /TRFRONTEND/TILE_METRIC? raises /RT/EXCEPTION
+    var home = BUILD()
+    if not home.TILES.ANY(function (t: /TRFRONTEND/HOME_TILE) => t.NAME = name and t.KIND = /TRFRONTEND/TILE_KIND.METRIC)
+      return null
+    end
+    var tile = TILE(name)
+    if tile is null
+      return null
+    end
+    return tile.METRIC
+  end
+
+  # The title of a language, else English.
+  private static method TITLE(texts: /TRFRONTEND/TITLE_TEXTS?, lang: STRING) returns STRING?
+    var found: STRING? = null
+    for t in texts default []
+      if t.LANGUAGE = lang
+        return t.TITLE
+      end
+      if t.LANGUAGE = "en"
+        found = t.TITLE
+      end
+    end
+    return found
+  end
+
+  # An app as the start page shows it, null if it does not exist or the
+  # user may not start it.
+  private static method HOME_APP(name: STRING, lang: STRING) returns /TRFRONTEND/HOME_APP? raises /RT/EXCEPTION
+    var app = APP(name)
+    if app is null
+      return null
+    end
+    var target = app.TARGET
+    var ht: /TRFRONTEND/HOME_TARGET
+    ht.KIND = target.KIND
+    ht.SERVICE = target.SERVICE
+    ht.ENTITY_SET = target.ENTITY_SET
+    ht.MODULE = target.MODULE
+    if target.KIND = /TRFRONTEND/TARGET_KIND.LIST
+      var service = target.SERVICE default ""
+      var parts = service.SPLIT("/")
+      if parts.LENGTH() <> 3
+        return null
+      end
+      var pkg = parts[2]
+      if not (authorized /TRBASE/ODATA_SERVICE
+        PACKAGE_ID = pkg
+        SERVICE_NAME = service
+        ACTIVITY = EXECUTE
+      end) or not (authorized /TRBASE/HTTP_SERVICE
+        PACKAGE_ID = "RT"
+        SERVICE_PATH = "/rt/odata"
+        ACTIVITY = EXECUTE
+      end)
+        return null
+      end
+      ht.URL = "/rt/odata/" + pkg.LOWER() + "/" + parts[3].LOWER() + "/"
+    elseif target.KIND = /TRFRONTEND/TARGET_KIND.URL
+      ht.URL = target.URL
+    else
+      var node = target.NODE default ""
+      var segments = node.SPLIT("/")
+      if segments.LENGTH() < 2
+        return null
+      end
+      if not (authorized /TRBASE/HTTP_SERVICE
+        PACKAGE_ID = segments[2].UPPER()
+        SERVICE_PATH = node
+        ACTIVITY = EXECUTE
+      end)
+        return null
+      end
+      ht.URL = node + "/" + (target.PATH default "")
+    end
+    var ha: /TRFRONTEND/HOME_APP
+    ha.NAME = name
+    ha.TITLE = name
+    for t in app.TEXTS
+      if t.LANGUAGE = lang or t.LANGUAGE = "en" and ha.TITLE = name
+        ha.TITLE = t.TITLE
+        ha.SUBTITLE = t.SUBTITLE
+      end
+    end
+    ha.ICON = app.ICON
+    ha.TARGET = ht
+    ha.PARAMETERS = app.PARAMETERS default []
+    return ha
+  end
+
+  private static method HOME_TILE(name: STRING, tile: /TRFRONTEND/TILE, app: /TRFRONTEND/HOME_APP, lang: STRING) returns /TRFRONTEND/HOME_TILE
+    var ht: /TRFRONTEND/HOME_TILE
+    ht.NAME = name
+    ht.APP = app.NAME
+    ht.KIND = tile.KIND
+    ht.SIZE = tile.SIZE
+    ht.TITLE = app.TITLE
+    ht.SUBTITLE = app.SUBTITLE
+    ht.ICON = app.ICON
+    var chosen: /TRFRONTEND/TILE_TEXT? = null
+    for t in tile.TEXTS default []
+      if t.LANGUAGE = lang or t.LANGUAGE = "en" and chosen is null
+        chosen = t
+      end
+    end
+    if chosen is not null
+      ht.TITLE = chosen.TITLE default ht.TITLE
+      ht.SUBTITLE = chosen.SUBTITLE default ht.SUBTITLE
+      ht.FOOTER = chosen.FOOTER
+      ht.UNIT = chosen.UNIT
+      ht.CONTENT = chosen.CONTENT
+    end
+    var metric = tile.METRIC
+    if metric is not null
+      ht.TONE = metric.TONE
+    end
+    return ht
+  end
+
+  # The content of a shipped object of a type, null if there is none.
+  private static method SHIPPED(name: STRING, type: STRING) returns STRING? raises /RT/EXCEPTION
+    var info = /TRBASE/OBJECTS.GET(name)
+    if info is null or info.TYPE <> type
+      return null
+    end
+    return info.CONTENT
+  end
+
+  # An app, shipped or local.
+  public static method APP(name: STRING) returns /TRFRONTEND/APP? raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var content = SHIPPED(name, "/TRFRONTEND/APP")
+      if content is null
+        return null
+      end
+      return transform content using /TRBASE/JSON into /TRFRONTEND/APP
+    end
+    var rows = select from /TRFRONTEND/LOCAL_APPS where NAME = name
+    if rows.LENGTH() = 0
+      return null
+    end
+    var row = rows[1]
+    var app: /TRFRONTEND/APP
+    var target: /TRFRONTEND/APP_TARGET
+    target.KIND = row.TARGET_KIND
+    target.SERVICE = row.SERVICE
+    target.ENTITY_SET = row.ENTITY_SET
+    target.NODE = row.NODE
+    target.PATH = row.PATH
+    target.MODULE = row.MODULE
+    target.URL = row.URL
+    app.TARGET = target
+    app.ICON = row.ICON
+    app.TEXTS = []
+    for t in select from /TRFRONTEND/LOCAL_APP_TEXTS where NAME = name order by LANGUAGE
+      var text: /TRFRONTEND/APP_TEXT
+      text.LANGUAGE = t.LANGUAGE
+      text.TITLE = t.TITLE
+      text.SUBTITLE = t.SUBTITLE
+      app.TEXTS.APPEND(text)
+    end
+    var params = new array of /TRFRONTEND/APP_PARAMETER
+    for p in select from /TRFRONTEND/LOCAL_APP_PARAMETERS where NAME = name order by PARAMETER
+      var par: /TRFRONTEND/APP_PARAMETER
+      par.NAME = p.PARAMETER
+      par.VALUE = p.VALUE
+      params.APPEND(par)
+    end
+    app.PARAMETERS = params
+    return app
+  end
+
+  # A tile, shipped or local.
+  public static method TILE(name: STRING) returns /TRFRONTEND/TILE? raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var content = SHIPPED(name, "/TRFRONTEND/TILE")
+      if content is null
+        return null
+      end
+      return transform content using /TRBASE/JSON into /TRFRONTEND/TILE
+    end
+    var rows = select from /TRFRONTEND/LOCAL_TILES where NAME = name
+    if rows.LENGTH() = 0
+      return null
+    end
+    var row = rows[1]
+    var tile: /TRFRONTEND/TILE
+    tile.APP = row.APP
+    tile.KIND = row.KIND
+    tile.SIZE = row.SIZE
+    var service = row.METRIC_SERVICE
+    var set = row.METRIC_ENTITY_SET
+    if service is not null and set is not null
+      var metric: /TRFRONTEND/TILE_METRIC
+      metric.SERVICE = service
+      metric.ENTITY_SET = set
+      metric.FILTER = row.METRIC_FILTER
+      metric.TONE = row.METRIC_TONE
+      tile.METRIC = metric
+    end
+    var texts = new array of /TRFRONTEND/TILE_TEXT
+    for t in select from /TRFRONTEND/LOCAL_TILE_TEXTS where NAME = name order by LANGUAGE
+      var text: /TRFRONTEND/TILE_TEXT
+      text.LANGUAGE = t.LANGUAGE
+      text.TITLE = t.TITLE
+      text.SUBTITLE = t.SUBTITLE
+      text.FOOTER = t.FOOTER
+      text.UNIT = t.UNIT
+      text.CONTENT = t.CONTENT
+      texts.APPEND(text)
+    end
+    tile.TEXTS = texts
+    return tile
+  end
+
+  # An app collection, shipped or local.
+  public static method COLLECTION(name: STRING) returns /TRFRONTEND/APP_COLLECTION? raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var content = SHIPPED(name, "/TRFRONTEND/APP_COLLECTION")
+      if content is null
+        return null
+      end
+      return transform content using /TRBASE/JSON into /TRFRONTEND/APP_COLLECTION
+    end
+    if (select count from /TRFRONTEND/LOCAL_APP_COLLECTIONS where NAME = name) = 0
+      return null
+    end
+    var collection: /TRFRONTEND/APP_COLLECTION
+    collection.TEXTS = []
+    for t in select from /TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS where NAME = name order by LANGUAGE
+      var text: /TRFRONTEND/COLLECTION_TEXT
+      text.LANGUAGE = t.LANGUAGE
+      text.TITLE = t.TITLE
+      text.DESCRIPTION = t.DESCRIPTION
+      collection.TEXTS.APPEND(text)
+    end
+    var tiles = new array of /TRFRONTEND/TILE_ENTRY
+    for t in select from /TRFRONTEND/LOCAL_APP_COLLECTION_TILES where NAME = name order by POSITION
+      var entry: /TRFRONTEND/TILE_ENTRY
+      entry.TILE = t.TILE
+      tiles.APPEND(entry)
+    end
+    collection.TILES = tiles
+    return collection
+  end
+
+  # A page, shipped or local.
+  public static method PAGE(name: STRING) returns /TRFRONTEND/PAGE? raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var content = SHIPPED(name, "/TRFRONTEND/PAGE")
+      if content is null
+        return null
+      end
+      return transform content using /TRBASE/JSON into /TRFRONTEND/PAGE
+    end
+    if (select count from /TRFRONTEND/LOCAL_PAGES where NAME = name) = 0
+      return null
+    end
+    var page: /TRFRONTEND/PAGE
+    page.TEXTS = []
+    for t in select from /TRFRONTEND/LOCAL_PAGE_TEXTS where NAME = name order by LANGUAGE
+      var text: /TRFRONTEND/TITLE_TEXT
+      text.LANGUAGE = t.LANGUAGE
+      text.TITLE = t.TITLE
+      page.TEXTS.APPEND(text)
+    end
+    var sections = new array of /TRFRONTEND/SECTION
+    for s in select from /TRFRONTEND/LOCAL_PAGE_SECTIONS where NAME = name order by POSITION
+      var section: /TRFRONTEND/SECTION
+      section.ID = s.SECTION
+      var texts = new array of /TRFRONTEND/TITLE_TEXT
+      for t in select from /TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS where NAME = name and SECTION = s.SECTION order by LANGUAGE
+        var text: /TRFRONTEND/TITLE_TEXT
+        text.LANGUAGE = t.LANGUAGE
+        text.TITLE = t.TITLE
+        texts.APPEND(text)
+      end
+      section.TEXTS = texts
+      var tiles = new array of /TRFRONTEND/TILE_ENTRY
+      for t in select from /TRFRONTEND/LOCAL_PAGE_SECTION_TILES where NAME = name and SECTION = s.SECTION order by POSITION
+        var entry: /TRFRONTEND/TILE_ENTRY
+        entry.TILE = t.TILE
+        tiles.APPEND(entry)
+      end
+      section.TILES = tiles
+      sections.APPEND(section)
+    end
+    page.SECTIONS = sections
+    return page
+  end
+
+  # A space, shipped or local.
+  public static method SPACE(name: STRING) returns /TRFRONTEND/SPACE? raises /RT/EXCEPTION
+    if not name.STARTS_WITH("/LOCAL/")
+      var content = SHIPPED(name, "/TRFRONTEND/SPACE")
+      if content is null
+        return null
+      end
+      return transform content using /TRBASE/JSON into /TRFRONTEND/SPACE
+    end
+    if (select count from /TRFRONTEND/LOCAL_SPACES where NAME = name) = 0
+      return null
+    end
+    var space: /TRFRONTEND/SPACE
+    space.TEXTS = []
+    for t in select from /TRFRONTEND/LOCAL_SPACE_TEXTS where NAME = name order by LANGUAGE
+      var text: /TRFRONTEND/TITLE_TEXT
+      text.LANGUAGE = t.LANGUAGE
+      text.TITLE = t.TITLE
+      space.TEXTS.APPEND(text)
+    end
+    var pages = new array of /TRFRONTEND/PAGE_ENTRY
+    for p in select from /TRFRONTEND/LOCAL_SPACE_PAGES where NAME = name order by POSITION
+      var entry: /TRFRONTEND/PAGE_ENTRY
+      entry.PAGE = p.PAGE
+      pages.APPEND(entry)
+    end
+    space.PAGES = pages
+    return space
+  end
+
+end

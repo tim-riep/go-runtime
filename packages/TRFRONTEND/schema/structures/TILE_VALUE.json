@@ -1,0 +1,23 @@
+{
+  "name": "/TRFRONTEND/TILE_VALUE",
+  "texts": {
+    "en": {
+      "label": "Value of a metric tile"
+    },
+    "de": {
+      "label": "Wert einer Kennzahlkachel"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRFRONTEND/LOCAL_NAME",
+      "notNull": true
+    },
+    {
+      "name": "VALUE",
+      "domain": "/TRBASE/COUNTER",
+      "notNull": true
+    }
+  ]
+}

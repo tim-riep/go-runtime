@@ -1,0 +1,60 @@
+# The start page service below /trfrontend/api for the shell, as JSON:
+#   GET home                     the spaces, tiles and apps of the user
+#   GET app?name=<app>           one app the user may start, for bookmarks
+#   GET tile-value?name=<tile>   the value of a metric tile
+public class /TRFRONTEND/HOME_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var rest = request.REST_PATH()
+    if request.METHOD() <> "GET" or rest <> "home" and rest <> "app" and rest <> "tile-value"
+      return false
+    end
+    response.SET_HEADER("Content-Type", "application/json; charset=utf-8")
+    response.SET_HEADER("Cache-Control", "no-store")
+    if rest = "home"
+      response.WRITE_TEXT(transform /TRFRONTEND/START_PAGE.BUILD() using /TRBASE/JSON)
+      return true
+    end
+    var name = request.QUERY("name")
+    if name is null
+      FAIL(response, 400, "bad-request", "the parameter name is missing")
+      return true
+    end
+    var wanted = name
+    if rest = "app"
+      var home = /TRFRONTEND/START_PAGE.BUILD()
+      var app = home.APPS.FIND(function (a: /TRFRONTEND/HOME_APP) => a.NAME = wanted)
+      if app is null
+        FAIL(response, 404, "not-found", "there is no app {name} that you may start")
+        return true
+      end
+      response.WRITE_TEXT(transform app using /TRBASE/JSON)
+      return true
+    end
+    var metric = /TRFRONTEND/START_PAGE.METRIC(name)
+    if metric is null
+      FAIL(response, 404, "not-found", "there is no metric tile {name} on your start page")
+      return true
+    end
+    var parts = metric.SERVICE.SPLIT("/")
+    var value: /TRFRONTEND/TILE_VALUE
+    value.NAME = name
+    try
+      value.VALUE = /TRBASE/ODATA.COUNT(parts[2], metric.SERVICE, metric.ENTITY_SET, metric.FILTER)
+    catch e: /TRBASE/ODATA_ERROR
+      FAIL(response, 502, "metric-failed", e.TEXT)
+      return true
+    end
+    response.WRITE_TEXT(transform value using /TRBASE/JSON)
+    return true
+  end
+
+  private method FAIL(response: /TRBASE/HTTP_RESPONSE, status: INT4, code: STRING, text: STRING) raises /RT/EXCEPTION
+    response.SET_STATUS(status)
+    var error = new map of STRING to STRING
+    error.SET("code", code)
+    error.SET("message", text)
+    response.WRITE_TEXT(transform error using /TRBASE/JSON)
+  end
+
+end
