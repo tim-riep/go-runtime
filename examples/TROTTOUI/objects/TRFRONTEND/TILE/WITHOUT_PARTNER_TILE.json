@@ -1,0 +1,26 @@
+{
+  "name": "/TROTTOUI/WITHOUT_PARTNER_TILE",
+  "content": {
+    "APP": "/TROTTOUI/OTTO_COMPANIES",
+    "KIND": "METRIC",
+    "SIZE": "SMALL",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Without OTTO partner",
+        "UNIT": "companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Ohne OTTO-Partner",
+        "UNIT": "Firmen"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies",
+      "FILTER": "TROTTO_OTTO_ID eq null",
+      "TONE": "CRITICAL"
+    }
+  }
+}

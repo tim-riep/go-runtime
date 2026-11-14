@@ -1,0 +1,16 @@
+{
+  "name": "/TROTTOUI/SYNC_OPERATOR_CONTENT",
+  "content": {
+    "ROLE": "/TROTTO/SYNC_OPERATOR",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TROTTOUI/OTTO_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TROTTOUI/OTTO_SPACE"
+      }
+    ]
+  }
+}

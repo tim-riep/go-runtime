@@ -178,11 +178,17 @@ export async function changeSession(change: { tenant?: string; language?: string
   return remember(await request<Session>('PATCH', '/rt/session', change));
 }
 
+/** The language of the session as query parameter, so that it wins over the browser's. */
+function lang(): string {
+  return language ? `lang=${encodeURIComponent(language)}` : '';
+}
+
 export function readHome(): Promise<Home> {
-  return request<Home>('GET', '/trfrontend/api/home');
+  const l = lang();
+  return request<Home>('GET', `/trfrontend/api/home${l ? `?${l}` : ''}`);
 }
 
 export async function readTileValue(name: string): Promise<string> {
-  const v = await request<{ NAME: string; VALUE: number | string }>('GET', `/trfrontend/api/tile-value?name=${encodeURIComponent(name)}`);
+  const v = await request<{ NAME: string; VALUE: number | string }>('GET', `/trfrontend/api/tile-value?name=${encodeURIComponent(name)}${lang() ? `&${lang()}` : ''}`);
   return String(v.VALUE);
 }

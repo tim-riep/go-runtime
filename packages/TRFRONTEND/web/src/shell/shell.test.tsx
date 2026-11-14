@@ -94,7 +94,7 @@ beforeEach(() => {
       return signedIn ? answer(200, session) : answer(401, { code: 'session-required', message: 'no' });
     }
     if (!signedIn) return answer(401, { code: 'session-expired', message: 'expired' });
-    if (url === '/trfrontend/api/home') return answer(200, home);
+    if (url.startsWith('/trfrontend/api/home')) return answer(200, home);
     if (url.startsWith('/trfrontend/api/tile-value')) return answer(200, { NAME: '/TRFDEMO/METRIC', VALUE: 42 });
     return answer(404, { code: 'not-found', message: url });
   });
@@ -120,6 +120,7 @@ describe('shell', () => {
     expect(await screen.findByRole('tab', { name: 'Finance' })).toBeTruthy();
     expect(await screen.findByText('Manage')).toBeTruthy();
     await waitFor(() => expect(screen.getByText('42')).toBeTruthy());
+    expect(calls.find((c) => c.url.startsWith('/trfrontend/api/home'))?.url).toBe('/trfrontend/api/home?lang=en');
     const post = calls.find((c) => c.method === 'POST');
     expect(JSON.parse(post?.body ?? '{}')).toEqual({ user: 'ALICE', password: 'secret' });
   });

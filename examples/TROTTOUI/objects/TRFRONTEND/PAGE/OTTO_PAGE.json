@@ -1,0 +1,35 @@
+{
+  "name": "/TROTTOUI/OTTO_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "OTTO"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "OTTO"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "PARTNERS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Partners"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Partner"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TROTTOUI/WITHOUT_PARTNER_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

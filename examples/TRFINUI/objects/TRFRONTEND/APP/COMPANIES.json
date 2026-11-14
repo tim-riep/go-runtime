@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/COMPANIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies",
+        "SUBTITLE": "Maintain"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen",
+        "SUBTITLE": "Pflegen"
+      }
+    ],
+    "ICON": "building",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies"
+    }
+  }
+}

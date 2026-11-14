@@ -1,0 +1,20 @@
+{
+  "name": "/TROTTOUI/OTTO_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "OTTO"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "OTTO"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TROTTOUI/OTTO_PAGE"
+      }
+    ]
+  }
+}

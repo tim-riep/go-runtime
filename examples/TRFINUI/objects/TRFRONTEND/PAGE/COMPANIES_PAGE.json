@@ -1,0 +1,38 @@
+{
+  "name": "/TRFINUI/COMPANIES_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "DAILY",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Daily work"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Tagesgeschäft"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/COMPANIES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/ACTIVE_COMPANIES_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

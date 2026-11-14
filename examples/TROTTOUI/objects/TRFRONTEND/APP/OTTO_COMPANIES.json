@@ -1,0 +1,21 @@
+{
+  "name": "/TROTTOUI/OTTO_COMPANIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies at OTTO"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen bei OTTO"
+      }
+    ],
+    "ICON": "building",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies"
+    }
+  }
+}

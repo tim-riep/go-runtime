@@ -1338,6 +1338,65 @@ point `/TRBASE/ODATA_METADATA`. [docs/odata.md](docs/odata.md) describes service
 supported parts of OData and the use in a spreadsheet; [docs/odata-vocabulary.md](docs/odata-vocabulary.md)
 the vocabulary `RT.Fields` of the kernel.
 
+## User interface
+
+The package `TRFRONTEND` in [packages/TRFRONTEND](packages/TRFRONTEND) brings the user
+interface to the browser, built with the components of
+[TRUI](https://github.com/tim-riep/trui):
+
+- a **shell** at `/trfrontend/` with sign-in over browser sessions (`/rt/session`), a header
+  with search over the apps, a switch between spaces and a user menu for language, tenant,
+  theme, density and signing out;
+- a **start page** of the spaces of the roles of the user: pages and their sections as groups
+  of tiles, metric tiles that count entities of a service with the authorizations of the user;
+- **generic list and detail pages** for apps of the kind `LIST`, driven by the metadata of
+  the service and the UI annotations of packages;
+- **apps** of the kinds `PAGE` (a page of a service node in the content area), `REMOTE` (a
+  module loaded with Module Federation that shares React and TRUI with the shell) and `URL`;
+- **administration**: apps for local apps, tiles, app collections, pages, spaces and role
+  contents, and a role page for local roles and role assignments, for the role
+  `/TRFRONTEND/ADMINISTRATOR`.
+
+Packages contribute through the object types of TRFRONTEND: `/TRFRONTEND/APP`, `TILE`,
+`APP_COLLECTION`, `PAGE`, `SPACE`, `ROLE_CONTENT` (which collections and spaces a role gets)
+and `UI_ANNOTATIONS` (columns, filters, sections and field groups of an entity, which other
+packages extend). [docs/frontend-vocabulary.md](docs/frontend-vocabulary.md) describes the
+annotations in the metadata. Administrators add local entries under `/LOCAL/` in the
+administration apps or copy shipped ones.
+
+From an empty database to the shell with the example companies, in the directory of the
+repository (Node 22 builds the user interface):
+
+```bash
+export RT_DATABASE=sqlite:rt.db
+rt init --admin admin --tenant ACME
+rt language add de
+make trfrontend
+rt install packages/TRFRONTEND/dist/TRFRONTEND examples/TRFIN examples/TROTTO examples/TRFINUI examples/TROTTOUI --yes
+rt http activate /trui
+rt http activate /trfrontend
+rt service activate /TRFIN/COMPANY_SERVICE
+rt service activate /TRFRONTEND/CONFIGURATION_SERVICE
+rt user create clara --tenant ACME
+rt role assign clara /TRFRONTEND/USER --tenant ACME
+rt role assign clara /TRFIN/COMPANY_CLERK --tenant ACME
+rt role assign clara /TRFIN/COMPANY_ADMIN --tenant ACME
+rt role assign clara /TRFIN/ODATA_USER --tenant ACME
+rt role assign admin /TRFRONTEND/ADMINISTRATOR --tenant ACME
+rt run TRFIN /TRFIN/COMPANY_SERVICE ADD_COUNTRY '["DE", "Germany"]' --tenant ACME --user admin
+rt serve --insecure-session-cookie
+```
+
+`rt init` and `rt user create` read the passwords from standard input; the examples have
+German texts, hence `rt language add de`. `/TRFIN/COMPANY_CLERK` gives clara the start page
+of companies, `/TRFIN/COMPANY_ADMIN` lets her create them. `rt install` of TRFRONTEND brings
+TRUI from GitHub along, since the manifest names its
+source. Instead of `make trfrontend`, a release of TRFRONTEND installs directly:
+`rt install github.com/tim-riep/go-runtime/packages/TRFRONTEND@1.0.0`. Then open
+`http://localhost:8080/trfrontend/` and sign in as `clara` or `admin`.
+`--insecure-session-cookie` lets the session cookie travel without TLS and is meant for
+development only.
+
 ## Library
 
 ```go
@@ -1495,21 +1554,28 @@ with golden files in `testdata/golden`; after an intended change, update them wi
 go test ./internal/planner ./kernel ./lang/syntax -update
 ```
 
+The user interface of TRFRONTEND has tests of its own in `packages/TRFRONTEND/web`, which need
+Node 22: `npm test` runs the unit tests and the components in Chromium, Firefox and WebKit,
+`TRUI_PACKAGE=<TRUI directory or ZIP> npm run test:e2e` builds `rt`, sets up a database as in
+[User interface](#user-interface) and drives the shell in the three browsers with checks of
+axe. A tag `trfrontend-v<version>` releases the package with
+`.github/workflows/trfrontend-release.yml`.
+
 ## Not included yet
 
 Stylesheets that include, import or read other stylesheets and documents, native methods
 with network or file access, outgoing HTTP connections, responses streamed from code,
 further ways of signing in, messages with texts per language, a
-language server and a debugger, user interface, views, indexes beyond keys,
+language server and a debugger, views, indexes beyond keys,
 data migrations with custom logic, joins and aggregates other than `count` in code,
 display properties of fields, translation packages
 for objects of other packages, export, delivery or protection of configuration by data class, field and operation control per
 instance, extensions of drafts and of services, assets uploaded at runtime or per tenant, extending asset repositories of
 other packages, references to assets from other objects, compression of stored assets and image processing,
-includes in extensions, derived roles with organizational levels, suggested values per application, start page contents of roles, groups of users and
+includes in extensions, derived roles with organizational levels, suggested values per application, groups of users and
 external role sources, extension points of kernel packages for events of the kernel such as
 sign-in or installation, implementations in local objects without package, implementations
-called asynchronously after the commit, extensions of user interfaces, drafts of business
+called asynchronously after the commit, drafts of business
 objects, `$batch`, `$search`, `$apply`, lambda operators, delta queries, media and OData
 Version 2 in services, business objects in
 `/TRBASE/REFLECTOR` and data migrations of business object tables that bypass their

@@ -593,3 +593,45 @@ func TestFrontendRolesAPI(t *testing.T) {
 		}
 	})
 }
+
+func TestFrontendExamples(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		ctx := context.Background()
+		initialized(t, k)
+		if _, err := k.Install(ctx, uiPackages(t), kernel.Options{}); err != nil {
+			t.Fatalf("%v\n%s", err, objectErrors(err))
+		}
+		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
+			t.Fatal(err)
+		}
+		if err := k.ActivateHTTPService(ctx, "/trfrontend"); err != nil {
+			t.Fatal(err)
+		}
+		if err := k.ActivateService(ctx, "/TRFIN/COMPANY_SERVICE", "test"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Users().Create(ctx, "olga", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		for _, role := range []string{"/TRFIN/COMPANY_CLERK", "/TRFIN/ODATA_USER", "/TRFRONTEND/USER", "/TROTTO/SYNC_OPERATOR"} {
+			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "olga", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		srv := httptest.NewServer(k.HTTPHandler())
+		t.Cleanup(srv.Close)
+		c := client{t, srv.URL}
+		h := readHome(t, c, basicAuth("olga", "secret"), "de")
+		var spaces []string
+		for _, s := range h.Spaces {
+			spaces = append(spaces, s.Name+"="+s.Title)
+		}
+		if strings.Join(spaces, " ") != "/TRFINUI/COMPANIES_SPACE=Firmen /TROTTOUI/OTTO_SPACE=OTTO" || len(h.Tiles) != 3 || len(h.Apps) != 2 {
+			t.Errorf("start page of the examples: %+v", h)
+		}
+		a := c.do("GET", "/trfrontend/api/tile-value?name="+url.QueryEscape("/TROTTOUI/WITHOUT_PARTNER_TILE"), basicAuth("olga", "secret"), "")
+		if a.status != 200 || !strings.Contains(a.body, `"VALUE":0`) {
+			t.Errorf("metric of TROTTOUI: %d %s", a.status, a.body)
+		}
+	})
+}
