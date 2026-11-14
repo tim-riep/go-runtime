@@ -1,0 +1,8 @@
+# A request to a service of TRFRONTEND lacks a query parameter it needs.
+public class /TRFRONTEND/PARAMETER_MISSING extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

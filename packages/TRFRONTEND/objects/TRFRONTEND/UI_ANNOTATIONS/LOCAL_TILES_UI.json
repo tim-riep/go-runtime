@@ -1,0 +1,124 @@
+{
+  "name": "/TRFRONTEND/LOCAL_TILES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_TILES",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Tile",
+          "TYPE_NAME_PLURAL": "Tiles"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kachel",
+          "TYPE_NAME_PLURAL": "Kacheln"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "APP"
+        },
+        {
+          "FIELD": "KIND"
+        },
+        {
+          "FIELD": "SIZE"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "APP"
+        },
+        {
+          "FIELD": "KIND"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_TILE"
+        }
+      ],
+      "MERGE_SET": "Tiles"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                },
+                {
+                  "FIELD": "APP"
+                },
+                {
+                  "FIELD": "KIND"
+                },
+                {
+                  "FIELD": "SIZE"
+                },
+                {
+                  "FIELD": "METRIC_SERVICE"
+                },
+                {
+                  "FIELD": "METRIC_ENTITY_SET"
+                },
+                {
+                  "FIELD": "METRIC_FILTER"
+                },
+                {
+                  "FIELD": "METRIC_TONE"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_TILE_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

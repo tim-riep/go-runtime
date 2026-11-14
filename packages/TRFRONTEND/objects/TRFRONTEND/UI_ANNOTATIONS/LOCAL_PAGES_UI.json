@@ -1,0 +1,104 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_PAGES",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Page",
+          "TYPE_NAME_PLURAL": "Pages"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Page",
+          "TYPE_NAME_PLURAL": "Pages"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_PAGE"
+        }
+      ],
+      "MERGE_SET": "Pages"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_PAGE_TEXTS"
+          }
+        },
+        {
+          "ID": "SECTIONS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Sections"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Abschnitte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_PAGE_SECTIONS"
+          }
+        }
+      ]
+    }
+  }
+}

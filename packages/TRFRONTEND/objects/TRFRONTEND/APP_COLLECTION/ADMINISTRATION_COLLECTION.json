@@ -1,0 +1,38 @@
+{
+  "name": "/TRFRONTEND/ADMINISTRATION_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Administration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Verwaltung"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFRONTEND/MANAGE_APPS_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_TILES_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_APP_COLLECTIONS_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_PAGES_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_SPACES_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_ROLE_CONTENTS_TILE"
+      },
+      {
+        "TILE": "/TRFRONTEND/MANAGE_ROLES_TILE"
+      }
+    ]
+  }
+}

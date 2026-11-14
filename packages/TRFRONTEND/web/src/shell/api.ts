@@ -116,7 +116,8 @@ export function currentLanguage(): string | null {
   return language;
 }
 
-async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+/** A JSON request with the CSRF token of the session for changes. */
+export async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';

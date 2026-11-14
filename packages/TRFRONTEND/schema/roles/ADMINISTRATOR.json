@@ -41,7 +41,7 @@
         ],
         "SERVICE_PATH": [
           {
-            "pattern": "/trfrontend/api*"
+            "pattern": "/trfrontend*"
           }
         ],
         "ACTIVITY": [

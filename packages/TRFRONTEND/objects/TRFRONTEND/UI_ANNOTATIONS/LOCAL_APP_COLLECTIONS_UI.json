@@ -1,0 +1,104 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP_COLLECTIONS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_APP_COLLECTIONS",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "App collection",
+          "TYPE_NAME_PLURAL": "App collections"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "App-Sammlung",
+          "TYPE_NAME_PLURAL": "App-Sammlungen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_APP_COLLECTION"
+        }
+      ],
+      "MERGE_SET": "AppCollections"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_APP_COLLECTION_TEXTS"
+          }
+        },
+        {
+          "ID": "TILES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Tiles"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kacheln"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_APP_COLLECTION_TILES"
+          }
+        }
+      ]
+    }
+  }
+}

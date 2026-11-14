@@ -9,6 +9,12 @@
         "en": "The page of the shell with the import map of TRUI",
         "de": "Die Seite der Shell mit der Import Map von TRUI"
       }
+    },
+    "roles.html": {
+      "description": {
+        "en": "The page of the administration of roles",
+        "de": "Die Seite der Rollenpflege"
+      }
     }
   }
 }

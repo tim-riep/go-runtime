@@ -1,0 +1,16 @@
+{
+  "name": "/TRFRONTEND/ADMINISTRATOR_CONTENT",
+  "content": {
+    "ROLE": "/TRFRONTEND/ADMINISTRATOR",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRFRONTEND/ADMINISTRATION_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRFRONTEND/ADMINISTRATION_SPACE"
+      }
+    ]
+  }
+}

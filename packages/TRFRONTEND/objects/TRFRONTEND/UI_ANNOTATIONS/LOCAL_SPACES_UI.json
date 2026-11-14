@@ -1,0 +1,104 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_SPACES",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Space",
+          "TYPE_NAME_PLURAL": "Spaces"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Space",
+          "TYPE_NAME_PLURAL": "Spaces"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_SPACE"
+        }
+      ],
+      "MERGE_SET": "Spaces"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_SPACE_TEXTS"
+          }
+        },
+        {
+          "ID": "PAGES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Pages"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Pages"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_SPACE_PAGES"
+          }
+        }
+      ]
+    }
+  }
+}

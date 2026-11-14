@@ -35,7 +35,7 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     target: 'es2023',
-    lib: { entry: 'src/main.tsx', formats: ['es'], fileName: () => 'shell.js' },
+    lib: { entry: { shell: 'src/main.tsx', roles: 'src/apps/roles/main.tsx' }, formats: ['es'], fileName: (_format, name) => `${name}.js` },
     rollupOptions: {
       external: shared,
       output: { chunkFileNames: 'chunks/[name]-[hash].js', assetFileNames: 'chunks/[name]-[hash][extname]' },

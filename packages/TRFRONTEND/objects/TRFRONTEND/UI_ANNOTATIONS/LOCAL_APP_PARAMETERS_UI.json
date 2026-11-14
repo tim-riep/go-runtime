@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APP_PARAMETERS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_APP_PARAMETERS",
+    "HEADER": {
+      "TITLE_FIELD": "PARAMETER",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Parameter",
+          "TYPE_NAME_PLURAL": "Parameters"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Parameter",
+          "TYPE_NAME_PLURAL": "Parameter"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "PARAMETER"
+        },
+        {
+          "FIELD": "VALUE"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "PARAMETER",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "PARAMETER"
+                },
+                {
+                  "FIELD": "VALUE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

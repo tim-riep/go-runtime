@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_SPACES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_ROLE_SPACES",
+    "HEADER": {
+      "TITLE_FIELD": "SPACE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Space",
+          "TYPE_NAME_PLURAL": "Spaces"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Space",
+          "TYPE_NAME_PLURAL": "Spaces"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "POSITION"
+        },
+        {
+          "FIELD": "SPACE"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "POSITION",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "POSITION"
+                },
+                {
+                  "FIELD": "SPACE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

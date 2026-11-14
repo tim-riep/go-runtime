@@ -17,7 +17,9 @@
 // creating, deleting and bound actions by the capabilities of the entity
 // set. With a merge set (Frontend.ListPage.MergeSet) it shows the entries
 // of both sets in one table, sorted and paged in the browser, and marks
-// those of the merge set, which cannot be changed.
+// those of the merge set, which cannot be changed. Unbound actions of the
+// list (action imports) run without selection; a parameter SOURCE starts
+// with the key of the one selected entry, e.g. to copy a shipped entry.
 
 import { Banner, Button, Form, FormField, PageHeader, Table, type TableColumn, type TableSort, Tag, Toolbar, type ToolbarItem } from '@tim-riep/trui';
 import { useMessageDialog, useToast } from '@tim-riep/trui/core';
@@ -66,6 +68,7 @@ export function ListPage({ client, model, view, texts, params, onOpen, onCreate,
   const [rowsByKey] = useState(() => new Map<string, Entity>());
   const [merged, setMerged] = useState<{ rows: Entity[]; truncated: boolean } | null>(null);
   const [action, setAction] = useState<string | null>(null);
+  const [imported, setImported] = useState<string | null>(null);
   const toast = useToast();
   const dialog = useMessageDialog();
 
@@ -119,7 +122,32 @@ export function ListPage({ client, model, view, texts, params, onOpen, onCreate,
   if (view.insertable) items.push({ key: 'create', label: texts.create, variant: 'primary', overflow: 'never' });
   if (view.deletable) items.push({ key: 'delete', label: texts.delete, disabled: selectedRows.length === 0 || anyShipped, overflow: 'never' });
   for (const a of view.actions) {
-    items.push({ key: `action:${a}`, label: actionLabel(model, a), disabled: selectedRows.length === 0 || anyShipped });
+    const imported = importOf(a);
+    if (imported) {
+      items.push({ key: `import:${imported}`, label: actionLabel(model, a) });
+    } else {
+      items.push({ key: `action:${a}`, label: actionLabel(model, a), disabled: selectedRows.length === 0 || anyShipped });
+    }
+  }
+
+  /** The action import of an unbound action, by its qualified name. */
+  function importOf(name: string): string | null {
+    for (const [n, a] of Object.entries(model.imports)) {
+      if (a.name === name) return n;
+    }
+    return null;
+  }
+
+  async function runImport(name: string, args: Record<string, Value>) {
+    setImported(null);
+    try {
+      const r = await client.action(name, args);
+      for (const m of r.messages) toast.show({ message: m.message, tone: m.severity === 'error' ? 'error' : m.severity === 'warning' ? 'warning' : 'information' });
+      toast.show({ message: texts.actionDone, tone: 'success' });
+    } catch (e) {
+      onError(e);
+    }
+    reload();
   }
 
   const reload = () => {
@@ -166,6 +194,10 @@ export function ListPage({ client, model, view, texts, params, onOpen, onCreate,
       onCreate();
     } else if (key === 'delete') {
       void remove();
+    } else if (key.startsWith('import:')) {
+      const name = key.slice('import:'.length);
+      if ((model.imports[name]?.parameters.length ?? 0) > 0) setImported(name);
+      else void runImport(name, {});
     } else if (key.startsWith('action:')) {
       const name = key.slice('action:'.length);
       const a = model.actions.find((x) => x.name === name && x.boundTo === set.type.name);
@@ -179,6 +211,8 @@ export function ListPage({ client, model, view, texts, params, onOpen, onCreate,
     setSelected(new Set());
   };
   const boundAction = action ? model.actions.find((x) => x.name === action && x.boundTo === set.type.name) : undefined;
+  const importAction = imported ? model.imports[imported] : undefined;
+  const source = selectedRows.length === 1 && selectedRows[0] ? selectedRows[0][set.type.key[0] ?? ''] : undefined;
 
   const table = view.mergeSet ? (
     <Table<Entity>
@@ -279,6 +313,17 @@ export function ListPage({ client, model, view, texts, params, onOpen, onCreate,
       {table}
       {boundAction ? (
         <ActionDialog model={model} action={boundAction} client={client} texts={texts} onRun={(p) => void run(boundAction.name, p)} onCancel={() => setAction(null)} />
+      ) : null}
+      {importAction && imported ? (
+        <ActionDialog
+          model={model}
+          action={importAction}
+          client={client}
+          texts={texts}
+          initial={source === undefined ? {} : { SOURCE: source }}
+          onRun={(p) => void runImport(imported, p)}
+          onCancel={() => setImported(null)}
+        />
       ) : null}
     </div>
   );

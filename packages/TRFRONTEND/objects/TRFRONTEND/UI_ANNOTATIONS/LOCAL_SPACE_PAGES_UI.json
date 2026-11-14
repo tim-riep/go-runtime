@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACE_PAGES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_SPACE_PAGES",
+    "HEADER": {
+      "TITLE_FIELD": "PAGE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Page",
+          "TYPE_NAME_PLURAL": "Pages"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Page",
+          "TYPE_NAME_PLURAL": "Pages"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "POSITION"
+        },
+        {
+          "FIELD": "PAGE"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "POSITION",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "POSITION"
+                },
+                {
+                  "FIELD": "PAGE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

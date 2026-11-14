@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE_SECTION_TILES_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_PAGE_SECTION_TILES",
+    "HEADER": {
+      "TITLE_FIELD": "TILE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Tile",
+          "TYPE_NAME_PLURAL": "Tiles"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kachel",
+          "TYPE_NAME_PLURAL": "Kacheln"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "POSITION"
+        },
+        {
+          "FIELD": "TILE"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "POSITION",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "POSITION"
+                },
+                {
+                  "FIELD": "TILE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "/TRFRONTEND/MANAGE_ROLE_CONTENTS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Role contents"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Rolleninhalte"
+      }
+    ],
+    "ICON": "shield",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFRONTEND/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "LocalRoleContents"
+    }
+  }
+}

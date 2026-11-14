@@ -1,0 +1,8 @@
+{
+  "name": "/TRFRONTEND/MANAGE_TILES_TILE",
+  "content": {
+    "APP": "/TRFRONTEND/MANAGE_TILES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

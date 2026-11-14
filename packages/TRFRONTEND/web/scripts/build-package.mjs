@@ -85,6 +85,9 @@ descriptor.files ??= {};
 descriptor.files['shell.js'] = {
   description: { en: 'The shell, which loads React and TRUI from /trui/lib/', de: 'Die Shell, die React und TRUI aus /trui/lib/ lädt' },
 };
+descriptor.files['roles.js'] = {
+  description: { en: 'The administration of roles', de: 'Die Rollenpflege' },
+};
 const folders = new Set();
 for (const f of files(shell)) {
   const p = relative(shell, f).split('\\').join('/');

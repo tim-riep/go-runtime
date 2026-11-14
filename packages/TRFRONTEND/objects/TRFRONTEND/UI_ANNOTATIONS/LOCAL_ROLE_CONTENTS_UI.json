@@ -1,0 +1,104 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_CONTENTS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_ROLE_CONTENTS",
+    "HEADER": {
+      "TITLE_FIELD": "ROLE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Role content",
+          "TYPE_NAME_PLURAL": "Role contents"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Rolleninhalt",
+          "TYPE_NAME_PLURAL": "Rolleninhalte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "ROLE"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "ROLE"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "ROLE",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_ROLE_CONTENT"
+        }
+      ],
+      "MERGE_SET": "RoleContents"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "ROLE"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "COLLECTIONS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "App collections"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "App-Sammlungen"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS"
+          }
+        },
+        {
+          "ID": "SPACES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Spaces"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Spaces"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_ROLE_SPACES"
+          }
+        }
+      ]
+    }
+  }
+}

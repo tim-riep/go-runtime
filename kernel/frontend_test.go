@@ -17,6 +17,7 @@ package kernel_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -155,7 +156,7 @@ func TestFrontendLocalConfiguration(t *testing.T) {
 		var list struct {
 			Value []map[string]any `json:"value"`
 		}
-		a := c.do("GET", configRoot+"Apps?$orderby=NAME", adam, "")
+		a := c.do("GET", configRoot+"Apps?$orderby=NAME&$filter="+url.QueryEscape("PACKAGE_ID eq 'TRFDEMO'"), adam, "")
 		if a.status != 200 || json.Unmarshal([]byte(a.body), &list) != nil || len(list.Value) != 2 || list.Value[0]["NAME"] != "/TRFDEMO/COMPANIES" {
 			t.Fatalf("shipped apps: %d %s", a.status, a.body)
 		}
@@ -236,7 +237,12 @@ func annotation(t *testing.T, doc []byte, target, term string) any {
 	if err := json.Unmarshal(doc, &md); err != nil {
 		t.Fatal(err)
 	}
-	ns, _ := md["TRFIN"].(map[string]any)
+	var ns map[string]any
+	for k, v := range md {
+		if !strings.HasPrefix(k, "$") {
+			ns, _ = v.(map[string]any)
+		}
+	}
 	ann, _ := ns["$Annotations"].(map[string]any)
 	targets, _ := ann[target].(map[string]any)
 	return targets["@"+term]
@@ -495,6 +501,95 @@ func TestFrontendShell(t *testing.T) {
 		h := c.do("GET", "/trfrontend/api/home", withCookie, "")
 		if h.status != 200 || !strings.Contains(h.body, `"TITLE":"Firmen"`) {
 			t.Errorf("start page with the session: %d %s", h.status, h.body)
+		}
+	})
+}
+
+func TestFrontendRolesAPI(t *testing.T) {
+	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
+		c := frontendServer(t, k)
+		ctx := context.Background()
+		if err := k.ActivateHTTPService(ctx, "/trfrontend"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := k.Users().Create(ctx, "bob", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
+			t.Fatal(err)
+		}
+		adam := func(r *http.Request) {
+			basicAuth("adam", "secret")(r)
+			r.Header.Set("Content-Type", "application/json")
+		}
+		// The administrator gets the shipped administration on the start page.
+		h := readHome(t, c, adam, "de")
+		if len(h.Spaces) != 1 || h.Spaces[0].Name != "/TRFRONTEND/ADMINISTRATION_SPACE" || len(h.Apps) != 7 || len(h.Tiles) != 7 {
+			t.Errorf("start page of the administrator: %+v", h)
+		}
+		meta := c.do("GET", configRoot+"$metadata?$format=json", adam, "")
+		lp := annotation(t, []byte(meta.body), "TRFRONTEND.TRFRONTEND_LOCAL_APPS", "Frontend.ListPage")
+		if m, _ := lp.(map[string]any); m["MergeSet"] != "Apps" || fmt.Sprint(m["Actions"]) != "[TRFRONTEND.COPY_APP]" {
+			t.Errorf("list page of local apps: %v", lp)
+		}
+		if a := c.do("GET", "/trfrontend/api/roles", adam, ""); a.status != 200 || !strings.Contains(a.body, `"NAME":"/TRFRONTEND/USER"`) {
+			t.Fatalf("roles: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/role?name="+url.QueryEscape("/TRFRONTEND/USER"), adam, ""); a.status != 200 || !strings.Contains(a.body, `"KIND":"VALUE"`) {
+			t.Errorf("package role: %d %s", a.status, a.body)
+		}
+		role := `{"NAME":"/LOCAL/CLERKS","COMPOSITE":false,"TEXTS":[{"LANGUAGE":"en","LABEL":"Clerks","DESCRIPTION":null}],"ROLES":[],"AUTHORIZATIONS":[` +
+			`{"OBJECT":"/TRBASE/HTTP_SERVICE","FIELDS":[{"FIELD":"PACKAGE_ID","VALUES":[{"KIND":"VALUE","LOW":"TRFRONTEND","HIGH":null}]},` +
+			`{"FIELD":"SERVICE_PATH","VALUES":[{"KIND":"PATTERN","LOW":"/trfrontend*","HIGH":null}]},` +
+			`{"FIELD":"ACTIVITY","VALUES":[{"KIND":"VALUE","LOW":"EXECUTE","HIGH":null}]}],"ROLE_NAME":null,"COMPOSITE":null}]}`
+		if a := c.do("POST", "/trfrontend/api/role", adam, role); a.status != 201 {
+			t.Fatalf("create: %d %s", a.status, a.body)
+		}
+		if a := c.do("POST", "/trfrontend/api/role", adam, role); a.status != 400 || !strings.Contains(a.body, "role-error") {
+			t.Errorf("create twice: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/role?name="+url.QueryEscape("/LOCAL/CLERKS"), adam, ""); a.status != 200 || !strings.Contains(a.body, `"LABEL":"Clerks"`) || !strings.Contains(a.body, `"LOW":"/trfrontend*"`) {
+			t.Errorf("role: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/role", adam, ""); a.status != 400 || !strings.Contains(a.body, "the parameter name is missing") {
+			t.Errorf("role without name: %d %s", a.status, a.body)
+		}
+		a := c.do("POST", "/trfrontend/api/assignments", adam, `{"USER_NAME":"bob","ROLE_NAME":"/LOCAL/CLERKS","TENANT":"ACME","VALID_FROM":null,"VALID_TO":null}`)
+		var assigned struct{ Assignment struct{ ID string } }
+		if a.status != 201 || json.Unmarshal([]byte(a.body), &assigned) != nil || assigned.Assignment.ID == "" {
+			t.Fatalf("assign: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/assignments?user=bob", adam, ""); a.status != 200 || !strings.Contains(a.body, `"ROLE_NAME":"/LOCAL/CLERKS"`) {
+			t.Errorf("assignments: %d %s", a.status, a.body)
+		}
+		// A role in use needs a confirmation to go.
+		if a := c.do("DELETE", "/trfrontend/api/role?name="+url.QueryEscape("/LOCAL/CLERKS"), adam, ""); a.status != 409 || !strings.Contains(a.body, "confirmation-required") {
+			t.Errorf("delete in use: %d %s", a.status, a.body)
+		}
+		if a := c.do("DELETE", "/trfrontend/api/assignment?id="+url.QueryEscape(assigned.Assignment.ID), adam, ""); a.status != 204 {
+			t.Errorf("unassign: %d %s", a.status, a.body)
+		}
+		if a := c.do("DELETE", "/trfrontend/api/role?name="+url.QueryEscape("/LOCAL/CLERKS"), adam, ""); a.status != 204 {
+			t.Errorf("delete: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/trfrontend/api/history?role="+url.QueryEscape("/LOCAL/CLERKS"), adam, ""); a.status != 200 || !strings.Contains(a.body, `"CHANGED_BY":"adam"`) {
+			t.Errorf("history: %d %s", a.status, a.body)
+		}
+		for _, p := range []string{"users", "authorization-objects", "authorizations?user=bob&tenant=ACME"} {
+			if a := c.do("GET", "/trfrontend/api/"+p, adam, ""); a.status != 200 {
+				t.Errorf("%s: %d %s", p, a.status, a.body)
+			}
+		}
+		// Without the administration of roles bob sees no roles and may change none.
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "bob", Role: "/TRFRONTEND/USER", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+			t.Fatal(err)
+		}
+		bob := func(r *http.Request) {
+			basicAuth("bob", "secret")(r)
+			r.Header.Set("Content-Type", "application/json")
+		}
+		if a := c.do("GET", "/trfrontend/api/roles", bob, ""); a.status != 200 || a.body != "[]" {
+			t.Errorf("roles of bob: %d %s", a.status, a.body)
+		}
+		if a := c.do("POST", "/trfrontend/api/role", bob, role); a.status != 403 {
+			t.Errorf("create by bob: %d %s", a.status, a.body)
 		}
 	})
 }

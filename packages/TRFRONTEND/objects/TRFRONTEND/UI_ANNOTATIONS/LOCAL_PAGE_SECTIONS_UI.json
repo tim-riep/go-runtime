@@ -1,0 +1,100 @@
+{
+  "name": "/TRFRONTEND/LOCAL_PAGE_SECTIONS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_PAGE_SECTIONS",
+    "HEADER": {
+      "TITLE_FIELD": "SECTION",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Section",
+          "TYPE_NAME_PLURAL": "Sections"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Abschnitt",
+          "TYPE_NAME_PLURAL": "Abschnitte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "POSITION"
+        },
+        {
+          "FIELD": "SECTION"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "POSITION",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "SECTION"
+                },
+                {
+                  "FIELD": "POSITION"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_PAGE_SECTION_TEXTS"
+          }
+        },
+        {
+          "ID": "TILES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Tiles"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kacheln"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_PAGE_SECTION_TILES"
+          }
+        }
+      ]
+    }
+  }
+}

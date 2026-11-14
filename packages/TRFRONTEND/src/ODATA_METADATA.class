@@ -62,7 +62,7 @@ public class /TRFRONTEND/ODATA_METADATA implements /TRBASE/ODATA_METADATA_EXTENS
   # The qualified public name of an action bound to a type.
   private static method ACTION(metadata: /TRBASE/ODATA_METADATA, target: STRING, action: STRING) returns STRING?
     for a in metadata.ACTIONS
-      if a.TECHNICAL_NAME = action and (a.BOUND_TO default "") = target
+      if a.TECHNICAL_NAME = action and (a.BOUND_TO is null or a.BOUND_TO = target)
         return metadata.NAMESPACE + "." + a.NAME
       end
     end

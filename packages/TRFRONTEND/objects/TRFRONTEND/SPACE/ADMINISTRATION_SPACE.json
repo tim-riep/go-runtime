@@ -1,0 +1,20 @@
+{
+  "name": "/TRFRONTEND/ADMINISTRATION_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Administration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Verwaltung"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFRONTEND/ADMINISTRATION_PAGE"
+      }
+    ]
+  }
+}

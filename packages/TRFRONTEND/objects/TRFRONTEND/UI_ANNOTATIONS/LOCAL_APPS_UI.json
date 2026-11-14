@@ -1,0 +1,143 @@
+{
+  "name": "/TRFRONTEND/LOCAL_APPS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_APPS",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "App",
+          "TYPE_NAME_PLURAL": "Apps"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "App",
+          "TYPE_NAME_PLURAL": "Apps"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "TARGET_KIND"
+        },
+        {
+          "FIELD": "SERVICE"
+        },
+        {
+          "FIELD": "ENTITY_SET"
+        },
+        {
+          "FIELD": "URL"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "TARGET_KIND"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "NAME",
+          "DESCENDING": false
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "COPY_APP"
+        }
+      ],
+      "MERGE_SET": "Apps"
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "NAME"
+                },
+                {
+                  "FIELD": "ICON"
+                },
+                {
+                  "FIELD": "TARGET_KIND"
+                },
+                {
+                  "FIELD": "SERVICE"
+                },
+                {
+                  "FIELD": "ENTITY_SET"
+                },
+                {
+                  "FIELD": "NODE"
+                },
+                {
+                  "FIELD": "PATH"
+                },
+                {
+                  "FIELD": "MODULE"
+                },
+                {
+                  "FIELD": "URL"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_APP_TEXTS"
+          }
+        },
+        {
+          "ID": "PARAMETERS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Parameters"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Parameter"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFRONTEND/LOCAL_APP_PARAMETERS"
+          }
+        }
+      ]
+    }
+  }
+}

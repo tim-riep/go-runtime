@@ -1,0 +1,91 @@
+# The administration of roles below /trfrontend/api for the role page, as
+# JSON over /TRBASE/ROLE_ADMINISTRATION. Names of roles contain slashes,
+# so they travel as query parameters:
+#   GET    roles                          all roles
+#   GET    role?name=<role>               a role with authorizations and use
+#   POST   role                           create a local role (ROLE_DEFINITION)
+#   PUT    role                           change a local role (ROLE_DEFINITION)
+#   DELETE role?name=<role>[&confirm=true]
+#   GET    assignments[?user=&role=&tenant=]
+#   POST   assignments                    assign (ASSIGN_REQUEST)
+#   DELETE assignment?id=<id>[&confirm=true]
+#   GET    users
+#   GET    history[?role=&user=]
+#   GET    authorizations?user=&tenant=   the effective authorizations of a user
+#   GET    authorization-objects
+# Cases that need a confirmation answer 409 confirmation-required.
+public class /TRFRONTEND/ROLES_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var rest = request.REST_PATH()
+    var verb = request.METHOD()
+    if rest <> "roles" and rest <> "role" and rest <> "assignments" and rest <> "assignment" and rest <> "users" and rest <> "history" and rest <> "authorizations" and rest <> "authorization-objects"
+      return false
+    end
+    response.SET_HEADER("Content-Type", "application/json; charset=utf-8")
+    response.SET_HEADER("Cache-Control", "no-store")
+    try
+      if verb = "GET" and rest = "roles"
+        response.WRITE_TEXT(transform /TRBASE/ROLE_ADMINISTRATION.ROLES() using /TRBASE/JSON)
+      elseif verb = "GET" and rest = "role"
+        response.WRITE_TEXT(transform /TRBASE/ROLE_ADMINISTRATION.ROLE(REQUIRED(request, "name")) using /TRBASE/JSON)
+      elseif verb = "POST" and rest = "role"
+        /TRBASE/ROLE_ADMINISTRATION.CREATE(transform request.BODY_TEXT() using /TRBASE/JSON into /TRBASE/ROLE_DEFINITION)
+        response.SET_STATUS(201)
+        response.WRITE_TEXT("\{\}")
+      elseif verb = "PUT" and rest = "role"
+        /TRBASE/ROLE_ADMINISTRATION.UPDATE(transform request.BODY_TEXT() using /TRBASE/JSON into /TRBASE/ROLE_DEFINITION)
+        response.WRITE_TEXT("\{\}")
+      elseif verb = "DELETE" and rest = "role"
+        /TRBASE/ROLE_ADMINISTRATION.DELETE(REQUIRED(request, "name"), (request.QUERY("confirm") default "") = "true")
+        response.SET_STATUS(204)
+      elseif verb = "GET" and rest = "assignments"
+        response.WRITE_TEXT(transform /TRBASE/ROLE_ADMINISTRATION.ASSIGNMENTS(request.QUERY("user"), request.QUERY("role"), request.QUERY("tenant")) using /TRBASE/JSON)
+      elseif verb = "POST" and rest = "assignments"
+        var a = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFRONTEND/ASSIGN_REQUEST
+        var result = /TRBASE/ROLE_ADMINISTRATION.ASSIGN(a.USER_NAME, a.ROLE_NAME, a.TENANT, a.VALID_FROM, a.VALID_TO)
+        response.SET_STATUS(201)
+        response.WRITE_TEXT(transform result using /TRBASE/JSON)
+      elseif verb = "DELETE" and rest = "assignment"
+        /TRBASE/ROLE_ADMINISTRATION.UNASSIGN(REQUIRED(request, "id"), (request.QUERY("confirm") default "") = "true")
+        response.SET_STATUS(204)
+      elseif verb = "GET" and rest = "users"
+        response.WRITE_TEXT(transform /TRBASE/USER_ADMINISTRATION.USERS() using /TRBASE/JSON)
+      elseif verb = "GET" and rest = "history"
+        response.WRITE_TEXT(transform /TRBASE/ROLE_ADMINISTRATION.HISTORY(request.QUERY("role"), request.QUERY("user")) using /TRBASE/JSON)
+      elseif verb = "GET" and rest = "authorizations"
+        response.WRITE_TEXT(transform /TRBASE/ROLE_ADMINISTRATION.AUTHORIZATIONS(REQUIRED(request, "user"), REQUIRED(request, "tenant"), null) using /TRBASE/JSON)
+      elseif verb = "GET" and rest = "authorization-objects"
+        response.WRITE_TEXT(transform /TRBASE/REFLECTOR.AUTHORIZATION_OBJECTS(null) using /TRBASE/JSON)
+      else
+        FAIL(response, 405, "method-not-allowed", "{verb} is not allowed on {rest}")
+      end
+    catch e: /TRFRONTEND/PARAMETER_MISSING
+      FAIL(response, 400, "bad-request", e.TEXT)
+    catch e: /TRBASE/TRANSFORM_RESULT_INVALID
+      FAIL(response, 400, "bad-request", e.TEXT)
+    catch e: /TRBASE/ROLE_CONFIRMATION_REQUIRED
+      FAIL(response, 409, "confirmation-required", e.TEXT)
+    catch e: /TRBASE/ROLE_ERROR
+      FAIL(response, 400, "role-error", e.TEXT)
+    end
+    return true
+  end
+
+  private method REQUIRED(request: /TRBASE/HTTP_REQUEST, name: STRING) returns STRING raises /TRFRONTEND/PARAMETER_MISSING
+    var value = request.QUERY(name)
+    if value is null or value = ""
+      raise /TRFRONTEND/PARAMETER_MISSING with "the parameter {name} is missing"
+    end
+    return value
+  end
+
+  private method FAIL(response: /TRBASE/HTTP_RESPONSE, status: INT4, code: STRING, text: STRING) raises /RT/EXCEPTION
+    response.SET_STATUS(status)
+    var error = new map of STRING to STRING
+    error.SET("code", code)
+    error.SET("message", text)
+    response.WRITE_TEXT(transform error using /TRBASE/JSON)
+  end
+
+end

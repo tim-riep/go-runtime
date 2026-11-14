@@ -42,14 +42,16 @@ export interface ActionDialogProps {
   action: Action;
   client: ODataClient;
   texts: Record<TextKey, string>;
+  /** Values the parameters start with. */
+  initial?: Record<string, Value>;
   onRun: (params: Record<string, Value>) => void;
   onCancel: () => void;
 }
 
 /** Asks for the parameters of an action before it runs. */
-export function ActionDialog({ model, action, client, texts, onRun, onCancel }: ActionDialogProps) {
+export function ActionDialog({ model, action, client, texts, initial = {}, onRun, onCancel }: ActionDialogProps) {
   const fields = parameterFields(action);
-  const [values, setValues] = useState<Record<string, Value>>(() => Object.fromEntries(fields.map((f) => [f.name, f.property.nullable ? null : ''])));
+  const [values, setValues] = useState<Record<string, Value>>(() => Object.fromEntries(fields.map((f) => [f.name, initial[f.name] ?? (f.property.nullable ? null : '')])));
   const formId = `action-${action.name}`;
   return (
     <Dialog

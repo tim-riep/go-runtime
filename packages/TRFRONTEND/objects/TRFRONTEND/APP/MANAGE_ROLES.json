@@ -1,0 +1,23 @@
+{
+  "name": "/TRFRONTEND/MANAGE_ROLES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Roles",
+        "SUBTITLE": "Authorizations and assignments"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Rollen",
+        "SUBTITLE": "Berechtigungen und Zuordnungen"
+      }
+    ],
+    "ICON": "role",
+    "TARGET": {
+      "KIND": "PAGE",
+      "NODE": "/trfrontend",
+      "PATH": "roles.html"
+    }
+  }
+}

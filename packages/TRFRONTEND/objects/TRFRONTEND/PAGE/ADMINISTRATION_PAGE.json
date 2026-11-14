@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/ADMINISTRATION_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Administration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Verwaltung"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "START_PAGE",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Start page"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Startseite"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFRONTEND/MANAGE_APPS_TILE"
+          },
+          {
+            "TILE": "/TRFRONTEND/MANAGE_TILES_TILE"
+          },
+          {
+            "TILE": "/TRFRONTEND/MANAGE_APP_COLLECTIONS_TILE"
+          },
+          {
+            "TILE": "/TRFRONTEND/MANAGE_PAGES_TILE"
+          },
+          {
+            "TILE": "/TRFRONTEND/MANAGE_SPACES_TILE"
+          },
+          {
+            "TILE": "/TRFRONTEND/MANAGE_ROLE_CONTENTS_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "ROLES",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Roles"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Rollen"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFRONTEND/MANAGE_ROLES_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

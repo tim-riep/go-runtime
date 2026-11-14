@@ -13,6 +13,9 @@
   "handlers": [
     {
       "class": "/TRFRONTEND/HOME_API"
+    },
+    {
+      "class": "/TRFRONTEND/ROLES_API"
     }
   ],
   "settings": {

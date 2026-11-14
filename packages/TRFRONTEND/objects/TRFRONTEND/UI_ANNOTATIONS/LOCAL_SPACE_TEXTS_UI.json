@@ -1,0 +1,68 @@
+{
+  "name": "/TRFRONTEND/LOCAL_SPACE_TEXTS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_SPACE_TEXTS",
+    "HEADER": {
+      "TITLE_FIELD": "TITLE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LANGUAGE"
+        },
+        {
+          "FIELD": "TITLE"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "LANGUAGE",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LANGUAGE"
+                },
+                {
+                  "FIELD": "TITLE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

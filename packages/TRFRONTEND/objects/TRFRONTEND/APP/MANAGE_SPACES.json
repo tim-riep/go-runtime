@@ -1,0 +1,21 @@
+{
+  "name": "/TRFRONTEND/MANAGE_SPACES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Spaces"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Spaces"
+      }
+    ],
+    "ICON": "folder-open",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFRONTEND/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "LocalSpaces"
+    }
+  }
+}

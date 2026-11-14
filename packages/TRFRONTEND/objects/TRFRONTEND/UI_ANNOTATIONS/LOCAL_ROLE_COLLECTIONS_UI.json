@@ -1,0 +1,62 @@
+{
+  "name": "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS_UI",
+  "content": {
+    "ENTITY": "/TRFRONTEND/LOCAL_ROLE_COLLECTIONS",
+    "HEADER": {
+      "TITLE_FIELD": "APP_COLLECTION",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "App collection",
+          "TYPE_NAME_PLURAL": "App collections"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "App-Sammlung",
+          "TYPE_NAME_PLURAL": "App-Sammlungen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "APP_COLLECTION"
+        }
+      ],
+      "FILTER_FIELDS": [],
+      "SORT": [
+        {
+          "FIELD": "APP_COLLECTION",
+          "DESCENDING": false
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "APP_COLLECTION"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

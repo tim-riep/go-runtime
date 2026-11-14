@@ -1,0 +1,8 @@
+{
+  "name": "/TRFRONTEND/MANAGE_ROLE_CONTENTS_TILE",
+  "content": {
+    "APP": "/TRFRONTEND/MANAGE_ROLE_CONTENTS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

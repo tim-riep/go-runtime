@@ -1,0 +1,8 @@
+{
+  "name": "/TRFRONTEND/MANAGE_APP_COLLECTIONS_TILE",
+  "content": {
+    "APP": "/TRFRONTEND/MANAGE_APP_COLLECTIONS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "/TRFRONTEND/ASSIGN_REQUEST",
+  "texts": {
+    "en": {
+      "label": "Request to assign a role"
+    },
+    "de": {
+      "label": "Anfrage, eine Rolle zuzuordnen"
+    }
+  },
+  "components": [
+    {
+      "name": "USER_NAME",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "dataElement": "/TRBASE/ROLE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "dataElement": "/TRBASE/TENANT",
+      "notNull": true
+    },
+    {
+      "name": "VALID_FROM",
+      "dataElement": "/TRBASE/VALID_FROM"
+    },
+    {
+      "name": "VALID_TO",
+      "dataElement": "/TRBASE/VALID_TO"
+    }
+  ]
+}
