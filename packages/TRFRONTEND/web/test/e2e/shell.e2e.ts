@@ -105,5 +105,17 @@ for (const name of names) {
       expect(await violations(page)).toEqual([]);
       await context.close();
     });
+
+    it('opens a shipped app in the list of local apps', async () => {
+      const context = await browser.newContext({ locale: 'en-US' });
+      const page = await context.newPage();
+      await signIn(page, 'admin');
+      await page.getByRole('tab', { name: 'Administration' }).waitFor();
+      await page.locator('[data-tile-id="/TRFRONTEND/MANAGE_APPS_TILE"]').click();
+      await page.getByRole('grid').getByText('/TRFRONTEND/MANAGE_APPS', { exact: true }).click();
+      await page.getByText('Shipped entries cannot be changed.', { exact: false }).waitFor();
+      expect(await violations(page)).toEqual([]);
+      await context.close();
+    });
   });
 }

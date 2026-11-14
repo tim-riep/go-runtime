@@ -301,6 +301,16 @@ export function detailView(m: ServiceModel, setName: string): DetailView {
 }
 
 /** The label of an action, from Core.Description or its name. */
+/**
+ * The detail view of a list for an entry of its second set, e.g. a shipped
+ * entry shown with the view of the local ones: tables through navigations
+ * that the type of that set lacks are left out.
+ */
+export function mergedDetailView(view: DetailView, set: EntitySet): DetailView {
+  const navigations = new Set(set.type.navigations.map((n) => n.name));
+  return { ...view, sections: view.sections.filter((s) => s.table === null || navigations.has(s.table)) };
+}
+
 export function actionLabel(m: ServiceModel, name: string): string {
   const a = m.actions.find((x) => x.name === name);
   const d = a ? str(annotation(m, a.annotations, 'Org.OData.Core.V1.Description')) : null;

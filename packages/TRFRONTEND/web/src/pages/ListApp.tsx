@@ -29,7 +29,7 @@ import { currentCsrfToken, currentLanguage, type HomeApp } from '../shell/api.ts
 import type { TextKey } from '../shell/texts.ts';
 import { DetailPage } from './DetailPage.tsx';
 import { ListPage } from './ListPage.tsx';
-import { detailView, listView } from './view.ts';
+import { detailView, listView, mergedDetailView } from './view.ts';
 
 export interface ListAppProps {
   app: HomeApp;
@@ -112,7 +112,7 @@ export function ListApp({ app, entity, params, texts, onNavigate, onSignedOut }:
       key={entity}
       client={client}
       model={model}
-      view={detailView(model, shipped ? listSet : set)}
+      view={shipped && list.mergeSet ? mergedDetailView(detailView(model, listSet), list.mergeSet) : detailView(model, set)}
       texts={texts}
       path={creating ? null : path}
       createPath={path}

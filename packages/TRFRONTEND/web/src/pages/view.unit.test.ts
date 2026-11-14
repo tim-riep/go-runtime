@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseMetadata } from '../odata/index.ts';
 import { filterOf, matches } from './filter.ts';
-import { actionLabel, detailView, listView } from './view.ts';
+import { actionLabel, detailView, listView, mergedDetailView } from './view.ts';
 
 const m = parseMetadata(JSON.parse(readFileSync(new URL('../../test/fixtures/company-service.json', import.meta.url), 'utf8')));
 
@@ -63,6 +63,16 @@ describe('detail view', () => {
     expect(d.sections[2]?.table).toBe('Contacts');
     expect(d.concurrency).toEqual(['CHANGED_AT']);
     expect(d.actions).toEqual(['TRFIN.BLOCK']);
+  });
+
+  it('leaves out tables that the type of a merged set lacks', () => {
+    const d = detailView(m, 'Companies');
+    const countries = m.entitySets.Countries;
+    if (!countries) throw new Error('no Countries');
+    expect(mergedDetailView(d, countries).sections.map((s) => s.id)).toEqual(['GENERAL', '/TROTTOUI/MARKETPLACE']);
+    const companies = m.entitySets.Companies;
+    if (!companies) throw new Error('no Companies');
+    expect(mergedDetailView(d, companies).sections.map((s) => s.id)).toEqual(['GENERAL', '/TROTTOUI/MARKETPLACE', 'CONTACTS']);
   });
 
   it('labels actions', () => {
