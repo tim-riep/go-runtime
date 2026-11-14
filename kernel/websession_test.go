@@ -183,6 +183,13 @@ func TestWebSessions(t *testing.T) {
 		if a.status != 401 || !strings.Contains(a.body, "session-expired") {
 			t.Errorf("idle: %d %s", a.status, a.body)
 		}
+		// A node open to everyone serves the expired cookie without a user
+		// and drops the cookie, so that the browser can sign in again.
+		a = b.do("GET", "/trhttp/public", "", false)
+		if set := a.header.Get("Set-Cookie"); a.status != 200 || !strings.Contains(a.body, "user=<null> tenant=ACME") ||
+			!strings.Contains(set, "rt_session=;") || !strings.Contains(set, "Max-Age=0") {
+			t.Errorf("public node with the expired cookie: %d %s %s", a.status, a.body, set)
+		}
 		if a := b.do("GET", "/rt/session", "", false); a.status != 401 {
 			t.Errorf("session after idle: %d", a.status)
 		}

@@ -173,8 +173,17 @@ func (k *Kernel) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, auth.ErrSessionExpired) {
-		fail(http.StatusUnauthorized, httpsvc.CodeSessionExpired)
-		return
+		if !set.Anonymous {
+			fail(http.StatusUnauthorized, httpsvc.CodeSessionExpired)
+			return
+		}
+		// Nodes open to everyone, such as the page to sign in, serve the
+		// request without a user and drop the cookie; otherwise a browser
+		// with an expired cookie could not reach the page to sign in again.
+		c := k.sessionCookie("", time.Unix(0, 0))
+		c.MaxAge = -1
+		http.SetCookie(w, c)
+		user, err = nil, nil
 	}
 	// Requests of a browser session that change something carry the token
 	// of the session, which other sites cannot know.
