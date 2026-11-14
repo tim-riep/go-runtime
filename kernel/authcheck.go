@@ -71,7 +71,7 @@ func (x *execution) CheckAuthorization(c authorization.Check, at native.CheckLoc
 	// stays in memory.
 	failed := !ok && (mode == native.CheckStatement || mode == native.CheckEntity)
 	if user, has := x.opts.User.Get(); has && (failed || e.Trace != nil) {
-		r := checkRecord{user: user, tenant: x.tenant, at: x.k.now(), mode: mode, check: c, allowed: ok, site: at}
+		r := checkRecord{user: user, tenant: x.tenant, at: x.k.timestamp(), mode: mode, check: c, allowed: ok, site: at}
 		if failed {
 			x.failed = &r
 		}

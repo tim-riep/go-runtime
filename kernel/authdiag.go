@@ -140,7 +140,7 @@ func (k *Kernel) recordKernelCheck(ctx context.Context, e *authorization.Effecti
 
 // rememberFailedCheck records a failed check of the kernel for an actor.
 func (k *Kernel) rememberFailedCheck(ctx context.Context, e *authorization.Effective, user, tenant string, c authorization.Check, allowed bool, function string) {
-	k.recordKernelCheck(ctx, e, checkRecord{user: user, tenant: tenant, at: k.now(), mode: native.CheckStatement, check: c, allowed: allowed,
+	k.recordKernelCheck(ctx, e, checkRecord{user: user, tenant: tenant, at: k.timestamp(), mode: native.CheckStatement, check: c, allowed: allowed,
 		site: native.CheckLocation{Kernel: function}})
 }
 

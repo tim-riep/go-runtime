@@ -239,7 +239,7 @@ func (s *session) traceFilters(st *statement, rows model.Optional[int64]) {
 		return
 	}
 	for _, f := range st.filters {
-		x.traced = append(x.traced, checkRecord{user: user, tenant: x.tenant, at: x.k.now(), mode: native.CheckFilter, check: f.check,
+		x.traced = append(x.traced, checkRecord{user: user, tenant: x.tenant, at: x.k.timestamp(), mode: native.CheckFilter, check: f.check,
 			columns: f.columns, condition: f.condition, rows: rows})
 	}
 }

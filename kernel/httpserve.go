@@ -355,7 +355,7 @@ func (k *Kernel) checkNode(ctx context.Context, node *httpsvc.Node, user, tenant
 	for _, c := range nodeChecks(node) {
 		ok := e.Check(c)
 		if !ok || e.Tracing(k.now()) {
-			k.recordKernelCheck(ctx, e, checkRecord{user: user, tenant: tenant, at: k.now(), mode: native.CheckStatement, check: c, allowed: ok,
+			k.recordKernelCheck(ctx, e, checkRecord{user: user, tenant: tenant, at: k.timestamp(), mode: native.CheckStatement, check: c, allowed: ok,
 				site: native.CheckLocation{Kernel: "http " + node.Path}})
 		}
 		if !ok {

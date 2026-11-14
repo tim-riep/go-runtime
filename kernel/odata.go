@@ -160,7 +160,7 @@ func (k *Kernel) checkService(ctx context.Context, kr *kernelRequest, svc *model
 		model.ActivityField: "EXECUTE"}}
 	ok := e.Check(c)
 	if record && (!ok || e.Tracing(k.now())) {
-		k.recordKernelCheck(ctx, e, checkRecord{user: kr.user.Name, tenant: kr.tenant.Or(""), at: k.now(), mode: native.CheckStatement, check: c,
+		k.recordKernelCheck(ctx, e, checkRecord{user: kr.user.Name, tenant: kr.tenant.Or(""), at: k.timestamp(), mode: native.CheckStatement, check: c,
 			allowed: ok, site: native.CheckLocation{Kernel: "odata " + svc.Name}})
 	}
 	return ok, nil

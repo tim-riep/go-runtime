@@ -296,6 +296,11 @@ func (t *Tokens) Create(ctx context.Context, user, label string, expires model.O
 		return "", nil, &rterr.InvalidArgument{Argument: "label", Message: "a token needs a label of 1 to 80 characters"}
 	}
 	k := t.k
+	// Timestamps are stored with microseconds; a time of the clock may
+	// carry nanoseconds.
+	if e, ok := expires.Get(); ok {
+		expires = model.Some(e.UTC().Truncate(time.Microsecond))
+	}
 	id := repo.NewID()
 	token, hash, err := auth.NewToken(id)
 	if err != nil {
