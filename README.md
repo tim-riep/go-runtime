@@ -1630,7 +1630,7 @@ Stylesheets that include, import or read other stylesheets and documents, native
 with network or file access, outgoing HTTP connections, responses streamed from code,
 further ways of signing in, messages with texts per language, a
 language server and a debugger, views, indexes beyond keys,
-data migrations with custom logic, joins and aggregates other than `count` in code,
+data migrations with custom logic, joins, `having` and `distinct` in code,
 display properties of fields, translation packages
 for objects of other packages, export, delivery or protection of configuration by data class, field and operation control per
 instance, extensions of drafts and of services, assets uploaded at runtime or per tenant, extending asset repositories of

@@ -1,0 +1,87 @@
+# Aggregations over postings and balances changed by a value, for the
+# tests of the kernel. Results are JSON.
+public class /TRAGG/SUMS
+
+  public static method ADD(id: INT8, account: STRING, period: INT4, amount: DEC(18,2), qty: INT4?, note: STRING?)
+    var p: /TRAGG/POSTINGS
+    p.POSTING_ID = id
+    p.ACCOUNT = account
+    p.PERIOD = period
+    p.AMOUNT = amount
+    p.QTY = qty
+    p.NOTE = note
+    insert p
+  end
+
+  public static method PER_ACCOUNT() returns STRING raises /TRBASE/XSLT_FAILED
+    var rows = select ACCOUNT, sum(AMOUNT), count(), min(PERIOD), max(NOTE), sum(QTY) as UNITS from /TRAGG/POSTINGS group by ACCOUNT
+    return transform rows using /TRBASE/JSON
+  end
+
+  public static method PER_PERIOD() returns STRING raises /TRBASE/XSLT_FAILED
+    var out: array of STRING = []
+    for row in select ACCOUNT, PERIOD, sum(AMOUNT) as TOTAL from /TRAGG/POSTINGS where AMOUNT > 0.00 group by ACCOUNT, PERIOD order by TOTAL descending, ACCOUNT
+      out.APPEND("{row.ACCOUNT}/{row.PERIOD}:{row.TOTAL default 0.00}")
+    end
+    return transform out using /TRBASE/JSON
+  end
+
+  public static method TOTAL(account: STRING?) returns STRING raises /TRBASE/XSLT_FAILED
+    if account is null
+      var all = select single sum(AMOUNT), count(), sum(QTY), max(PERIOD) from /TRAGG/POSTINGS
+      return transform all using /TRBASE/JSON
+    end
+    var one = select single sum(AMOUNT), count() from /TRAGG/POSTINGS where ACCOUNT = account
+    return transform one using /TRBASE/JSON
+  end
+
+  public static method READABLE() returns STRING raises /TRBASE/XSLT_FAILED
+    var rows = select ACCOUNT, sum(AMOUNT) from /TRAGG/POSTINGS where authorized /TRAGG/ACCOUNT
+      ACCOUNT = ACCOUNT
+      ACTIVITY = READ
+    end group by ACCOUNT limit 10
+    return transform rows using /TRBASE/JSON
+  end
+
+  public static method OPEN(account: STRING)
+    var b: /TRAGG/BALANCES
+    b.ACCOUNT = account
+    insert b
+  end
+
+  public static method BOOK(account: STRING, amount: DEC(38,2)) returns INT8
+    return update /TRAGG/BALANCES set BALANCE = BALANCE + amount, POSTINGS = POSTINGS + 1 where ACCOUNT = account
+  end
+
+  public static method TAKE(account: STRING, amount: DEC(18,2)) returns INT8
+    return update /TRAGG/BALANCES set BALANCE = BALANCE - amount, LIMIT_AMOUNT = amount where ACCOUNT = account
+  end
+
+  public static method BALANCE(account: STRING) returns STRING raises /TRBASE/XSLT_FAILED
+    var b = select single from /TRAGG/BALANCES where ACCOUNT = account
+    if b is null
+      return "none"
+    end
+    return transform b using /TRBASE/JSON
+  end
+
+  public static method OVERFLOWS() returns STRING
+    try
+      BOOK("BIG", 9999999999999999.99)
+      BOOK("BIG", 9999999999999999.99)
+    catch e: /RT/OVERFLOW
+      return "OVERFLOW"
+    end
+    return "FITS"
+  end
+
+  public static method SUM_OVERFLOWS() returns STRING raises /TRBASE/XSLT_FAILED
+    try
+      var total = select single sum(AMOUNT) from /TRAGG/POSTINGS
+      return transform total using /TRBASE/JSON
+    catch e: /RT/OVERFLOW
+      return "OVERFLOW"
+    end
+  end
+
+end

@@ -1,0 +1,7 @@
+{
+  "name": "/TRAGG/READER",
+  "texts": { "en": { "label": "Accounts 1" } },
+  "authorizations": [
+    { "object": "/TRAGG/ACCOUNT", "fields": { "ACCOUNT": [{ "pattern": "1*" }], "ACTIVITY": [{ "value": "READ" }] } }
+  ]
+}

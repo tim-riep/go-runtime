@@ -1,0 +1,14 @@
+{
+  "name": "/TRAGG/POSTINGS",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "POSTING_ID", "domain": "/TRBASE/COUNTER" },
+    { "name": "ACCOUNT", "domain": "/TRBASE/NAME", "notNull": true },
+    { "name": "PERIOD", "domain": "/TRBASE/LENGTH", "notNull": true },
+    { "name": "AMOUNT", "domain": "/TRAGG/AMOUNT", "notNull": true },
+    { "name": "QTY", "domain": "/TRBASE/LENGTH" },
+    { "name": "NOTE", "domain": "/TRBASE/NAME" }
+  ],
+  "primaryKey": ["POSTING_ID"]
+}

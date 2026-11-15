@@ -17,6 +17,10 @@ public class /TRX/DB
     var n = select count from /TRX/COMPANIES
     var changed = update /TRX/COMPANIES set NAME = "x", STATUS = null where NOTE is empty using audit
     delete from /TRX/COMPANIES where NAME <> ""
+    var totals = select COUNTRY, sum(CAPITAL), count() as N, max(NAME) from /TRX/COMPANIES where NAME <> "" group by COUNTRY order by N descending limit 5
+    var all = select single min(CAPITAL) from /TRX/COMPANIES
+    update /TRX/COMPANIES set CAPITAL = CAPITAL + 1.00, NAME = "y" where NOTE is null
+    update /TRX/COMPANIES set CAPITAL = CAPITAL - (x * 2) where NOTE is null
     if count > 1000
       rollback
       return 0

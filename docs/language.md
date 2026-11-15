@@ -60,9 +60,9 @@ end
   `false` are literals.
 
 Database access uses the keywords `commit`, `rollback`, `session`, `using`, `select`,
-`insert`, `update`, `delete`, `from` and `where`; `single`, `count`, `order`, `by`,
-`ascending`, `descending`, `limit` and `set` are keywords only at their place in a
-database statement. `transform`, `parameters` and `into` belong to the expression
+`insert`, `update`, `delete`, `from` and `where`; `single`, `count`, `sum`, `min`, `max`,
+`group`, `order`, `by`, `ascending`, `descending`, `limit` and `set` are keywords only at
+their place in a database statement. `transform`, `parameters` and `into` belong to the expression
 `transform`. `authorization` and `authorized` belong to authorization checks; `check`
 and `any` are keywords only there and remain usable as names. `extension point` and
 `filters` run extension points; they are no keywords and remain usable as names.
@@ -532,6 +532,11 @@ end
   there is none. `update` writes all fields that are not part of the key.
 - `update T set A = x, B = y where ...` and `delete from T where ...` change all matching
   rows and return their number; they may stand as statements.
+- `update T set A = A + x` and `A = A - x` change a field by a value in the database, in
+  one statement: parallel executions lose no change, since PostgreSQL locks the row until
+  the commit and SQLite has one writer. The field has a number type and `notNull`, the value
+  comes from the code and is not null; a value with `+` or `-` needs parentheses,
+  `A = A - (x + y)`. A result the field cannot hold raises `/RT/OVERFLOW`.
 - In `where`, upper-case names and global names are fields of the table; values come from
   local names, `me.X` or `/PKG/C.X`. A comparison relates a field to a value or to another
   field with `=`, `<>`, `<`, `<=`, `>` or `>=`; further there are `FIELD in array`,
@@ -565,6 +570,51 @@ end
   `/RT/NOT_NULL_VIOLATION`, `/RT/ROW_NOT_FOUND`, `/RT/TOO_MANY_ROWS`, `/RT/LOCK_TIMEOUT`
   and `/RT/SESSION_ERROR`. `TABLE_NAME` and `CONSTRAINT_NAME` tell where an error happened
   when the database reports it. After a caught error the session goes on.
+
+### Aggregations
+
+`select` reads fields and aggregates of the rows, grouped by fields:
+
+```rt
+public class /TRORDER/DOC_ORDER_TOTALS
+
+  # The amount and the number of the orders, paid and open.
+  public static method BY_PAYMENT() returns array of STRING
+    var out: array of STRING = []
+    for row in select PAID, sum(AMOUNT), count() as ORDERS, max(ID) from /TRORDER/ORDERS group by PAID
+      out.APPEND("{row.PAID}: {row.ORDERS} orders, {row.SUM_AMOUNT default 0.00}, last {row.MAX_ID default "-"}")
+    end
+    return out
+  end
+
+  public static method TOTAL() returns DEC(38,2)
+    var all = select single sum(AMOUNT) as TOTAL, min(NOTE) from /TRORDER/ORDERS
+    return all.TOTAL default 0.00
+  end
+
+  # Raises the amounts of open orders in the database.
+  public static method SURCHARGE(amount: DEC(15,2)) returns INT8
+    return update /TRORDER/ORDERS set AMOUNT = AMOUNT + amount where PAID = false
+  end
+
+end
+```
+
+- The select list names fields of the table and the aggregates `sum(F)`, `min(F)`,
+  `max(F)` and `count()`. Every field that is not aggregated is a field of `group by`, and
+  every field of `group by` is in the list.
+- The result is an array of a structure that the compiler derives from the list: a field
+  keeps its name, type and optionality; `sum(AMOUNT)` is named `SUM_AMOUNT`, `min(F)`
+  `MIN_F`, `max(F)` `MAX_F` and `count()` `COUNT`, and `as NAME` names a column; an extension
+  field `/PKG/F` gives `SUM_PKG_F`. The same list gives the same structure.
+- `count()` is `INT8`. `sum` over integers is `INT8?`, over `DEC(p,s)` `DEC(38,s)?`, so it is
+  exact; under SQLite, which stores `DEC` as scaled integers, a sum beyond 18 digits raises
+  `/RT/OVERFLOW`. `min` and `max` have the type of the field and are optional. Aggregates
+  skip `null`; over no row `sum`, `min` and `max` are `null` and `count()` is 0.
+- `select single` with aggregates and without `group by` gives exactly one row, the
+  structure itself; with `group by` the first group or `null`.
+- `order by` names columns of the result; without it the groups come in the order of their
+  fields. `where`, `authorized`, `limit`, `using` and `for row in select ...` work as for rows.
 
 ## Sessions and transactions
 
@@ -1467,12 +1517,14 @@ extensionExpr = "extension" "point" GLOBAL [ "filters" MEMBER "=" expr { "," MEM
 transformExpr = "transform" expr "using" GLOBAL [ "parameters" MEMBER "=" expr { "," MEMBER "=" expr } ]
                 [ "into" type ] ;
 args          = expr { "," expr } | MEMBER ":" expr { "," MEMBER ":" expr } ;
-selectExpr    = "select" [ "single" | "count" ] "from" GLOBAL [ "where" expr ]
+selectExpr    = "select" ( "count" | [ "single" ] [ selectItem { "," selectItem } ] )
+                "from" GLOBAL [ "where" expr ] [ "group" "by" field { "," field } ]
                 [ "order" "by" field [ "ascending" | "descending" ]
                   { "," field [ "ascending" | "descending" ] } ]
                 [ "limit" expr ] [ "using" expr ] ;
-updateExpr    = "update" GLOBAL "set" field "=" expr { "," field "=" expr } [ "where" expr ]
-                [ "using" expr ] ;
+selectItem    = ( field | ( "sum" | "min" | "max" ) "(" field ")" | "count" "(" ")" ) [ "as" MEMBER ] ;
+updateExpr    = "update" GLOBAL "set" setItem { "," setItem } [ "where" expr ] [ "using" expr ] ;
+setItem       = field "=" ( expr | field ( "+" | "-" ) expr ) ;
 deleteExpr    = "delete" "from" GLOBAL [ "where" expr ] [ "using" expr ] ;
 field         = MEMBER | GLOBAL ;
 ```

@@ -184,7 +184,9 @@ func TestNumberRangeMaintenance(t *testing.T) {
 func TestNumberRangeGivesNumbers(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		numbersKernel(t, k)
-		doc := func(company string, year int) string { return mustNumbers(t, k, "DOCUMENT", `"`+company+`"`, fmt.Sprint(year)) }
+		doc := func(company string, year int) string {
+			return mustNumbers(t, k, "DOCUMENT", `"`+company+`"`, fmt.Sprint(year))
+		}
 		if got := doc("1000", 2026); got != `"0000000001"` {
 			t.Fatalf("first number: %s", got)
 		}
@@ -199,7 +201,10 @@ func TestNumberRangeGivesNumbers(t *testing.T) {
 		if got := doc("2000", 2026) + doc("1000", 2027) + doc("1000", 2026); got != `"5000000000""0000000001""0000000003"` {
 			t.Errorf("per subobject and year: %s", got)
 		}
-		for _, c := range []struct{ args []string; want string }{
+		for _, c := range []struct {
+			args []string
+			want string
+		}{
 			{[]string{`"/TRNUM/DOCUMENT"`, `"01"`, `"3000"`, "2026"}, "NOT_FOUND"},
 			{[]string{`"/TRNUM/DOCUMENT"`, `"01"`, "null", "2026"}, "ARGUMENT_INVALID"},
 			{[]string{`"/TRNUM/DOCUMENT"`, `"01"`, `"1000"`, "null"}, "ARGUMENT_INVALID"},

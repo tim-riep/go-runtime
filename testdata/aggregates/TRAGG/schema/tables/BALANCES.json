@@ -1,0 +1,12 @@
+{
+  "name": "/TRAGG/BALANCES",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "ACCOUNT", "domain": "/TRBASE/NAME" },
+    { "name": "BALANCE", "domain": "/TRAGG/AMOUNT", "notNull": true, "default": "0.00" },
+    { "name": "POSTINGS", "domain": "/TRBASE/COUNTER", "notNull": true, "default": 0 },
+    { "name": "LIMIT_AMOUNT", "domain": "/TRAGG/AMOUNT" }
+  ],
+  "primaryKey": ["ACCOUNT"]
+}

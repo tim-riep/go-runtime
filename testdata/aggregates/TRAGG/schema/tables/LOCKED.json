@@ -1,0 +1,10 @@
+{
+  "name": "/TRAGG/LOCKED",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    { "name": "ACCOUNT", "domain": "/TRBASE/NAME" },
+    { "name": "BALANCE", "domain": "/TRAGG/AMOUNT", "notNull": true, "default": "0.00" }
+  ],
+  "primaryKey": ["ACCOUNT"]
+}

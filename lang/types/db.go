@@ -327,8 +327,8 @@ func (c *checker) aggregateType(it *syntax.SelectItem, ft Type) Type {
 		c.errorf(it.Field.Pos, CodeType, "sum needs a field of a number type, not %s", ft)
 		return TypInvalid
 	}
-	if !ordered(base) || IsKind(base, String) {
-		c.errorf(it.Field.Pos, CodeType, "%s needs a field of a number, CHAR, date or time type, not %s", it.Func, ft)
+	if !ordered(base) {
+		c.errorf(it.Field.Pos, CodeType, "%s needs a field of a type that can be ordered, not %s", it.Func, ft)
 		return TypInvalid
 	}
 	return Opt(base)
@@ -379,6 +379,10 @@ func (c *checker) query(f *fnCtx, sc *scope, x *syntax.QueryExpr, e env) Type {
 			if len(x.Order) > 0 || x.Limit != nil {
 				c.errorf(x.Pos, CodeType, "select single reads one row and takes no order by or limit")
 			}
+			if len(x.GroupBy) == 0 {
+				// Aggregates without group by give exactly one row.
+				return row
+			}
 			return Opt(row)
 		}
 		return &Array{Elem: row}
@@ -427,10 +431,10 @@ func (c *checker) update(f *fnCtx, sc *scope, x *syntax.UpdateExpr, e env) Type 
 			case s.Op != "":
 				// FIELD = FIELD + value: a field of a number type that is
 				// never null and a value that is not null.
-				if !IsNumeric(ft) {
-					c.errorf(s.Field.Pos, CodeType, "%s %s value needs a field of a number type, not %s", s.Field.Name, s.Op, ft)
-				} else if _, opt := ft.(*Optional); opt {
+				if _, opt := ft.(*Optional); opt {
 					c.errorf(s.Field.Pos, CodeType, "%s may be null, so %s %s value has no result; only fields with notNull change by a value", s.Field.Name, s.Field.Name, s.Op)
+				} else if !IsNumeric(ft) {
+					c.errorf(s.Field.Pos, CodeType, "%s %s value needs a field of a number type, not %s", s.Field.Name, s.Op, ft)
 				}
 				c.notNull(s.Value, vt)
 				c.assign(s.Value, vt, NonOpt(ft), "the value added to "+s.Field.Name)

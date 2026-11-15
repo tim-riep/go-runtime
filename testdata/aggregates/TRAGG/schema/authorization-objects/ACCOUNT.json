@@ -1,0 +1,6 @@
+{
+  "name": "/TRAGG/ACCOUNT",
+  "texts": { "en": { "label": "Accounts" } },
+  "fields": [{ "name": "ACCOUNT", "domain": "/TRBASE/NAME" }, { "name": "ACTIVITY" }],
+  "activities": ["READ"]
+}

@@ -1065,9 +1065,12 @@ func (c *checker) useMember(pos syntax.Pos, m any) {
 // useField records the use of a field of a table or a component of a
 // structure.
 func (c *checker) useField(pos syntax.Pos, st *Struct, field string) {
-	if st.Table {
+	switch {
+	case st.Table:
 		c.use(pos, "field", st.Name, field)
-	} else {
+	case c.schema.s.Structures[st.Name] != nil:
+		// Structs the checker derives, such as the rows of a select list,
+		// are no objects of the schema.
 		c.use(pos, "component", st.Name, field)
 	}
 }

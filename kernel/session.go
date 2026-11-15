@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/tim-riep/go-runtime/authorization"
 	"github.com/tim-riep/go-runtime/dialect"
@@ -203,6 +204,10 @@ func (x *execution) classify(err error) error {
 		}
 		return &vm.DatabaseError{Class: class, Text: cv.Error(), Table: cv.Table, Constraint: cv.Constraint}
 	}
+	if strings.Contains(err.Error(), "integer overflow") {
+		// SQLite sums the scaled integers of DEC as 64-bit integers.
+		return &vm.DatabaseError{Class: "/RT/OVERFLOW", Text: "a sum has more digits than the database holds: " + err.Error()}
+	}
 	var lt *rterr.LockTimeout
 	if errors.As(err, &lt) {
 		text := "a statement waited too long for a lock"
@@ -342,11 +347,26 @@ func (s *session) Exec(ctx context.Context, p *bytecode.Program, q *bytecode.Que
 		return err
 	})
 	if err != nil {
-		return 0, err
+		return 0, overflow(q, err)
 	}
 	s.written = true
 	s.traceFilters(st, model.Some(n))
 	return n, nil
+}
+
+// overflow turns a failed check of a field that update ... set changes by
+// a value into /RT/OVERFLOW: the result no longer fits the field.
+func overflow(q *bytecode.Query, err error) error {
+	var de *vm.DatabaseError
+	if !errors.As(err, &de) || de.Class != "/RT/CHECK_VIOLATION" {
+		return err
+	}
+	for i, f := range q.Sets {
+		if i < len(q.SetOps) && q.SetOps[i] != "" && (de.Constraint == "" || de.Constraint == model.CheckName(q.Table, f)) {
+			return &vm.DatabaseError{Class: "/RT/OVERFLOW", Text: fmt.Sprintf("%s.%s no longer holds the result: %s", q.Table, f, de.Text), Table: q.Table}
+		}
+	}
+	return err
 }
 
 // errReadOnly rejects changes in an execution that only reads.

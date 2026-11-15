@@ -1,0 +1,7 @@
+{
+  "name": "/TRAGG/LOCKED",
+  "description": { "en": "Locked balances" },
+  "dataClass": "configuration",
+  "root": "/TRAGG/LOCKED",
+  "entities": { "/TRAGG/LOCKED": { "operations": ["create", "update"] } }
+}
