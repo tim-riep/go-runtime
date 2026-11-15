@@ -1,0 +1,51 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_EXTENSIONS",
+  "description": "Extensions of business objects by other packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "BEHAVIOR_CLASS",
+      "domain": "/RT/OBJECT_NAME"
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "table": "/RT/BUSINESS_OBJECTS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        }
+      ]
+    },
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

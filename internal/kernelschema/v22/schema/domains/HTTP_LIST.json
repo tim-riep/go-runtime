@@ -1,0 +1,6 @@
+{
+  "name": "/RT/HTTP_LIST",
+  "description": "Comma-separated list of names of a setting of a service node",
+  "type": "CHAR",
+  "length": 64
+}

@@ -1474,13 +1474,41 @@ func (p *parser) authFields() []*AuthField {
 func (p *parser) selectExpr() Expr {
 	e := &QueryExpr{Pos: p.tok.Pos}
 	p.next()
-	if p.isWord("single") || p.isWord("count") {
-		e.Mode = p.tok.Text
+	switch {
+	case p.isWord("single"):
+		e.Mode = "single"
 		p.next()
+	case p.isWord("count") && !p.peekOp("("):
+		e.Mode = "count"
+		p.next()
+	}
+	if e.Mode != "count" && !p.isKw("from") {
+		for {
+			e.Items = append(e.Items, p.selectItem())
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
 	}
 	p.expectKw("from")
 	e.Table = p.global()
 	e.Where = p.where()
+	if p.isWord("group") {
+		p.next()
+		if !p.isWord("by") {
+			p.errorf(p.tok.Pos, `expected "by" after "group"`)
+		} else {
+			p.next()
+		}
+		for {
+			e.GroupBy = append(e.GroupBy, p.memberName())
+			if !p.isOp(",") {
+				break
+			}
+			p.next()
+		}
+	}
 	if p.isWord("order") {
 		p.next()
 		if !p.isWord("by") {
@@ -1509,6 +1537,45 @@ func (p *parser) selectExpr() Expr {
 	return e
 }
 
+// selectItem parses a field or an aggregate of a select list with an
+// optional alias.
+func (p *parser) selectItem() SelectItem {
+	item := SelectItem{Pos: p.tok.Pos}
+	if (p.isWord("sum") || p.isWord("min") || p.isWord("max") || p.isWord("count")) && p.peekOp("(") {
+		item.Func = p.tok.Text
+		p.next()
+		p.expectOp("(")
+		if item.Func != "count" {
+			item.Field = p.memberName()
+		}
+		p.expectOp(")")
+	} else {
+		item.Field = p.memberName()
+	}
+	if p.isKw("as") {
+		p.next()
+		item.Alias = p.ident()
+	}
+	return item
+}
+
+// peekOp reports whether the token after the current one is an operator.
+func (p *parser) peekOp(text string) bool {
+	if p.i+1 >= len(p.toks) {
+		return false
+	}
+	t := p.toks[p.i+1]
+	return t.Kind == OP && t.Text == text
+}
+
+// peek returns the token after the current one.
+func (p *parser) peek() Token {
+	if p.i+1 >= len(p.toks) {
+		return p.tok
+	}
+	return p.toks[p.i+1]
+}
+
 func (p *parser) updateExpr() Expr {
 	e := &UpdateExpr{Pos: p.tok.Pos}
 	p.next()
@@ -1521,7 +1588,17 @@ func (p *parser) updateExpr() Expr {
 	for {
 		item := SetItem{Field: p.memberName()}
 		p.expectOp("=")
-		item.Value = p.expr(0)
+		// FIELD = FIELD + value changes the field in the database.
+		if next := p.peek(); (p.tok.Kind == IDENT || p.tok.Kind == GLOBAL) && p.tok.Text == item.Field.Name && next.Kind == OP && (next.Text == "+" || next.Text == "-") {
+			p.next()
+			item.Op = p.tok.Text
+			p.next()
+			// The value binds tighter than + and -, so that A = A - x + y
+			// does not read as A - (x + y); such values need parentheses.
+			item.Value = p.expr(precedence["*"])
+		} else {
+			item.Value = p.expr(0)
+		}
 		e.Sets = append(e.Sets, item)
 		if !p.isOp(",") {
 			break

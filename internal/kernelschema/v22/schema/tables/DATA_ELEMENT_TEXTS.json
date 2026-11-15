@@ -1,0 +1,66 @@
+{
+  "name": "/RT/DATA_ELEMENT_TEXTS",
+  "description": "Field labels of data elements per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "DATA_ELEMENT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "SHORT_LABEL",
+      "domain": "/RT/SHORT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "MEDIUM_LABEL",
+      "domain": "/RT/MEDIUM_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "LONG_LABEL",
+      "domain": "/RT/LONG_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "HEADING",
+      "domain": "/RT/HEADING",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "DATA_ELEMENT",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "DATA_ELEMENT",
+      "table": "/RT/DATA_ELEMENTS",
+      "fields": [
+        {
+          "field": "DATA_ELEMENT",
+          "references": "DATA_ELEMENT"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

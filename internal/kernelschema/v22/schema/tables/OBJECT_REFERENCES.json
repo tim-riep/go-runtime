@@ -1,0 +1,55 @@
+{
+  "name": "/RT/OBJECT_REFERENCES",
+  "description": "References in the content of objects, for the where-used list",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/REFERENCE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "TARGET",
+      "domain": "/RT/HTTP_PATH",
+      "notNull": true
+    },
+    {
+      "name": "PART",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TARGET_TYPE",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POINTER",
+      "domain": "/RT/JSON_POINTER",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "OBJECT_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "OBJECT",
+      "table": "/RT/OBJECTS",
+      "fields": [
+        {
+          "field": "OBJECT_NAME",
+          "references": "OBJECT_NAME"
+        }
+      ]
+    }
+  ]
+}

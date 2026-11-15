@@ -1,0 +1,43 @@
+{
+  "name": "/RT/HTTP_SERVICE_AUTH_FIELDS",
+  "description": "Fields of the additional checks of service nodes",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME"
+    },
+    {
+      "name": "ANY_VALUE",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "description": "The field is not checked"
+    },
+    {
+      "name": "VALUE",
+      "domain": "/RT/AUTH_VALUE",
+      "description": "Value in canonical text form; null with ANY_VALUE"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH",
+    "FIELD_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/HTTP_SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_PATH",
+          "references": "SERVICE_PATH"
+        }
+      ]
+    }
+  ]
+}

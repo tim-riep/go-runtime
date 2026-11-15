@@ -1,0 +1,16 @@
+{
+  "name": "/RT/NUMBERING",
+  "description": "Who gives the key of new instances",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "external",
+      "description": "The caller"
+    },
+    {
+      "value": "uuid",
+      "description": "The kernel, a new UUID"
+    }
+  ]
+}

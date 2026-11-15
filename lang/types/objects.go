@@ -339,6 +339,7 @@ const (
 	CodeObjectType     = "object-type"
 	CodeAsset          = "asset"
 	CodeAuthorization  = "authorization"
+	CodeNumberRange    = "number-range"
 	CodeConstant       = "constant"
 	CodeTest           = "test"
 	CodeStatement      = "statement"

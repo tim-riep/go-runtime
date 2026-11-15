@@ -1,0 +1,14 @@
+{
+  "name": "/RT/ALL_AUTHORIZATIONS",
+  "texts": {
+    "en": {
+      "label": "All authorizations",
+      "description": "Every authorization object with all values, also objects and activities installed later; for the first setup and emergencies"
+    },
+    "de": {
+      "label": "Alle Berechtigungen",
+      "description": "Jedes Berechtigungsobjekt mit allen Werten, auch später installierte Objekte und Aktivitäten; für die Ersteinrichtung und Notfälle"
+    }
+  },
+  "authorizations": []
+}

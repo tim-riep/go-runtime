@@ -1,0 +1,42 @@
+{
+  "name": "/RT/ROLES",
+  "description": "Roles of packages and local roles",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Owner package, empty for local roles"
+    },
+    {
+      "name": "COMPOSITE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "description": "File in the package, empty for local roles"
+    }
+  ],
+  "primaryKey": [
+    "ROLE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

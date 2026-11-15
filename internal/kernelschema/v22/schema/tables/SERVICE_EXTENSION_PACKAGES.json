@@ -1,0 +1,32 @@
+{
+  "name": "/RT/SERVICE_EXTENSION_PACKAGES",
+  "description": "Packages whose extensions a service offers",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_NAME",
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_NAME",
+          "references": "SERVICE_NAME"
+        }
+      ]
+    }
+  ]
+}

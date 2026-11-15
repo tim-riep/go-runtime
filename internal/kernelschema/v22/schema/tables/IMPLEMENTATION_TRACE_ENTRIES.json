@@ -1,0 +1,64 @@
+{
+  "name": "/RT/IMPLEMENTATION_TRACE_ENTRIES",
+  "description": "Evaluations of extension points recorded by a trace",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ENTRY_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "TRACED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "FILTER_VALUES",
+      "domain": "/RT/CHECK_DATA",
+      "notNull": true,
+      "description": "Values of the filter fields as JSON"
+    },
+    {
+      "name": "SELECTION",
+      "domain": "/RT/CHECK_DATA",
+      "notNull": true,
+      "description": "Every implementation with the reason why it was selected or not, as JSON"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Package of the code that ran the extension point"
+    },
+    {
+      "name": "CLASS_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LINE_NO",
+      "domain": "/RT/POSITION"
+    }
+  ],
+  "primaryKey": [
+    "ENTRY_ID"
+  ],
+  "foreignKeys": []
+}

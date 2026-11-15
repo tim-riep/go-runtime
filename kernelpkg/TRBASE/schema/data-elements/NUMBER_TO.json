@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/NUMBER_TO",
+  "domain": "/TRBASE/RANGE_NUMBER",
+  "texts": {
+    "en": {
+      "short": "To",
+      "medium": "To number",
+      "long": "Last number of the interval",
+      "heading": "To number"
+    },
+    "de": {
+      "short": "Bis",
+      "medium": "Bis-Nummer",
+      "long": "Letzte Nummer des Intervalls",
+      "heading": "Bis-Nummer"
+    }
+  }
+}

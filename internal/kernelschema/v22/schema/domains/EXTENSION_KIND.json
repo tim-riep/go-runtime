@@ -1,0 +1,28 @@
+{
+  "name": "/RT/EXTENSION_KIND",
+  "description": "Kind of extension of a business object",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "fieldProperties",
+      "description": "Properties of fields of the extending package"
+    },
+    {
+      "value": "determinations",
+      "description": "Determinations"
+    },
+    {
+      "value": "validations",
+      "description": "Validations"
+    },
+    {
+      "value": "actions",
+      "description": "Actions"
+    },
+    {
+      "value": "entities",
+      "description": "Dependent entities of the extending package"
+    }
+  ]
+}

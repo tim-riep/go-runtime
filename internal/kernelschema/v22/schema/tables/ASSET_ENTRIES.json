@@ -1,0 +1,100 @@
+{
+  "name": "/RT/ASSET_ENTRIES",
+  "description": "Folders and assets of asset repositories",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "REPOSITORY_ID",
+      "domain": "/RT/ASSET_REPOSITORY_ID"
+    },
+    {
+      "name": "PATH",
+      "domain": "/RT/ASSET_PATH"
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/ASSET_KIND",
+      "notNull": true
+    },
+    {
+      "name": "PARENT_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "description": "Containing folder, empty on the top level"
+    },
+    {
+      "name": "MIME_TYPE",
+      "domain": "/RT/MIME_TYPE"
+    },
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256",
+      "description": "Language-independent content, empty for folders and assets with variants only"
+    },
+    {
+      "name": "SIZE",
+      "domain": "/RT/BYTE_SIZE"
+    },
+    {
+      "name": "SOURCE_PATH",
+      "domain": "/RT/ASSET_PATH"
+    },
+    {
+      "name": "MODIFIED_AT",
+      "domain": "/RT/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "REPOSITORY_ID",
+    "PATH"
+  ],
+  "foreignKeys": [
+    {
+      "name": "REPOSITORY",
+      "table": "/RT/ASSET_REPOSITORIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        }
+      ]
+    },
+    {
+      "name": "PARENT",
+      "table": "/RT/ASSET_ENTRIES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        },
+        {
+          "field": "REPOSITORY_ID",
+          "references": "REPOSITORY_ID"
+        },
+        {
+          "field": "PARENT_PATH",
+          "references": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "BLOB",
+      "table": "/RT/ASSET_BLOBS",
+      "fields": [
+        {
+          "field": "SHA256",
+          "references": "SHA256"
+        }
+      ]
+    }
+  ]
+}

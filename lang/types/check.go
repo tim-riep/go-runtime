@@ -126,6 +126,9 @@ type Info struct {
 	Tables    map[syntax.Expr]*Struct
 	RowTables map[*syntax.RowStmt]*Struct
 	Cursors   map[*syntax.ForStmt]bool
+	// SelectLists are the select lists: the struct of their rows and the
+	// column of every field of it.
+	SelectLists map[*syntax.QueryExpr]*SelectList
 	// Transforms describes the transform expressions.
 	Transforms map[*syntax.TransformExpr]*Transform
 	// ExtensionPoints describes the extension point expressions.
@@ -245,7 +248,7 @@ func Check(cfg Config) (*Program, []Diagnostic) {
 		Globals: map[*syntax.GlobalExpr]any{}, Selects: map[*syntax.SelectExpr]*Selection{}, Calls: map[*syntax.CallExpr]*Call{},
 		TypeExprs: map[*syntax.Type]Type{}, Funcs: map[*syntax.FuncExpr]*FuncInfo{}, Vars: map[syntax.Stmt][]*Local{},
 		Catches: map[*syntax.CatchClause]*Local{}, Raises: map[*syntax.RaiseStmt]*Class{}, Expansions: map[*syntax.IncludeStmt]*Expansion{},
-		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{},
+		Fields: map[syntax.Expr]*FieldRef{}, Tables: map[syntax.Expr]*Struct{}, RowTables: map[*syntax.RowStmt]*Struct{}, Cursors: map[*syntax.ForStmt]bool{}, SelectLists: map[*syntax.QueryExpr]*SelectList{},
 		Transforms: map[*syntax.TransformExpr]*Transform{}, AuthChecks: map[*syntax.AuthCheck]*AuthCheck{},
 		ExtensionPoints: map[*syntax.ExtensionPointExpr]*ExtensionExpr{}, Entities: map[any]*EntityStatement{}}
 	c.schema = newSchemaTypes(c, cfg.Schema, cfg.Package)

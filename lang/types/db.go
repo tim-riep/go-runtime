@@ -15,6 +15,7 @@
 package types
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/tim-riep/go-runtime/lang/syntax"
@@ -229,15 +230,136 @@ func (c *checker) convertValue(x syntax.Expr, from, to Type) {
 	}
 }
 
+// SelectList is a select list: Row is the struct of the result rows, whose
+// fields are the Columns in order.
+type SelectList struct {
+	Row     *Struct
+	Columns []SelectColumn
+	GroupBy []string
+}
+
+// SelectColumn is a column of a select list: a field of the table, or an
+// aggregate (Func sum, min, max or count) over a field or, for count, the
+// rows.
+type SelectColumn struct {
+	Func  string
+	Field string
+}
+
+// selection checks a select list with group by and returns the struct of
+// its rows. Fields that are not aggregated are the fields of group by.
+func (c *checker) selection(st *Struct, x *syntax.QueryExpr) *Struct {
+	sel := &SelectList{}
+	var fields []*Field
+	var parts []string
+	for i := range x.Items {
+		it := &x.Items[i]
+		col := SelectColumn{Func: it.Func}
+		var ft Type = TypInvalid
+		if it.Func != "count" {
+			if t, ok := c.field(st, &it.Field); ok {
+				ft = t
+			} else {
+				c.errorf(it.Field.Pos, CodeType, "%s is no field of %s", it.Field.Name, st.Name)
+			}
+			col.Field = it.Field.Name
+		}
+		f := &Field{Name: col.Field, Type: ft}
+		text := col.Field
+		switch it.Func {
+		case "":
+			if !slices.ContainsFunc(x.GroupBy, func(g syntax.Ident) bool { return g.Name == col.Field }) {
+				c.errorf(it.Field.Pos, CodeType, "%s is not aggregated, so it must be a field of group by", col.Field)
+			}
+		case "count":
+			f.Name, f.Type, text = "COUNT", TypInt8, "count()"
+		default:
+			text = it.Func + "(" + col.Field + ")"
+			f.Name = strings.ToUpper(it.Func) + "_" + strings.ReplaceAll(strings.TrimPrefix(col.Field, "/"), "/", "_")
+			f.Type = c.aggregateType(it, ft)
+		}
+		if a := it.Alias.Name; a != "" {
+			if syntax.CaseOf(a) != syntax.UpperCase {
+				c.errorf(it.Alias.Pos, CodeType, "the name of a column is upper case, not %s", a)
+			}
+			f.Name = a
+			text += " as " + a
+		}
+		if slices.ContainsFunc(fields, func(o *Field) bool { return o.Name == f.Name }) {
+			c.errorf(it.Pos, CodeDuplicate, "the select list has two columns named %s; name one with as", f.Name)
+		}
+		fields = append(fields, f)
+		parts = append(parts, text)
+		sel.Columns = append(sel.Columns, col)
+	}
+	for i := range x.GroupBy {
+		g := &x.GroupBy[i]
+		c.field(st, g)
+		if !slices.ContainsFunc(x.Items, func(it syntax.SelectItem) bool { return it.Func == "" && it.Field.Name == g.Name }) {
+			c.errorf(g.Pos, CodeType, "%s of group by must be a column of the select list", g.Name)
+		}
+		sel.GroupBy = append(sel.GroupBy, g.Name)
+	}
+	name := "select " + strings.Join(parts, ", ") + " from " + st.Name
+	if len(sel.GroupBy) > 0 {
+		name += " group by " + strings.Join(sel.GroupBy, ", ")
+	}
+	sel.Row = c.schema.selection(name, fields)
+	c.info.SelectLists[x] = sel
+	return sel.Row
+}
+
+// aggregateType is the type of sum, min and max over a field: sum over
+// integers is INT8, over DEC(p,s) DEC(38,s), so that it stays exact; min
+// and max have the type of the field. All are null over no row.
+func (c *checker) aggregateType(it *syntax.SelectItem, ft Type) Type {
+	if ft == TypInvalid {
+		return TypInvalid
+	}
+	base := NonOpt(ft)
+	if it.Func == "sum" {
+		switch {
+		case IsInteger(base):
+			return Opt(TypInt8)
+		case IsKind(base, Dec):
+			return Opt(DecType(38, BasicOf(base).Scale))
+		}
+		c.errorf(it.Field.Pos, CodeType, "sum needs a field of a number type, not %s", ft)
+		return TypInvalid
+	}
+	if !ordered(base) || IsKind(base, String) {
+		c.errorf(it.Field.Pos, CodeType, "%s needs a field of a number, CHAR, date or time type, not %s", it.Func, ft)
+		return TypInvalid
+	}
+	return Opt(base)
+}
+
 // query checks select.
 func (c *checker) query(f *fnCtx, sc *scope, x *syntax.QueryExpr, e env) Type {
 	st := c.table(x.Table)
 	if x.Where != nil && st != nil {
 		c.where(f, sc, st, x.Where, e)
 	}
+	var row *Struct
+	switch {
+	case st != nil && len(x.Items) > 0:
+		row = c.selection(st, x)
+	case len(x.GroupBy) > 0:
+		c.errorf(x.Pos, CodeType, "group by needs a select list of fields and aggregates")
+	}
 	if st != nil {
-		for _, o := range x.Order {
-			ft, _ := c.field(st, &o.Field)
+		for i := range x.Order {
+			o := &x.Order[i]
+			var ft Type
+			if row != nil {
+				if fd := row.Field(o.Field.Name); fd != nil {
+					ft = fd.Type
+				} else {
+					c.errorf(o.Field.Pos, CodeUnknown, "order by names a column of the select list; it has no column %s", o.Field.Name)
+				}
+			} else {
+				ft, _ = c.field(st, &o.Field)
+			}
 			if ft != nil && ft != TypInvalid && !ordered(NonOpt(ft)) && !IsKind(NonOpt(ft), Bool) {
 				c.errorf(o.Field.Pos, CodeType, "order by needs a field of a type that can be ordered, not %s", ft)
 			}
@@ -252,6 +374,15 @@ func (c *checker) query(f *fnCtx, sc *scope, x *syntax.QueryExpr, e env) Type {
 		return TypInvalid
 	}
 	c.info.Tables[x] = st
+	if row != nil {
+		if x.Mode == "single" {
+			if len(x.Order) > 0 || x.Limit != nil {
+				c.errorf(x.Pos, CodeType, "select single reads one row and takes no order by or limit")
+			}
+			return Opt(row)
+		}
+		return &Array{Elem: row}
+	}
 	switch x.Mode {
 	case "single":
 		if len(x.Order) > 0 || x.Limit != nil {
@@ -291,7 +422,19 @@ func (c *checker) update(f *fnCtx, sc *scope, x *syntax.UpdateExpr, e env) Type 
 			}
 			seen[s.Field.Name] = true
 			vt := c.expr(f, sc, s.Value, e, ft)
-			if ft != nil {
+			switch {
+			case ft == nil || ft == TypInvalid:
+			case s.Op != "":
+				// FIELD = FIELD + value: a field of a number type that is
+				// never null and a value that is not null.
+				if !IsNumeric(ft) {
+					c.errorf(s.Field.Pos, CodeType, "%s %s value needs a field of a number type, not %s", s.Field.Name, s.Op, ft)
+				} else if _, opt := ft.(*Optional); opt {
+					c.errorf(s.Field.Pos, CodeType, "%s may be null, so %s %s value has no result; only fields with notNull change by a value", s.Field.Name, s.Field.Name, s.Op)
+				}
+				c.notNull(s.Value, vt)
+				c.assign(s.Value, vt, NonOpt(ft), "the value added to "+s.Field.Name)
+			default:
 				c.assign(s.Value, vt, ft, "the value of "+s.Field.Name)
 			}
 		}

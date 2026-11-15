@@ -1,0 +1,7 @@
+{
+  "name": "/TRNUM/READER",
+  "texts": { "en": { "label": "Tickets" } },
+  "authorizations": [
+    { "object": "/TRBASE/NUMBER_RANGE", "fields": { "NUMBER_RANGE_OBJECT": [{ "value": "/TRNUM/TICKET" }], "ACTIVITY": [{ "value": "READ" }] } }
+  ]
+}

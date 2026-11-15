@@ -1,0 +1,9 @@
+# A number range object, or an interval of it for the subobject and year,
+# does not exist or is not visible to the calling package.
+public class /TRBASE/NUMBER_RANGE_NOT_FOUND extends /TRBASE/NUMBER_RANGE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

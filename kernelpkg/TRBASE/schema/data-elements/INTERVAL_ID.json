@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/INTERVAL_ID",
+  "domain": "/TRBASE/INTERVAL_ID",
+  "texts": {
+    "en": {
+      "short": "Interval",
+      "medium": "Interval",
+      "long": "Interval of a number range",
+      "heading": "Interval"
+    },
+    "de": {
+      "short": "Intervall",
+      "medium": "Intervall",
+      "long": "Intervall eines Nummernkreises",
+      "heading": "Intervall"
+    }
+  }
+}

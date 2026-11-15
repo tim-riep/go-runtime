@@ -1,0 +1,24 @@
+{
+  "name": "/RT/SERVICE_MEMBER_KIND",
+  "description": "Kind of a setting of an entity set of a service",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "operation",
+      "description": "Operation offered"
+    },
+    {
+      "value": "action",
+      "description": "Action offered"
+    },
+    {
+      "value": "hidden-field",
+      "description": "Field not offered"
+    },
+    {
+      "value": "navigation",
+      "description": "Public name of a navigation"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/INTERVAL_ID",
+  "description": "Identifier of an interval of a number range: two upper-case letters or digits",
+  "type": "CHAR",
+  "length": 2
+}

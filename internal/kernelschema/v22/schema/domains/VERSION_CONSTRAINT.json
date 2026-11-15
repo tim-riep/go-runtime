@@ -1,0 +1,5 @@
+{
+  "name": "/RT/VERSION_CONSTRAINT",
+  "description": "Version constraint",
+  "type": "STRING"
+}

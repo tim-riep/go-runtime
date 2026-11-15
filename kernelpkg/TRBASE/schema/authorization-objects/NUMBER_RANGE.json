@@ -1,0 +1,28 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE",
+  "texts": {
+    "en": {
+      "label": "Number range intervals",
+      "description": "Maintaining the intervals of number range objects"
+    },
+    "de": {
+      "label": "Nummernkreisintervalle",
+      "description": "Intervalle von Nummernkreisobjekten pflegen"
+    }
+  },
+  "fields": [
+    {
+      "name": "NUMBER_RANGE_OBJECT",
+      "dataElement": "/TRBASE/NUMBER_RANGE_NAME"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

@@ -1,0 +1,22 @@
+# Numbers of the number range objects of packages. NEXT gives the next
+# number of an interval as text with leading zeros, with the length of the
+# object; subobject and year are null for objects without them. With the
+# buffering none the number is given in the transaction of the session and
+# counts as used with its commit; a rollback returns it, and executions on
+# the same interval wait for each other. With buffering, the kernel
+# reserves blocks per process, and numbers lost on a restart leave gaps.
+# Code uses the objects of its own package and of the packages it
+# requires; a literal name is checked when the code compiles.
+public class /TRBASE/NUMBER_RANGE
+
+  # The next number of an internal interval in the default session.
+  public static method NEXT(object: STRING, interval: STRING, subobject: STRING?, year: INT4?) returns STRING raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # The next number of an internal interval in a session.
+  public static method NEXT_IN(target: SESSION, object: STRING, interval: STRING, subobject: STRING?, year: INT4?) returns STRING raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # Whether a number given from outside lies in an external interval and
+  # has the length of the object.
+  public static method CHECK_EXTERNAL(object: STRING, interval: STRING, subobject: STRING?, year: INT4?, number: STRING) returns BOOL raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+end

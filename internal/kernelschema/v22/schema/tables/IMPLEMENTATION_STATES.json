@@ -1,0 +1,36 @@
+{
+  "name": "/RT/IMPLEMENTATION_STATES",
+  "description": "Global activation of implementations that differs from the default, kept across upgrades of their package",
+  "tenantSpecific": false,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "IMPLEMENTATION_NAME"
+  ],
+  "foreignKeys": []
+}

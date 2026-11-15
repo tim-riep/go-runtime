@@ -1,0 +1,46 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_ACTION_AUTH",
+  "description": "Fields of the authorization objects of actions of extensions with the fields of the entity that give their values",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME"
+    },
+    {
+      "name": "ENTITY_FIELD",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "METHOD_NAME",
+    "FIELD_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "METHOD",
+      "table": "/RT/BUSINESS_OBJECT_METHODS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        },
+        {
+          "field": "METHOD_NAME",
+          "references": "METHOD_NAME"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/RT/SOURCE_SPEC",
+  "description": "Version, constraint, commit or branch of a package address",
+  "type": "CHAR",
+  "length": 200
+}

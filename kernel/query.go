@@ -221,16 +221,18 @@ const (
 	KindAuthorizationObject = "authorization-object"
 	KindObjectType          = "object-type"
 	KindObject              = "object"
+	KindNumberRange         = "number-range"
 )
 
 // Resolve determines which kind of object a name refers to. A prefix
 // "package:", "table:", "domain:", "data-element:", "structure:",
-// "array-type:", "class:" or "authorization-object:" selects the kind
+// "array-type:", "class:", "authorization-object:", "object-type:",
+// "object:" or "number-range:" selects the kind
 // explicitly; a bare name
 // that matches several kinds is reported as rterr.Ambiguous.
 func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, err error) {
 	if kd, n, ok := strings.Cut(ref, ":"); ok && slices.Contains([]string{KindPackage, KindTable, KindDomain, KindDataElement, KindStructure, KindArrayType, KindClass, KindAuthorizationObject,
-		KindObjectType, KindObject}, kd) {
+		KindObjectType, KindObject, KindNumberRange}, kd) {
 		return kd, n, nil
 	}
 	s, err := k.Schema(ctx)
@@ -264,6 +266,9 @@ func (k *Kernel) Resolve(ctx context.Context, ref string) (kind, name string, er
 	}
 	if _, ok := s.Objects[ref]; ok {
 		kinds = append(kinds, KindObject)
+	}
+	if _, ok := s.NumberRanges[ref]; ok {
+		kinds = append(kinds, KindNumberRange)
 	}
 	for _, sources := range s.Sources {
 		for _, src := range sources {

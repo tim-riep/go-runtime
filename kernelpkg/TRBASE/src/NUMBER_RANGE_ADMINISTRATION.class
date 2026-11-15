@@ -1,0 +1,29 @@
+# The intervals of number range objects in the tenant of the execution,
+# for maintenance pages. Every method checks /TRBASE/NUMBER_RANGE for the
+# object with the user of the execution; changes are written in the
+# transaction of the default session and recorded in the history. Moving
+# the current number of an interval back and deleting an interval that gave
+# numbers need confirm.
+public class /TRBASE/NUMBER_RANGE_ADMINISTRATION
+
+  # The number range objects whose intervals the user may read, of a
+  # package or of all for null, ordered by name.
+  public static method OBJECTS(pkg: STRING?) returns /TRBASE/NUMBER_RANGE_INFO_ARRAY executed by kernel
+
+  # The intervals of an object, ordered by subobject, year and interval.
+  public static method INTERVALS(object: STRING) returns /TRBASE/NUMBER_INTERVAL_ARRAY raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # Adds an interval; CURRENT_NO is null or the last number given.
+  public static method ADD_INTERVAL(interval: /TRBASE/NUMBER_INTERVAL) raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # Changes the bounds, the current number or the kind of an interval.
+  public static method CHANGE_INTERVAL(interval: /TRBASE/NUMBER_INTERVAL, confirm: BOOL) raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # Deletes an interval.
+  public static method DELETE_INTERVAL(object: STRING, interval: STRING, subobject: STRING?, year: INT4?, confirm: BOOL) raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+  # The changes of the intervals of an object, or of all for null, in the
+  # tenant, ordered by time.
+  public static method HISTORY(object: STRING?) returns /TRBASE/NUMBER_RANGE_CHANGE_ARRAY raises /TRBASE/NUMBER_RANGE_ERROR executed by kernel
+
+end

@@ -175,8 +175,16 @@ func (f *fn) selectQuery(x *syntax.QueryExpr) int {
 		kind = QCount
 	}
 	q := f.newQuery(kind, st)
+	if sel := f.c.info.SelectLists[x]; sel != nil {
+		q.q.Row = f.c.typeDesc(sel.Row)
+		for _, c := range sel.Columns {
+			q.q.Columns = append(q.q.Columns, bytecode.Column{Func: c.Func, Field: c.Field})
+		}
+		q.q.GroupBy = slices.Clone(sel.GroupBy)
+	}
 	q.where(x.Where)
-	for _, o := range x.Order {
+	for i := range x.Order {
+		o := &x.Order[i]
 		name := o.Field.Name
 		if fr, ok := f.c.info.Fields[&o.Field]; ok {
 			name = fr.Field
@@ -200,6 +208,7 @@ func (f *fn) dbExpr(x syntax.Expr) {
 		q := f.newQuery(QUpdateWhere, info.Tables[x])
 		for _, s := range x.Sets {
 			q.q.Sets = append(q.q.Sets, s.Field.Name)
+			q.q.SetOps = append(q.q.SetOps, s.Op)
 			f.valueOwn(s.Value)
 			q.q.Params = append(q.q.Params, f.c.typeDesc(types.NonOpt(f.operandType(s.Value))))
 		}

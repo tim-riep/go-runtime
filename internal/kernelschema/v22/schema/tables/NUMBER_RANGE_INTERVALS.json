@@ -1,0 +1,71 @@
+{
+  "name": "/RT/NUMBER_RANGE_INTERVALS",
+  "description": "Intervals of number ranges per tenant",
+  "tenantSpecific": true,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "INTERVAL_UUID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "RANGE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "INTERVAL_ID",
+      "domain": "/RT/INTERVAL_ID",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT",
+      "domain": "/RT/SUBOBJECT_VALUE",
+      "description": "Value of the subobject; null for objects without subobject"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "domain": "/RT/FISCAL_YEAR",
+      "description": "null for objects without fiscal year"
+    },
+    {
+      "name": "FROM_NO",
+      "domain": "/RT/NUMBER",
+      "notNull": true
+    },
+    {
+      "name": "TO_NO",
+      "domain": "/RT/NUMBER",
+      "notNull": true
+    },
+    {
+      "name": "CURRENT_NO",
+      "domain": "/RT/NUMBER",
+      "description": "The last number given or reserved; null before the first"
+    },
+    {
+      "name": "EXTERNAL",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "WARNED",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "INTERVAL_UUID"
+  ],
+  "foreignKeys": []
+}

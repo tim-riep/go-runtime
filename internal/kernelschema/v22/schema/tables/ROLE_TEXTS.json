@@ -1,0 +1,51 @@
+{
+  "name": "/RT/ROLE_TEXTS",
+  "description": "Labels and descriptions of roles per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "ROLE_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ROLE",
+      "table": "/RT/ROLES",
+      "fields": [
+        {
+          "field": "ROLE_NAME",
+          "references": "ROLE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

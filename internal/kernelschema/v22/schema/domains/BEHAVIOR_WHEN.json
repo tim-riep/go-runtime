@@ -1,0 +1,16 @@
+{
+  "name": "/RT/BEHAVIOR_WHEN",
+  "description": "When a determination runs",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "modify",
+      "description": "At the end of the entity statement"
+    },
+    {
+      "value": "save",
+      "description": "In the save sequence"
+    }
+  ]
+}

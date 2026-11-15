@@ -1,0 +1,57 @@
+{
+  "name": "/RT/ROLE_ASSIGNMENTS",
+  "description": "Roles assigned to users in a tenant, with an optional period of validity",
+  "tenantSpecific": true,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "ASSIGNMENT_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "ROLE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "VALID_FROM",
+      "domain": "/RT/DAY",
+      "description": "First day of validity, empty for open"
+    },
+    {
+      "name": "VALID_TO",
+      "domain": "/RT/DAY",
+      "description": "Last day of validity, empty for open"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ASSIGNMENT_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "USER",
+      "table": "/RT/USERS",
+      "fields": [
+        {
+          "field": "USER_NAME",
+          "references": "USER_NAME"
+        }
+      ]
+    }
+  ]
+}

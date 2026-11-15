@@ -1,0 +1,37 @@
+{
+  "name": "/RT/AUTH_OBJECT_ACTIVITIES",
+  "description": "Activities that authorization objects with the field ACTIVITY allow",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "ACTIVITY",
+      "domain": "/RT/ACTIVITY"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "OBJECT_NAME",
+    "ACTIVITY"
+  ],
+  "foreignKeys": [
+    {
+      "name": "OBJECT",
+      "table": "/RT/AUTH_OBJECTS",
+      "fields": [
+        {
+          "field": "OBJECT_NAME",
+          "references": "OBJECT_NAME"
+        }
+      ]
+    }
+  ]
+}

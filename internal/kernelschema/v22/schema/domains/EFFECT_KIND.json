@@ -1,0 +1,6 @@
+{
+  "name": "/RT/EFFECT_KIND",
+  "description": "Kind of an effect of native methods outside the VM and the database",
+  "type": "CHAR",
+  "length": 64
+}

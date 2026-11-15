@@ -1,0 +1,16 @@
+{
+  "name": "/RT/EXTENSION_USE",
+  "description": "How many implementations of an extension point run",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "single",
+      "description": "Exactly one implementation"
+    },
+    {
+      "value": "multiple",
+      "description": "All matching active implementations in order"
+    }
+  ]
+}

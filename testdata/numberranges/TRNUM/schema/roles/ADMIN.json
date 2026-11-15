@@ -1,0 +1,7 @@
+{
+  "name": "/TRNUM/ADMIN",
+  "texts": { "en": { "label": "Number ranges" } },
+  "authorizations": [
+    { "object": "/TRBASE/NUMBER_RANGE", "fields": { "NUMBER_RANGE_OBJECT": [{ "pattern": "/TRNUM/*" }], "ACTIVITY": [{ "pattern": "*" }] } }
+  ]
+}

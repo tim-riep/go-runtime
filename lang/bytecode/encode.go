@@ -247,6 +247,13 @@ func Encode(p *Program) []byte {
 		}
 		w.bool(q.Limit)
 		w.ints(q.Params)
+		w.strs(q.SetOps)
+		w.int(len(q.Columns))
+		for _, c := range q.Columns {
+			w.str(c.Func)
+			w.str(c.Field)
+		}
+		w.strs(q.GroupBy)
 	}
 	w.int(len(p.Transforms))
 	for _, t := range p.Transforms {
@@ -506,6 +513,14 @@ func Decode(b []byte) (*Program, error) {
 		}
 		q.Limit = r.bool()
 		q.Params = r.ints()
+		q.SetOps = r.strs()
+		if n := r.count(); n > 0 {
+			q.Columns = make([]Column, n)
+			for j := range q.Columns {
+				q.Columns[j] = Column{Func: r.str(), Field: r.str()}
+			}
+		}
+		q.GroupBy = r.strs()
 		p.Queries[i] = q
 	}
 	p.Transforms = make([]Transform, r.count())

@@ -1,0 +1,87 @@
+# Numbers of the number ranges of TRNUM for the tests of the kernel.
+public class /TRNUM/NUMBERS
+
+  public static method DOCUMENT(company: STRING, year: INT4) returns STRING raises /TRBASE/NUMBER_RANGE_ERROR
+    return /TRBASE/NUMBER_RANGE.NEXT("/TRNUM/DOCUMENT", "01", company, year)
+  end
+
+  # Gives a number and keeps it in a note, then fails, so that the
+  # execution rolls back.
+  public static method DOCUMENT_FAILING(company: STRING, year: INT4) raises /TRBASE/NUMBER_RANGE_ERROR
+    var note: /TRNUM/NOTES
+    note.NOTE_NO = DOCUMENT(company, year)
+    insert note
+    var zero = 0
+    var x = 1 / zero
+  end
+
+  public static method TICKETS(n: INT4) returns array of STRING raises /TRBASE/NUMBER_RANGE_ERROR
+    var out: array of STRING = []
+    for i from 1 to n
+      out.APPEND(/TRBASE/NUMBER_RANGE.NEXT("/TRNUM/TICKET", "01", null, null))
+    end
+    return out
+  end
+
+  public static method PARTNER() returns STRING raises /TRBASE/NUMBER_RANGE_ERROR
+    return /TRBASE/NUMBER_RANGE.NEXT("/TRNUM/PARTNER", "01", null, null)
+  end
+
+  # A ticket in a session of its own, committed or rolled back.
+  public static method TICKET_IN_SESSION(keep: BOOL) returns STRING raises /TRBASE/NUMBER_RANGE_ERROR
+    var s = open session
+    var number = /TRBASE/NUMBER_RANGE.NEXT_IN(s, "/TRNUM/TICKET", "01", null, null)
+    if keep
+      commit s
+    else
+      rollback s
+    end
+    return number
+  end
+
+  public static method EXTERNAL(number: STRING) returns BOOL raises /TRBASE/NUMBER_RANGE_ERROR
+    return /TRBASE/NUMBER_RANGE.CHECK_EXTERNAL("/TRNUM/TICKET", "X1", null, null, number)
+  end
+
+  # The class of the exception NEXT raises for an object, interval,
+  # subobject and year, or "" when it gives a number.
+  public static method FAILURE(object: STRING, interval: STRING, subobject: STRING?, year: INT4?) returns STRING
+    try
+      /TRBASE/NUMBER_RANGE.NEXT(object, interval, subobject, year)
+    catch e: /TRBASE/NUMBER_RANGE_NOT_FOUND
+      return "NOT_FOUND"
+    catch e: /TRBASE/NUMBER_RANGE_EXHAUSTED
+      return "EXHAUSTED"
+    catch e: /TRBASE/NUMBER_RANGE_ARGUMENT_INVALID
+      return "ARGUMENT_INVALID"
+    catch e: /TRBASE/NUMBER_RANGE_ERROR
+      return "ERROR"
+    end
+    return ""
+  end
+
+  public static method ADD(interval: /TRBASE/NUMBER_INTERVAL) raises /TRBASE/NUMBER_RANGE_ERROR
+    /TRBASE/NUMBER_RANGE_ADMINISTRATION.ADD_INTERVAL(interval)
+  end
+
+  public static method CHANGE(interval: /TRBASE/NUMBER_INTERVAL, confirm: BOOL) raises /TRBASE/NUMBER_RANGE_ERROR
+    /TRBASE/NUMBER_RANGE_ADMINISTRATION.CHANGE_INTERVAL(interval, confirm)
+  end
+
+  public static method REMOVE(object: STRING, interval: STRING, confirm: BOOL) raises /TRBASE/NUMBER_RANGE_ERROR
+    /TRBASE/NUMBER_RANGE_ADMINISTRATION.DELETE_INTERVAL(object, interval, null, null, confirm)
+  end
+
+  public static method INTERVALS(object: STRING) returns /TRBASE/NUMBER_INTERVAL_ARRAY raises /TRBASE/NUMBER_RANGE_ERROR
+    return /TRBASE/NUMBER_RANGE_ADMINISTRATION.INTERVALS(object)
+  end
+
+  public static method OBJECTS() returns /TRBASE/NUMBER_RANGE_INFO_ARRAY
+    return /TRBASE/NUMBER_RANGE_ADMINISTRATION.OBJECTS("TRNUM")
+  end
+
+  public static method HISTORY() returns /TRBASE/NUMBER_RANGE_CHANGE_ARRAY raises /TRBASE/NUMBER_RANGE_ERROR
+    return /TRBASE/NUMBER_RANGE_ADMINISTRATION.HISTORY(null)
+  end
+
+end

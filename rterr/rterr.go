@@ -66,6 +66,7 @@ const (
 	CodeService         Code = "service"          // invalid service
 	CodeObjectType      Code = "object-type"      // invalid object type
 	CodeObject          Code = "object"           // invalid object of a package-defined type
+	CodeNumberRange     Code = "number-range"     // invalid number range object
 )
 
 // Location points at the place in a package that caused an error.
@@ -291,6 +292,33 @@ type ConfirmationRequired struct {
 func (e *ConfirmationRequired) Error() string {
 	return fmt.Sprintf("%s of %s deletes data and must be confirmed explicitly", e.Operation, e.Object)
 }
+
+// NumberRangeError reports a failed operation on a number range.
+type NumberRangeError struct {
+	Kind    NumberRangeErrorKind
+	Object  string
+	Message string
+}
+
+// NumberRangeErrorKind tells why an operation on a number range failed.
+type NumberRangeErrorKind string
+
+// Kinds of NumberRangeError.
+const (
+	// NumberRangeNotFound: the object or the interval does not exist or
+	// is not visible.
+	NumberRangeNotFound NumberRangeErrorKind = "not-found"
+	// NumberRangeExhausted: the interval gave its last number.
+	NumberRangeExhausted NumberRangeErrorKind = "exhausted"
+	// NumberRangeArgument: an argument does not fit the object or the
+	// interval.
+	NumberRangeArgument NumberRangeErrorKind = "argument"
+	// NumberRangeConfirmation: the change moves a current number back or
+	// deletes an interval that gave numbers.
+	NumberRangeConfirmation NumberRangeErrorKind = "confirmation"
+)
+
+func (e *NumberRangeError) Error() string { return e.Object + ": " + e.Message }
 
 // NotFound reports that a requested object does not exist.
 type NotFound struct {

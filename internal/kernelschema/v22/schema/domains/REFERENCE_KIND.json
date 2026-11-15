@@ -1,0 +1,52 @@
+{
+  "name": "/RT/REFERENCE_KIND",
+  "description": "Kind of a reference in the content of an object",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "package",
+      "description": "Package"
+    },
+    {
+      "value": "businessObject",
+      "description": "Business object"
+    },
+    {
+      "value": "entity",
+      "description": "Entity of a business object"
+    },
+    {
+      "value": "field",
+      "description": "Field of an entity"
+    },
+    {
+      "value": "action",
+      "description": "Action of a business object"
+    },
+    {
+      "value": "service",
+      "description": "Service"
+    },
+    {
+      "value": "entitySet",
+      "description": "Entity set of a service"
+    },
+    {
+      "value": "role",
+      "description": "Role"
+    },
+    {
+      "value": "httpNode",
+      "description": "Node of HTTP services"
+    },
+    {
+      "value": "assetRepository",
+      "description": "Asset repository"
+    },
+    {
+      "value": "object",
+      "description": "Object of a package-defined type"
+    }
+  ]
+}

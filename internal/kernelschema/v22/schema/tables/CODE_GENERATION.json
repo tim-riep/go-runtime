@@ -1,0 +1,26 @@
+{
+  "name": "/RT/CODE_GENERATION",
+  "description": "Current generation of the compiled code; every change of code increases it",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ID",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "GENERATION",
+      "domain": "/RT/GENERATION",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ID"
+  ],
+  "foreignKeys": []
+}

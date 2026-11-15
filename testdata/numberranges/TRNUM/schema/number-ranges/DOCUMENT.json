@@ -1,0 +1,8 @@
+{
+  "name": "/TRNUM/DOCUMENT",
+  "texts": { "en": { "label": "Documents" } },
+  "length": 10,
+  "subobject": { "name": "COMPANY", "domain": "/TRNUM/COMPANY" },
+  "perFiscalYear": true,
+  "buffering": { "mode": "none" }
+}

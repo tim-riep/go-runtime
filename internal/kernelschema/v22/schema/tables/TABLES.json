@@ -1,0 +1,52 @@
+{
+  "name": "/RT/TABLES",
+  "description": "Tables",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Owner package, empty for the kernel"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    },
+    {
+      "name": "TENANT_SPECIFIC",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "DATA_CLASS",
+      "domain": "/RT/DATA_CLASS",
+      "notNull": true
+    },
+    {
+      "name": "PK_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true,
+      "description": "Generated name of the primary key constraint and its index"
+    }
+  ],
+  "primaryKey": [
+    "TABLE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

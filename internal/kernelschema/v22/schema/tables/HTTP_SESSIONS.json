@@ -1,0 +1,55 @@
+{
+  "name": "/RT/HTTP_SESSIONS",
+  "description": "Sessions of browsers; only a hash of the session ID is stored",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SESSION_HASH",
+      "domain": "/RT/SHA256"
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "LAST_SEEN_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "EXPIRES_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SESSION_HASH"
+  ],
+  "foreignKeys": [
+    {
+      "name": "USER",
+      "table": "/RT/USERS",
+      "fields": [
+        {
+          "field": "USER_NAME",
+          "references": "USER_NAME"
+        }
+      ]
+    }
+  ]
+}

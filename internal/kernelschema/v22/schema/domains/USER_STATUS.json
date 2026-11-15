@@ -1,0 +1,16 @@
+{
+  "name": "/RT/USER_STATUS",
+  "description": "Status of a user",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "active",
+      "description": "Active"
+    },
+    {
+      "value": "locked",
+      "description": "Locked"
+    }
+  ]
+}

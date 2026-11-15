@@ -1,0 +1,5 @@
+{
+  "name": "/RT/SOURCE_TEXT",
+  "description": "Text of a source file",
+  "type": "STRING"
+}

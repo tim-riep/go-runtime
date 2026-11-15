@@ -1,0 +1,70 @@
+{
+  "name": "/RT/NUMBER_RANGE_HISTORY",
+  "description": "Changes of intervals of number ranges; entries are never changed",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "CHANGE_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "CHANGE_KIND",
+      "domain": "/RT/NUMBER_RANGE_CHANGE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID",
+      "notNull": true
+    },
+    {
+      "name": "RANGE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "INTERVAL_ID",
+      "domain": "/RT/INTERVAL_ID",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT",
+      "domain": "/RT/SUBOBJECT_VALUE"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "domain": "/RT/FISCAL_YEAR"
+    },
+    {
+      "name": "OLD_STATE",
+      "domain": "/RT/OBJECT_CONTENT",
+      "description": "The interval before as JSON; null when added"
+    },
+    {
+      "name": "NEW_STATE",
+      "domain": "/RT/OBJECT_CONTENT",
+      "description": "The interval after as JSON; null when deleted"
+    },
+    {
+      "name": "CONFIRMED",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "description": "A change that needed a confirmation: the current number moved back or a used interval deleted"
+    }
+  ],
+  "primaryKey": [
+    "CHANGE_ID"
+  ],
+  "foreignKeys": []
+}

@@ -1,0 +1,16 @@
+{
+  "name": "/RT/NUMBER_RANGE_BUFFERING",
+  "description": "How a number range gives numbers",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "none",
+      "description": "Without gaps in the transaction of the execution"
+    },
+    {
+      "value": "buffered",
+      "description": "In blocks per process; gaps are allowed"
+    }
+  ]
+}

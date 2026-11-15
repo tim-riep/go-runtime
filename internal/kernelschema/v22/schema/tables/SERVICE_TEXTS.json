@@ -1,0 +1,47 @@
+{
+  "name": "/RT/SERVICE_TEXTS",
+  "description": "Descriptions of services per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_NAME",
+          "references": "SERVICE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

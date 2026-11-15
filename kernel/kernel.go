@@ -121,6 +121,8 @@ type Kernel struct {
 	// httpLog receives the log statements of requests; nil writes them
 	// to slog.
 	httpLog vm.LogSink
+	// numbers are the blocks of buffered number ranges.
+	numbers numberBuffers
 }
 
 // Open connects to a database. The connection string selects the dialect:
@@ -598,6 +600,9 @@ func (k *Kernel) apply(ctx context.Context, o operation, opts Options) (*plan.Pl
 			return err
 		}
 		if err := k.syncServiceStates(ctx, q, want); err != nil {
+			return err
+		}
+		if err := k.syncNumberRanges(ctx, q, cur, want, started); err != nil {
 			return err
 		}
 		if err := k.syncActivation(ctx, q, cur, want, started); err != nil {

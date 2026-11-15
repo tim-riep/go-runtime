@@ -1,0 +1,46 @@
+{
+  "name": "/RT/PACKAGES",
+  "description": "Installed packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "VERSION",
+      "domain": "/RT/VERSION",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    },
+    {
+      "name": "INSTALLED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "UPDATED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "LANGUAGE_VERSION",
+      "domain": "/RT/LANGUAGE_VERSION",
+      "description": "Version of the source language, empty without source files"
+    },
+    {
+      "name": "KERNEL_PACKAGE",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "default": false,
+      "description": "The package is embedded in the kernel and installed only from there"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID"
+  ]
+}

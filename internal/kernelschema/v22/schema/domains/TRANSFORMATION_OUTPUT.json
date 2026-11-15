@@ -1,0 +1,20 @@
+{
+  "name": "/RT/TRANSFORMATION_OUTPUT",
+  "description": "What a transformation produces",
+  "type": "CHAR",
+  "length": 4,
+  "values": [
+    {
+      "value": "xml",
+      "description": "XML"
+    },
+    {
+      "value": "html",
+      "description": "HTML"
+    },
+    {
+      "value": "text",
+      "description": "Text"
+    }
+  ]
+}

@@ -199,6 +199,84 @@ func (sb *sqlBuilder) where(q *bytecode.Query, tenant string, params []any, key 
 	return nil
 }
 
+// selectList writes select with a list of fields and aggregates, grouped
+// by fields. columns are the names of the result columns. Sums over DEC
+// keep their scale with 38 digits; under SQLite, which sums the scaled
+// integers, a sum beyond 18 digits overflows.
+func (sb *sqlBuilder) selectList(st *statement, q *bytecode.Query, columns []string, tenant string, args []any, limit int64) error {
+	pg := sb.d.Name() == "postgres"
+	var exprs []string
+	for _, c := range q.Columns {
+		var dom *model.Domain
+		if c.Field != "" {
+			d, err := sb.domain(c.Field)
+			if err != nil {
+				return err
+			}
+			dom = d
+		}
+		switch c.Func {
+		case "":
+			exprs = append(exprs, sb.q(c.Field))
+		case "count":
+			exprs = append(exprs, "COUNT(*)")
+			dom = &model.Domain{Type: model.Int8}
+		case "sum":
+			sum := "SUM(" + sb.q(c.Field) + ")"
+			if dom.Type == model.Dec {
+				dom = &model.Domain{Type: model.Dec, Length: 38, Decimals: dom.Decimals}
+				if pg {
+					sum = fmt.Sprintf("CAST(%s AS NUMERIC(38,%d))", sum, dom.Decimals)
+				}
+			} else {
+				dom = &model.Domain{Type: model.Int8}
+				if pg {
+					sum = "CAST(" + sum + " AS BIGINT)"
+				}
+			}
+			exprs = append(exprs, sum)
+		default:
+			exprs = append(exprs, strings.ToUpper(c.Func)+"("+sb.q(c.Field)+")")
+		}
+		st.domains = append(st.domains, dom)
+	}
+	st.columns = columns
+	sb.write("SELECT ", strings.Join(exprs, ", "), " FROM ", sb.q(q.Table))
+	if err := sb.where(q, tenant, args, nil); err != nil {
+		return err
+	}
+	var groups []string
+	for _, g := range q.GroupBy {
+		groups = append(groups, sb.q(g))
+	}
+	if len(groups) > 0 {
+		sb.write(" GROUP BY ", strings.Join(groups, ", "))
+	}
+	// Order by names columns of the result, written as their positions;
+	// without it the groups come in the order of their fields.
+	var order []string
+	for _, o := range q.Order {
+		dir := ""
+		if o.Descending {
+			dir = " DESC"
+		}
+		order = append(order, fmt.Sprint(slices.Index(columns, o.Field)+1)+dir)
+	}
+	if len(order) == 0 {
+		order = groups
+	}
+	if len(order) > 0 {
+		sb.write(" ORDER BY ", strings.Join(order, ", "))
+	}
+	switch {
+	case q.Kind == bytecode.QSingle:
+		sb.write(" LIMIT 1")
+	case q.Limit:
+		sb.write(" LIMIT ", sb.bind(limit))
+	}
+	return nil
+}
+
 type keyValue struct {
 	column string
 	value  any
@@ -226,7 +304,15 @@ func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, auth
 	}
 	st := &statement{}
 	switch q.Kind {
-	case bytecode.QSelect, bytecode.QSingle, bytecode.QCount:
+	case bytecode.QSelect, bytecode.QSingle:
+		if len(q.Columns) > 0 {
+			if err := sb.selectList(st, q, columns, tenant, args, limit); err != nil {
+				return nil, err
+			}
+			break
+		}
+		fallthrough
+	case bytecode.QCount:
 		if q.Kind == bytecode.QCount {
 			sb.write("SELECT COUNT(*) FROM ", sb.q(q.Table))
 		} else {
@@ -325,6 +411,11 @@ func buildStatement(d dialect.Dialect, phys *model.Physical, tenant string, auth
 			ph, err := sb.value(c, args[i])
 			if err != nil {
 				return nil, err
+			}
+			if i < len(q.SetOps) && q.SetOps[i] != "" {
+				// The database changes the field by the value, atomically.
+				sets = append(sets, sb.q(c)+" = "+sb.q(c)+" "+q.SetOps[i]+" "+ph)
+				continue
 			}
 			sets = append(sets, sb.q(c)+" = "+ph)
 		}

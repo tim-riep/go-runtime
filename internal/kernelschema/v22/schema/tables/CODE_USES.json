@@ -1,0 +1,67 @@
+{
+  "name": "/RT/CODE_USES",
+  "description": "Objects used by the code of packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "LINE_NO",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "COLUMN_NO",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "OBJECT_KIND",
+      "domain": "/RT/USE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "MEMBER_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Field, component, method, attribute, constant or fixed value"
+    },
+    {
+      "name": "OBJECT_PACKAGE",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Owner of the object, empty for the kernel"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

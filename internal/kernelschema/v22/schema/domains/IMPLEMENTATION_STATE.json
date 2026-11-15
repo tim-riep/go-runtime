@@ -1,0 +1,16 @@
+{
+  "name": "/RT/IMPLEMENTATION_STATE",
+  "description": "Activation of an implementation",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "active",
+      "description": "Active"
+    },
+    {
+      "value": "inactive",
+      "description": "Inactive"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/RT/LONG_LABEL",
+  "description": "Long field label",
+  "type": "CHAR",
+  "length": 40
+}

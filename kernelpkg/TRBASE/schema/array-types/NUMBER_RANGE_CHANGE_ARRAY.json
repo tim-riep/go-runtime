@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE_CHANGE_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Changes of intervals"
+    },
+    "de": {
+      "label": "Änderungen von Intervallen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/NUMBER_RANGE_CHANGE"
+  }
+}

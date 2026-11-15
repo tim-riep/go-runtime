@@ -1,0 +1,46 @@
+{
+  "name": "/RT/HTTP_HANDLER_PARAMETERS",
+  "description": "Parameters of the handler entries of service nodes",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "PARAMETER_NAME",
+      "domain": "/RT/PARAMETER_NAME"
+    },
+    {
+      "name": "VALUE",
+      "domain": "/RT/PARAMETER_VALUE",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH",
+    "POSITION",
+    "PARAMETER_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "HANDLER",
+      "table": "/RT/HTTP_HANDLERS",
+      "fields": [
+        {
+          "field": "SERVICE_PATH",
+          "references": "SERVICE_PATH"
+        },
+        {
+          "field": "POSITION",
+          "references": "POSITION"
+        }
+      ]
+    }
+  ]
+}

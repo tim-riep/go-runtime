@@ -1,0 +1,6 @@
+{
+  "name": "/RT/HTTP_PATH",
+  "description": "Full path of a service node, e.g. /trfin/companies",
+  "type": "CHAR",
+  "length": 300
+}

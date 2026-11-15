@@ -1,0 +1,26 @@
+{
+  "name": "/RT/AUTH_GENERATION",
+  "description": "Counter of changes that affect effective authorizations",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ID",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "GENERATION",
+      "domain": "/RT/GENERATION",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "ID"
+  ],
+  "foreignKeys": []
+}

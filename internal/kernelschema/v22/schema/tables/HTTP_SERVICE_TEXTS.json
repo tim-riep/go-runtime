@@ -1,0 +1,51 @@
+{
+  "name": "/RT/HTTP_SERVICE_TEXTS",
+  "description": "Labels of service nodes per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "SERVICE",
+      "table": "/RT/HTTP_SERVICES",
+      "fields": [
+        {
+          "field": "SERVICE_PATH",
+          "references": "SERVICE_PATH"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

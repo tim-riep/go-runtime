@@ -1,0 +1,16 @@
+{
+  "name": "/RT/AUTH_MAPPING_KIND",
+  "description": "Kind of an entry of the authorization of an entity",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "field",
+      "description": "Field of the object and field of the entity"
+    },
+    {
+      "value": "activity",
+      "description": "Operation, read or action and activity"
+    }
+  ]
+}

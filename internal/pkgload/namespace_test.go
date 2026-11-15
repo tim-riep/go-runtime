@@ -200,6 +200,7 @@ func TestEveryObjectTypeChecksNamespaces(t *testing.T) {
 		"http service":              {"schema/http-services/X.json", `{"path":"x","texts":{"en":{"label":"X"}},"handlers":[{"class":"/TRZ/H"}]}`},
 		"object type":               {"schema/object-types/X.json", `{"name":"/TRX/X","description":{"en":"X"},"content":"/TRZ/C"}`},
 		"object":                    {"objects/TRZ/T/X.json", `{"name":"/TRX/X","content":{}}`},
+		"number range":              {"schema/number-ranges/X.json", `{"name":"/TRX/X","texts":{"en":{"label":"X"}},"length":5,"subobject":{"name":"A","domain":"/TRZ/Y"}}`},
 	}
 	for _, typ := range ObjectTypes() {
 		if typ.Definitions == nil || typ.References == nil {

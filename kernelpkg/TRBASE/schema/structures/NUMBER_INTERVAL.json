@@ -1,0 +1,65 @@
+{
+  "name": "/TRBASE/NUMBER_INTERVAL",
+  "texts": {
+    "en": {
+      "label": "Interval of a number range"
+    },
+    "de": {
+      "label": "Intervall eines Nummernkreises"
+    }
+  },
+  "components": [
+    {
+      "name": "RANGE_NAME",
+      "dataElement": "/TRBASE/NUMBER_RANGE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "INTERVAL_ID",
+      "dataElement": "/TRBASE/INTERVAL_ID",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT",
+      "dataElement": "/TRBASE/SUBOBJECT_VALUE"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "FROM_NO",
+      "dataElement": "/TRBASE/NUMBER_FROM",
+      "notNull": true
+    },
+    {
+      "name": "TO_NO",
+      "dataElement": "/TRBASE/NUMBER_TO",
+      "notNull": true
+    },
+    {
+      "name": "CURRENT_NO",
+      "dataElement": "/TRBASE/NUMBER_CURRENT"
+    },
+    {
+      "name": "EXTERNAL",
+      "dataElement": "/TRBASE/EXTERNAL_NUMBERING",
+      "notNull": true
+    },
+    {
+      "name": "USED_PERCENT",
+      "domain": "/TRBASE/LENGTH",
+      "description": "Share of the interval given so far; set when reading"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "description": "Set when reading"
+    },
+    {
+      "name": "CHANGED_BY",
+      "dataElement": "/TRBASE/USER_NAME",
+      "description": "Set when reading"
+    }
+  ]
+}

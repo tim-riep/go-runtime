@@ -1,0 +1,11 @@
+# An argument does not fit the number range object or the interval: a
+# subobject or fiscal year that is missing or not expected, a number that
+# is not made of digits or does not fit, or an internal interval where an
+# external one is needed and the other way round.
+public class /TRBASE/NUMBER_RANGE_ARGUMENT_INVALID extends /TRBASE/NUMBER_RANGE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

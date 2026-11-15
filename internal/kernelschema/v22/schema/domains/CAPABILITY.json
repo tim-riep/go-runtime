@@ -1,0 +1,6 @@
+{
+  "name": "/RT/CAPABILITY",
+  "description": "Capability of native methods beyond computing and the database, such as clock",
+  "type": "CHAR",
+  "length": 32
+}

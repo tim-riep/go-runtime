@@ -1,0 +1,82 @@
+{
+  "name": "/RT/AUTH_TRACE_ENTRIES",
+  "description": "Authorization checks recorded by a trace",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "ENTRY_ID",
+      "domain": "/RT/LOG_ID"
+    },
+    {
+      "name": "CHECKED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID"
+    },
+    {
+      "name": "CHECK_MODE",
+      "domain": "/RT/CHECK_MODE",
+      "notNull": true
+    },
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "ALLOWED",
+      "domain": "/RT/FLAG",
+      "description": "Result of a check; null for filters"
+    },
+    {
+      "name": "CHECK_VALUES",
+      "domain": "/RT/CHECK_DATA",
+      "notNull": true,
+      "description": "Values by field, null for any; columns of filters"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "description": "Package of the code that made the check"
+    },
+    {
+      "name": "CLASS_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "METHOD_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LINE_NO",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "KERNEL_FUNCTION",
+      "domain": "/RT/KERNEL_FUNCTION"
+    },
+    {
+      "name": "CONDITION_SQL",
+      "domain": "/RT/CHECK_DATA",
+      "description": "Condition of a filter"
+    },
+    {
+      "name": "ROW_COUNT",
+      "domain": "/RT/GENERATION",
+      "description": "Rows that a filtered statement read or changed"
+    }
+  ],
+  "primaryKey": [
+    "ENTRY_ID"
+  ],
+  "foreignKeys": []
+}

@@ -288,9 +288,9 @@ func (l *loader) checkLayout() {
 		p := path.Join(SchemaDir, e.Name())
 		known := []string{DomainsDir, DataElementsDir, TablesDir, ExtensionsDir,
 			StructuresDir, ArrayTypesDir, StructureExtensionsDir, HTTPServicesDir, AuthorizationObjectsDir, RolesDir,
-			ExtensionPointsDir, ImplementationsDir, BusinessObjectsDir, BusinessObjectExtensionsDir, ServicesDir, ObjectTypesDir}
+			ExtensionPointsDir, ImplementationsDir, BusinessObjectsDir, BusinessObjectExtensionsDir, ServicesDir, ObjectTypesDir, NumberRangesDir}
 		if !e.IsDir() || !slices.Contains(known, p) {
-			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/, business-object-extensions/, services/ and object-types/")
+			l.fail(rterr.CodeFile, l.loc(p), "unexpected entry; schema/ may only contain domains/, data-elements/, tables/, extensions/, structures/, array-types/, structure-extensions/, http-services/, authorization-objects/, roles/, extension-points/, extension-implementations/, business-objects/, business-object-extensions/, services/, object-types/ and number-ranges/")
 		}
 	}
 }

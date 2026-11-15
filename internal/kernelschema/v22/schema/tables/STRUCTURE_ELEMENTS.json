@@ -1,0 +1,97 @@
+{
+  "name": "/RT/STRUCTURE_ELEMENTS",
+  "description": "Components and includes of structures in their order; extension components follow the elements",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "STRUCTURE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "ELEMENT_KIND",
+      "domain": "/RT/ELEMENT_KIND",
+      "notNull": true
+    },
+    {
+      "name": "COMPONENT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Name of the component, empty for includes"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true,
+      "description": "Owner of the element"
+    },
+    {
+      "name": "ORIGIN",
+      "domain": "/RT/COMPONENT_ORIGIN",
+      "description": "Origin of the component, empty for includes"
+    },
+    {
+      "name": "TYPE_KIND",
+      "domain": "/RT/TYPE_KIND",
+      "description": "Kind of the component type, empty for includes"
+    },
+    {
+      "name": "TYPE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Name of the component type, empty for includes"
+    },
+    {
+      "name": "INCLUDE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Included structure or table, empty for components"
+    },
+    {
+      "name": "NOT_NULL",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "DEFAULT_KIND",
+      "domain": "/RT/DEFAULT_KIND",
+      "notNull": true
+    },
+    {
+      "name": "DEFAULT_VALUE",
+      "domain": "/RT/VALUE",
+      "description": "Default value in canonical text form"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/DESCRIPTION"
+    }
+  ],
+  "primaryKey": [
+    "STRUCTURE_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "STRUCTURE",
+      "table": "/RT/STRUCTURES",
+      "fields": [
+        {
+          "field": "STRUCTURE_NAME",
+          "references": "STRUCTURE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

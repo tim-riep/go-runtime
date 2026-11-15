@@ -1,0 +1,75 @@
+{
+  "name": "/RT/NUMBER_RANGES",
+  "description": "Number range objects of packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "RANGE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "NUMBER_LENGTH",
+      "domain": "/RT/LENGTH",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME",
+      "description": "Name of the subobject; null without subobject"
+    },
+    {
+      "name": "SUBOBJECT_DATA_ELEMENT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "SUBOBJECT_DOMAIN",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PER_FISCAL_YEAR",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "BUFFERING",
+      "domain": "/RT/NUMBER_RANGE_BUFFERING",
+      "notNull": true
+    },
+    {
+      "name": "BLOCK_SIZE",
+      "domain": "/RT/COUNT",
+      "description": "Numbers per block; null without buffering"
+    },
+    {
+      "name": "WARNING_PERCENT",
+      "domain": "/RT/PERCENT",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "RANGE_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

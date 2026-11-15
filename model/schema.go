@@ -62,6 +62,8 @@ type Schema struct {
 	ObjectTypes map[string]*ObjectType
 	// Objects are the objects of package-defined types by name.
 	Objects map[string]*Object
+	// NumberRanges are the number range objects by name.
+	NumberRanges map[string]*NumberRange
 }
 
 // NewSchema returns an empty schema.
@@ -88,6 +90,7 @@ func NewSchema() *Schema {
 		Services:                 map[string]*Service{},
 		ObjectTypes:              map[string]*ObjectType{},
 		Objects:                  map[string]*Object{},
+		NumberRanges:             map[string]*NumberRange{},
 	}
 }
 
@@ -102,6 +105,9 @@ func (s *Schema) Clone() *Schema {
 	}
 	for k, v := range s.AuthorizationObjects {
 		c.AuthorizationObjects[k] = cloneAuthorizationObject(v)
+	}
+	for k, v := range s.NumberRanges {
+		c.NumberRanges[k] = cloneNumberRange(v)
 	}
 	for k, v := range s.Roles {
 		c.Roles[k] = cloneRole(v)
@@ -313,6 +319,15 @@ func (s *Schema) AddPackage(p *Package, installedAt, updatedAt time.Time) error 
 		}
 		s.AuthorizationObjects[o.Name] = o
 	}
+	for i := range p.NumberRanges {
+		n := cloneNumberRange(&p.NumberRanges[i])
+		n.Owner = id
+		if old, ok := s.NumberRanges[n.Name]; ok {
+			errs = append(errs, &rterr.NameConflict{Kind: "number range", Name: n.Name, Owner: string(old.Owner), Package: string(id), Location: n.Src})
+			continue
+		}
+		s.NumberRanges[n.Name] = n
+	}
 	for i := range p.Roles {
 		r := cloneRole(&p.Roles[i])
 		r.Owner = id
@@ -455,6 +470,12 @@ func (s *Schema) RemoveLanguage(code string) int {
 			n++
 		}
 	}
+	for _, r := range s.NumberRanges {
+		if _, ok := r.Texts[code]; ok {
+			delete(r.Texts, code)
+			n++
+		}
+	}
 	for _, r := range s.Roles {
 		if _, ok := r.Texts[code]; ok {
 			delete(r.Texts, code)
@@ -530,6 +551,11 @@ func (s *Schema) RemovePackage(id PackageID) {
 	for name, o := range s.AuthorizationObjects {
 		if o.Owner == id {
 			delete(s.AuthorizationObjects, name)
+		}
+	}
+	for name, r := range s.NumberRanges {
+		if r.Owner == id {
+			delete(s.NumberRanges, name)
 		}
 	}
 	for name, r := range s.Roles {

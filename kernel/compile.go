@@ -280,6 +280,12 @@ func changedObjects(cur, want *model.Schema) map[string]bool {
 			out[name] = true
 		}
 	}
+	// Code names number range objects that must exist.
+	for name := range cur.NumberRanges {
+		if _, ok := want.NumberRanges[name]; !ok {
+			out[name] = true
+		}
+	}
 	// Domains and data elements change the types of components as well.
 	for name, d := range want.Domains {
 		if c, ok := cur.Domains[name]; !ok || c.TypeString() != d.TypeString() || !slices.Equal(c.Values, d.Values) {

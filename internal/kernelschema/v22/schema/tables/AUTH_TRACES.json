@@ -1,0 +1,41 @@
+{
+  "name": "/RT/AUTH_TRACES",
+  "description": "Running authorization traces, one per user",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "USER_NAME",
+      "domain": "/RT/USER_NAME"
+    },
+    {
+      "name": "TENANT",
+      "domain": "/RT/TENANT_ID",
+      "description": "Only checks in this tenant; null: in all tenants"
+    },
+    {
+      "name": "STARTED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "UNTIL",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "MAX_ENTRIES",
+      "domain": "/RT/COUNT",
+      "notNull": true
+    },
+    {
+      "name": "STARTED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "USER_NAME"
+  ],
+  "foreignKeys": []
+}

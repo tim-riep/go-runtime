@@ -1,0 +1,61 @@
+{
+  "name": "/RT/EXTENSION_POINTS",
+  "description": "Extension points of packages",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "INTERFACE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "EXTENSION_USE",
+      "domain": "/RT/EXTENSION_USE",
+      "notNull": true
+    },
+    {
+      "name": "FALLBACK_CLASS",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "Class that runs when no implementation matches; null for none"
+    },
+    {
+      "name": "COMMIT_ALLOWED",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVATION",
+      "domain": "/RT/EXTENSION_ACTIVATION"
+    }
+  ],
+  "primaryKey": [
+    "POINT_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

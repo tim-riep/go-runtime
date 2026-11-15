@@ -1,0 +1,32 @@
+{
+  "name": "/RT/PACKAGE_CAPABILITIES",
+  "description": "Capabilities a package declares in its manifest",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "CAPABILITY",
+      "domain": "/RT/CAPABILITY"
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID",
+    "CAPABILITY"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

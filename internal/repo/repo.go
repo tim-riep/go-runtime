@@ -547,6 +547,9 @@ func (r *Repo) Load(ctx context.Context, q dialect.Querier) (*model.Schema, erro
 	if err := r.loadAuthorizationObjects(ctx, q, s); err != nil {
 		return nil, err
 	}
+	if err := r.loadNumberRanges(ctx, q, s); err != nil {
+		return nil, err
+	}
 	if err := r.loadRoles(ctx, q, s); err != nil {
 		return nil, err
 	}
@@ -582,7 +585,7 @@ func ProvisionalClass(owner model.PackageID) model.DataClass {
 func (r *Repo) HasDataClasses() bool { return r.has(TTables, "DATA_CLASS") }
 
 // deleteOrder lists the repository tables children first.
-var deleteOrder = []string{TObjectReferences, TObjects, TObjectTypeTexts, TObjectTypes, TServiceMembers, TServiceSets, TServiceExtensions, TServiceTexts, TServices, TBusinessObjectExtensible, TBusinessObjectActAuth, TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
+var deleteOrder = []string{TNumberRangeTexts, TNumberRanges, TObjectReferences, TObjects, TObjectTypeTexts, TObjectTypes, TServiceMembers, TServiceSets, TServiceExtensions, TServiceTexts, TServices, TBusinessObjectExtensible, TBusinessObjectActAuth, TBusinessObjectAuth, TBusinessObjectTrig, TBusinessObjectMethod, TBusinessObjectFields, TBusinessObjectEntity,
 	TBusinessObjectExts, TBusinessObjectTexts, TBusinessObjects, TImplementationValues, TImplementationTexts, TImplementations, TExtensionPointDefaults, TExtensionPointFilters,
 	TExtensionPointTexts, TExtensionPoints, TRoleAuthValues, TRoleAuthorizations, TCompositeRoles, TRoleTexts, TRoles, TAuthObjectActivities, TAuthObjectFields, TAuthObjectTexts, TAuthObjects, THTTPHandlerParams, THTTPHandlers, THTTPServiceTexts, THTTPAuthFields, THTTPServices, TTransformationTexts, TTransformations, TCodeIncludes, TCodeUses, TBytecode, TSources, TTableIncludes, TArrayTypeKeys, TArrayTypeTexts, TArrayTypes, TStructureElements, TStructureExtensions,
 	TStructureTexts, TStructures, TAssetEntryTexts, TAssetVariants, TAssetEntries, TAssetRepositoryTexts, TAssetRepositories, tSettingTables, tSettingExtensions, tSettingTexts, tSettings, TFKFields, TForeignKeys, TFields,
@@ -710,6 +713,9 @@ func (r *Repo) Write(ctx context.Context, q dialect.Querier, s *model.Schema) er
 		return err
 	}
 	if err := r.writeAuthorizationObjects(ctx, q, s); err != nil {
+		return err
+	}
+	if err := r.writeNumberRanges(ctx, q, s); err != nil {
 		return err
 	}
 	if err := r.writeRoles(ctx, q, s); err != nil {

@@ -184,6 +184,19 @@ Commands:
                            remove the setting of a tenant, or the global one
   implementation history [name]
                            show the changes of the activation of implementations
+  number-range list [package]
+                           list the number range objects of a package or of all packages
+  number-range show <name> show a number range object with length, subobject and buffering
+  number-range history [name] --tenant T
+                           show the changes of the intervals of a tenant
+  number-range interval list <object> --tenant T
+                           list the intervals of an object with their current numbers
+  number-range interval add|change <object> <id> --tenant T --from N --to N [--current N]
+       [--external] [--subobject V] [--year Y]
+                           add or change an interval; moving the current number back
+                           needs --yes
+  number-range interval delete <object> <id> --tenant T [--subobject V] [--year Y] [--yes]
+                           delete an interval; one that gave numbers needs --yes
   http list [package]      list the service nodes with their activation
   http show <path>         show a service node with its resolved settings and handlers
   http activate <path>     activate a service node and the never activated nodes below it
@@ -255,6 +268,9 @@ type cli struct {
 	lockFile          string
 	serve             server.Config
 	sessions          kernel.SessionSettings
+	subobject, year   string
+	current           string
+	external          bool
 }
 
 func main() {
@@ -285,12 +301,16 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	c.fs.StringVar(&c.lockFile, "lock", "", "install: install the packages of a lock file written by rt export lock")
 	c.fs.BoolVar(&c.incomplete, "incomplete", false, "role list: only roles with authorizations that grant nothing")
 	c.fs.StringVar(&c.userFilter, "user", "", "run: the user of the execution; role history: only the changes of a user")
-	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD")
-	c.fs.StringVar(&c.to, "to", "", "role assign: last day of validity, YYYY-MM-DD")
+	c.fs.StringVar(&c.from, "from", "", "role assign: first day of validity, YYYY-MM-DD; number-range interval: the first number")
+	c.fs.StringVar(&c.to, "to", "", "role assign: last day of validity, YYYY-MM-DD; number-range interval: the last number")
 	c.fs.StringVar(&c.admin, "admin", "", "init: create this first user with all authorizations in --tenant; the password is read from standard input")
 	c.fs.StringVar(&c.date, "date", "", "user authorizations: the day, YYYY-MM-DD (default today)")
 	c.fs.BoolVar(&c.check, "check", false, "fmt: only list files that are not in canonical form")
 	c.fs.StringVar(&c.dataClass, "data-class", "", "business-object list: only business objects of a data class: application, configuration or runtimeConfiguration")
+	c.fs.StringVar(&c.subobject, "subobject", "", "number-range interval: the value of the subobject")
+	c.fs.StringVar(&c.year, "year", "", "number-range interval: the fiscal year")
+	c.fs.StringVar(&c.current, "current", "", "number-range interval: the last number given")
+	c.fs.BoolVar(&c.external, "external", false, "number-range interval: numbers are given from outside")
 	c.fs.BoolVar(&c.base, "base", false, "business-object show: without the extensions of other packages")
 	c.node.register(c.fs)
 	c.fs.StringVar(&c.format, "format", "", "service metadata: xml (the default) or json")
@@ -507,6 +527,8 @@ func (c *cli) dispatch(ctx context.Context, k *kernel.Kernel, cmd string, args [
 		return c.object(ctx, k, args)
 	case "authorization-objects":
 		return c.authorizationObjects(ctx, k, args)
+	case "number-range":
+		return c.numberRange(ctx, k, args)
 	case "role":
 		return c.role(ctx, k, args)
 	case "activities":
@@ -733,6 +755,17 @@ func (c *cli) show(ctx context.Context, k *kernel.Kernel, ref string) int {
 		}
 	case kernel.KindAuthorizationObject:
 		return c.showAuthorizationObject(ctx, k, name)
+	case kernel.KindNumberRange:
+		if code := c.numberRange(ctx, k, []string{"show", name}); code != exitOK || c.asJSON {
+			return code
+		}
+		uses, err := k.CodeUses(ctx, name)
+		if err != nil {
+			return c.fail(err)
+		}
+		for _, u := range uses {
+			fmt.Fprintf(c.stdout, "  used by %s %s:%d\n", u.Package, u.File, u.Line)
+		}
 	case kernel.KindObjectType:
 		if code := c.showObjectType(ctx, k, name); code != exitOK || c.asJSON {
 			return code
@@ -1266,8 +1299,14 @@ func (c *cli) fail(err error) int {
 		ua   *rterr.UnsafeArchive
 		ie   *rterr.IntegrityError
 		io   *rterr.ImplementationOverlap
+		nr   *rterr.NumberRangeError
 	)
 	switch {
+	case errors.As(err, &nr) && nr.Kind == rterr.NumberRangeConfirmation:
+		fmt.Fprintln(c.stderr, "hint: rerun with --yes")
+		return exitNeedsPermit
+	case errors.As(err, &nr) && nr.Kind == rterr.NumberRangeArgument:
+		return exitInvalid
 	case errors.As(err, &dc):
 		fmt.Fprintln(c.stderr, "hint: rerun with --allow-destructive, or with --dry-run to see the plan")
 		return exitNeedsPermit

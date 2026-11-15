@@ -1,0 +1,25 @@
+{
+  "name": "/RT/METADATA_GENERATIONS",
+  "description": "Counters of changes of the metadata of services that the code generation does not cover; * stands for all services",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "SERVICE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "GENERATION",
+      "domain": "/RT/GENERATION",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_NAME"
+  ]
+}

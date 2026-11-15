@@ -1,0 +1,5 @@
+{
+  "name": "/RT/GENERATION",
+  "description": "Generation of the compiled code",
+  "type": "INT8"
+}

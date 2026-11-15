@@ -1,0 +1,5 @@
+{
+  "name": "/RT/LENGTH",
+  "description": "Length or number of decimals of a domain",
+  "type": "INT4"
+}

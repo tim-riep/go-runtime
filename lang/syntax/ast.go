@@ -515,15 +515,18 @@ type (
 // Database expressions.
 type (
 	// QueryExpr is select: it reads the rows of a table, all (Mode ""),
-	// one ("single") or their number ("count").
+	// one ("single") or their number ("count"). With Items it reads the
+	// listed fields and aggregates, grouped by GroupBy.
 	QueryExpr struct {
-		Pos   Pos
-		Mode  string
-		Table Name
-		Where Expr // nil without where
-		Order []OrderItem
-		Limit Expr
-		Using Expr
+		Pos     Pos
+		Mode    string
+		Items   []SelectItem
+		Table   Name
+		Where   Expr // nil without where
+		GroupBy []Ident
+		Order   []OrderItem
+		Limit   Expr
+		Using   Expr
 	}
 	// UpdateExpr changes the rows of a table that match Where and yields
 	// their number.
@@ -633,10 +636,23 @@ type OrderItem struct {
 	Explicit   bool // ascending or descending was written
 }
 
-// SetItem is FIELD = value of an update.
+// SetItem is FIELD = value of an update, or FIELD = FIELD + value and
+// FIELD = FIELD - value with Op "+" or "-", which changes the field by the
+// value in the database.
 type SetItem struct {
 	Field Ident
+	Op    string
 	Value Expr
+}
+
+// SelectItem is a field or an aggregate of a select list: Func is "" for
+// a field, else sum, min, max or count; count() has no field. Alias is the
+// name after as, empty without.
+type SelectItem struct {
+	Pos   Pos
+	Func  string
+	Field Ident
+	Alias Ident
 }
 
 func (e *QueryExpr) Start() Pos          { return e.Pos }

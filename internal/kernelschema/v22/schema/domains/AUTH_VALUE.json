@@ -1,0 +1,5 @@
+{
+  "name": "/RT/AUTH_VALUE",
+  "description": "Granted value or bound in its text form",
+  "type": "STRING"
+}

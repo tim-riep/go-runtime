@@ -1,0 +1,5 @@
+{
+  "name": "/RT/COUNT",
+  "description": "Number of items, starting at 0",
+  "type": "INT4"
+}

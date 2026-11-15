@@ -482,3 +482,34 @@ func TestObjectCommands(t *testing.T) {
 		}
 	}
 }
+
+func TestNumberRangeCommands(t *testing.T) {
+	db := testutil.Databases(t)[0]
+	trnum := filepath.Join(testutil.ModuleRoot(t), "testdata", "numberranges", "TRNUM")
+	for _, s := range []struct {
+		args     []string
+		code     int
+		contains string
+	}{
+		{[]string{"init"}, exitOK, "Executed"},
+		{[]string{"install", trnum}, exitOK, "create-number-range /TRNUM/DOCUMENT"},
+		{[]string{"tenant", "create", "ACME"}, exitOK, "ACME"},
+		{[]string{"number-range", "list"}, exitOK, "/TRNUM/PARTNER   TRNUM    6       -          false  blocks of 5  Partners"},
+		{[]string{"show", "/TRNUM/DOCUMENT"}, exitOK, "used by TRNUM src/NUMBERS.class:5"},
+		{[]string{"number-range", "interval", "add", "/TRNUM/TICKET", "01", "--tenant", "ACME", "--from", "1", "--to", "50"}, exitOK, "Interval 01 of /TRNUM/TICKET added"},
+		{[]string{"number-range", "interval", "add", "/TRNUM/TICKET", "02", "--tenant", "ACME", "--from", "50", "--to", "60"}, exitInvalid, "overlaps with interval 01"},
+		{[]string{"run", "TRNUM", "/TRNUM/NUMBERS", "TICKETS", "[2]", "--tenant", "ACME"}, exitOK, `"0002"`},
+		{[]string{"number-range", "interval", "list", "/TRNUM/TICKET", "--tenant", "ACME"}, exitOK, "01        <null>     -     0001  0050  0002     4%    internal"},
+		{[]string{"number-range", "interval", "change", "/TRNUM/TICKET", "01", "--tenant", "ACME", "--from", "1", "--to", "50", "--current", "1"}, exitNeedsPermit, "--yes"},
+		{[]string{"number-range", "interval", "change", "/TRNUM/TICKET", "01", "--tenant", "ACME", "--from", "1", "--to", "50", "--current", "1", "--yes"}, exitOK, "changed"},
+		{[]string{"number-range", "interval", "delete", "/TRNUM/TICKET", "01", "--tenant", "ACME", "--yes"}, exitOK, "deleted"},
+		{[]string{"number-range", "history", "/TRNUM/TICKET", "--tenant", "ACME", "--json"}, exitOK, `"kind": "delete"`},
+	} {
+		var out, errOut bytes.Buffer
+		code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
+		all := out.String() + errOut.String()
+		if code != s.code || !strings.Contains(all, s.contains) {
+			t.Errorf("rt %s: exit %d (want %d):\n%s", strings.Join(s.args, " "), code, s.code, all)
+		}
+	}
+}

@@ -50,6 +50,14 @@ type Query struct {
 	// Sets are the fields that update ... set assigns, in the order of
 	// their values on the stack.
 	Sets []string
+	// SetOps tell for each field of Sets how its value applies: "" sets
+	// it, "+" and "-" change the field by it in the database.
+	SetOps []string
+	// Columns are the columns of a select list, the fields of Row in
+	// order; empty when select reads whole rows.
+	Columns []Column
+	// GroupBy are the fields the rows of a select list are grouped by.
+	GroupBy []string
 	// Where is the condition: an index into Conds, -1 without condition.
 	Where int
 	Conds []Cond
@@ -61,6 +69,13 @@ type Query struct {
 	// uses, in the order the code pushes them: the values of Sets, then
 	// the values of the condition.
 	Params []int
+}
+
+// Column is a column of a select list: a field, or the aggregate Func
+// (sum, min, max or count) over a field or, for count, the rows.
+type Column struct {
+	Func  string
+	Field string
 }
 
 // CondOp is the operator of a condition.

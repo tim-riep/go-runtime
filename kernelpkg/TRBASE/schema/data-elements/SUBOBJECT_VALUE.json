@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/SUBOBJECT_VALUE",
+  "domain": "/TRBASE/TEXT",
+  "texts": {
+    "en": {
+      "short": "Subobject",
+      "medium": "Subobject",
+      "long": "Value of the subobject",
+      "heading": "Subobject"
+    },
+    "de": {
+      "short": "Unterobj.",
+      "medium": "Unterobjekt",
+      "long": "Wert des Unterobjekts",
+      "heading": "Unterobjekt"
+    }
+  }
+}

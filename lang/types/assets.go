@@ -97,3 +97,35 @@ func (c *checker) authorizationObject(x *syntax.CallExpr) {
 	}
 	c.use(pos, "authorization-object", name, "")
 }
+
+// NumberRangeClass is the class of the kernel package TRBASE that gives
+// numbers of number range objects.
+const NumberRangeClass = "/TRBASE/NUMBER_RANGE"
+
+// numberRange checks the number range object of a call given as string
+// literal at argument arg: it belongs to the own package or a required one
+// and exists. It is recorded as used, so an upgrade that removes it
+// compiles the package again and fails. Other arguments are checked when
+// the code runs.
+func (c *checker) numberRange(x *syntax.CallExpr, arg int) {
+	if len(x.Args) <= arg {
+		return
+	}
+	name, ok := literal(x.Args[arg].Value)
+	if !ok {
+		return
+	}
+	pos := x.Args[arg].Value.Start()
+	pkg, _, ok := model.SplitName(name)
+	n := c.cfg.Schema.NumberRanges[name]
+	switch {
+	case !ok:
+		c.errorf(pos, CodeNumberRange, "%q is no name of a number range object", name)
+	case pkg != c.cfg.Package && !slices.Contains(c.cfg.Visible, pkg):
+		c.errorf(pos, CodeNumberRange, "%s may not use the number range object %s: %s does not require %s", c.cfg.Package, name, c.cfg.Package, pkg)
+	case n == nil:
+		c.errorf(pos, CodeNumberRange, "number range object %s does not exist", name)
+	default:
+		c.use(pos, "number-range", name, "")
+	}
+}

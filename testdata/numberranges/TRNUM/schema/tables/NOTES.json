@@ -1,0 +1,9 @@
+{
+  "name": "/TRNUM/NOTES",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "NOTE_NO", "domain": "/TRBASE/NAME" }
+  ],
+  "primaryKey": ["NOTE_NO"]
+}

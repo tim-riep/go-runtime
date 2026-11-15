@@ -1,0 +1,8 @@
+# The interval has given its last number.
+public class /TRBASE/NUMBER_RANGE_EXHAUSTED extends /TRBASE/NUMBER_RANGE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

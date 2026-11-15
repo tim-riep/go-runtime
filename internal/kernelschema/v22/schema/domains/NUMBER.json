@@ -1,0 +1,6 @@
+{
+  "name": "/RT/NUMBER",
+  "description": "Number of a number range, padded with zeros to 20 digits",
+  "type": "CHAR",
+  "length": 20
+}

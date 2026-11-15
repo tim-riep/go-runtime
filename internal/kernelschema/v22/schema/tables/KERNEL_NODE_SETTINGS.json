@@ -1,0 +1,61 @@
+{
+  "name": "/RT/KERNEL_NODE_SETTINGS",
+  "description": "Settings of the service nodes of the kernel, maintained during operation; empty columns take the defaults",
+  "tenantSpecific": false,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "SERVICE_PATH",
+      "domain": "/RT/HTTP_PATH"
+    },
+    {
+      "name": "AUTHENTICATION",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "TENANT_SOURCES",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "LANGUAGE_SOURCES",
+      "domain": "/RT/HTTP_LIST"
+    },
+    {
+      "name": "MAX_BODY_SIZE",
+      "domain": "/RT/BYTE_SIZE"
+    },
+    {
+      "name": "MAX_RESPONSE_SIZE",
+      "domain": "/RT/BYTE_SIZE"
+    },
+    {
+      "name": "TIMEOUT_SECONDS",
+      "domain": "/RT/COUNT"
+    },
+    {
+      "name": "BUDGET",
+      "domain": "/RT/GENERATION"
+    },
+    {
+      "name": "MAX_PAGE_SIZE",
+      "domain": "/RT/COUNT"
+    },
+    {
+      "name": "METADATA_TIMEOUT_SECONDS",
+      "domain": "/RT/COUNT"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/USER_NAME"
+    }
+  ],
+  "primaryKey": [
+    "SERVICE_PATH"
+  ],
+  "foreignKeys": []
+}

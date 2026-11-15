@@ -1,0 +1,47 @@
+{
+  "name": "/RT/OBJECT_TYPE_TEXTS",
+  "description": "Descriptions of object types per language",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TYPE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "LANGUAGE",
+      "domain": "/RT/LANGUAGE"
+    },
+    {
+      "name": "DESCRIPTION",
+      "domain": "/RT/OBJECT_LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "TYPE_NAME",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "TYPE",
+      "table": "/RT/OBJECT_TYPES",
+      "fields": [
+        {
+          "field": "TYPE_NAME",
+          "references": "TYPE_NAME"
+        }
+      ]
+    },
+    {
+      "name": "LANGUAGE",
+      "table": "/RT/LANGUAGES",
+      "fields": [
+        {
+          "field": "LANGUAGE",
+          "references": "LANGUAGE"
+        }
+      ]
+    }
+  ]
+}

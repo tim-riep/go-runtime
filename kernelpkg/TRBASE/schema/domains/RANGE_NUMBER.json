@@ -1,0 +1,6 @@
+{
+  "name": "/TRBASE/RANGE_NUMBER",
+  "description": "Number of a number range: up to 20 digits",
+  "type": "CHAR",
+  "length": 20
+}

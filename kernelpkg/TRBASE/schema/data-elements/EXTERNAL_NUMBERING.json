@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/EXTERNAL_NUMBERING",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "External",
+      "medium": "External numbers",
+      "long": "Numbers are given externally",
+      "heading": "External"
+    },
+    "de": {
+      "short": "Extern",
+      "medium": "Externe Nummern",
+      "long": "Nummern werden extern vergeben",
+      "heading": "Extern"
+    }
+  }
+}

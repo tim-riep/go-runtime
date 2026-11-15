@@ -1,0 +1,14 @@
+{
+  "name": "/RT/ASSET_KIND",
+  "description": "Kind of an entry of an asset repository",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "FOLDER"
+    },
+    {
+      "value": "FILE"
+    }
+  ]
+}

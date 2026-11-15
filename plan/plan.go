@@ -109,6 +109,10 @@ const (
 	DropService   ChangeKind = "drop-service"
 	AlterService  ChangeKind = "alter-service"
 
+	CreateNumberRange ChangeKind = "create-number-range"
+	DropNumberRange   ChangeKind = "drop-number-range"
+	AlterNumberRange  ChangeKind = "alter-number-range"
+
 	CreateObjectType ChangeKind = "create-object-type"
 	DropObjectType   ChangeKind = "drop-object-type"
 	AlterObjectType  ChangeKind = "alter-object-type"
@@ -148,7 +152,7 @@ func (k ChangeKind) Physical() bool {
 		CreateExtensionPoint, DropExtensionPoint, AlterExtensionPoint, CreateImplementation, DropImplementation, AlterImplementation,
 		CreateBusinessObject, DropBusinessObject, AlterBusinessObject,
 		AddBusinessObjectExtension, DropBusinessObjectExtension, AlterBusinessObjectExtension,
-		CreateService, DropService, AlterService,
+		CreateService, DropService, AlterService, CreateNumberRange, DropNumberRange, AlterNumberRange,
 		CreateObjectType, DropObjectType, AlterObjectType, CreateObject, DropObject, AlterObject, ObjectMessage:
 		return false
 	}

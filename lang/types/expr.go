@@ -1112,6 +1112,10 @@ func (c *checker) call(f *fnCtx, sc *scope, x *syntax.CallExpr, e env, want Type
 					c.authorizationObject(x)
 				case t.Name == ReflectorClass && name == "EXTENSION_POINT":
 					c.reflectedExtensionPoint(x)
+				case t.Name == NumberRangeClass && (name == "NEXT" || name == "CHECK_EXTERNAL"):
+					c.numberRange(x, 0)
+				case t.Name == NumberRangeClass && name == "NEXT_IN":
+					c.numberRange(x, 1)
 				}
 				return c.methodCall(f, sc, x, m, nil, e, false)
 			case *Enum:

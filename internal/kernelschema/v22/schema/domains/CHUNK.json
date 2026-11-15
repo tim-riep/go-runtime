@@ -1,0 +1,5 @@
+{
+  "name": "/RT/CHUNK",
+  "description": "Part of a stored content",
+  "type": "BLOB"
+}

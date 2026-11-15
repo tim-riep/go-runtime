@@ -1,0 +1,43 @@
+{
+  "name": "/RT/TABLE_INCLUDES",
+  "description": "Includes of structures and tables in tables",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "INCLUDE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "AFTER_FIELDS",
+      "domain": "/RT/COUNT",
+      "notNull": true,
+      "description": "Number of own fields of the table before the include"
+    }
+  ],
+  "primaryKey": [
+    "TABLE_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "TABLE",
+      "table": "/RT/TABLES",
+      "fields": [
+        {
+          "field": "TABLE_NAME",
+          "references": "TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}

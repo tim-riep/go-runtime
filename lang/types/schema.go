@@ -255,6 +255,17 @@ func (st *schemaTypes) newOf(table string, pos syntax.Pos) Type {
 	return s
 }
 
+// selection returns the struct of the rows of a select list, the same
+// struct for the same list.
+func (st *schemaTypes) selection(name string, fields []*Field) *Struct {
+	if s, ok := st.structs[name]; ok {
+		return s
+	}
+	s := &Struct{Name: name, Fields: fields}
+	st.structs[name] = s
+	return s
+}
+
 // projection returns the struct of the rows that read returns: the given
 // fields of a table, the key fields first.
 func (st *schemaTypes) projection(table *Struct, fields []string) *Struct {

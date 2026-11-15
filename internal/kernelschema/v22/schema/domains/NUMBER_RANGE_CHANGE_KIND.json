@@ -1,0 +1,24 @@
+{
+  "name": "/RT/NUMBER_RANGE_CHANGE_KIND",
+  "description": "Kind of a change of an interval of a number range",
+  "type": "CHAR",
+  "length": 32,
+  "values": [
+    {
+      "value": "add",
+      "description": "Interval added"
+    },
+    {
+      "value": "change",
+      "description": "Interval changed"
+    },
+    {
+      "value": "delete",
+      "description": "Interval deleted"
+    },
+    {
+      "value": "removed",
+      "description": "Interval removed with its number range object"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "/RT/EXTENSION_IMPLEMENTATIONS",
+  "description": "Implementations of extension points that packages bring",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "IMPLEMENTATION_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "CLASS_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "SORT_ORDER",
+      "domain": "/RT/SORT_ORDER",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "IMPLEMENTATION_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    },
+    {
+      "name": "POINT",
+      "table": "/RT/EXTENSION_POINTS",
+      "fields": [
+        {
+          "field": "POINT_NAME",
+          "references": "POINT_NAME"
+        }
+      ]
+    }
+  ]
+}

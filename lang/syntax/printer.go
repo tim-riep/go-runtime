@@ -790,8 +790,35 @@ func (p *printer) expr(x Expr) {
 		if x.Mode != "" {
 			p.w(x.Mode + " ")
 		}
+		for i, it := range x.Items {
+			if i > 0 {
+				p.w(", ")
+			}
+			switch it.Func {
+			case "":
+				p.w(it.Field.Name)
+			case "count":
+				p.w("count()")
+			default:
+				p.w(it.Func + "(" + it.Field.Name + ")")
+			}
+			if it.Alias.Name != "" {
+				p.w(" as " + it.Alias.Name)
+			}
+		}
+		if len(x.Items) > 0 {
+			p.w(" ")
+		}
 		p.w("from " + x.Table.Name)
 		p.where(x.Where)
+		for i, g := range x.GroupBy {
+			if i == 0 {
+				p.w(" group by ")
+			} else {
+				p.w(", ")
+			}
+			p.w(g.Name)
+		}
 		for i, o := range x.Order {
 			if i == 0 {
 				p.w(" order by ")
@@ -847,6 +874,9 @@ func (p *printer) expr(x Expr) {
 				p.w(", ")
 			}
 			p.w(s.Field.Name + " = ")
+			if s.Op != "" {
+				p.w(s.Field.Name + " " + s.Op + " ")
+			}
 			p.expr(s.Value)
 		}
 		p.where(x.Where)

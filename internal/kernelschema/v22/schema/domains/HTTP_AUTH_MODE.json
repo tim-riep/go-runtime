@@ -1,0 +1,16 @@
+{
+  "name": "/RT/HTTP_AUTH_MODE",
+  "description": "Additional check of a service node: one of its own, or none for its subtree",
+  "type": "CHAR",
+  "length": 5,
+  "values": [
+    {
+      "value": "check",
+      "description": "The node makes its own check"
+    },
+    {
+      "value": "none",
+      "description": "The node and its subtree make no additional check"
+    }
+  ]
+}

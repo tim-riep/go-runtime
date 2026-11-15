@@ -1,0 +1,5 @@
+{
+  "name": "/RT/JSON_POINTER",
+  "description": "JSON Pointer into a document",
+  "type": "STRING"
+}

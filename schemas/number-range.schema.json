@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tim-riep/go-runtime/schemas/number-range.schema.json",
+  "title": "Number range object",
+  "description": "A number range object (schema/number-ranges/<name without namespace>.json): numbers of a fixed length with leading zeros, given from intervals that each tenant maintains.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "texts",
+    "length"
+  ],
+  "properties": {
+    "name": {
+      "$ref": "common.schema.json#/$defs/objectName"
+    },
+    "texts": {
+      "$ref": "common.schema.json#/$defs/labels"
+    },
+    "length": {
+      "description": "Number of digits of a number.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "subobject": {
+      "description": "A field whose values divide the intervals, e.g. a company; null or missing for none.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "maxLength": 30
+            },
+            "dataElement": {
+              "$ref": "common.schema.json#/$defs/objectName",
+              "description": "Data element of the subobject."
+            },
+            "domain": {
+              "$ref": "common.schema.json#/$defs/objectName",
+              "description": "Domain of the subobject."
+            }
+          }
+        }
+      ]
+    },
+    "perFiscalYear": {
+      "description": "Whether intervals apply per fiscal year.",
+      "type": "boolean",
+      "default": false
+    },
+    "buffering": {
+      "description": "none gives numbers without gaps in the transaction of the execution; buffered reserves blocks per process, with gaps.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "const": "none"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "blockSize"
+          ],
+          "properties": {
+            "mode": {
+              "const": "buffered"
+            },
+            "blockSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            }
+          }
+        }
+      ]
+    },
+    "warningPercent": {
+      "description": "Share of an interval in percent after which the kernel logs a warning.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 90
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/TRNUM/TICKET",
+  "texts": { "en": { "label": "Tickets" } },
+  "length": 4,
+  "warningPercent": 50
+}

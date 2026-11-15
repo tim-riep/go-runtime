@@ -1,0 +1,6 @@
+{
+  "name": "/RT/INTERVAL_ID",
+  "description": "Identifier of an interval of a number range",
+  "type": "CHAR",
+  "length": 2
+}

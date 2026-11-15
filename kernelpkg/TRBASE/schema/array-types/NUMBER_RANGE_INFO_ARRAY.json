@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE_INFO_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Number range objects"
+    },
+    "de": {
+      "label": "Nummernkreisobjekte"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/NUMBER_RANGE_INFO"
+  }
+}

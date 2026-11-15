@@ -48,4 +48,5 @@ const (
 	Service                 = "service.schema.json"
 	ObjectType              = "object-type.schema.json"
 	Object                  = "object.schema.json"
+	NumberRange             = "number-range.schema.json"
 )

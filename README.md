@@ -68,6 +68,8 @@ transaction together with its own bookkeeping.
 - **Implementation**: a class of a package that implements the interface of an extension point
   of the package or of a required one, for the filter values it names. The kernel selects the
   active implementations when the code runs; the defining package does not know them.
+- **Number range object**: numbers of a fixed length that the kernel gives from intervals,
+  which every tenant maintains, without gaps or in blocks.
 - **Object type**: a type of objects that a package defines, whose content is a structure of
   the package. Packages that require it ship objects of the type, e.g. descriptions of
   pages; the kernel checks them like every other object and keeps them read-only.
@@ -94,6 +96,7 @@ TRFIN/
     business-object-extensions/*.json  one extension per extended business object, named <NAME>.json
     services/*.json            one service over OData per file, named <NAME>.json
     object-types/*.json        one object type per file, named <NAME>.json
+    number-ranges/*.json       one number range object per file, named <NAME>.json
   src/
     <NAME>.class               a class, exception class or test class
     <NAME>.interface           an interface
@@ -929,6 +932,62 @@ the name carries the namespace of the shipping package:
   <name>` describe types and objects; `rt object-type schema` writes a JSON Schema of the
   object files for editors. `rt show` lists the objects that refer to an object.
 
+### Number ranges
+
+A number range object (`schema/number-ranges/JOURNAL_ENTRY.json`) describes numbers that the
+kernel gives from intervals:
+
+```json
+{
+  "name": "/TRFIN/JOURNAL_ENTRY",
+  "texts": { "en": { "label": "Journal entries" }, "de": { "label": "Belege" } },
+  "length": 10,
+  "subobject": { "name": "COMPANY", "dataElement": "/TRFIN/COMPANY" },
+  "perFiscalYear": true,
+  "buffering": { "mode": "none" },
+  "warningPercent": 90
+}
+```
+
+- `length` is 1 to 20 digits; numbers are text with leading zeros. `subobject` (optional) is a
+  field of type `CHAR(n)`, `INT4` or `INT8` whose values divide the intervals, such as a
+  company; `perFiscalYear` divides them by year as well.
+- `buffering` `none` gives numbers without gaps in the transaction of the execution: a
+  number counts as used with the commit, a rollback returns it, and executions on the same
+  interval wait for each other (PostgreSQL holds the lock of the row of the interval until
+  the commit, SQLite has one writer). `buffered` with a `blockSize` reserves blocks per
+  process in a transaction of their own; numbers of a block that a restart loses leave gaps.
+  Under SQLite, and in tests, an execution that has already written gives buffered numbers in
+  its transaction instead.
+- When an interval reaches `warningPercent` (default 90), the kernel logs a warning once; an
+  interval that gave its last number raises `/TRBASE/NUMBER_RANGE_EXHAUSTED`.
+- Upgrades may make numbers longer and change texts, buffering and the warning. A shorter
+  length, another subobject and another division by year are destructive and remove the
+  intervals of the object in all tenants, as removing the object does.
+
+**Intervals** are runtime configuration of each tenant in `/RT/NUMBER_RANGE_INTERVALS`: an
+ID of two characters `A-Z0-9`, the value of the subobject (`null` for objects without one,
+`""` is a value), the fiscal year, the from and to number, the current number and whether
+numbers come from outside (`external`). Intervals of the same subobject and year do not
+overlap. The kernel gives the numbers of internal intervals and only checks those of external
+ones. Moving the current number back and deleting an interval that gave numbers need a
+confirmation, are logged with `audit=true` and recorded with every other change in
+`/RT/NUMBER_RANGE_HISTORY`.
+
+```bash
+rt number-range list TRFIN
+rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999
+rt number-range interval list /TRFIN/JOURNAL_ENTRY --tenant ACME
+rt number-range interval change /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999 --current 41 --yes
+rt number-range history --tenant ACME
+```
+
+The library offers the same with `k.AddNumberInterval`, `ChangeNumberInterval`,
+`DeleteNumberInterval`, `NumberIntervals` and `NumberRangeHistory`, with an `Actor` for the
+checks of `/TRBASE/NUMBER_RANGE` (`NUMBER_RANGE_OBJECT`, `ACTIVITY`). Code maintains intervals
+with `/TRBASE/NUMBER_RANGE_ADMINISTRATION` and gives numbers with `/TRBASE/NUMBER_RANGE`; see the
+[language reference](docs/language.md#number-ranges).
+
 ### Tenants
 
 For a table with `tenantSpecific: true` the kernel
@@ -1463,6 +1522,7 @@ rt object list /TRDEF/VIEW
 rt object show /TRUSE/COMPANIES
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
+rt show number-range:/TRFIN/JOURNAL_ENTRY
 rt show /TRFIN/COMPANY_ARRAY --json
 rt show /TRFIN/COMPANIES_ARCHIVE
 rt asset repos

@@ -1,0 +1,20 @@
+{
+  "name": "/RT/ACTIVITY",
+  "domain": "/RT/ACTIVITY",
+  "texts": {
+    "en": {
+      "short": "Activity",
+      "medium": "Activity",
+      "long": "Activity",
+      "heading": "Activity",
+      "description": "What a user may do with the data an authorization object protects"
+    },
+    "de": {
+      "short": "Aktivität",
+      "medium": "Aktivität",
+      "long": "Aktivität",
+      "heading": "Aktivität",
+      "description": "Was ein Benutzer mit den Daten tun darf, die ein Berechtigungsobjekt schützt"
+    }
+  }
+}

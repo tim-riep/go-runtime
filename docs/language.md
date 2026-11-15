@@ -809,6 +809,8 @@ The kernel package `TRBASE` brings:
 | `/TRBASE/ODATA` | `COUNT(pkg, service, set, filter)`: the number of entities of an entity set that the user of the execution may read, as `$count` of a request with an optional `$filter`; it raises `/TRBASE/ODATA_ERROR` for services that are not active or that the user may not start, unknown entity sets and invalid filters |
 | `/TRBASE/ODATA_METADATA_CACHE` | `INVALIDATE(pkg, service)`: discards the metadata documents of a service, of the services of a package or of all; only `CHANGED` of the behavior of an object type calls it |
 | `/TRBASE/OBJECTS` | objects of package-defined types, see [Objects of package-defined types](#objects-of-package-defined-types) |
+| `/TRBASE/NUMBER_RANGE` | numbers of number range objects, see [Number ranges](#number-ranges) |
+| `/TRBASE/NUMBER_RANGE_ADMINISTRATION` | the intervals of number range objects, see [Number ranges](#number-ranges) |
 
 Errors of stylesheets raise the checked exception `/TRBASE/XSLT_FAILED` with `TEXT` and
 `LINE_NO`, the line in the stylesheet or `null`.
@@ -859,6 +861,42 @@ for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRDEF/VIEW", /TRBASE/REFERENCE_KIND.E
   var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
 end
 ```
+
+## Number ranges
+
+`/TRBASE/NUMBER_RANGE` gives the numbers of number range objects (see the README) from the
+intervals of the tenant of the execution:
+
+```
+var number = /TRBASE/NUMBER_RANGE.NEXT("/TRFIN/JOURNAL_ENTRY", type.INTERVAL, company, year)
+var partner = /TRBASE/NUMBER_RANGE.NEXT("/TRBP/PARTNER", grouping.INTERVAL, null, null)
+if not /TRBASE/NUMBER_RANGE.CHECK_EXTERNAL("/TRBP/PARTNER", "XX", null, null, given)
+  ...
+end
+```
+
+- `NEXT(object, interval, subobject, year)` returns the next number of an internal interval
+  as `STRING` with the length of the object and leading zeros. The subobject in text form and
+  the fiscal year are `null` for objects without them. `NEXT_IN(session, ...)` gives the
+  number in another session; with the buffering `none` it counts as used with the commit of
+  that session, and a rollback returns it.
+- `CHECK_EXTERNAL(object, interval, subobject, year, number)` tells whether a number given
+  from outside has the length of the object and lies in the external interval.
+- All raise `/TRBASE/NUMBER_RANGE_ERROR` with the subclasses `/TRBASE/NUMBER_RANGE_NOT_FOUND`
+  (object or interval), `/TRBASE/NUMBER_RANGE_EXHAUSTED` and
+  `/TRBASE/NUMBER_RANGE_ARGUMENT_INVALID` (a missing or unexpected subobject or year, an
+  external interval for `NEXT`, an internal one for `CHECK_EXTERNAL`).
+- Code uses the objects of its own package and of the packages it requires. An object given
+  as string literal is checked when the code compiles and recorded as used, so an upgrade
+  that removes it fails; other names are checked when the code runs.
+
+`/TRBASE/NUMBER_RANGE_ADMINISTRATION` maintains the intervals in the tenant of the execution
+for the user of the execution, checked with `/TRBASE/NUMBER_RANGE`: `OBJECTS(pkg)`,
+`INTERVALS(object)`, `ADD_INTERVAL(interval)`, `CHANGE_INTERVAL(interval, confirm)`,
+`DELETE_INTERVAL(object, interval, subobject, year, confirm)` and `HISTORY(object)`, with
+intervals as `/TRBASE/NUMBER_INTERVAL`. Changes are written in the transaction of the default
+session. Moving the current number back and deleting an interval that gave numbers without
+`confirm` raise `/TRBASE/NUMBER_RANGE_CONFIRMATION_REQUIRED`.
 
 ## Asset repositories
 

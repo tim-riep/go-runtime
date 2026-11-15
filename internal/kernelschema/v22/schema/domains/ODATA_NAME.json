@@ -1,0 +1,6 @@
+{
+  "name": "/RT/ODATA_NAME",
+  "description": "Public name in OData",
+  "type": "CHAR",
+  "length": 128
+}

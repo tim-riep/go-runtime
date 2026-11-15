@@ -262,6 +262,48 @@ type Implementation struct {
 	Active      bool                   `rt:"ACTIVE"`
 }
 
+// NumberInterval is the structure /TRBASE/NUMBER_INTERVAL.
+type NumberInterval struct {
+	RangeName   string                    `rt:"RANGE_NAME"`
+	IntervalID  string                    `rt:"INTERVAL_ID"`
+	Subobject   model.Optional[string]    `rt:"SUBOBJECT"`
+	FiscalYear  model.Optional[int32]     `rt:"FISCAL_YEAR"`
+	FromNo      string                    `rt:"FROM_NO"`
+	ToNo        string                    `rt:"TO_NO"`
+	CurrentNo   model.Optional[string]    `rt:"CURRENT_NO"`
+	External    bool                      `rt:"EXTERNAL"`
+	UsedPercent model.Optional[int32]     `rt:"USED_PERCENT"`
+	ChangedAt   model.Optional[time.Time] `rt:"CHANGED_AT"`
+	ChangedBy   model.Optional[string]    `rt:"CHANGED_BY"`
+}
+
+// NumberRangeChange is the structure /TRBASE/NUMBER_RANGE_CHANGE.
+type NumberRangeChange struct {
+	ChangedAt  time.Time              `rt:"CHANGED_AT"`
+	ChangedBy  string                 `rt:"CHANGED_BY"`
+	Kind       string                 `rt:"KIND"`
+	RangeName  string                 `rt:"RANGE_NAME"`
+	IntervalID string                 `rt:"INTERVAL_ID"`
+	Subobject  model.Optional[string] `rt:"SUBOBJECT"`
+	FiscalYear model.Optional[int32]  `rt:"FISCAL_YEAR"`
+	OldState   model.Optional[string] `rt:"OLD_STATE"`
+	NewState   model.Optional[string] `rt:"NEW_STATE"`
+	Confirmed  bool                   `rt:"CONFIRMED"`
+}
+
+// NumberRangeInfo is the structure /TRBASE/NUMBER_RANGE_INFO.
+type NumberRangeInfo struct {
+	Name           string                 `rt:"NAME"`
+	PackageID      string                 `rt:"PACKAGE_ID"`
+	Label          model.Optional[string] `rt:"LABEL"`
+	Length         int32                  `rt:"LENGTH"`
+	SubobjectName  model.Optional[string] `rt:"SUBOBJECT_NAME"`
+	PerFiscalYear  bool                   `rt:"PER_FISCAL_YEAR"`
+	Buffered       bool                   `rt:"BUFFERED"`
+	BlockSize      model.Optional[int32]  `rt:"BLOCK_SIZE"`
+	WarningPercent int32                  `rt:"WARNING_PERCENT"`
+}
+
 // ObjectInfo is the structure /TRBASE/OBJECT_INFO.
 type ObjectInfo struct {
 	Name      string `rt:"NAME"`

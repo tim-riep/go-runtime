@@ -1,0 +1,7 @@
+{
+  "id": "TRNUM",
+  "version": "1.0.0",
+  "description": "Number ranges for the tests of the kernel",
+  "languageVersion": 1,
+  "requires": [{ "id": "TRBASE" }]
+}

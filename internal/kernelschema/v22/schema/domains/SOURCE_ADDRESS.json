@@ -1,0 +1,6 @@
+{
+  "name": "/RT/SOURCE_ADDRESS",
+  "description": "Address of a package in a source without version, e.g. github.com/owner/repo/dir",
+  "type": "CHAR",
+  "length": 400
+}

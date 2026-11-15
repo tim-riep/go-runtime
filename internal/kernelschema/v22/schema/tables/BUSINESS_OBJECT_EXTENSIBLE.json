@@ -1,0 +1,41 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_EXTENSIBLE",
+  "description": "Kinds of extensions that business objects and their entities allow",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "EXTENSION_KIND",
+      "domain": "/RT/EXTENSION_KIND",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "table": "/RT/BUSINESS_OBJECTS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        }
+      ]
+    }
+  ]
+}

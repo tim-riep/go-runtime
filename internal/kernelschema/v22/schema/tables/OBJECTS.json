@@ -1,0 +1,62 @@
+{
+  "name": "/RT/OBJECTS",
+  "description": "Objects of package-defined types",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "OBJECT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TYPE_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "FILE_PATH",
+      "domain": "/RT/ASSET_PATH",
+      "notNull": true
+    },
+    {
+      "name": "CONTENT",
+      "domain": "/RT/OBJECT_CONTENT",
+      "notNull": true
+    },
+    {
+      "name": "SHA256",
+      "domain": "/RT/SHA256",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "OBJECT_NAME"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    },
+    {
+      "name": "TYPE",
+      "table": "/RT/OBJECT_TYPES",
+      "fields": [
+        {
+          "field": "TYPE_NAME",
+          "references": "TYPE_NAME"
+        }
+      ]
+    }
+  ]
+}

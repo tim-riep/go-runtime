@@ -420,7 +420,9 @@ type Package struct {
 	ObjectTypes []ObjectType
 	// Objects are the objects of package-defined types the package ships.
 	Objects []Object
-	Origin  string // where the package was loaded from
+	// NumberRanges are the number range objects of the package.
+	NumberRanges []NumberRange
+	Origin       string // where the package was loaded from
 }
 
 // PackageInfo is an installed package.

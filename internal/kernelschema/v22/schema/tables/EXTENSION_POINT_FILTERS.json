@@ -1,0 +1,51 @@
+{
+  "name": "/RT/EXTENSION_POINT_FILTERS",
+  "description": "Filter fields of extension points",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "POINT_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION"
+    },
+    {
+      "name": "FIELD_NAME",
+      "domain": "/RT/AUTH_FIELD_NAME",
+      "notNull": true
+    },
+    {
+      "name": "DATA_ELEMENT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "DOMAIN_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "HAS_DEFAULT",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "description": "Whether implementations that do not name the field take default values"
+    }
+  ],
+  "primaryKey": [
+    "POINT_NAME",
+    "POSITION"
+  ],
+  "foreignKeys": [
+    {
+      "name": "POINT",
+      "table": "/RT/EXTENSION_POINTS",
+      "fields": [
+        {
+          "field": "POINT_NAME",
+          "references": "POINT_NAME"
+        }
+      ]
+    }
+  ]
+}

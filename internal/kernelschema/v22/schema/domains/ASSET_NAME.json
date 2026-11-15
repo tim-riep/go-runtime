@@ -1,0 +1,6 @@
+{
+  "name": "/RT/ASSET_NAME",
+  "description": "Name of a release asset",
+  "type": "CHAR",
+  "length": 255
+}

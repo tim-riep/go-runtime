@@ -1,0 +1,112 @@
+{
+  "name": "/RT/BUSINESS_OBJECT_ENTITIES",
+  "description": "Entities of business objects and the entities that extensions add to or extend",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "BO_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "TABLE_NAME",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "POSITION",
+      "domain": "/RT/POSITION",
+      "notNull": true
+    },
+    {
+      "name": "PARENT_TABLE",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "The parent entity; null for the root"
+    },
+    {
+      "name": "FK_NAME",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "The foreign key to the parent"
+    },
+    {
+      "name": "NUMBERING",
+      "domain": "/RT/NUMBERING"
+    },
+    {
+      "name": "CAN_CREATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CAN_UPDATE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CAN_DELETE",
+      "domain": "/RT/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "ETAG_FIELD",
+      "domain": "/RT/OBJECT_NAME"
+    },
+    {
+      "name": "AUTH_OBJECT",
+      "domain": "/RT/OBJECT_NAME",
+      "description": "null: the entity takes the authorization of the root or has none"
+    },
+    {
+      "name": "EXTENSIBLE_LISTED",
+      "domain": "/RT/FLAG",
+      "notNull": true,
+      "default": false
+    }
+  ],
+  "primaryKey": [
+    "BO_NAME",
+    "TABLE_NAME",
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "BUSINESS_OBJECT",
+      "table": "/RT/BUSINESS_OBJECTS",
+      "fields": [
+        {
+          "field": "BO_NAME",
+          "references": "BO_NAME"
+        }
+      ]
+    },
+    {
+      "name": "PACKAGE",
+      "table": "/RT/PACKAGES",
+      "fields": [
+        {
+          "field": "PACKAGE_ID",
+          "references": "PACKAGE_ID"
+        }
+      ]
+    }
+  ]
+}

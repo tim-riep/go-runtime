@@ -1,0 +1,10 @@
+# A change of an interval moves its current number back or deletes an
+# interval that gave numbers; calling it again with confirm true makes the
+# change.
+public class /TRBASE/NUMBER_RANGE_CONFIRMATION_REQUIRED extends /TRBASE/NUMBER_RANGE_ERROR
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

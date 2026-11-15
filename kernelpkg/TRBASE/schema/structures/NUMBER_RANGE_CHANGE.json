@@ -1,0 +1,59 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE_CHANGE",
+  "texts": {
+    "en": {
+      "label": "Change of an interval"
+    },
+    "de": {
+      "label": "Änderung eines Intervalls"
+    }
+  },
+  "components": [
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "CHANGED_BY",
+      "dataElement": "/TRBASE/USER_NAME",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "domain": "/TRBASE/NAME",
+      "notNull": true
+    },
+    {
+      "name": "RANGE_NAME",
+      "dataElement": "/TRBASE/NUMBER_RANGE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "INTERVAL_ID",
+      "dataElement": "/TRBASE/INTERVAL_ID",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT",
+      "dataElement": "/TRBASE/SUBOBJECT_VALUE"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "OLD_STATE",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "NEW_STATE",
+      "domain": "/TRBASE/TEXT"
+    },
+    {
+      "name": "CONFIRMED",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    }
+  ]
+}

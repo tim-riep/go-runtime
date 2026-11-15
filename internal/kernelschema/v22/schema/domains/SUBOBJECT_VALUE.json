@@ -1,0 +1,5 @@
+{
+  "name": "/RT/SUBOBJECT_VALUE",
+  "description": "Value of the subobject of a number range in text form",
+  "type": "STRING"
+}

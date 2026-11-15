@@ -1,0 +1,6 @@
+{
+  "name": "/TRNUM/PARTNER",
+  "texts": { "en": { "label": "Partners" } },
+  "length": 6,
+  "buffering": { "mode": "buffered", "blockSize": 5 }
+}

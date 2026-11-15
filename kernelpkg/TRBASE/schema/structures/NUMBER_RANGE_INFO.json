@@ -1,0 +1,55 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE_INFO",
+  "texts": {
+    "en": {
+      "label": "Number range object"
+    },
+    "de": {
+      "label": "Nummernkreisobjekt"
+    }
+  },
+  "components": [
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NUMBER_RANGE_NAME",
+      "notNull": true
+    },
+    {
+      "name": "PACKAGE_ID",
+      "dataElement": "/TRBASE/PACKAGE_ID",
+      "notNull": true
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBASE/OBJECT_LABEL"
+    },
+    {
+      "name": "LENGTH",
+      "domain": "/TRBASE/LENGTH",
+      "notNull": true
+    },
+    {
+      "name": "SUBOBJECT_NAME",
+      "domain": "/TRBASE/FIELD_NAME"
+    },
+    {
+      "name": "PER_FISCAL_YEAR",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "BUFFERED",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true
+    },
+    {
+      "name": "BLOCK_SIZE",
+      "domain": "/TRBASE/LENGTH"
+    },
+    {
+      "name": "WARNING_PERCENT",
+      "domain": "/TRBASE/LENGTH",
+      "notNull": true
+    }
+  ]
+}

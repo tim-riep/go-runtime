@@ -1,0 +1,8 @@
+# An operation on a number range failed; the subclasses tell why.
+public open class /TRBASE/NUMBER_RANGE_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

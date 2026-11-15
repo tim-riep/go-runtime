@@ -1,0 +1,14 @@
+{
+  "name": "/TRBASE/NUMBER_INTERVAL_ARRAY",
+  "texts": {
+    "en": {
+      "label": "Intervals"
+    },
+    "de": {
+      "label": "Intervalle"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBASE/NUMBER_INTERVAL"
+  }
+}

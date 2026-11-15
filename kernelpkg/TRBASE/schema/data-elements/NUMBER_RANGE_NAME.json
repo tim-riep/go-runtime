@@ -1,0 +1,18 @@
+{
+  "name": "/TRBASE/NUMBER_RANGE_NAME",
+  "domain": "/TRBASE/OBJECT_NAME",
+  "texts": {
+    "en": {
+      "short": "Num. range",
+      "medium": "Number range",
+      "long": "Number range object",
+      "heading": "Number range"
+    },
+    "de": {
+      "short": "Nr.-Kreis",
+      "medium": "Nummernkreis",
+      "long": "Nummernkreisobjekt",
+      "heading": "Nummernkreis"
+    }
+  }
+}

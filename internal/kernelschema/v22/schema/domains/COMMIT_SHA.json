@@ -1,0 +1,6 @@
+{
+  "name": "/RT/COMMIT_SHA",
+  "description": "Commit hash in lower-case hex",
+  "type": "CHAR",
+  "length": 64
+}

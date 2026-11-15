@@ -1,0 +1,62 @@
+{
+  "name": "/RT/PACKAGE_ORIGINS",
+  "description": "Where installed packages come from, for upgrades, locks and the check of tags",
+  "tenantSpecific": false,
+  "dataClass": "system",
+  "fields": [
+    {
+      "name": "PACKAGE_ID",
+      "domain": "/RT/PACKAGE_ID"
+    },
+    {
+      "name": "KIND",
+      "domain": "/RT/ORIGIN_KIND",
+      "notNull": true
+    },
+    {
+      "name": "ADDRESS",
+      "domain": "/RT/SOURCE_ADDRESS",
+      "description": "Address without version; null for local packages"
+    },
+    {
+      "name": "REQUESTED",
+      "domain": "/RT/SOURCE_SPEC",
+      "description": "The version, constraint, commit or branch as requested"
+    },
+    {
+      "name": "CONSTRAINT_TEXT",
+      "domain": "/RT/SOURCE_SPEC",
+      "description": "What later upgrades may choose"
+    },
+    {
+      "name": "TAG",
+      "domain": "/RT/SOURCE_SPEC"
+    },
+    {
+      "name": "COMMIT_SHA",
+      "domain": "/RT/COMMIT_SHA"
+    },
+    {
+      "name": "ASSET_NAME",
+      "domain": "/RT/ASSET_NAME"
+    },
+    {
+      "name": "ARCHIVE_SHA256",
+      "domain": "/RT/SHA256"
+    },
+    {
+      "name": "INSTALLED_AT",
+      "domain": "/RT/TIMESTAMP",
+      "notNull": true
+    },
+    {
+      "name": "INSTALLED_BY",
+      "domain": "/RT/USER_NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "PACKAGE_ID"
+  ],
+  "foreignKeys": []
+}
