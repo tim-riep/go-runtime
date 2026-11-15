@@ -1,0 +1,22 @@
+{
+  "name": "/TRLATE/DOC",
+  "description": { "en": "Document" },
+  "root": "/TRLATE/DOCS",
+  "behaviorClass": "/TRLATE/DOC_BEHAVIOR",
+  "entities": {
+    "/TRLATE/DOCS": {
+      "operations": ["create", "update"],
+      "numbering": "late",
+      "lateNumbering": { "fields": ["DOC_NO"], "method": "ASSIGN_NUMBERS" },
+      "save": "WRITE_LINES",
+      "administrative": { "createdAt": "CREATED_AT" },
+      "authorization": {
+        "object": "/TRLATE/DOC",
+        "fields": { "COMPANY": "COMPANY", "KIND": "*" },
+        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE" }
+      }
+    },
+    "/TRLATE/ITEMS": { "parent": "/TRLATE/DOCS", "foreignKey": "DOC", "operations": ["create"] },
+    "/TRLATE/LINES": { "parent": "/TRLATE/DOCS", "foreignKey": "DOC", "operations": [], "maintainedBy": "save" }
+  }
+}

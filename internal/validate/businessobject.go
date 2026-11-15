@@ -167,8 +167,33 @@ func (v *validator) entityFields(b *model.BusinessObject, e *model.Entity, t *mo
 		if len(t.PrimaryKey) != 1 || v.baseType(e.Table, t.PrimaryKey[0]) != model.UUID {
 			fail(loc.At("/numbering"), "numbering uuid needs a key of one field of type UUID; %s has the key %s", e.Table, strings.Join(t.PrimaryKey, ", "))
 		}
+	case model.NumberingLate:
+		v.lateNumbering(b, e, t, fail)
 	default:
-		fail(loc.At("/numbering"), "numbering is external or uuid, not %q", e.Numbering)
+		fail(loc.At("/numbering"), "numbering is external, uuid or late, not %q", e.Numbering)
+	}
+	if e.LateNumbering != nil && e.Numbering != model.NumberingLate {
+		fail(loc.At("/lateNumbering"), "lateNumbering needs the numbering late")
+	}
+	if m, ok := e.MaintainedBy.Get(); ok {
+		switch {
+		case m != model.MaintainedBySave:
+			fail(loc.At("/maintainedBy"), "maintainedBy is save, not %q", m)
+		case !e.Parent.Valid():
+			fail(loc.At("/maintainedBy"), "the root is changed with entity statements; only dependent entities are maintained by save")
+		case len(e.Operations) > 0:
+			fail(loc.At("/operations"), "%s is maintained by save and has no operations", e.Table)
+		case len(e.Determinations)+len(e.Validations)+len(e.Actions) > 0:
+			fail(loc, "%s is maintained by save and has no determinations, validations or actions", e.Table)
+		case e.Numbering != model.NumberingExternal:
+			fail(loc.At("/numbering"), "%s is maintained by save; the save method gives its keys", e.Table)
+		}
+		if re := b.Entity(b.Root); re != nil && !re.Save.Valid() {
+			fail(loc.At("/maintainedBy"), "the root %s needs a save method that maintains %s", b.Root, e.Table)
+		}
+	}
+	if _, ok := e.Save.Get(); ok && e.Table != b.Root {
+		fail(loc.At("/save"), "only the root runs a save method")
 	}
 	for _, name := range []string{model.LinkField, model.ParentLinkField} {
 		if v.physicalField(e.Table, name) != nil {
@@ -212,6 +237,39 @@ func (v *validator) entityFields(b *model.BusinessObject, e *model.Entity, t *mo
 	}
 }
 
+// lateNumbering checks the key fields that the behavior class gives when
+// an instance is saved: fields of the key of the root, at least one of
+// them CHAR, whose preliminary value $<n> keeps new instances apart.
+func (v *validator) lateNumbering(b *model.BusinessObject, e *model.Entity, t *model.Table, fail func(rterr.Location, string, ...any)) {
+	loc := e.Src.At("/lateNumbering")
+	l := e.LateNumbering
+	switch {
+	case l == nil:
+		fail(e.Src.At("/numbering"), "numbering late needs lateNumbering with the fields and the method")
+		return
+	case e.Table != b.Root:
+		fail(e.Src.At("/numbering"), "only the root has numbering late; dependent entities take the key of their parent")
+		return
+	}
+	char := false
+	for _, f := range l.Fields {
+		switch {
+		case !slices.Contains(t.PrimaryKey, f):
+			fail(loc.At("/fields"), "%s is no key field of %s", f, e.Table)
+		case v.baseType(e.Table, f) == model.Char:
+			char = true
+		case v.baseType(e.Table, f) != model.Int4 && v.baseType(e.Table, f) != model.Int8:
+			fail(loc.At("/fields"), "%s is %s; late key fields are CHAR, INT4 or INT8", f, v.baseType(e.Table, f))
+		}
+	}
+	if !char {
+		fail(loc.At("/fields"), "one of the late key fields must be CHAR, so that new instances have preliminary keys of their own")
+	}
+	if !b.BehaviorClass.Valid() {
+		fail(loc.At("/method"), "late numbering needs a behavior class with the method %s", l.Method)
+	}
+}
+
 func typeList(types []model.BaseType) string {
 	var out []string
 	for _, t := range types {
@@ -236,6 +294,12 @@ func (v *validator) baseType(table, field string) model.BaseType {
 // authorization of an entity.
 func (v *validator) entityBehavior(b *model.BusinessObject, e *model.Entity, fail func(rterr.Location, string, ...any), method func(name, what string, at rterr.Location)) {
 	loc := e.Src
+	if l := e.LateNumbering; l != nil {
+		method(l.Method, "late numbering of "+e.Table, loc.At("/lateNumbering/method"))
+	}
+	if m, ok := e.Save.Get(); ok {
+		method(m, "save method of "+e.Table, loc.At("/save"))
+	}
 	trigger := func(t model.Trigger, at rterr.Location) {
 		for _, op := range t.On {
 			if !slices.Contains(model.EntityOperations, op) {
@@ -294,7 +358,7 @@ func (v *validator) entityBehavior(b *model.BusinessObject, e *model.Entity, fai
 	}
 	for _, f := range o.Fields {
 		if !f.IsActivity() && au.Fields[f.Name] == "" {
-			fail(at.At("/fields"), "the field %s of %s needs a field of %s", f.Name, o.Name, e.Table)
+			fail(at.At("/fields"), "the field %s of %s needs a field of %s, or * not to check it", f.Name, o.Name, e.Table)
 		}
 	}
 	for _, name := range slices.Sorted(maps.Keys(au.Fields)) {
@@ -302,6 +366,7 @@ func (v *validator) entityBehavior(b *model.BusinessObject, e *model.Entity, fai
 		switch {
 		case !ok || f.IsActivity():
 			fail(at.At("/fields/"+name), "%s is no field of %s that an entity field gives", name, o.Name)
+		case au.Fields[name] == model.AnyField:
 		case au.Fields[name] == model.TenantField || v.physicalField(e.Table, au.Fields[name]) == nil:
 			fail(at.At("/fields/"+name), "%s is no field of %s", au.Fields[name], e.Table)
 		}

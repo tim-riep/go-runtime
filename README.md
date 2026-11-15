@@ -784,8 +784,17 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
   same tenant flag and the data class of the business object. Dependent entities name
   their `parent` and a `foreignKey` of their table that covers the key of the parent; they
   may not have fields `LINK` or `PARENT_LINK`, which link new instances in a statement.
-- `numbering` is `external` (the caller gives the key, the default) or `uuid` (the kernel
-  gives the single key field of type `UUID`).
+- `numbering` is `external` (the caller gives the key, the default), `uuid` (the kernel
+  gives the single key field of type `UUID`) or `late` for the root: `"lateNumbering":
+  {"fields": ["DOCUMENT_NO"], "method": "ASSIGN_NUMBERS"}` names key fields, one of them
+  `CHAR`, that a method of the behavior class gives when the instance is saved, e.g. from a
+  number range. Until then a `CHAR` field the caller leaves out has the preliminary value
+  `$<n>` and a number 0, and dependent instances take the key of their parent.
+- `save` names a method of the behavior class that the root runs in the save sequence after
+  the instances are written. It writes tables without business object, also with
+  `update ... set A = A + x`, and the dependent entities with `"maintainedBy": "save"`, which
+  have no operations and are read like other entities, also over OData; the kernel allows
+  their writes only while the save method runs.
 - `fields` sets `readOnly`, `readOnlyOnUpdate` and `mandatory`; `administrative` names the
   fields the kernel fills when it saves (`createdAt`/`changedAt` TIMESTAMP, `createdBy`/
   `changedBy` text) and `etag` a TIMESTAMP, UUID or INT8 field for optimistic locking.
@@ -797,7 +806,8 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
   are `instance` (the default) or static, with an optional `parameter` structure, a `result`
   (`self` or a structure) and `modifies` (default `true`).
 - `authorization` maps every field of the authorization object except `ACTIVITY` to a field
-  of the entity and every operation, `read` and every action to an activity. The root of a
+  of the entity, or to `*` when the entity does not check it, and every operation, `read`
+  and every action to an activity. The root of a
   business object of application data needs one. A dependent entity without one takes that
   of the nearest parent entity with one: `read` with its activity for read, everything else
   with its activity for update.

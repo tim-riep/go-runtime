@@ -1,0 +1,49 @@
+# The behavior of /TRLATE/DOC: numbers from /TRLATE/DOC per company and
+# year when a document is saved, and a line and the total of the company
+# for every item.
+public class /TRLATE/DOC_BEHAVIOR
+
+  public method ASSIGN_NUMBERS(keys: array of key of /TRLATE/DOCS, response: /TRBASE/ENTITY_RESPONSE) returns array of key of /TRLATE/DOCS
+    var out: array of key of /TRLATE/DOCS = []
+    for i, key in keys
+      try
+        key.DOC_NO = /TRBASE/NUMBER_RANGE.NEXT("/TRLATE/DOC", "01", key.COMPANY, key.FISCAL_YEAR)
+      catch e: /TRBASE/NUMBER_RANGE_ERROR
+        response.ERROR(i, e.TEXT)
+      end
+      out.APPEND(key)
+    end
+    return out
+  end
+
+  public method WRITE_LINES(keys: array of key of /TRLATE/DOCS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var doc = select single from /TRLATE/DOCS where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOC_NO = key.DOC_NO
+      if doc is not null and (doc.TEXT default "") = "FAIL"
+        response.FIELD_ERROR(i, "TEXT", "the save method fails")
+        continue
+      end
+      var line = 0
+      for item in select from /TRLATE/ITEMS where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOC_NO = key.DOC_NO
+        line = line + 1
+        var l: /TRLATE/LINES
+        l.COMPANY = item.COMPANY
+        l.FISCAL_YEAR = item.FISCAL_YEAR
+        l.DOC_NO = item.DOC_NO
+        l.LINE_NO = line
+        l.AMOUNT = item.AMOUNT
+        insert l
+      end
+      var sum = select single sum(AMOUNT) from /TRLATE/ITEMS where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOC_NO = key.DOC_NO
+      var amount = sum.SUM_AMOUNT default 0.00
+      var changed = update /TRLATE/TOTALS set TOTAL = TOTAL + amount where COMPANY = key.COMPANY
+      if changed = 0
+        var t: /TRLATE/TOTALS
+        t.COMPANY = key.COMPANY
+        t.TOTAL = amount
+        insert t
+      end
+    end
+  end
+
+end

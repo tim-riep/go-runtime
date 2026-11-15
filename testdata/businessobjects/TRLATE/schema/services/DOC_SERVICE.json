@@ -1,0 +1,9 @@
+{
+  "name": "/TRLATE/DOC_SERVICE",
+  "description": { "en": "Documents" },
+  "entitySets": {
+    "Docs": { "businessObject": "/TRLATE/DOC", "entity": "/TRLATE/DOCS" },
+    "Items": { "businessObject": "/TRLATE/DOC", "entity": "/TRLATE/ITEMS" },
+    "Lines": { "businessObject": "/TRLATE/DOC", "entity": "/TRLATE/LINES" }
+  }
+}

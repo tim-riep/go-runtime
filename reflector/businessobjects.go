@@ -54,6 +54,9 @@ type Entity struct {
 	ParentKey      *ParentKey              `json:"parentKey"`
 	Operations     []model.EntityOperation `json:"operations"`
 	Numbering      model.Numbering         `json:"numbering"`
+	LateNumbering  *model.LateNumbering    `json:"lateNumbering"`
+	Save           model.Optional[string]  `json:"save"`
+	MaintainedBy   model.Optional[string]  `json:"maintainedBy"`
 	Fields         []EntityField           `json:"fields"`
 	Determinations []model.Determination   `json:"determinations"`
 	Validations    []model.Validation      `json:"validations"`
@@ -151,7 +154,8 @@ func (r *Reflector) entity(b *model.BusinessObject, e *model.Entity) (*Entity, e
 		return nil, err
 	}
 	t := r.s.Tables[e.Table]
-	out := &Entity{Table: e.Table, Origin: e.Origin, Texts: map[string]Text{}, Operations: e.Operations, Numbering: e.Numbering, Fields: []EntityField{},
+	out := &Entity{Table: e.Table, Origin: e.Origin, Texts: map[string]Text{}, Operations: e.Operations, Numbering: e.Numbering,
+		LateNumbering: e.LateNumbering, Save: e.Save, MaintainedBy: e.MaintainedBy, Fields: []EntityField{},
 		Determinations: e.Determinations, Validations: e.Validations, Actions: []EntityAction{}, AuthorizationConstants: map[string]string{}, Children: []*Entity{}}
 	for l, tx := range d.Texts {
 		out.Texts[l] = Text{Label: tx.Label, Description: tx.Description}

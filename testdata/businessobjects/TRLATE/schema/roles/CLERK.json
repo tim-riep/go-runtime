@@ -1,0 +1,9 @@
+{
+  "name": "/TRLATE/CLERK",
+  "texts": { "en": { "label": "Documents of 1000" } },
+  "authorizations": [
+    { "object": "/TRBASE/HTTP_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "RT" }], "SERVICE_PATH": [{ "value": "/rt/odata" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+    { "object": "/TRBASE/ODATA_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "TRLATE" }], "SERVICE_NAME": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+    { "object": "/TRLATE/DOC", "fields": { "COMPANY": [{ "value": "1000" }, { "value": "3000" }], "KIND": [{ "value": "Z" }], "ACTIVITY": [{ "pattern": "*" }] } }
+  ]
+}

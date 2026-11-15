@@ -1,0 +1,52 @@
+# Creates documents with items in one execution, for the tests of the
+# kernel.
+public class /TRLATE/API
+
+  # Creates a document per text with an item per amount, saves them and
+  # returns the result of the save as JSON.
+  public static method CREATE(company: STRING, year: INT4, texts: array of STRING, amounts: array of DEC(18,2)) returns STRING raises /TRBASE/XSLT_FAILED
+    var docs: array of new of /TRLATE/DOCS = []
+    var items: array of new of /TRLATE/ITEMS = []
+    for i, text in texts
+      var doc: new of /TRLATE/DOCS
+      doc.LINK = "d{i}"
+      doc.COMPANY = company
+      doc.FISCAL_YEAR = year
+      doc.TEXT = text
+      docs.APPEND(doc)
+      for j, amount in amounts
+        var item: new of /TRLATE/ITEMS
+        item.PARENT_LINK = "d{i}"
+        item.ITEM_NO = j as INT4
+        item.AMOUNT = amount
+        items.APPEND(item)
+      end
+    end
+    modify business object /TRLATE/DOC
+      create /TRLATE/DOCS fields (COMPANY, FISCAL_YEAR, TEXT) from docs
+      create /TRLATE/ITEMS by parent fields (ITEM_NO, AMOUNT) from items
+      result created
+    end
+    if created.FAILURES is not empty
+      return transform created using /TRBASE/JSON
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+    end
+    return transform saved using /TRBASE/JSON
+  end
+
+  public static method TOTAL(company: STRING) returns DEC(18,2)
+    var t = select single from /TRLATE/TOTALS where COMPANY = company
+    if t is null
+      return 0.00
+    end
+    return t.TOTAL
+  end
+
+  public static method LINES() returns INT8
+    return select count from /TRLATE/LINES
+  end
+
+end

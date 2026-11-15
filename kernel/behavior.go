@@ -370,7 +370,7 @@ func (b *entityBuffer) authorizeChange(ctx context.Context, req vm.ModifyRequest
 	changed := false
 	if au := e.Authorization; au != nil {
 		for _, f := range au.Fields {
-			if v, set := after[f]; set && jsonValue(nil, v) != jsonValue(nil, in.values[f]) {
+			if v, set := after[f]; set && f != model.AnyField && jsonValue(nil, v) != jsonValue(nil, in.values[f]) {
 				changed = true
 			}
 		}
@@ -424,7 +424,7 @@ func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *m
 	}
 	maps.Copy(c.Values, ra.Constants)
 	for of, ef := range au.Fields {
-		if values == nil {
+		if values == nil || ef == model.AnyField {
 			if c.Any == nil {
 				c.Any = map[string]bool{}
 			}
@@ -465,7 +465,7 @@ func (b *entityBuffer) checkAction(ctx context.Context, bo *model.BusinessObject
 		c.Values[model.ActivityField] = act
 	}
 	for of, ef := range fields {
-		if values == nil {
+		if values == nil || ef == model.AnyField {
 			if c.Any == nil {
 				c.Any = map[string]bool{}
 			}

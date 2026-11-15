@@ -123,6 +123,15 @@ func (c *cli) printEntity(e *reflector.Entity, indent string, owner model.Packag
 	fmt.Fprintf(out, "%sentity %s  key (%s)  operations %s  numbering %s%s\n", indent, e.Table, strings.Join(e.Key, ", "), strings.Join(ops, ", "), e.Numbering,
 		from(e.Origin, owner))
 	in := indent + "  "
+	if l := e.LateNumbering; l != nil {
+		fmt.Fprintf(out, "%slate key fields %s by %s\n", in, strings.Join(l.Fields, ", "), l.Method)
+	}
+	if m, ok := e.Save.Get(); ok {
+		fmt.Fprintf(out, "%ssave method %s\n", in, m)
+	}
+	if m, ok := e.MaintainedBy.Get(); ok {
+		fmt.Fprintf(out, "%smaintained by %s\n", in, m)
+	}
 	if p := e.ParentKey; p != nil {
 		var pairs []string
 		for _, f := range p.Fields {

@@ -71,6 +71,9 @@ type instance struct {
 	recent    map[string]bool
 	recentOps map[model.EntityOperation]bool
 	link      *string
+	// preliminary tells that the late key fields have preliminary values
+	// until the save sequence gives them.
+	preliminary bool
 }
 
 // entityBuffer is the transaction buffer of the business objects of an
@@ -84,6 +87,30 @@ type entityBuffer struct {
 	// not trigger again; depth counts nested entity statements of them.
 	running map[string]bool
 	depth   int
+	// preliminaries counts the preliminary keys of late numbering.
+	preliminaries int
+}
+
+// preliminary gives the late key fields of a new instance that the
+// statement does not give, or gives as null, a preliminary value until the
+// save sequence gives the final ones: $<n> for CHAR fields, 0 for numbers.
+func (b *entityBuffer) preliminary(e *model.Entity, l *model.LateNumbering, given []string, values map[string]any) bool {
+	missing := func(f string) bool { return !slices.Contains(given, f) || values[f] == nil }
+	if !slices.ContainsFunc(l.Fields, missing) {
+		return false
+	}
+	b.preliminaries++
+	for _, f := range l.Fields {
+		if !missing(f) {
+			continue
+		}
+		if d := b.domain(e.Table, f); d != nil && d.Type == model.Char {
+			values[f] = "$" + strconv.Itoa(b.preliminaries)
+		} else {
+			values[f] = int64(0)
+		}
+	}
+	return true
 }
 
 func (x *execution) buffer() *entityBuffer {
@@ -514,6 +541,10 @@ func (b *entityBuffer) create(ctx context.Context, bo *model.BusinessObject, e *
 		if e.Numbering == model.NumberingUUID {
 			values[b.keyFields(e.Table)[0]] = newUUID()
 		}
+		preliminary := false
+		if l := e.LateNumbering; l != nil && e.Numbering == model.NumberingLate {
+			preliminary = b.preliminary(e, l, st.Fields, values)
+		}
 		var parent *instance
 		if p, ok := e.Parent.Get(); ok {
 			pe := bo.Entity(p)
@@ -577,6 +608,7 @@ func (b *entityBuffer) create(ctx context.Context, bo *model.BusinessObject, e *
 			in.recentOps[model.OperationUpdate] = true
 		} else {
 			in = b.add(bo, e, values, stateCreated)
+			in.preliminary = preliminary
 			in.ops[model.OperationCreate] = true
 			in.recentOps[model.OperationCreate] = true
 		}

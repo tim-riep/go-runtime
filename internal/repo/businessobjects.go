@@ -42,6 +42,8 @@ const (
 	methodDetermination = "determination"
 	methodValidation    = "validation"
 	methodAction        = "action"
+	methodNumbering     = "numbering"
+	methodSave          = "save"
 )
 
 // HasBusinessObjects reports whether the kernel tables have business
@@ -115,7 +117,7 @@ func (r *Repo) loadBusinessObjects(ctx context.Context, q dialect.Querier, s *mo
 	}
 	rows := boRows{s: s}
 	entities, err := r.selectRows(ctx, q, TBusinessObjectEntity, []string{"BO_NAME", "TABLE_NAME", "PACKAGE_ID", "POSITION", "PARENT_TABLE", "FK_NAME", "NUMBERING",
-		"CAN_CREATE", "CAN_UPDATE", "CAN_DELETE", "CREATED_BY", "CREATED_AT", "CHANGED_BY", "CHANGED_AT", "ETAG_FIELD", "AUTH_OBJECT", "EXTENSIBLE_LISTED"},
+		"CAN_CREATE", "CAN_UPDATE", "CAN_DELETE", "CREATED_BY", "CREATED_AT", "CHANGED_BY", "CHANGED_AT", "ETAG_FIELD", "AUTH_OBJECT", "EXTENSIBLE_LISTED", "MAINTAINED_BY"},
 		"BO_NAME", "PACKAGE_ID", "POSITION")
 	if err != nil {
 		return err
@@ -126,7 +128,7 @@ func (r *Repo) loadBusinessObjects(ctx context.Context, q dialect.Querier, s *mo
 			continue
 		}
 		e := model.Entity{Table: str(x["TABLE_NAME"]), Parent: opt(x["PARENT_TABLE"]), ForeignKey: opt(x["FK_NAME"]), Numbering: model.Numbering(str(x["NUMBERING"])),
-			Fields: map[string]model.FieldProperties{}, ETag: opt(x["ETAG_FIELD"]),
+			Fields: map[string]model.FieldProperties{}, ETag: opt(x["ETAG_FIELD"]), MaintainedBy: opt(x["MAINTAINED_BY"]),
 			Administrative: model.AdministrativeFields{CreatedBy: opt(x["CREATED_BY"]), CreatedAt: opt(x["CREATED_AT"]), ChangedBy: opt(x["CHANGED_BY"]), ChangedAt: opt(x["CHANGED_AT"])}}
 		for op, col := range map[model.EntityOperation]string{model.OperationCreate: "CAN_CREATE", model.OperationUpdate: "CAN_UPDATE", model.OperationDelete: "CAN_DELETE"} {
 			if flag(x[col]) {
@@ -203,6 +205,10 @@ func (r *Repo) loadBusinessObjects(ctx context.Context, q dialect.Querier, s *mo
 			e.Determinations = append(e.Determinations, model.Determination{Name: name, When: model.When(str(x["RUNS_WHEN"])), Trigger: t})
 		case methodValidation:
 			e.Validations = append(e.Validations, model.Validation{Name: name, Trigger: t})
+		case methodNumbering:
+			e.LateNumbering = &model.LateNumbering{Fields: triggers[k], Method: name}
+		case methodSave:
+			e.Save = model.Some(name)
 		case methodAction:
 			a := model.Action{Name: name, Instance: flag(x["IS_INSTANCE"]), Parameter: opt(x["PARAMETER_TYPE"]),
 				Result: opt(x["RESULT_TYPE"]), Modifies: flag(x["MODIFIES"]), Activity: opt(x["ACTIVITY"])}
@@ -316,7 +322,7 @@ func (r *Repo) writeEntities(ctx context.Context, q dialect.Querier, name string
 			"FK_NAME": val(e.ForeignKey), "NUMBERING": nil, "CAN_CREATE": e.Allows(model.OperationCreate), "CAN_UPDATE": e.Allows(model.OperationUpdate),
 			"CAN_DELETE": e.Allows(model.OperationDelete), "CREATED_BY": val(e.Administrative.CreatedBy), "CREATED_AT": val(e.Administrative.CreatedAt),
 			"CHANGED_BY": val(e.Administrative.ChangedBy), "CHANGED_AT": val(e.Administrative.ChangedAt), "ETAG_FIELD": val(e.ETag), "AUTH_OBJECT": nil,
-			"EXTENSIBLE_LISTED": e.Extensible.Valid()}
+			"EXTENSIBLE_LISTED": e.Extensible.Valid(), "MAINTAINED_BY": val(e.MaintainedBy)}
 		if e.Numbering != "" {
 			x["NUMBERING"] = string(e.Numbering)
 		}
@@ -356,6 +362,16 @@ func (r *Repo) writeEntities(ctx context.Context, q dialect.Querier, name string
 		}
 		for j, v := range e.Validations {
 			if err := method(v.Name, methodValidation, j, v.Trigger, nil); err != nil {
+				return err
+			}
+		}
+		if l := e.LateNumbering; l != nil {
+			if err := method(l.Method, methodNumbering, 0, model.Trigger{Fields: l.Fields}, nil); err != nil {
+				return err
+			}
+		}
+		if m, ok := e.Save.Get(); ok {
+			if err := method(m, methodSave, 0, model.Trigger{}, nil); err != nil {
 				return err
 			}
 		}

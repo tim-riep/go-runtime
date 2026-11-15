@@ -11,6 +11,10 @@
     {
       "value": "uuid",
       "description": "The kernel, a new UUID"
+    },
+    {
+      "value": "late",
+      "description": "The behavior class gives key fields when the instance is saved"
     }
   ]
 }

@@ -48,7 +48,26 @@ const (
 	// NumberingUUID: the kernel gives the single key field of type UUID a
 	// new value when the instance is created.
 	NumberingUUID Numbering = "uuid"
+	// NumberingLate: the behavior class gives the key fields of
+	// LateNumbering when the instance is saved; until then the kernel
+	// gives them preliminary values.
+	NumberingLate Numbering = "late"
 )
+
+// LateNumbering names the key fields that a method of the behavior class
+// gives in the save sequence, and the method.
+type LateNumbering struct {
+	Fields []string `json:"fields"`
+	Method string   `json:"method"`
+}
+
+// MaintainedBySave marks an entity without operations that only the save
+// method of its business object writes.
+const MaintainedBySave = "save"
+
+// AnyField maps a field of an authorization object to no field of an
+// entity: the field is not checked.
+const AnyField = "*"
 
 // When tells when a determination runs.
 type When string
@@ -108,12 +127,19 @@ type Entity struct {
 	ForeignKey     Optional[string]           `json:"foreignKey"`
 	Operations     []EntityOperation          `json:"operations"`
 	Numbering      Numbering                  `json:"numbering"`
+	LateNumbering  *LateNumbering             `json:"lateNumbering,omitempty"`
 	Fields         map[string]FieldProperties `json:"fields"`
 	Administrative AdministrativeFields       `json:"administrative"`
 	ETag           Optional[string]           `json:"etag"`
 	Determinations []Determination            `json:"determinations"`
 	Validations    []Validation               `json:"validations"`
 	Actions        []Action                   `json:"actions"`
+	// Save is the method of the behavior class that the root runs in the
+	// save sequence after the instances are written.
+	Save Optional[string] `json:"save"`
+	// MaintainedBy is MaintainedBySave for an entity that only the save
+	// method writes.
+	MaintainedBy Optional[string] `json:"maintainedBy"`
 	// Authorization is nil for a dependent entity that takes the
 	// authorization of the root.
 	Authorization *EntityAuthorization `json:"authorization"`
@@ -248,7 +274,7 @@ func (b *BusinessObject) Children(table string) []*Entity {
 // or actions, which need a behavior class.
 func (b *BusinessObject) HasBehavior() bool {
 	for _, e := range b.Entities {
-		if len(e.Determinations)+len(e.Validations)+len(e.Actions) > 0 {
+		if len(e.Determinations)+len(e.Validations)+len(e.Actions) > 0 || e.LateNumbering != nil || e.Save.Valid() {
 			return true
 		}
 	}

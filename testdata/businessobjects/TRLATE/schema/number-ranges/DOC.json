@@ -1,0 +1,7 @@
+{
+  "name": "/TRLATE/DOC",
+  "texts": { "en": { "label": "Documents" } },
+  "length": 10,
+  "subobject": { "name": "COMPANY", "domain": "/TRLATE/COMPANY" },
+  "perFiscalYear": true
+}

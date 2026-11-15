@@ -1,0 +1,6 @@
+{
+  "name": "/TRLATE/DOC",
+  "texts": { "en": { "label": "Documents" } },
+  "fields": [{ "name": "COMPANY", "domain": "/TRLATE/COMPANY" }, { "name": "KIND", "domain": "/TRLATE/COMPANY" }, { "name": "ACTIVITY" }],
+  "activities": ["READ", "CREATE", "UPDATE"]
+}

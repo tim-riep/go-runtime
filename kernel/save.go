@@ -25,10 +25,12 @@ import (
 	"github.com/tim-riep/go-runtime/vm"
 )
 
-// Save runs the save sequence: determinations on save, validations,
-// mandatory fields, administrative fields and ETags, writing every change
-// in a savepoint of the default session and its commit. When anything
-// fails, nothing is written and the buffer stays.
+// Save runs the save sequence: determinations on save, validations and
+// mandatory fields; then, in a savepoint of the default session, late
+// numbering, administrative fields and ETags, writing every change and
+// the save methods; then the commit. When anything fails, nothing is
+// written: numbers given by late numbering return with the rollback to
+// the savepoint, and the buffer stays with its preliminary keys.
 func (b *entityBuffer) Save(ctx context.Context, behavior vm.Behavior) (*vm.EntityResult, bool, error) {
 	r := &result{}
 	if err := b.determine(ctx, behavior, model.WhenSave, b.changedInstances(), r); err != nil {
@@ -41,15 +43,245 @@ func (b *entityBuffer) Save(ctx context.Context, behavior vm.Behavior) (*vm.Enti
 	if r.Failed() {
 		return &r.EntityResult, false, nil
 	}
-	ok, err := b.write(ctx, r)
-	if err != nil || !ok {
-		return &r.EntityResult, false, err
+	s := b.x.sessions[0]
+	if err := s.savepoint(ctx, "rt_save"); err != nil {
+		return nil, false, err
 	}
-	if err := b.x.sessions[0].Commit(ctx); err != nil {
+	var undo []func()
+	fail := func(err error) (*vm.EntityResult, bool, error) {
+		for i := len(undo) - 1; i >= 0; i-- {
+			undo[i]()
+		}
+		if rerr := s.rollbackTo(ctx, "rt_save"); rerr != nil && err == nil {
+			err = rerr
+		}
+		if err != nil {
+			return nil, false, err
+		}
+		return &r.EntityResult, false, nil
+	}
+	roots := b.savedRoots()
+	u, err := b.assignNumbers(ctx, behavior, r)
+	undo = append(undo, u)
+	if err != nil || r.Failed() {
+		return fail(err)
+	}
+	written, err := b.write(ctx, r)
+	if err != nil || r.Failed() {
+		return fail(err)
+	}
+	if err := b.saveMethods(ctx, behavior, roots, r); err != nil || r.Failed() {
+		return fail(err)
+	}
+	if err := s.release(ctx, "rt_save"); err != nil {
+		return fail(err)
+	}
+	for in, values := range written {
+		in.values = values
+	}
+	if err := s.Commit(ctx); err != nil {
 		return nil, false, err
 	}
 	b.instances, b.order = map[string]*instance{}, nil
 	return &r.EntityResult, true, nil
+}
+
+// savedRoots returns the root instances of business objects with a save
+// method whose instance or dependent instances changed since the last
+// save, in the order they entered the buffer.
+func (b *entityBuffer) savedRoots() []*instance {
+	var out []*instance
+	seen := map[*instance]bool{}
+	for _, in := range b.order {
+		if in.state == stateRead {
+			continue
+		}
+		root := b.rootOf(in)
+		if root == nil || seen[root] {
+			continue
+		}
+		if re := root.bo.Entity(root.bo.Root); re == nil || !re.Save.Valid() {
+			continue
+		}
+		seen[root] = true
+		out = append(out, root)
+	}
+	return out
+}
+
+// rootOf returns the root instance of an instance in the buffer along the
+// foreign keys to the parents, nil when a parent is not in the buffer.
+func (b *entityBuffer) rootOf(in *instance) *instance {
+	for in != nil && in.entity.Parent.Valid() {
+		in = b.parentOf(in)
+	}
+	return in
+}
+
+// parentOf returns the parent instance of a dependent instance from the
+// buffer, nil when it is not there.
+func (b *entityBuffer) parentOf(in *instance) *instance {
+	p := in.bo.Entity(in.entity.Parent.Or(""))
+	if p == nil {
+		return nil
+	}
+	pk := map[string]any{}
+	for _, c := range b.foreignKey(in.entity).Columns {
+		if c.Field != model.TenantField {
+			pk[c.References] = in.values[c.Field]
+		}
+	}
+	key, ok := b.keyOf(p.Table, pk)
+	if !ok {
+		return nil
+	}
+	return b.instances[bufferKey(p.Table, key)]
+}
+
+// assignNumbers runs the late numbering of new root instances with
+// preliminary keys and gives them and their dependent instances the final
+// keys. The returned function restores the preliminary keys.
+func (b *entityBuffer) assignNumbers(ctx context.Context, behavior vm.Behavior, r *result) (func(), error) {
+	type group struct {
+		bo  *model.BusinessObject
+		e   *model.Entity
+		ins []*instance
+	}
+	var groups []*group
+	for _, in := range b.order {
+		if !in.preliminary || in.state != stateCreated {
+			continue
+		}
+		if n := len(groups); n > 0 && groups[n-1].e == in.entity {
+			groups[n-1].ins = append(groups[n-1].ins, in)
+		} else {
+			groups = append(groups, &group{bo: in.bo, e: in.entity, ins: []*instance{in}})
+		}
+	}
+	type saved struct {
+		in     *instance
+		key    string
+		values map[string]any
+	}
+	var olds []saved
+	undo := func() {
+		for i := len(olds) - 1; i >= 0; i-- {
+			o := olds[i]
+			delete(b.instances, bufferKey(o.in.entity.Table, o.in.key))
+			o.in.key, o.in.values = o.key, o.values
+			b.instances[bufferKey(o.in.entity.Table, o.key)] = o.in
+		}
+	}
+	renamed := map[*instance]bool{}
+	rekey := func(in *instance, values map[string]any) {
+		olds = append(olds, saved{in: in, key: in.key, values: in.values})
+		delete(b.instances, bufferKey(in.entity.Table, in.key))
+		in.values = values
+		in.key, _ = b.keyOf(in.entity.Table, values)
+		b.instances[bufferKey(in.entity.Table, in.key)] = in
+		renamed[in] = true
+	}
+	for _, g := range groups {
+		if behavior == nil {
+			return undo, fmt.Errorf("%s has late numbering but no behavior", g.bo.Name)
+		}
+		l := g.e.LateNumbering
+		out, failed, err := b.call(ctx, behavior, behaviorCall{bo: g.bo, entity: g.e, method: l.Method, ins: g.ins, reason: reasonBehavior}, r)
+		if err != nil || len(failed) > 0 {
+			return undo, err
+		}
+		keys, _ := out.([]any)
+		if len(keys) != len(g.ins) {
+			r.fail(g.e.Table, "create", reasonBehavior, nil, nil)
+			r.message("error", fmt.Sprintf("%s returned %d keys for %d instances", l.Method, len(keys), len(g.ins)), g.e.Table, nil, nil)
+			return undo, nil
+		}
+		// The dependent instances take the keys of their parents in the
+		// order of depth, before any key changes.
+		children := map[*instance][]*instance{}
+		for _, in := range b.order {
+			if in.bo == g.bo && in.entity.Parent.Valid() && in.state == stateCreated {
+				if p := b.parentOf(in); p != nil {
+					children[p] = append(children[p], in)
+				}
+			}
+		}
+		for i, in := range g.ins {
+			key, _ := keys[i].(map[string]any)
+			values := mapsClone(in.values)
+			problem := ""
+			for _, f := range b.keyFields(g.e.Table) {
+				v := key[f]
+				switch {
+				case slices.Contains(l.Fields, f):
+					if v == nil || fmt.Sprint(v) == "" || strings.HasPrefix(fmt.Sprint(v), "$") {
+						problem = fmt.Sprintf("%s gave %s no final value", l.Method, f)
+					}
+					values[f] = v
+				case jsonValue(nil, v) != jsonValue(nil, in.values[f]):
+					problem = fmt.Sprintf("%s changed %s, which is no late key field", l.Method, f)
+				}
+			}
+			if problem != "" {
+				r.fail(g.e.Table, "create", reasonBehavior, strPtr(in.key), in.link)
+				r.message("error", problem, g.e.Table, strPtr(in.key), nil)
+				continue
+			}
+			var walk func(parent *instance, kids []*instance)
+			walk = func(parent *instance, kids []*instance) {
+				for _, kid := range kids {
+					grand := children[kid]
+					v := mapsClone(kid.values)
+					for _, c := range b.foreignKey(kid.entity).Columns {
+						if c.Field != model.TenantField {
+							v[c.Field] = parent.values[c.References]
+						}
+					}
+					rekey(kid, v)
+					walk(kid, grand)
+				}
+			}
+			kids := children[in]
+			rekey(in, values)
+			walk(in, kids)
+		}
+	}
+	for _, in := range b.order {
+		if renamed[in] {
+			r.Created = append(r.Created, vm.EntityCreated{Entity: in.entity.Table, Link: in.link, Key: in.key})
+		}
+	}
+	return undo, nil
+}
+
+// saveMethods runs the save methods of the business objects whose root
+// instances are given, after the instances are written. They write tables
+// without business object and the entities maintained by save.
+func (b *entityBuffer) saveMethods(ctx context.Context, behavior vm.Behavior, roots []*instance, r *result) error {
+	if len(roots) == 0 {
+		return nil
+	}
+	if behavior == nil {
+		return fmt.Errorf("business objects with save methods need a behavior")
+	}
+	b.x.saving++
+	defer func() { b.x.saving-- }()
+	for len(roots) > 0 {
+		bo, e := roots[0].bo, roots[0].entity
+		var ins, rest []*instance
+		for _, in := range roots {
+			if in.bo == bo {
+				ins = append(ins, in)
+			} else {
+				rest = append(rest, in)
+			}
+		}
+		roots = rest
+		if _, _, err := b.call(ctx, behavior, behaviorCall{bo: bo, entity: e, method: e.Save.Or(""), ins: ins, reason: reasonBehavior}, r); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // changedInstances returns the instances changed since the last save.
@@ -121,13 +353,13 @@ func depth(bo *model.BusinessObject, e *model.Entity) int {
 	return n
 }
 
-// write writes the changes in a savepoint of the default session:
-// deletions of children first, creations of parents first, then updates
-// of the changed fields. Updates and deletions of entities with ETag
-// check that the instance did not change since it was read. On a failure
-// everything is rolled back to the savepoint.
-func (b *entityBuffer) write(ctx context.Context, r *result) (bool, error) {
-	s := b.x.sessions[0]
+// write writes the changes in the default session: deletions of children
+// first, creations of parents first, then updates of the changed fields.
+// Updates and deletions of entities with ETag check that the instance did
+// not change since it was read. It returns the values with administrative
+// fields and ETags, which the buffer takes over when the save succeeds;
+// failures go to the result.
+func (b *entityBuffer) write(ctx context.Context, r *result) (map[*instance]map[string]any, error) {
 	now := b.x.k.timestamp()
 	var user any
 	if u, ok := b.x.opts.User.Get(); ok {
@@ -146,15 +378,8 @@ func (b *entityBuffer) write(ctx context.Context, r *result) (bool, error) {
 	}
 	slices.SortStableFunc(deletes, func(x, y *instance) int { return depth(y.bo, y.entity) - depth(x.bo, x.entity) })
 	slices.SortStableFunc(creates, func(x, y *instance) int { return depth(x.bo, x.entity) - depth(y.bo, y.entity) })
-	if err := s.savepoint(ctx, "rt_save"); err != nil {
-		return false, err
-	}
-	// written are the values with administrative fields and ETags, which
-	// the buffer takes over only when everything is written.
 	written := map[*instance]map[string]any{}
-	failed := false
 	fail := func(in *instance, reason string, err error) {
-		failed = true
 		r.fail(in.entity.Table, saveOperation(in), reason, strPtr(in.key), in.link)
 		if err != nil {
 			r.message("error", err.Error(), in.entity.Table, strPtr(in.key), nil)
@@ -166,7 +391,7 @@ func (b *entityBuffer) write(ctx context.Context, r *result) (bool, error) {
 		case isDatabaseError(err):
 			fail(in, reasonDatabase, err)
 		case err != nil:
-			return false, err
+			return nil, err
 		case n == 0:
 			fail(in, b.lost(in), nil)
 		}
@@ -177,7 +402,7 @@ func (b *entityBuffer) write(ctx context.Context, r *result) (bool, error) {
 		if _, err := b.exec(ctx, in, "insert", values); isDatabaseError(err) {
 			fail(in, reasonDatabase, err)
 		} else if err != nil {
-			return false, err
+			return nil, err
 		}
 	}
 	for _, in := range updates {
@@ -188,18 +413,12 @@ func (b *entityBuffer) write(ctx context.Context, r *result) (bool, error) {
 		case isDatabaseError(err):
 			fail(in, reasonDatabase, err)
 		case err != nil:
-			return false, err
+			return nil, err
 		case n == 0:
 			fail(in, b.lost(in), nil)
 		}
 	}
-	if failed {
-		return false, s.rollbackTo(ctx, "rt_save")
-	}
-	for in, values := range written {
-		in.values = values
-	}
-	return true, s.release(ctx, "rt_save")
+	return written, nil
 }
 
 // lost tells why an update or deletion found no row: another execution

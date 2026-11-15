@@ -268,6 +268,11 @@ func (b *BusinessObject) BehaviorClassOf(pkg PackageID) Optional[string] {
 
 func cloneEntity(e Entity) Entity {
 	e.Operations = slices.Clone(e.Operations)
+	if l := e.LateNumbering; l != nil {
+		c := *l
+		c.Fields = slices.Clone(l.Fields)
+		e.LateNumbering = &c
+	}
 	e.Fields = maps.Clone(e.Fields)
 	if e.Fields == nil {
 		e.Fields = map[string]FieldProperties{}

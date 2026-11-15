@@ -1,0 +1,7 @@
+{
+  "id": "TRLATE",
+  "version": "1.0.0",
+  "description": "Late numbering and save methods of business objects for the tests of the kernel",
+  "languageVersion": 1,
+  "requires": [{ "id": "TRBASE" }]
+}

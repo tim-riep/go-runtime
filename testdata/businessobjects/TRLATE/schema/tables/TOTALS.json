@@ -1,0 +1,10 @@
+{
+  "name": "/TRLATE/TOTALS",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "COMPANY", "domain": "/TRLATE/COMPANY" },
+    { "name": "TOTAL", "domain": "/TRLATE/AMOUNT", "notNull": true, "default": "0.00" }
+  ],
+  "primaryKey": ["COMPANY"]
+}

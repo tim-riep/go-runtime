@@ -206,3 +206,45 @@ func TestBusinessObjectRules(t *testing.T) {
 		})
 	}
 }
+
+// TestBusinessObjectSavePhases checks late numbering, save methods,
+// entities maintained by save and fields of authorization objects that
+// are not checked.
+func TestBusinessObjectSavePhases(t *testing.T) {
+	late := func(b *model.BusinessObject) {
+		b.Entities[0].Numbering = model.NumberingLate
+		b.Entities[0].LateNumbering = &model.LateNumbering{Fields: []string{"ORDER_ID"}, Method: "NUMBERS"}
+		b.Entities[0].Save = model.Some("WRITE")
+		b.Entities[1].MaintainedBy, b.Entities[1].Operations = model.Some(model.MaintainedBySave), nil
+		b.Entities[0].Authorization.Fields["COUNTRY"] = model.AnyField
+	}
+	if err := Schema(withBO(t, func(_ *model.Package, b *model.BusinessObject) { late(b) }), Options{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name     string
+		change   func(b *model.BusinessObject)
+		contains string
+	}{
+		{"late without fields", func(b *model.BusinessObject) { b.Entities[0].LateNumbering = nil }, "numbering late needs lateNumbering"},
+		{"late field not in the key", func(b *model.BusinessObject) { b.Entities[0].LateNumbering.Fields = []string{"NAME"} }, "NAME is no key field"},
+		{"late without CHAR", func(b *model.BusinessObject) {
+			b.Entities[0].LateNumbering.Fields = nil
+		}, "one of the late key fields must be CHAR"},
+		{"late dependent entity", func(b *model.BusinessObject) {
+			b.Entities[2].Numbering, b.Entities[2].LateNumbering = model.NumberingLate, &model.LateNumbering{Fields: []string{"NOTE_ID"}, Method: "X"}
+		}, "only the root has numbering late"},
+		{"lateNumbering without late", func(b *model.BusinessObject) { b.Entities[0].Numbering = model.NumberingExternal }, "lateNumbering needs the numbering late"},
+		{"same method", func(b *model.BusinessObject) { b.Entities[0].Save = model.Some("NUMBERS") }, "the method NUMBERS is the"},
+		{"save on a dependent entity", func(b *model.BusinessObject) { b.Entities[2].Save = model.Some("OTHER") }, "only the root runs a save method"},
+		{"maintained with operations", func(b *model.BusinessObject) {
+			b.Entities[1].Operations = []model.EntityOperation{model.OperationCreate}
+		}, "is maintained by save and has no operations"},
+		{"maintained without save method", func(b *model.BusinessObject) { b.Entities[0].Save = model.None[string]() }, "needs a save method that maintains /TRS/ITEMS"},
+		{"maintained root", func(b *model.BusinessObject) { b.Entities[0].MaintainedBy = model.Some(model.MaintainedBySave) }, "only dependent entities are maintained by save"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			expect(t, withBO(t, func(_ *model.Package, b *model.BusinessObject) { late(b); c.change(b) }), rterr.CodeBusinessObject, c.contains)
+		})
+	}
+}

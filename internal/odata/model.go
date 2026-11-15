@@ -410,7 +410,8 @@ func (b *builder) entityType(bo *model.BusinessObject, e *model.Entity, def *mod
 			// The fields of the foreign key to the parent are set from
 			// the parent for contained entities and fixed once created.
 			p.Computed = props.ReadOnly || e.Administered(f.Name) || (p.Key && e.Numbering == model.NumberingUUID) ||
-				parentFields[f.Name] && contained
+				parentFields[f.Name] && contained || e.LateNumbering != nil && slices.Contains(e.LateNumbering.Fields, f.Name) ||
+				e.MaintainedBy.Valid()
 			p.Immutable = !p.Computed && (props.ReadOnlyOnUpdate || p.Key || parentFields[f.Name])
 		}
 		if p.Key {

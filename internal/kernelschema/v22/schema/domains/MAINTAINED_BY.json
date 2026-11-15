@@ -1,0 +1,12 @@
+{
+  "name": "/RT/MAINTAINED_BY",
+  "description": "Who writes an entity without operations",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "save",
+      "description": "The save method of the business object"
+    }
+  ]
+}

@@ -123,6 +123,8 @@ func (v *validator) extendedEntity(x *model.BusinessObjectExtension, b *model.Bu
 		fail(loc.At("/foreignKey"), "only dependent entities of the extending package have a foreign key")
 	case e.Extensible.Valid():
 		fail(loc.At("/extensible"), "an extension cannot change what %s allows to extend", e.Table)
+	case e.LateNumbering != nil || e.Save.Valid() || e.MaintainedBy.Valid():
+		fail(loc, "an extension cannot change the numbering and the save method of %s", e.Table)
 	}
 	own := model.Namespace(x.Package)
 	allow := func(kind model.ExtensionKind, n int, at string) {

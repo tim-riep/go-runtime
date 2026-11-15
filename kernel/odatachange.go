@@ -42,6 +42,9 @@ type changeSet struct {
 	links map[string]string
 	// messages are the warnings and informations of all statements.
 	messages []vm.EntityMessage
+	// created are the instances that late numbering gave keys when they
+	// were saved.
+	created []vm.EntityCreated
 }
 
 // change runs fn in an execution of the request with a transaction buffer.
@@ -97,6 +100,7 @@ func (cs *changeSet) save(ctx context.Context) error {
 		return e
 	}
 	cs.messages = append(cs.messages, r.Messages...)
+	cs.created = append(cs.created, r.Created...)
 	return nil
 }
 
@@ -233,7 +237,8 @@ func (k *Kernel) serveCreate(w http.ResponseWriter, r *http.Request, sr *service
 			return err
 		}
 		key = map[string]any{}
-		for _, c := range r.Created {
+		// Late numbering gives the final key when the instances are saved.
+		for _, c := range append(r.Created, cs.created...) {
 			if c.Link != nil && *c.Link == "n1" {
 				var raw map[string]json.RawMessage
 				if err := json.Unmarshal([]byte(c.Key), &raw); err != nil {

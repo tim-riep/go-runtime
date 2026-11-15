@@ -48,8 +48,9 @@ func (b BehaviorMethod) String() string {
 }
 
 // BehaviorMethods returns the methods of the behavior class of a business
-// object: determinations and validations get the keys of the instances
-// and a response, instance actions also their parameter and return the
+// object: determinations, validations and the save method get the keys of
+// the instances and a response, late numbering also returns the keys with
+// the fields it gives, instance actions also their parameter and return the
 // rows of their result structure, static actions get only the parameter
 // and return their result structure. An action with result self returns
 // nothing; the kernel reads the instances.
@@ -66,6 +67,14 @@ func (c *checker) behaviorMethods(entities []model.Entity) []BehaviorMethod {
 		}
 		withKeys := func(name string) BehaviorMethod {
 			return BehaviorMethod{Name: model.BehaviorMethodName(name), Entity: e.Table, Params: []string{"keys", "response"}, Sig: &Func{Params: []Type{keys, response}, Result: TypVoid}}
+		}
+		if l := e.LateNumbering; l != nil {
+			m := withKeys(l.Method)
+			m.Sig.Result = keys
+			out = append(out, m)
+		}
+		if name, ok := e.Save.Get(); ok {
+			out = append(out, withKeys(name))
 		}
 		for _, d := range e.Determinations {
 			out = append(out, withKeys(d.Name))

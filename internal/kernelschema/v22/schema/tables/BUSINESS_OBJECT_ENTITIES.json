@@ -80,6 +80,11 @@
       "domain": "/RT/FLAG",
       "notNull": true,
       "default": false
+    },
+    {
+      "name": "MAINTAINED_BY",
+      "domain": "/RT/MAINTAINED_BY",
+      "description": "null: changed with entity statements"
     }
   ],
   "primaryKey": [

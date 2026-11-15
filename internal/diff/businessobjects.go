@@ -63,8 +63,11 @@ func businessObjects(cur, want *model.Schema) []plan.Change {
 			if ce.Parent != we.Parent || ce.ForeignKey != we.ForeignKey {
 				note(true, "entity %s: parent %s by %s -> %s by %s", ce.Table, ce.Parent.Or("none"), ce.ForeignKey.Or("none"), we.Parent.Or("none"), we.ForeignKey.Or("none"))
 			}
-			if ce.Numbering != we.Numbering {
+			if ce.Numbering != we.Numbering || !sameJSON(ce.LateNumbering, we.LateNumbering) {
 				note(true, "entity %s: numbering %s -> %s", ce.Table, ce.Numbering, we.Numbering)
+			}
+			if ce.MaintainedBy != we.MaintainedBy {
+				note(true, "entity %s: maintained by %s -> %s", ce.Table, ce.MaintainedBy.Or("entity statements"), we.MaintainedBy.Or("entity statements"))
 			}
 			if !sameJSON(behaviorOf(ce), behaviorOf(*we)) {
 				note(false, "entity %s: behavior", ce.Table)
@@ -132,7 +135,7 @@ func businessObjectExtensions(cur, want *model.Schema) []plan.Change {
 // behaviorOf returns what of an entity is behavior: everything except
 // the table, its place in the tree and the location.
 func behaviorOf(e model.Entity) model.Entity {
-	e.Parent, e.ForeignKey, e.Numbering = model.None[string](), model.None[string](), ""
+	e.Parent, e.ForeignKey, e.Numbering, e.LateNumbering, e.MaintainedBy = model.None[string](), model.None[string](), "", nil, model.None[string]()
 	return e
 }
 

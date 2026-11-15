@@ -1,0 +1,16 @@
+{
+  "name": "/TRLATE/ITEMS",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "COMPANY", "domain": "/TRLATE/COMPANY" },
+    { "name": "FISCAL_YEAR", "domain": "/TRBASE/LENGTH" },
+    { "name": "DOC_NO", "domain": "/TRLATE/DOC_NO" },
+    { "name": "ITEM_NO", "domain": "/TRBASE/LENGTH" },
+    { "name": "AMOUNT", "domain": "/TRLATE/AMOUNT", "notNull": true }
+  ],
+  "primaryKey": ["COMPANY", "FISCAL_YEAR", "DOC_NO", "ITEM_NO"],
+  "foreignKeys": [
+    { "name": "DOC", "table": "/TRLATE/DOCS", "fields": [{ "field": "COMPANY", "references": "COMPANY" }, { "field": "FISCAL_YEAR", "references": "FISCAL_YEAR" }, { "field": "DOC_NO", "references": "DOC_NO" }] }
+  ]
+}

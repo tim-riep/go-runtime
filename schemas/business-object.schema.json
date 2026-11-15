@@ -126,10 +126,11 @@
             "$ref": "#/$defs/operations"
           },
           "numbering": {
-            "description": "external: the caller gives the key; uuid: the kernel gives the single key field of type UUID a new value. Default external.",
+            "description": "external: the caller gives the key; uuid: the kernel gives the single key field of type UUID a new value; late: the method of lateNumbering gives the fields it names when the instance is saved. Default external.",
             "enum": [
               "external",
-              "uuid"
+              "uuid",
+              "late"
             ]
           },
           "fields": {
@@ -247,7 +248,15 @@
                   "pattern": "^[A-Z][A-Z0-9_]*$"
                 },
                 "additionalProperties": {
-                  "$ref": "#/$defs/fieldName"
+                  "description": "A field of the entity, or * when the field of the object is not checked.",
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/fieldName"
+                    },
+                    {
+                      "const": "*"
+                    }
+                  ]
                 }
               },
               "activities": {
@@ -263,6 +272,38 @@
           "extensible": {
             "$ref": "#/$defs/extensible",
             "description": "Narrows the kinds of extensions of the business object for this entity: a subset of its list."
+          },
+          "lateNumbering": {
+            "description": "With numbering late: the key fields the behavior class gives when an instance is saved, and its method. Until then a CHAR field has the value $<n> and a number 0, unless the caller gives a value.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fields",
+              "method"
+            ],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/fieldName"
+                }
+              },
+              "method": {
+                "$ref": "common.schema.json#/$defs/localName"
+              }
+            }
+          },
+          "save": {
+            "$ref": "common.schema.json#/$defs/localName",
+            "description": "The root only: a method of the behavior class that runs in the save sequence after the instances are written and writes tables without business object and entities maintained by save."
+          },
+          "maintainedBy": {
+            "description": "save: the entity has no operations; only the save method of the business object writes it.",
+            "enum": [
+              "save"
+            ]
           }
         }
       }

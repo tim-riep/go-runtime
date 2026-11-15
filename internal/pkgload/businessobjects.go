@@ -41,6 +41,9 @@ type entityDoc struct {
 	ForeignKey     model.Optional[string]           `json:"foreignKey"`
 	Operations     []model.EntityOperation          `json:"operations"`
 	Numbering      string                           `json:"numbering"`
+	LateNumbering  *model.LateNumbering             `json:"lateNumbering"`
+	Save           model.Optional[string]           `json:"save"`
+	MaintainedBy   model.Optional[string]           `json:"maintainedBy"`
 	Fields         map[string]model.FieldProperties `json:"fields"`
 	Administrative model.AdministrativeFields       `json:"administrative"`
 	ETag           model.Optional[string]           `json:"etag"`
@@ -122,6 +125,11 @@ func entityRefs(entities map[string]*entityDoc) []NameRef {
 			field(f, at+"/administrative")
 		}
 		field(e.ETag.Or(""), at+"/etag")
+		if l := e.LateNumbering; l != nil {
+			for _, f := range l.Fields {
+				field(f, at+"/lateNumbering/fields")
+			}
+		}
 		for _, t := range append(slices.Clone(e.Determinations), e.Validations...) {
 			for _, f := range t.Fields {
 				field(f, at+"/"+t.Name)
@@ -154,8 +162,8 @@ func entityRefs(entities map[string]*entityDoc) []NameRef {
 // file gives none, so that validation finds a numbering they may not set.
 func (e *entityDoc) entity(table string, loc rterr.Location, extension bool) model.Entity {
 	en := model.Entity{Table: table, Parent: e.Parent, ForeignKey: e.ForeignKey, Operations: e.Operations,
-		Numbering: model.Numbering(e.Numbering), Fields: e.Fields, Administrative: e.Administrative, ETag: e.ETag,
-		Authorization: e.Authorization, Extensible: e.Extensible, Src: loc}
+		Numbering: model.Numbering(e.Numbering), LateNumbering: e.LateNumbering, Save: e.Save, MaintainedBy: e.MaintainedBy, Fields: e.Fields,
+		Administrative: e.Administrative, ETag: e.ETag, Authorization: e.Authorization, Extensible: e.Extensible, Src: loc}
 	if en.Numbering == "" && (!extension || en.Parent.Valid()) {
 		en.Numbering = model.NumberingExternal
 	}

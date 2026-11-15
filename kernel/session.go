@@ -49,6 +49,11 @@ type execution struct {
 	// savepoint that rollback returns to, and everything is rolled back
 	// at the end.
 	test bool
+	// saving counts the save methods of business objects that run; only
+	// they write entities maintained by save, whose business objects
+	// maintained lists by table, made on first use.
+	saving     int
+	maintained map[string]string
 	// contents are the asset contents that code of the execution loaded,
 	// by hash.
 	contents map[string][]byte
@@ -321,6 +326,9 @@ func (s *session) Exec(ctx context.Context, p *bytecode.Program, q *bytecode.Que
 	if s.x.opts.ReadOnly {
 		return 0, errReadOnly
 	}
+	if bo, ok := s.x.maintainedBy(q.Table); ok && s.x.saving == 0 {
+		return 0, &vm.DatabaseError{Class: "/RT/SESSION_ERROR", Text: fmt.Sprintf("%s is maintained by the save method of %s and written only while it runs", q.Table, bo)}
+	}
 	st, err := s.statement(p, q, args, 0)
 	if err != nil {
 		return 0, err
@@ -367,6 +375,23 @@ func overflow(q *bytecode.Query, err error) error {
 		}
 	}
 	return err
+}
+
+// maintainedBy returns the business object whose save method maintains a
+// table.
+func (x *execution) maintainedBy(table string) (string, bool) {
+	if x.maintained == nil {
+		x.maintained = map[string]string{}
+		for _, name := range x.schema.BusinessObjectNames() {
+			for _, e := range x.schema.BusinessObjects[name].Entities {
+				if e.MaintainedBy.Valid() {
+					x.maintained[e.Table] = name
+				}
+			}
+		}
+	}
+	bo, ok := x.maintained[table]
+	return bo, ok
 }
 
 // errReadOnly rejects changes in an execution that only reads.

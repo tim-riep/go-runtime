@@ -1,0 +1,14 @@
+{
+  "name": "/TRLATE/DOCS",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "COMPANY", "domain": "/TRLATE/COMPANY" },
+    { "name": "FISCAL_YEAR", "domain": "/TRBASE/LENGTH" },
+    { "name": "DOC_NO", "domain": "/TRLATE/DOC_NO" },
+    { "name": "KIND", "domain": "/TRLATE/COMPANY", "notNull": true, "default": "A" },
+    { "name": "TEXT", "domain": "/TRBASE/TEXT" },
+    { "name": "CREATED_AT", "domain": "/TRBASE/TIMESTAMP" }
+  ],
+  "primaryKey": ["COMPANY", "FISCAL_YEAR", "DOC_NO"]
+}

@@ -731,9 +731,13 @@ commit business objects result saved
   kernel. An instance that fails leaves the others alone.
 - The changes go to the transaction buffer of the execution, not to the database: `read`
   sees them, `select` does not. `commit business objects [result x]` runs the save
-  sequence: determinations on save, validations, mandatory fields (key fields and
-  `mandatory` ones: not `null`, text not `""`), administrative fields and a new ETag, then it
-  writes all changes in the default session and commits it. Updates and deletions of
+  sequence: determinations on save, validations and mandatory fields (key fields and
+  `mandatory` ones: not `null`, text not `""`); then, in a savepoint of the default session,
+  the method of late numbering, administrative fields and a new ETag, writing all changes
+  and the save methods; then it commits the default session. A failure in the savepoint
+  rolls back to it: numbers that late numbering took from a number range return, and the
+  instances keep their preliminary keys. `CREATED` of the result of the save holds the final
+  keys of late numbering with their `LINK`. Updates and deletions of
   entities with ETag fail with `ETAG` when another execution changed the row since it was
   read. When anything fails nothing is written and the buffer stays; without `result` that
   raises `/RT/SAVE_FAILED`. `rollback business objects` drops the buffer and rolls back the
@@ -780,6 +784,13 @@ end
   without namespace: `/TROTTO/RESERVE_ID` is the method `RESERVE_ID` of its behavior class.
 - Validations run once in the save sequence after the determinations. They must not change
   the buffer: the compiler rejects `modify` and actions that change instances in them.
+- The method of late numbering takes the keys of the new root instances with preliminary
+  keys and returns them in the same order with the late key fields set:
+  `ASSIGN_NUMBERS(keys: array of key of T, response: /TRBASE/ENTITY_RESPONSE) returns array
+  of key of T`. The save method takes the keys of the root instances whose instance or
+  dependent instances changed: `WRITE(keys: array of key of T, response: ...)`. Errors of the
+  response fail the save. Only the behavior class writes entities maintained by save, and
+  the kernel allows it only while the save method runs.
 - The response addresses instances by their position in `keys`, starting at 1:
   `FAIL(position)`, `ERROR(position, text)`, `FIELD_ERROR(position, field, text)`,
   `MESSAGE(position, severity, text)` and `GLOBAL_MESSAGE(severity, text)`. An error fails

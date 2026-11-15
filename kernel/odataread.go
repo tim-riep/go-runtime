@@ -77,6 +77,10 @@ func (q *odataQuery) readAuthorization() (string, error) {
 		param(name, v)
 	}
 	for objField, column := range au.Fields {
+		if column == model.AnyField {
+			// Neither a column nor a parameter: the field is any.
+			column = ""
+		}
 		f.Fields = append(f.Fields, bytecode.AuthFilterField{Name: objField, Param: -1, Column: column})
 	}
 	if act, ok := au.Activities[model.ReadActivityKey]; ok {
