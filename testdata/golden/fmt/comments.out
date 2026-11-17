@@ -1,7 +1,7 @@
 # header comment
 #   indented header
 
-public class /TRFIN/COMMENTS implements /TRFIN/A, /TRFIN/B # after class line
+public class /TRDEMOFIN/COMMENTS implements /TRDEMOFIN/A, /TRDEMOFIN/B # after class line
 
   # before first member
   public constant LIMIT: DEC(15,2) = 1000.00 # after constant
@@ -12,7 +12,7 @@ public class /TRFIN/COMMENTS implements /TRFIN/A, /TRFIN/B # after class line
   private attribute LIST: array of INT4? # trailing
 
   public method RUN(a: INT4, # after first param
-      b: STRING) returns INT4 raises /TRFIN/E # after signature
+      b: STRING) returns INT4 raises /TRDEMOFIN/E # after signature
     # first statement comment
     var x = a + # after plus
         # own line in expression
@@ -35,7 +35,7 @@ public class /TRFIN/COMMENTS implements /TRFIN/A, /TRFIN/B # after class line
     try # after try
       FOO(x)
       # before catch
-    catch e: /TRFIN/E # after catch
+    catch e: /TRDEMOFIN/E # after catch
       log warning "failed {e.TEXT}"
     finally # after finally
       x = 0

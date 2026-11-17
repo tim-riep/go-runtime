@@ -32,7 +32,7 @@ import (
 const invoice = `{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":"","REFERENCE":null,"TOTAL":"150.50",
 	"ITEMS":[{"POSITION":1,"TEXT":"Consulting <hours>","AMOUNT":"100.00"},{"POSITION":2,"TEXT":"Travel","AMOUNT":"50.50"}]}`
 
-// TestTransform runs the transformations of TRFIN: an invoice as HTML with
+// TestTransform runs the transformations of TRDEMOFIN: an invoice as HTML with
 // a parameter, an import of XML into a structure that is stored, the
 // canonical format with /TRBASE/IDENTITY, a result that does not fit and
 // a template from an asset repository.
@@ -40,13 +40,13 @@ func TestTransform(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
-		const R, O, T = "/TRFIN/INVOICE_RENDERER", "/TRFIN/ORDER_INTAKE", "/TRFIN/TEMPLATE_RENDERER"
+		const R, O, T = "/TRDEMOFIN/INVOICE_RENDERER", "/TRDEMOFIN/ORDER_INTAKE", "/TRDEMOFIN/TEMPLATE_RENDERER"
 		html := text(t, mustCall(t, k, "ACME", R, "RENDER", invoice))
 		for _, part := range []string{`lang="de"`, "Rechnung R-1", "Consulting &lt;hours&gt;", "Summe: 150.50", `class="note"`} {
 			if !strings.Contains(html, part) {
@@ -59,7 +59,7 @@ func TestTransform(t *testing.T) {
 		}
 
 		xml := text(t, mustCall(t, k, "ACME", R, "AS_XML", invoice))
-		for _, part := range []string{`<NOTE/>`, `<REFERENCE xsi:nil="true"/>`, `<TOTAL>150.50</TOTAL>`, `<ITEMS><item><POSITION>1</POSITION>`, `type="/TRFIN/INVOICE"`} {
+		for _, part := range []string{`<NOTE/>`, `<REFERENCE xsi:nil="true"/>`, `<TOTAL>150.50</TOTAL>`, `<ITEMS><item><POSITION>1</POSITION>`, `type="/TRDEMOFIN/INVOICE"`} {
 			if !strings.Contains(xml, part) {
 				t.Errorf("AS_XML lacks %s:\n%s", part, xml)
 			}
@@ -71,8 +71,8 @@ func TestTransform(t *testing.T) {
 
 		// An order is read into a structure and stored.
 		boss := companyAdmin(t, k, "ACME")
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme"`, `"DE"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme"`, `"DE"`)
 		row := mustCall(t, k, "ACME", O, "IMPORT", `"<order id=\"O-1\" company=\"C1\" date=\"2026-11-07\"><amount>12.5</amount><note/></order>"`)
 		if !strings.Contains(row, `"AMOUNT":"12.50"`) || !strings.Contains(row, `"NOTE":""`) {
 			t.Errorf("IMPORT = %s", row)
@@ -85,7 +85,7 @@ func TestTransform(t *testing.T) {
 		if exceptionClass(err) != "/TRBASE/TRANSFORM_RESULT_INVALID" {
 			t.Errorf("IMPORT of an incomplete order: %v", err)
 		}
-		if got := text(t, mustCall(t, k, "ACME", O, "WRONG", `"<order id=\"O-4\" company=\"C1\" date=\"2026-11-08\"><amount>3</amount></order>"`)); !strings.Contains(got, "/TRFIN/COMPANIES has no component <ORDER_ID>") &&
+		if got := text(t, mustCall(t, k, "ACME", O, "WRONG", `"<order id=\"O-4\" company=\"C1\" date=\"2026-11-08\"><amount>3</amount></order>"`)); !strings.Contains(got, "/TRDEMOFIN/COMPANIES has no component <ORDER_ID>") &&
 			!strings.Contains(got, "<NAME> is missing") {
 			t.Errorf("WRONG = %s", got)
 		}
@@ -117,27 +117,27 @@ func TestTransformChecks(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		dir := testutil.CopyExample(t, "TRFIN")
+		dir := testutil.CopyExample(t, "TRDEMOFIN")
 		renderer := filepath.Join(dir, "src", "INVOICE_RENDERER.class")
 		src, _ := os.ReadFile(renderer)
 		bad := strings.Replace(string(src), `parameters LANG = "de"`, `parameters LANGUAGE = "de"`, 1)
 		testutil.WriteFile(t, dir, "src/INVOICE_RENDERER.class", []byte(bad))
 		_, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{})
 		var ce *rterr.CompileError
-		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRFIN/INVOICE_HTML has no top-level xsl:param LANGUAGE; its parameters are LANG") {
+		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRDEMOFIN/INVOICE_HTML has no top-level xsl:param LANGUAGE; its parameters are LANG") {
 			t.Fatalf("unknown parameter: %v", err)
 		}
 
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		without := testutil.CopyExample(t, "TRFIN")
+		without := testutil.CopyExample(t, "TRDEMOFIN")
 		_ = os.Remove(filepath.Join(without, "transformations", "ORDER_IMPORT.xsl"))
 		_ = os.Remove(filepath.Join(without, "transformations", "ORDER_IMPORT.json"))
 		pkg := testutil.LoadDir(t, without)
 		pkg.Manifest.Version = "1.1.0"
 		_, err = k.Upgrade(ctx, pkg, kernel.Options{})
-		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRFIN/ORDER_IMPORT is not a transformation") {
+		if !errors.As(err, &ce) || !strings.Contains(err.Error(), "/TRDEMOFIN/ORDER_IMPORT is not a transformation") {
 			t.Fatalf("upgrade without a used transformation: %v", err)
 		}
 	})
@@ -149,13 +149,13 @@ func TestJSON(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
-		const J = "/TRFIN/INVOICE_JSON"
+		const J = "/TRDEMOFIN/INVOICE_JSON"
 		js := text(t, mustCall(t, k, "ACME", J, "TO_JSON", invoice))
 		for _, part := range []string{`"NOTE":""`, `"REFERENCE":null`, `"TOTAL":"150.50"`, `"AMOUNT":"50.50"`, `"POSITION":1`} {
 			if !strings.Contains(js, part) {

@@ -1,0 +1,64 @@
+# Rates orders and sums up open amounts
+public class /TRDEMOORDER/ORDER_RATING implements /TRDEMOORDER/RATER
+
+  public constant LIMIT: DEC(15,2) = 1000.00
+  private attribute HISTORY: array of /TRDEMOORDER/ORDER_INFO
+  include /TRDEMOORDER/CHECKS
+
+  public method RATE(order: /TRDEMOORDER/ORDER_INFO) returns /TRDEMOORDER/RATING raises /TRDEMOORDER/INVALID_ORDER
+    CHECK(order)
+    var note = order.NOTE default ""
+    if order.COUPON is not null and not (order.COUPON is empty)
+      note = "{note} coupon {order.COUPON}"
+    end
+    HISTORY.APPEND(order)
+    var rating = /TRDEMOORDER/RATING.NORMAL
+    if order.AMOUNT > LIMIT
+      rating = /TRDEMOORDER/RATING.HIGH
+    end
+    include /TRDEMOORDER/LOG_RATING if found
+    # An audit include may be added later; until then nothing is inserted.
+    include /TRDEMOORDER/AUDIT if found
+    return rating
+  end
+
+  public method OPEN_TOTAL() returns DEC(15,2)
+    var total: DEC(15,2) = 0
+    for info in HISTORY.FILTER(function (o: /TRDEMOORDER/ORDER_INFO) returns BOOL
+      return not o.PAID
+    end)
+      total = total + info.AMOUNT
+    end
+    return total
+  end
+
+  # Rates all orders and returns the rating per order.
+  public static method RATE_ALL(orders: /TRDEMOORDER/ORDER_ARRAY) returns map of STRING to /TRDEMOORDER/RATING raises /TRDEMOORDER/INVALID_ORDER
+    var rater: /TRDEMOORDER/RATER = new /TRDEMOORDER/ORDER_RATING()
+    var out: map of STRING to /TRDEMOORDER/RATING = [:]
+    for order in orders
+      out.SET(order.ID, rater.RATE(order))
+    end
+    return out
+  end
+
+  # Turns orders into rows of the table /TRDEMOORDER/ORDERS, a table used as structure.
+  public static method TO_ROWS(orders: /TRDEMOORDER/ORDER_ARRAY) returns array of /TRDEMOORDER/ORDERS
+    var rows: array of /TRDEMOORDER/ORDERS = []
+    for no, order in orders
+      var row = new /TRDEMOORDER/ORDERS(ORDER_NO: no, ID: order.ID, AMOUNT: order.AMOUNT, NOTE: order.NOTE, COUPON: order.COUPON,
+          PAID: order.PAID, RATING: /TRDEMOORDER/RATING.NORMAL)
+      if order.AMOUNT > LIMIT
+        row.RATING = /TRDEMOORDER/RATING.HIGH
+      end
+      rows.APPEND(row)
+    end
+    return rows
+  end
+
+  # Finds an order by its key without searching through the array.
+  public static method FIND(orders: /TRDEMOORDER/ORDER_ARRAY, id: STRING) returns /TRDEMOORDER/ORDER_INFO?
+    return orders.LOOKUP(ID: id)
+  end
+
+end

@@ -73,13 +73,13 @@ func TestOpen(t *testing.T) {
 		t.Fatalf("root: %v", err)
 	}
 	// A single top-level directory without manifest at the root is removed.
-	nested := archive(t, entry{name: "TRFIN/manifest.json", data: "m"}, entry{name: "TRFIN/src/A.class", data: "a"})
+	nested := archive(t, entry{name: "TRDEMOFIN/manifest.json", data: "m"}, entry{name: "TRDEMOFIN/src/A.class", data: "a"})
 	if fsys, err := pkgzip.Open("nested.zip", nested, pkgzip.DefaultLimits, pkgzip.Options{}); err != nil || read(t, fsys, "manifest.json") != "m" {
 		t.Fatalf("nested: %v", err)
 	}
-	repo := archive(t, entry{name: "tim-riep-erp-0123abc/README.md", data: "r"}, entry{name: "tim-riep-erp-0123abc/packages/TRFIN/manifest.json", data: "fin"},
-		entry{name: "tim-riep-erp-0123abc/packages/TROTTO/manifest.json", data: "otto"})
-	fsys, err = pkgzip.Open("repo.zip", repo, pkgzip.DefaultLimits, pkgzip.Options{StripTop: true, Dir: "packages/TROTTO"})
+	repo := archive(t, entry{name: "tim-riep-erp-0123abc/README.md", data: "r"}, entry{name: "tim-riep-erp-0123abc/packages/TRDEMOFIN/manifest.json", data: "fin"},
+		entry{name: "tim-riep-erp-0123abc/packages/TRDEMOOTTO/manifest.json", data: "otto"})
+	fsys, err = pkgzip.Open("repo.zip", repo, pkgzip.DefaultLimits, pkgzip.Options{StripTop: true, Dir: "packages/TRDEMOOTTO"})
 	if err != nil || read(t, fsys, "manifest.json") != "otto" {
 		t.Fatalf("directory: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestOpen(t *testing.T) {
 	if _, rerr := fs.ReadFile(keep, "README.md"); err != nil || rerr == nil || read(t, keep, "src/A.class") != "a" {
 		t.Errorf("keep: %v %v", err, rerr)
 	}
-	if _, err := fs.ReadFile(fsys, "../TRFIN/manifest.json"); err == nil {
+	if _, err := fs.ReadFile(fsys, "../TRDEMOFIN/manifest.json"); err == nil {
 		t.Error("left the directory")
 	}
 	_, err = pkgzip.Open("repo.zip", repo, pkgzip.DefaultLimits, pkgzip.Options{StripTop: true, Dir: "packages/NONE"})

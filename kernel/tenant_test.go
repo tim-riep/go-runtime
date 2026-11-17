@@ -43,7 +43,7 @@ func TestTenants(t *testing.T) {
 			t.Fatalf("list: %v %+v", err, list)
 		}
 
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "C1", "NAME": "Globex", "COUNTRY": "DE"})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "C1", "NAME": "Globex", "COUNTRY": "DE"})
 
 		var conf *rterr.ConfirmationRequired
 		if _, err := ten.Delete(ctx, tenantA, kernel.Options{}); !errors.As(err, &conf) {
@@ -57,7 +57,7 @@ func TestTenants(t *testing.T) {
 		for _, c := range dry.Changes {
 			order = append(order, c.Table+" "+c.Detail)
 		}
-		if got := strings.Join(order, ", "); got != "/TROTTO/OTTO_CONNECTIONS 0 rows, /TROTTO/COMPANY_CHANNELS 0 rows, /TRFIN/PAYMENTS 0 rows, /TRFIN/ORDERS 0 rows, /TRFIN/CONTACTS 0 rows, /TRFIN/COMPANIES_ARCHIVE 0 rows, /TRFIN/BANK_ACCOUNTS 1 rows, /TRFIN/COMPANIES 1 rows, /TRBASE/AUDIT_LOG 0 rows, /RT/ROLE_ASSIGNMENTS 0 rows, /RT/NUMBER_RANGE_INTERVALS 0 rows, /RT/IMPLEMENTATION_TENANT_STATES 0 rows, /RT/TENANTS tenant ACME" {
+		if got := strings.Join(order, ", "); got != "/TRDEMOOTTO/OTTO_CONNECTIONS 0 rows, /TRDEMOOTTO/COMPANY_CHANNELS 0 rows, /TRDEMOFIN/PAYMENTS 0 rows, /TRDEMOFIN/ORDERS 0 rows, /TRDEMOFIN/CONTACTS 0 rows, /TRDEMOFIN/COMPANIES_ARCHIVE 0 rows, /TRDEMOFIN/BANK_ACCOUNTS 1 rows, /TRDEMOFIN/COMPANIES 1 rows, /TRBASE/AUDIT_LOG 0 rows, /RT/ROLE_ASSIGNMENTS 0 rows, /RT/NUMBER_RANGE_INTERVALS 0 rows, /RT/IMPLEMENTATION_TENANT_STATES 0 rows, /RT/TENANTS tenant ACME" {
 			t.Fatalf("dependent tables must be emptied first: %s", got)
 		}
 		if !strings.Contains(dry.SQL(), "DELETE FROM") {
@@ -66,10 +66,10 @@ func TestTenants(t *testing.T) {
 		if _, err := ten.Delete(ctx, tenantA, kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		if n := count(t, k, "/TRFIN/COMPANIES"); n != 1 {
+		if n := count(t, k, "/TRDEMOFIN/COMPANIES"); n != 1 {
 			t.Errorf("companies left: %d, want only the one of GLOBEX", n)
 		}
-		if n := count(t, k, "/TRFIN/BANK_ACCOUNTS"); n != 0 {
+		if n := count(t, k, "/TRDEMOFIN/BANK_ACCOUNTS"); n != 0 {
 			t.Errorf("bank accounts left: %d", n)
 		}
 		list, _ = ten.List(ctx)
@@ -126,9 +126,9 @@ func TestCheck(t *testing.T) {
 			t.Fatalf("fresh install: %v %v", err, d)
 		}
 		for _, stmt := range []string{
-			`ALTER TABLE "/TRFIN/COUNTRIES" ADD COLUMN "EXTRA" TEXT`,
+			`ALTER TABLE "/TRDEMOFIN/COUNTRIES" ADD COLUMN "EXTRA" TEXT`,
 			`CREATE TABLE "STRAY" ("X" INTEGER)`,
-			`DROP TABLE "/TRFIN/PAYMENTS"`,
+			`DROP TABLE "/TRDEMOFIN/PAYMENTS"`,
 		} {
 			if _, err := k.DB().ExecContext(ctx, stmt); err != nil {
 				t.Fatal(err)
@@ -139,8 +139,8 @@ func TestCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := []string{
-			"/TRFIN/COUNTRIES.EXTRA: column is not in the repository",
-			"/TRFIN/PAYMENTS: table is missing in the database",
+			"/TRDEMOFIN/COUNTRIES.EXTRA: column is not in the repository",
+			"/TRDEMOFIN/PAYMENTS: table is missing in the database",
 			"STRAY: table is not in the repository",
 		}
 		if len(d) != len(want) {

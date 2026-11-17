@@ -1,0 +1,24 @@
+{
+  "name": "/TRDEMOOTTO/SYNC_OPERATOR",
+  "texts": {
+    "en": { "label": "OTTO connection operator", "description": "Runs the exchange with OTTO for German-speaking countries" },
+    "de": { "label": "Betrieb Anbindung OTTO" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRDEMOOTTO/MARKETPLACE",
+      "fields": {
+        "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
+        "ACTIVITY": [{ "value": "EXECUTE" }, { "value": "IMPORT" }]
+      }
+    },
+    {
+      "object": "/TRDEMOFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "D*" }, { "value": "AT" }, { "value": "CH" }],
+        "ACTIVITY": [{ "value": "READ" }, { "value": "UPDATE" }]
+      }
+    }
+  ]
+}

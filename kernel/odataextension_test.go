@@ -109,9 +109,9 @@ var (
     metadata.ANNOTATIONS = out`)
 )
 
-// The implementations of TRBAD break the rules on the service of TRFIN.
+// The implementations of TRBAD break the rules on the service of TRDEMOFIN.
 var (
-	renameImplementation = metadataImplementation("TRBAD", "RENAME", 1, `"PACKAGE_ID": [{ "value": "TRFIN" }]`, `
+	renameImplementation = metadataImplementation("TRBAD", "RENAME", 1, `"PACKAGE_ID": [{ "value": "TRDEMOFIN" }]`, `
     var sets: /TRBASE/ODATA_ENTITY_SET_ARRAY = []
     for s in metadata.ENTITY_SETS
       var c = s
@@ -119,7 +119,7 @@ var (
       sets.APPEND(c)
     end
     metadata.ENTITY_SETS = sets`)
-	uncomputeImplementation = metadataImplementation("TRBAD", "UNCOMPUTE", 2, `"PACKAGE_ID": [{ "value": "TRFIN" }]`, `
+	uncomputeImplementation = metadataImplementation("TRBAD", "UNCOMPUTE", 2, `"PACKAGE_ID": [{ "value": "TRDEMOFIN" }]`, `
     var out: /TRBASE/ODATA_ANNOTATION_ARRAY = []
     for a in metadata.ANNOTATIONS
       if a.TERM <> "Core.Computed"
@@ -127,7 +127,7 @@ var (
       end
     end
     metadata.ANNOTATIONS = out`)
-	writeImplementation = metadataImplementation("TRBAD", "WRITE", 3, `"PACKAGE_ID": [{ "value": "TRFIN" }]`, `
+	writeImplementation = metadataImplementation("TRBAD", "WRITE", 3, `"PACKAGE_ID": [{ "value": "TRDEMOFIN" }]`, `
     var row: /TRBAD/CALLS
     row.SERVICE = metadata.SERVICE_NAME
     insert row`)
@@ -176,7 +176,7 @@ func TestODataMetadataExtensions(t *testing.T) {
 		}
 		anna := basicAuth("anna", "secret")
 		const items = "/rt/odata/trodata/items/$metadata"
-		const companies = "/rt/odata/trfin/company_service/$metadata"
+		const companies = "/rt/odata/trdemofin/company_service/$metadata"
 		plain := c.do("GET", items, anna, "")
 		plainCompanies := c.do("GET", companies, anna, "")
 
@@ -205,7 +205,7 @@ func TestODataMetadataExtensions(t *testing.T) {
 		}
 		// The filters select the service.
 		if a := c.do("GET", companies, anna, ""); a.body != plainCompanies.body {
-			t.Error("the implementations changed the service of TRFIN")
+			t.Error("the implementations changed the service of TRDEMOFIN")
 		}
 		// Without extensions the metadata are those of the kernel.
 		doc, err := k.ServiceMetadata(ctx, itemsService, kernel.ServiceMetadataOptions{WithoutExtensions: true})

@@ -96,7 +96,7 @@ type Address struct {
 }
 
 // Location returns the address without spec in canonical form, such as
-// github.com/tim-riep/trfin or github.com/tim-riep/erp/packages/TRFIN.
+// github.com/tim-riep/trdemofin or github.com/tim-riep/erp/packages/TRDEMOFIN.
 func (a Address) Location() string {
 	s := a.Host + "/" + a.Owner + "/" + a.Repo
 	if a.Dir != "" {

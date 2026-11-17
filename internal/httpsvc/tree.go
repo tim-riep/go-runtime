@@ -55,7 +55,7 @@ var Defaults = Settings{
 
 // Node is a node of the tree.
 type Node struct {
-	Path     string // full path, e.g. /trfin/companies
+	Path     string // full path, e.g. /trdemofin/companies
 	Package  model.PackageID
 	Service  *model.HTTPService // nil for nodes that only exist as parents
 	Parent   *Node              // nil for the root node of a package

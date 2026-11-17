@@ -70,8 +70,8 @@ func TestReadAssets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		logo, info := readAsset(t, k, "TRFIN", "web", "images/logo.png", model.None[string]())
-		if !bytes.Equal(logo, exampleFile(t, "TRFIN", "web/images/logo.png")) {
+		logo, info := readAsset(t, k, "TRDEMOFIN", "web", "images/logo.png", model.None[string]())
+		if !bytes.Equal(logo, exampleFile(t, "TRDEMOFIN", "web/images/logo.png")) {
 			t.Fatal("logo differs from the package file")
 		}
 		sum := sha256.Sum256(logo)
@@ -93,17 +93,17 @@ func TestReadAssets(t *testing.T) {
 			{"letter/letter.xsl", model.Some("fr"), none, "letter/letter.xsl"},
 			{"letter/letter.xsl", none, none, "letter/letter.xsl"},
 		} {
-			b, info := readAsset(t, k, "TRFIN", "templates", c.path, c.lang)
-			if !bytes.Equal(b, exampleFile(t, "TRFIN", "templates/"+c.want)) || info.Language != c.chosen || info.Source != model.Some(c.want) {
+			b, info := readAsset(t, k, "TRDEMOFIN", "templates", c.path, c.lang)
+			if !bytes.Equal(b, exampleFile(t, "TRDEMOFIN", "templates/"+c.want)) || info.Language != c.chosen || info.Source != model.Some(c.want) {
 				t.Errorf("%s in %s: got %s (language %s)", c.path, c.lang, info.Source, info.Language)
 			}
 		}
-		_, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice_de.xsl", model.None[string]())
+		_, err := k.OpenAsset(ctx, "TRDEMOFIN", "templates", "invoice/invoice_de.xsl", model.None[string]())
 		if !errors.Is(err, fs.ErrNotExist) {
 			t.Fatalf("variant files must not be readable under their own path: %v", err)
 		}
 		var nf *rterr.AssetNotFound
-		if _, err := k.OpenAsset(ctx, "TRFIN", "nope", "x", model.None[string]()); !errors.As(err, &nf) || nf.Path != "" {
+		if _, err := k.OpenAsset(ctx, "TRDEMOFIN", "nope", "x", model.None[string]()); !errors.As(err, &nf) || nf.Path != "" {
 			t.Fatalf("unknown repository: %v", err)
 		}
 
@@ -111,19 +111,19 @@ func TestReadAssets(t *testing.T) {
 		if ok, _ := k.AssetExists(ctx, "TRBASE", "web", "css/base.css"); !ok {
 			t.Fatal("base.css missing in TRBASE web")
 		}
-		if ok, _ := k.AssetExists(ctx, "TRFIN", "web", "css/base.css"); ok {
-			t.Fatal("base.css of TRBASE visible in TRFIN web")
+		if ok, _ := k.AssetExists(ctx, "TRDEMOFIN", "web", "css/base.css"); ok {
+			t.Fatal("base.css of TRBASE visible in TRDEMOFIN web")
 		}
 		repos, err := k.AssetRepositories(ctx, "")
 		if err != nil || len(repos) != 3 || repos[0].Package != "TRBASE" || repos[1].ID != "templates" || repos[2].ID != "web" {
 			t.Fatalf("repositories: %v %+v", err, repos)
 		}
 
-		list, err := k.ListAssets(ctx, "TRFIN", "templates", "invoice")
+		list, err := k.ListAssets(ctx, "TRDEMOFIN", "templates", "invoice")
 		if err != nil || len(list) != 1 || list[0].Path != "invoice/invoice.xsl" || len(list[0].Variants) != 2 || list[0].HasNeutral {
 			t.Fatalf("list: %v %+v", err, list)
 		}
-		top, _ := k.ListAssets(ctx, "TRFIN", "templates", "")
+		top, _ := k.ListAssets(ctx, "TRDEMOFIN", "templates", "")
 		if len(top) != 2 || !top[0].Folder || top[0].Description["de"] != "Rechnungen" {
 			t.Fatalf("top level: %+v", top)
 		}

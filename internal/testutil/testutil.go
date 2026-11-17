@@ -49,8 +49,8 @@ func ModuleRoot(t testing.TB) string {
 	}
 }
 
-// Example loads a package from the examples directory, e.g. "TRFIN" or
-// "upgrade/TROTTO".
+// Example loads a package from the examples directory, e.g. "TRDEMOFIN" or
+// "upgrade/TRDEMOOTTO".
 func Example(t testing.TB, name string) *model.Package {
 	t.Helper()
 	dir := filepath.Join(ModuleRoot(t), "examples", name)
@@ -163,7 +163,7 @@ func CopyDir(t testing.TB, src string) string {
 }
 
 // ZipDir returns a ZIP archive of the files below src, each under prefix
-// (e.g. "TRFIN/"; "" for the root).
+// (e.g. "TRDEMOFIN/"; "" for the root).
 func ZipDir(t testing.TB, src, prefix string) []byte {
 	t.Helper()
 	var buf bytes.Buffer

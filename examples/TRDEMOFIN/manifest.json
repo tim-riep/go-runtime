@@ -1,0 +1,15 @@
+{
+  "id": "TRDEMOFIN",
+  "version": "1.0.0",
+  "description": "Companies and bank accounts",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.0.0"
+    }
+  ],
+  "languageVersion": 1,
+  "capabilities": [
+    "clock"
+  ]
+}

@@ -40,7 +40,7 @@ func TestTRBASENatives(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, trusePackage(t)), testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, trusePackage(t)), testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
@@ -63,8 +63,8 @@ func TestTRBASENatives(t *testing.T) {
 			t.Errorf("READ_DE = %s", got)
 		}
 		expectCall(t, k, "ACME", U, "READ", `"not found: missing.xsl"`, `"TRUSE"`, `"missing.xsl"`)
-		// TRUSE does not require TRFIN, so it cannot read its assets.
-		expectCall(t, k, "ACME", U, "READ", `"denied: TRUSE"`, `"TRFIN"`, `"invoice/invoice.xsl"`)
+		// TRUSE does not require TRDEMOFIN, so it cannot read its assets.
+		expectCall(t, k, "ACME", U, "READ", `"denied: TRUSE"`, `"TRDEMOFIN"`, `"invoice/invoice.xsl"`)
 
 		expectCall(t, k, "ACME", U, "RUN", `"upper:ACME"`, `"acme"`)
 		expectCall(t, k, "ACME", U, "MANY", `["upper:A","upper:B","upper:C"]`, `["a","b","c"]`)

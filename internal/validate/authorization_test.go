@@ -35,7 +35,7 @@ var activityField = model.AuthorizationField{Name: model.ActivityField}
 // authObject returns a valid object of TRS with the field ACTIVITY.
 func authObject() model.AuthorizationObject {
 	return model.AuthorizationObject{Name: "/TRS/COMPANY", Texts: en,
-		Fields:     []model.AuthorizationField{authDE("COMPANY_ID", "/TRFIN/COMPANY"), authDE("COUNTRY", "/TRBASE/COUNTRY"), activityField},
+		Fields:     []model.AuthorizationField{authDE("COMPANY_ID", "/TRDEMOFIN/COMPANY"), authDE("COUNTRY", "/TRBASE/COUNTRY"), activityField},
 		Activities: []string{"READ", "UPDATE"}}
 }
 
@@ -50,7 +50,7 @@ func TestAuthorizationObjectValid(t *testing.T) {
 		withObject(t, func(o *model.AuthorizationObject) {}),
 		// Without ACTIVITY and without activities; with a domain of fixed values, INT4, BOOL and UUID.
 		withObject(t, func(o *model.AuthorizationObject) {
-			o.Fields = []model.AuthorizationField{authDomain("STATUS", "/TRFIN/COMPANY_STATUS"), authDomain("COUNT", "/TRBASE/COUNTER"),
+			o.Fields = []model.AuthorizationField{authDomain("STATUS", "/TRDEMOFIN/COMPANY_STATUS"), authDomain("COUNT", "/TRBASE/COUNTER"),
 				authDomain("FLAG", "/TRBASE/FLAG"), authDomain("ID", "/TRBASE/GUID")}
 			o.Activities = nil
 		}),
@@ -87,7 +87,7 @@ func TestAuthorizationObjectRules(t *testing.T) {
 		{"ACTIVITY without activities", func(o *model.AuthorizationObject) { o.Activities = nil }, rterr.CodeAuthorization, "lists the activities that can be granted"},
 		{"unknown activity", func(o *model.AuthorizationObject) { o.Activities = []string{"READ", "DANCE"} }, rterr.CodeAuthorization, "DANCE is no activity"},
 		{"activity twice", func(o *model.AuthorizationObject) { o.Activities = []string{"READ", "READ"} }, rterr.CodeDuplicate, "the activity READ is listed twice"},
-		{"namespace", func(o *model.AuthorizationObject) { o.Name = "/TRFIN/MINE" }, rterr.CodeName, "must start with the namespace /TRS/"},
+		{"namespace", func(o *model.AuthorizationObject) { o.Name = "/TRDEMOFIN/MINE" }, rterr.CodeName, "must start with the namespace /TRS/"},
 		{"no English", func(o *model.AuthorizationObject) { o.Texts = map[string]model.Label{"de": {Label: "Firma"}} }, rterr.CodeText, "texts in English"},
 	} {
 		t.Run(c.name, func(t *testing.T) { expect(t, withObject(t, c.change), c.code, c.contains) })
@@ -101,7 +101,7 @@ func TestAuthorizationObjectNotVisible(t *testing.T) {
 	o.Name = "/TRT/COMPANY"
 	p := &model.Package{Manifest: model.Manifest{ID: "TRT", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRBASE"}}},
 		AuthorizationObjects: []model.AuthorizationObject{o}}
-	expect(t, withTRS(t, p), rterr.CodeNotVisible, "/TRFIN/COMPANY belongs to package TRFIN, which TRT does not require")
+	expect(t, withTRS(t, p), rterr.CodeNotVisible, "/TRDEMOFIN/COMPANY belongs to package TRDEMOFIN, which TRT does not require")
 }
 
 // TestAuthorizationTypeChangeElsewhere rejects a domain that changes to a

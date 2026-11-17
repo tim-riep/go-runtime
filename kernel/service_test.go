@@ -26,14 +26,14 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
-const companyService = "/TRFIN/COMPANY_SERVICE"
+const companyService = "/TRDEMOFIN/COMPANY_SERVICE"
 
-// installCompanies installs TRFIN and TROTTO, which extends the companies
-// that the service of TRFIN offers.
+// installCompanies installs TRDEMOFIN and TRDEMOOTTO, which extends the companies
+// that the service of TRDEMOFIN offers.
 func installCompanies(t *testing.T, k *kernel.Kernel) *plan.Plan {
 	t.Helper()
 	initialized(t, k)
-	p, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")}, kernel.Options{})
+	p, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TRDEMOFIN"), testutil.Example(t, "TRDEMOOTTO")}, kernel.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,8 +51,8 @@ func TestServiceLifecycle(t *testing.T) {
 		if !found {
 			t.Errorf("plan without create-service: %+v", p.Changes)
 		}
-		list, err := k.Services(ctx, "TRFIN")
-		if err != nil || len(list) != 1 || list[0].Path != "/rt/odata/trfin/company_service/" || list[0].Active {
+		list, err := k.Services(ctx, "TRDEMOFIN")
+		if err != nil || len(list) != 1 || list[0].Path != "/rt/odata/trdemofin/company_service/" || list[0].Active {
 			t.Fatalf("services: %+v, %v", list, err)
 		}
 		d, err := k.Service(ctx, companyService)
@@ -77,7 +77,7 @@ func TestServiceLifecycle(t *testing.T) {
 			t.Errorf("activated: %+v", d)
 		}
 		// An upgrade keeps the activation.
-		next := testutil.Example(t, "TRFIN")
+		next := testutil.Example(t, "TRDEMOFIN")
 		next.Manifest.Version = "1.0.1"
 		if _, err := k.Upgrade(ctx, next, kernel.Options{}); err != nil {
 			t.Fatal(err)
@@ -92,7 +92,7 @@ func TestServiceLifecycle(t *testing.T) {
 			t.Error("still active")
 		}
 		var nf *rterr.NotFound
-		if err := k.ActivateService(ctx, "/TRFIN/NOTHING", ""); !errors.As(err, &nf) {
+		if err := k.ActivateService(ctx, "/TRDEMOFIN/NOTHING", ""); !errors.As(err, &nf) {
 			t.Errorf("activate unknown: %v", err)
 		}
 
@@ -100,13 +100,13 @@ func TestServiceLifecycle(t *testing.T) {
 		if err := k.ActivateService(ctx, companyService, ""); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{AllowDestructive: true, Confirm: true}); err != nil {
+		if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{AllowDestructive: true, Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
 		if d, _ := k.Service(ctx, companyService); len(d.Contained) != 0 {
-			t.Errorf("the service still offers the extension of TROTTO: %+v", d.Contained)
+			t.Errorf("the service still offers the extension of TRDEMOOTTO: %+v", d.Contained)
 		}
-		if _, err := k.Uninstall(ctx, "TRFIN", kernel.Options{AllowDestructive: true, Confirm: true}); err != nil {
+		if _, err := k.Uninstall(ctx, "TRDEMOFIN", kernel.Options{AllowDestructive: true, Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Service(ctx, companyService); !errors.As(err, &nf) {

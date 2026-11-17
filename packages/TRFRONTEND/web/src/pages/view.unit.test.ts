@@ -26,12 +26,12 @@ describe('list view', () => {
 
   it('takes columns, filter fields, sort and actions from Frontend.ListPage', () => {
     expect(v.typeNamePlural).toBe('Companies');
-    expect(v.columns.map((c) => c.field.name)).toEqual(['COMPANY_ID', 'NAME', 'TROTTO_OTTO_ID', 'CITY', 'COUNTRY', 'STATUS']);
+    expect(v.columns.map((c) => c.field.name)).toEqual(['COMPANY_ID', 'NAME', 'TRDEMOOTTO_OTTO_ID', 'CITY', 'COUNTRY', 'STATUS']);
     expect(v.columns[0]).toMatchObject({ width: 8, importance: 'HIGH' });
     expect(v.columns[3]?.width).toBeNull();
-    expect(v.filterFields.map((f) => f.name)).toEqual(['NAME', 'COUNTRY', 'STATUS', 'TROTTO_OTTO_ID']);
+    expect(v.filterFields.map((f) => f.name)).toEqual(['NAME', 'COUNTRY', 'STATUS', 'TRDEMOOTTO_OTTO_ID']);
     expect(v.sort).toEqual([{ field: 'NAME', descending: false }]);
-    expect(v.actions).toEqual(['TRFIN.BLOCK', 'TRFIN.TROTTO_SYNC']);
+    expect(v.actions).toEqual(['TRDEMOFIN.BLOCK', 'TRDEMOFIN.TRDEMOOTTO_SYNC']);
     expect(v.insertable && v.deletable).toBe(true);
   });
 
@@ -62,26 +62,26 @@ describe('detail view', () => {
   it('takes header, sections, groups and tables from the annotations', () => {
     const d = detailView(m, 'Companies');
     expect(d).toMatchObject({ typeName: 'Company', titleField: 'NAME', subtitleField: 'COMPANY_ID', descriptionField: 'CITY' });
-    expect(d.sections.map((s) => s.id)).toEqual(['GENERAL', '/TROTTOUI/MARKETPLACE', 'CONTACTS']);
+    expect(d.sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS']);
     expect(d.sections[0]?.groups[1]?.fields.map((f) => f.name)).toEqual(['STREET', 'POSTAL_CODE', 'CITY', 'COUNTRY']);
     expect(d.sections[2]?.table).toBe('Contacts');
     expect(d.concurrency).toEqual(['CHANGED_AT']);
-    expect(d.actions).toEqual(['TRFIN.BLOCK']);
+    expect(d.actions).toEqual(['TRDEMOFIN.BLOCK']);
   });
 
   it('leaves out tables that the type of a merged set lacks', () => {
     const d = detailView(m, 'Companies');
     const countries = m.entitySets.Countries;
     if (!countries) throw new Error('no Countries');
-    expect(mergedDetailView(d, countries).sections.map((s) => s.id)).toEqual(['GENERAL', '/TROTTOUI/MARKETPLACE']);
+    expect(mergedDetailView(d, countries).sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE']);
     const companies = m.entitySets.Companies;
     if (!companies) throw new Error('no Companies');
-    expect(mergedDetailView(d, companies).sections.map((s) => s.id)).toEqual(['GENERAL', '/TROTTOUI/MARKETPLACE', 'CONTACTS']);
+    expect(mergedDetailView(d, companies).sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS']);
   });
 
   it('labels actions', () => {
-    expect(actionLabel(m, 'TRFIN.TROTTO_SYNC')).toBe('Gives the company a partner ID at OTTO');
-    expect(actionLabel(m, 'TRFIN.BLOCK')).toBe('BLOCK');
+    expect(actionLabel(m, 'TRDEMOFIN.TRDEMOOTTO_SYNC')).toBe('Gives the company a partner ID at OTTO');
+    expect(actionLabel(m, 'TRDEMOFIN.BLOCK')).toBe('BLOCK');
   });
 });
 
@@ -89,7 +89,7 @@ describe('filter', () => {
   const v = listView(m, 'Companies');
 
   it('matches text in part and fixed values and value helps exactly', () => {
-    expect(filterOf(v.filterFields, { NAME: "O'B", COUNTRY: 'DE', STATUS: null, TROTTO_OTTO_ID: '' })).toBe("contains(NAME,'O''B') and COUNTRY eq 'DE'");
+    expect(filterOf(v.filterFields, { NAME: "O'B", COUNTRY: 'DE', STATUS: null, TRDEMOOTTO_OTTO_ID: '' })).toBe("contains(NAME,'O''B') and COUNTRY eq 'DE'");
     expect(filterOf(v.filterFields, {})).toBeUndefined();
   });
 

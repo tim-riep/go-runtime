@@ -162,7 +162,7 @@ func TestAllAuthorizationsRoleRestored(t *testing.T) {
 			for _, damage := range []string{
 				`DELETE FROM "/RT/ROLE_TEXTS" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS'`,
 				`UPDATE "/RT/ROLE_TEXTS" SET "LABEL" = 'Nothing' WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS' AND "LANGUAGE" = 'en'`,
-				`INSERT INTO "/RT/ROLE_AUTHORIZATIONS" ("ROLE_NAME", "POSITION", "OBJECT_NAME") VALUES ('/RT/ALL_AUTHORIZATIONS', 1, '/TRFIN/COMPANY')`,
+				`INSERT INTO "/RT/ROLE_AUTHORIZATIONS" ("ROLE_NAME", "POSITION", "OBJECT_NAME") VALUES ('/RT/ALL_AUTHORIZATIONS', 1, '/TRDEMOFIN/COMPANY')`,
 			} {
 				// Opening a kernel restores the role, the first time already
 				// in exec, so damage it between two kernels.
@@ -217,7 +217,7 @@ func TestAllAuthorizationsRoleRestored(t *testing.T) {
 			if _, err := k.DB().ExecContext(ctx, `DELETE FROM "/RT/ROLE_TEXTS" WHERE "ROLE_NAME" = '/RT/ALL_AUTHORIZATIONS' AND "LANGUAGE" = 'de'`); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); err != nil {
+			if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true}); err != nil {
 				t.Fatal(err)
 			}
 			if s, _ := k.Schema(ctx); s.Roles[allRole].Texts["de"].Label != "Alle Berechtigungen" {
@@ -284,7 +284,7 @@ func TestAllAuthorizationsHolders(t *testing.T) {
 			t.Errorf("holders after the lock: %+v", holders)
 		}
 		// A locked user has nothing, though it has the role.
-		if e, _ := k.EffectiveAuthorizations(ctx, "bob", "BETA", time.Now()); e.All || e.Allows("/TRFIN/COMPANY", nil) {
+		if e, _ := k.EffectiveAuthorizations(ctx, "bob", "BETA", time.Now()); e.All || e.Allows("/TRDEMOFIN/COMPANY", nil) {
 			t.Errorf("locked user: %+v", e)
 		}
 		if err := roles.Unassign(ctx, bobBETA.ID, cli); err != nil {
@@ -304,11 +304,11 @@ func TestAllAuthorizationsHolders(t *testing.T) {
 		audits()
 		srv := httptest.NewServer(k.HTTPHandler())
 		defer srv.Close()
-		if err := k.ActivateHTTPService(ctx, "/trfin"); err != nil {
+		if err := k.ActivateHTTPService(ctx, "/trdemofin"); err != nil {
 			t.Fatal(err)
 		}
 		for range 5 {
-			r, _ := http.NewRequest("GET", srv.URL+"/trfin/companies", nil)
+			r, _ := http.NewRequest("GET", srv.URL+"/trdemofin/companies", nil)
 			r.SetBasicAuth("bob", "wrong")
 			resp, err := http.DefaultClient.Do(r)
 			if err != nil {
@@ -342,14 +342,14 @@ func TestAllAuthorizationsLater(t *testing.T) {
 		}
 		values := map[string]string{"COMPANY_ID": "C1", "COUNTRY": "DE", "ACTIVITY": "APPROVE"}
 		e, err := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now())
-		if err != nil || !e.Allows("/TRFIN/COMPANY", values) || !e.Allows("/TROTTO/MARKETPLACE", map[string]string{"COUNTRY": "FR", "ACTIVITY": "SEND"}) {
+		if err != nil || !e.Allows("/TRDEMOFIN/COMPANY", values) || !e.Allows("/TRDEMOOTTO/MARKETPLACE", map[string]string{"COUNTRY": "FR", "ACTIVITY": "SEND"}) {
 			t.Fatalf("objects installed after the assignment: %+v %v", e, err)
 		}
 		if _, err := k.Upgrade(ctx, finWithField(t, "1.1.0", true), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		values["REGION"] = "NORTH"
-		if e, _ := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now()); !e.Allows("/TRFIN/COMPANY", values) || len(e.NotEffective) != 0 {
+		if e, _ := k.EffectiveAuthorizations(ctx, "root", "ACME", time.Now()); !e.Allows("/TRDEMOFIN/COMPANY", values) || len(e.NotEffective) != 0 {
 			t.Errorf("a field added later: %+v", e)
 		}
 		if d, _ := k.Roles().Get(ctx, allRole); len(d.Authorizations) != 10 {

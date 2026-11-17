@@ -1,0 +1,16 @@
+{
+  "name": "/TRDEMOOTTOUI/SYNC_OPERATOR_CONTENT",
+  "content": {
+    "ROLE": "/TRDEMOOTTO/SYNC_OPERATOR",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRDEMOOTTOUI/OTTO_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRDEMOOTTOUI/OTTO_SPACE"
+      }
+    ]
+  }
+}

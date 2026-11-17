@@ -44,9 +44,9 @@ func TestLastFailedCheck(t *testing.T) {
 				t.Fatal("not denied")
 			}
 			f, err := k.LastFailedCheck(ctx, "anna", "ACME")
-			if err != nil || f.Object != "/TRFIN/COMPANY" || string(f.Values["COUNTRY"]) != `"FR"` || string(f.Values["ACTIVITY"]) != `"UPDATE"` ||
+			if err != nil || f.Object != "/TRDEMOFIN/COMPANY" || string(f.Values["COUNTRY"]) != `"FR"` || string(f.Values["ACTIVITY"]) != `"UPDATE"` ||
 				f.Site.Class.Or("") != "/TRAUTH/CHECKS" || f.Site.Method.Or("") != "UPDATE_COMPANY" || f.Site.Line.Or(0) != 6 ||
-				f.Site.Package.Or("") != "TRAUTH" || !strings.Contains(string(f.Grants), "/TRFIN/COMPANY_CLERK") {
+				f.Site.Package.Or("") != "TRAUTH" || !strings.Contains(string(f.Grants), "/TRDEMOFIN/COMPANY_CLERK") {
 				t.Fatalf("last failed: %+v %v", f, err)
 			}
 			// authorized and executions without user are not recorded.

@@ -7,11 +7,11 @@ public class /TRTEST/NATIVES
 
   public static method TEXT(text: STRING?) returns STRING? executed by kernel
 
-  # Checks /TRFIN/COMPANY for C1 in a country with READ, any company with
+  # Checks /TRDEMOFIN/COMPANY for C1 in a country with READ, any company with
   # any.
   public static method AUTHORIZE(country: STRING, any: BOOL) returns STRING executed by kernel
 
-  # Checks /TRFIN/COMPANY n times.
+  # Checks /TRDEMOFIN/COMPANY n times.
   public static method AUTHORIZE_MANY(n: INT4) returns INT4 executed by kernel
 
   public static method DOUBLE(amount: DEC(15,2)) returns DEC(15,2) executed by kernel

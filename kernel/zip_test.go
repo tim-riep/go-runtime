@@ -36,11 +36,11 @@ func TestInstallZip(t *testing.T) {
 		initialized(t, k)
 		dir := t.TempDir()
 		ex := filepath.Join(testutil.ModuleRoot(t), "examples")
-		fin, otto := filepath.Join(dir, "TRFIN-1.0.0.zip"), filepath.Join(dir, "trotto.zip")
-		if err := os.WriteFile(fin, testutil.ZipDir(t, filepath.Join(ex, "TRFIN"), ""), 0o644); err != nil {
+		fin, otto := filepath.Join(dir, "TRDEMOFIN-1.0.0.zip"), filepath.Join(dir, "trdemootto.zip")
+		if err := os.WriteFile(fin, testutil.ZipDir(t, filepath.Join(ex, "TRDEMOFIN"), ""), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(otto, testutil.ZipDir(t, filepath.Join(ex, "TROTTO"), "TROTTO/"), 0o644); err != nil {
+		if err := os.WriteFile(otto, testutil.ZipDir(t, filepath.Join(ex, "TRDEMOOTTO"), "TRDEMOOTTO/"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		var pkgs []*model.Package

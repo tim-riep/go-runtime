@@ -1,0 +1,38 @@
+{
+  "name": "/TRDEMOFINUI/COMPANIES_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "DAILY",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Daily work"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Tagesgeschäft"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRDEMOFINUI/COMPANIES_TILE"
+          },
+          {
+            "TILE": "/TRDEMOFINUI/ACTIVE_COMPANIES_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

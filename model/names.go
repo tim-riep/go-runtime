@@ -99,7 +99,7 @@ func ValidTenantID(id string) bool {
 // TenantIDLength is the length of the tenant key domain.
 const TenantIDLength = 16
 
-// Namespace returns the namespace prefix of a package, e.g. "/TROTTO/".
+// Namespace returns the namespace prefix of a package, e.g. "/TRDEMOOTTO/".
 func Namespace(id PackageID) string { return "/" + string(id) + "/" }
 
 // SplitName splits a name with namespace into package ID and the part after
@@ -131,7 +131,7 @@ func Qualify(id PackageID, local string) string { return Namespace(id) + local }
 func IsKernelName(name string) bool { return strings.HasPrefix(name, KernelNamespace) }
 
 // GeneratedName returns the SQL name the kernel generates for a logical
-// name such as "/TRFIN/COMPANIES#FK#COUNTRY". A logical name that fits into
+// name such as "/TRDEMOFIN/COMPANIES#FK#COUNTRY". A logical name that fits into
 // MaxIdentifierBytes is used as it is. A longer one keeps its first 52
 // bytes, followed by "~" and the first 10 hex digits of its SHA-256, which
 // makes exactly MaxIdentifierBytes. The result is deterministic; "#" and "~"

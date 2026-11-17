@@ -102,11 +102,11 @@ func TestStructureFormatErrors(t *testing.T) {
 func TestStructureReferenceToPackageNotRequired(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/structures/S.json"] = file(`{"name":"/TRX/S","texts":{"en":{"label":"S"}},
-		"components":[{"include":"/TRFIN/COMPANIES"},{"name":"A","arrayType":"/TRFIN/COMPANY_ARRAY"}]}`)
-	expectViolation(t, fsys, "schema/structures/S.json", "/components/0/include", "/TRFIN/COMPANIES")
-	expectViolation(t, fsys, "schema/structures/S.json", "/components/1/arrayType", "/TRFIN/COMPANY_ARRAY")
+		"components":[{"include":"/TRDEMOFIN/COMPANIES"},{"name":"A","arrayType":"/TRDEMOFIN/COMPANY_ARRAY"}]}`)
+	expectViolation(t, fsys, "schema/structures/S.json", "/components/0/include", "/TRDEMOFIN/COMPANIES")
+	expectViolation(t, fsys, "schema/structures/S.json", "/components/1/arrayType", "/TRDEMOFIN/COMPANY_ARRAY")
 	fsys = validFS()
 	fsys["schema/tables/ORDERS.json"] = file(`{"name":"/TRX/ORDERS","tenantSpecific":false,"dataClass":"application",
-		"fields":[{"name":"ORDER_ID","domain":"/TRBASE/ID"},{"include":"/TRFIN/ADDRESS"}],"primaryKey":["ORDER_ID"]}`)
-	expectViolation(t, fsys, "schema/tables/ORDERS.json", "/fields/1/include", "/TRFIN/ADDRESS")
+		"fields":[{"name":"ORDER_ID","domain":"/TRBASE/ID"},{"include":"/TRDEMOFIN/ADDRESS"}],"primaryKey":["ORDER_ID"]}`)
+	expectViolation(t, fsys, "schema/tables/ORDERS.json", "/fields/1/include", "/TRDEMOFIN/ADDRESS")
 }

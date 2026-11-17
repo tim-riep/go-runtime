@@ -1,0 +1,14 @@
+{
+  "name": "/TRDEMOFIN/COUNTRY",
+  "description": { "en": "Country", "de": "Land" },
+  "dataClass": "configuration",
+  "root": "/TRDEMOFIN/COUNTRIES",
+  "entities": {
+    "/TRDEMOFIN/COUNTRIES": {
+      "operations": ["create", "update", "delete"],
+      "fields": {
+        "NAME": { "mandatory": true }
+      }
+    }
+  }
+}

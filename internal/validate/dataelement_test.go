@@ -39,21 +39,21 @@ func TestDataElementResolvesDomain(t *testing.T) {
 	if err := Schema(s, Options{Languages: map[string]bool{"en": true, "de": true}}); err != nil {
 		t.Fatal(err)
 	}
-	f := s.Physical().Tables["/TRFIN/COMPANIES"].Field("COUNTRY")
+	f := s.Physical().Tables["/TRDEMOFIN/COMPANIES"].Field("COUNTRY")
 	if f.DataElement != model.Some("/TRBASE/COUNTRY") || f.Domain != "/TRBASE/COUNTRY_CODE" {
 		t.Fatalf("physical field: %+v", f)
 	}
-	if s.Tables["/TRFIN/COMPANIES"].Field("COMPANY_ID").Domain != "" {
+	if s.Tables["/TRDEMOFIN/COMPANIES"].Field("COMPANY_ID").Domain != "" {
 		t.Fatal("the declaration must not carry the domain")
 	}
-	if ext := s.Physical().Tables["/TRFIN/COMPANIES"].Field("/TROTTO/OTTO_ID"); ext.Domain != "/TROTTO/OTTO_ID" {
+	if ext := s.Physical().Tables["/TRDEMOFIN/COMPANIES"].Field("/TRDEMOOTTO/OTTO_ID"); ext.Domain != "/TRDEMOOTTO/OTTO_ID" {
 		t.Fatalf("extension field: %+v", ext)
 	}
 }
 
 func TestFieldWithDomainAndDataElement(t *testing.T) {
 	e := load(t)
-	e.fin.Tables[1].Fields[0].Domain = "/TRFIN/COMPANY_ID" // /TRFIN/COMPANIES.COMPANY_ID has a data element
+	e.fin.Tables[1].Fields[0].Domain = "/TRDEMOFIN/COMPANY_ID" // /TRDEMOFIN/COMPANIES.COMPANY_ID has a data element
 	expect(t, e.schema(t), rterr.CodeDataElement, "not both")
 }
 
@@ -71,13 +71,13 @@ func TestUnknownDataElement(t *testing.T) {
 
 func TestDataElementNotVisible(t *testing.T) {
 	e := load(t)
-	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[0].DataElement = model.Some("/TROTTO/OTTO_PARTNER") // TRFIN does not require TROTTO
-	expect(t, e.schema(t), rterr.CodeNotVisible, "data element /TROTTO/OTTO_PARTNER")
+	tableOf(e.fin, "/TRDEMOFIN/COUNTRIES").Fields[0].DataElement = model.Some("/TRDEMOOTTO/OTTO_PARTNER") // TRDEMOFIN does not require TRDEMOOTTO
+	expect(t, e.schema(t), rterr.CodeNotVisible, "data element /TRDEMOOTTO/OTTO_PARTNER")
 }
 
 func TestDataElementDomainNotVisible(t *testing.T) {
 	e := load(t)
-	dataElement(e.base, "/TRBASE/NAME").Domain = "/TRFIN/COMPANY_ID" // owned by TRFIN
+	dataElement(e.base, "/TRBASE/NAME").Domain = "/TRDEMOFIN/COMPANY_ID" // owned by TRDEMOFIN
 	expect(t, e.schema(t), rterr.CodeNotVisible, "data element /TRBASE/NAME")
 }
 
@@ -104,7 +104,7 @@ func TestDataElementLabelLength(t *testing.T) {
 
 func TestDataElementNameConflict(t *testing.T) {
 	e := load(t)
-	e.fin.DataElements = append(e.fin.DataElements, model.DataElement{Name: "/TRBASE/NAME", Domain: "/TRFIN/COMPANY_ID", Texts: map[string]model.DataElementText{}})
+	e.fin.DataElements = append(e.fin.DataElements, model.DataElement{Name: "/TRBASE/NAME", Domain: "/TRDEMOFIN/COMPANY_ID", Texts: map[string]model.DataElementText{}})
 	s := testutil.AddPackages(t, testutil.KernelSchema(t), e.base)
 	var nc *rterr.NameConflict
 	if err := s.AddPackage(e.fin, testutil.Epoch, testutil.Epoch); !errors.As(err, &nc) || nc.Kind != "data element" {
@@ -125,11 +125,11 @@ func TestMissingLanguages(t *testing.T) {
 
 func TestDataElementTypeCompatibility(t *testing.T) {
 	e := load(t)
-	dataElement(e.fin, "/TRFIN/COMPANY").Domain = "/TRFIN/IBAN" // every COMPANY_ID changes, keys stay consistent
+	dataElement(e.fin, "/TRDEMOFIN/COMPANY").Domain = "/TRDEMOFIN/IBAN" // every COMPANY_ID changes, keys stay consistent
 	if err := Schema(e.schema(t), Options{}); err != nil {
 		t.Fatalf("consistent change rejected: %v", err)
 	}
 	e = load(t)
-	tableOf(e.otto, "/TROTTO/OTTO_CONNECTIONS").Fields[0].DataElement = model.Some("/TRBASE/NAME") // /TROTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRFIN/COMPANIES CHAR(10)
+	tableOf(e.otto, "/TRDEMOOTTO/OTTO_CONNECTIONS").Fields[0].DataElement = model.Some("/TRBASE/NAME") // /TRDEMOOTTO/OTTO_CONNECTIONS.COMPANY_ID CHAR(80) -> /TRDEMOFIN/COMPANIES CHAR(10)
 	expect(t, e.schema(t), rterr.CodeTypeMismatch, "CHAR(80)")
 }

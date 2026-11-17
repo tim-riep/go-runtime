@@ -33,15 +33,15 @@ import (
 )
 
 // frontendPackages loads TRFRONTEND from its sources with a stand-in for
-// TRUI, TRFIN and TROTTO, and the demo content TRFDEMO.
+// TRUI, TRDEMOFIN and TRDEMOOTTO, and the demo content TRFDEMO.
 func frontendPackages(t *testing.T) []*model.Package {
 	t.Helper()
 	root := testutil.ModuleRoot(t)
 	return []*model.Package{
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRUI")),
 		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
-		testutil.Example(t, "TRFIN"),
-		testutil.Example(t, "TROTTO"),
+		testutil.Example(t, "TRDEMOFIN"),
+		testutil.Example(t, "TRDEMOOTTO"),
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRFDEMO")),
 	}
 }
@@ -74,7 +74,7 @@ func TestFrontendInstall(t *testing.T) {
 				notes = append(notes, c.Name+": "+c.Detail)
 			}
 		}
-		if len(notes) != 1 || !strings.Contains(notes[0], "the tile /TRFDEMO/HELP_TILE of the page /TRFDEMO/COMPANIES_PAGE is in no app collection of the role /TRFIN/COMPANY_CLERK") {
+		if len(notes) != 1 || !strings.Contains(notes[0], "the tile /TRFDEMO/HELP_TILE of the page /TRFDEMO/COMPANIES_PAGE is in no app collection of the role /TRDEMOFIN/COMPANY_CLERK") {
 			t.Errorf("warnings: %v", notes)
 		}
 		types, err := k.ObjectTypes(ctx, "TRFRONTEND")
@@ -95,13 +95,13 @@ func TestFrontendObjectRules(t *testing.T) {
 		{"icon", "objects/TRFRONTEND/APP/HELP.json", `{"name":"/TRFDEMO/HELP","content":{"TEXTS":[{"LANGUAGE":"en","TITLE":"Help"}],"ICON":"Help Me",
 			"TARGET":{"KIND":"URL","URL":"https://example.org"}}}`, "is no name of an icon of TRUI"},
 		{"list without entity set", "objects/TRFRONTEND/APP/HELP.json", `{"name":"/TRFDEMO/HELP","content":{"TEXTS":[{"LANGUAGE":"en","TITLE":"Help"}],
-			"TARGET":{"KIND":"LIST","SERVICE":"/TRFIN/COMPANY_SERVICE"}}}`, "needs SERVICE and ENTITY_SET"},
+			"TARGET":{"KIND":"LIST","SERVICE":"/TRDEMOFIN/COMPANY_SERVICE"}}}`, "needs SERVICE and ENTITY_SET"},
 		{"unknown entity set", "objects/TRFRONTEND/APP/HELP.json", `{"name":"/TRFDEMO/HELP","content":{"TEXTS":[{"LANGUAGE":"en","TITLE":"Help"}],
-			"TARGET":{"KIND":"LIST","SERVICE":"/TRFIN/COMPANY_SERVICE","ENTITY_SET":"Nope"}}}`, "Nope is no entity set of /TRFIN/COMPANY_SERVICE"},
+			"TARGET":{"KIND":"LIST","SERVICE":"/TRDEMOFIN/COMPANY_SERVICE","ENTITY_SET":"Nope"}}}`, "Nope is no entity set of /TRDEMOFIN/COMPANY_SERVICE"},
 		{"tile of a missing app", "objects/TRFRONTEND/TILE/HELP_TILE.json", `{"name":"/TRFDEMO/HELP_TILE","content":{"APP":"/TRFDEMO/NOPE"}}`,
 			"object /TRFDEMO/NOPE does not exist"},
-		{"section of another namespace", "objects/TRFRONTEND/UI_ANNOTATIONS/COMPANIES_UI.json", `{"name":"/TRFDEMO/COMPANIES_UI","content":{"ENTITY":"/TRFIN/COMPANIES",
-			"DETAIL":{"SECTIONS":[{"ID":"/TROTTO/MARKET"}]}}}`, "carries the namespace of another package"},
+		{"section of another namespace", "objects/TRFRONTEND/UI_ANNOTATIONS/COMPANIES_UI.json", `{"name":"/TRFDEMO/COMPANIES_UI","content":{"ENTITY":"/TRDEMOFIN/COMPANIES",
+			"DETAIL":{"SECTIONS":[{"ID":"/TRDEMOOTTO/MARKET"}]}}}`, "carries the namespace of another package"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -215,17 +215,17 @@ func TestFrontendLocalConfiguration(t *testing.T) {
 	})
 }
 
-// uiPackages are TRFRONTEND with TRFIN and TROTTO and their UI annotations.
+// uiPackages are TRFRONTEND with TRDEMOFIN and TRDEMOOTTO and their UI annotations.
 func uiPackages(t *testing.T) []*model.Package {
 	t.Helper()
 	root := testutil.ModuleRoot(t)
 	return []*model.Package{
 		testutil.LoadDir(t, filepath.Join(root, "testdata", "frontend", "TRUI")),
 		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFRONTEND")),
-		testutil.Example(t, "TRFIN"),
-		testutil.Example(t, "TROTTO"),
-		testutil.Example(t, "TRFINUI"),
-		testutil.Example(t, "TROTTOUI"),
+		testutil.Example(t, "TRDEMOFIN"),
+		testutil.Example(t, "TRDEMOOTTO"),
+		testutil.Example(t, "TRDEMOFINUI"),
+		testutil.Example(t, "TRDEMOOTTOUI"),
 	}
 }
 
@@ -257,7 +257,7 @@ func TestFrontendMetadata(t *testing.T) {
 		}
 		meta := func(lang string) []byte {
 			t.Helper()
-			doc, err := k.ServiceMetadata(ctx, "/TRFIN/COMPANY_SERVICE", kernel.ServiceMetadataOptions{Language: lang, Format: "json"})
+			doc, err := k.ServiceMetadata(ctx, "/TRDEMOFIN/COMPANY_SERVICE", kernel.ServiceMetadataOptions{Language: lang, Format: "json"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -267,18 +267,18 @@ func TestFrontendMetadata(t *testing.T) {
 		if !strings.Contains(string(doc), `"$Alias": "Frontend"`) && !strings.Contains(string(doc), `"$Alias":"Frontend"`) {
 			t.Errorf("no reference to the vocabulary: %s", doc)
 		}
-		list, _ := annotation(t, doc, "TRFIN.TRFIN_COMPANIES", "Frontend.ListPage").(map[string]any)
+		list, _ := annotation(t, doc, "TRDEMOFIN.TRDEMOFIN_COMPANIES", "Frontend.ListPage").(map[string]any)
 		var columns []string
 		for _, c := range list["Columns"].([]any) {
 			columns = append(columns, c.(map[string]any)["Property"].(map[string]any)["$PropertyPath"].(string))
 		}
-		if strings.Join(columns, " ") != "COMPANY_ID NAME TROTTO_OTTO_ID CITY COUNTRY STATUS" {
+		if strings.Join(columns, " ") != "COMPANY_ID NAME TRDEMOOTTO_OTTO_ID CITY COUNTRY STATUS" {
 			t.Errorf("columns: %v", columns)
 		}
-		if fmt := list["Actions"].([]any); len(fmt) != 2 || fmt[0] != "TRFIN.BLOCK" || fmt[1] != "TRFIN.TROTTO_SYNC" {
+		if fmt := list["Actions"].([]any); len(fmt) != 2 || fmt[0] != "TRDEMOFIN.BLOCK" || fmt[1] != "TRDEMOFIN.TRDEMOOTTO_SYNC" {
 			t.Errorf("actions: %v", list["Actions"])
 		}
-		detail, _ := annotation(t, doc, "TRFIN.TRFIN_COMPANIES", "Frontend.DetailPage").(map[string]any)
+		detail, _ := annotation(t, doc, "TRDEMOFIN.TRDEMOFIN_COMPANIES", "Frontend.DetailPage").(map[string]any)
 		var sections []string
 		var main []string
 		table := ""
@@ -294,17 +294,17 @@ func TestFrontendMetadata(t *testing.T) {
 				table = nav["$NavigationPropertyPath"].(string)
 			}
 		}
-		if strings.Join(sections, " ") != "GENERAL /TROTTOUI/MARKETPLACE CONTACTS" || strings.Join(main, " ") != "COMPANY_ID NAME TROTTO_OTTO_ID STATUS FOUNDED_ON" ||
+		if strings.Join(sections, " ") != "GENERAL /TRDEMOOTTOUI/MARKETPLACE CONTACTS" || strings.Join(main, " ") != "COMPANY_ID NAME TRDEMOOTTO_OTTO_ID STATUS FOUNDED_ON" ||
 			table == "" {
 			t.Errorf("detail: sections %v, fields %v, table %q", sections, main, table)
 		}
-		header, _ := annotation(t, meta("de"), "TRFIN.TRFIN_COMPANIES", "Frontend.Header").(map[string]any)
+		header, _ := annotation(t, meta("de"), "TRDEMOFIN.TRDEMOFIN_COMPANIES", "Frontend.Header").(map[string]any)
 		if header["TypeNamePlural"] != "Firmen" || header["Title"].(map[string]any)["$PropertyPath"] != "NAME" {
 			t.Errorf("header in German: %v", header)
 		}
 
 		// A changed annotation reaches the metadata at once.
-		dir := testutil.CopyExample(t, "TROTTOUI")
+		dir := testutil.CopyExample(t, "TRDEMOOTTOUI")
 		file := filepath.Join(dir, "objects", "TRFRONTEND", "UI_ANNOTATIONS", "COMPANIES_UI.json")
 		data, _ := os.ReadFile(file)
 		testutil.WriteFile(t, dir, "objects/TRFRONTEND/UI_ANNOTATIONS/COMPANIES_UI.json", []byte(strings.Replace(string(data), `"WIDTH": 10`, `"WIDTH": 12`, 1)))
@@ -334,12 +334,12 @@ func homeKernel(t *testing.T, k *kernel.Kernel) client {
 			t.Fatal(err)
 		}
 	}
-	if err := k.ActivateService(ctx, "/TRFIN/COMPANY_SERVICE", "test"); err != nil {
+	if err := k.ActivateService(ctx, "/TRDEMOFIN/COMPANY_SERVICE", "test"); err != nil {
 		t.Fatal(err)
 	}
 	users := map[string][]string{
-		"clara": {"/TRFIN/COMPANY_CLERK", "/TRFIN/ODATA_USER", "/TRFRONTEND/USER"},
-		"nora":  {"/TRFIN/COMPANY_CLERK", "/TRFRONTEND/USER"},
+		"clara": {"/TRDEMOFIN/COMPANY_CLERK", "/TRDEMOFIN/ODATA_USER", "/TRFRONTEND/USER"},
+		"nora":  {"/TRDEMOFIN/COMPANY_CLERK", "/TRFRONTEND/USER"},
 	}
 	for user, roles := range users {
 		if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
@@ -352,10 +352,10 @@ func homeKernel(t *testing.T, k *kernel.Kernel) client {
 		}
 	}
 	for _, country := range []string{"DE", "AT", "US"} {
-		mustInsert(t, k, "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": country, "NAME": country})
+		mustInsert(t, k, "/TRDEMOFIN/COUNTRIES", values{"COUNTRY_CODE": country, "NAME": country})
 	}
 	for i, x := range []struct{ id, country, status string }{{"C1", "DE", "ACTIVE"}, {"C2", "AT", "ACTIVE"}, {"C3", "DE", "BLOCKED"}, {"C4", "US", "ACTIVE"}} {
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{"/RT/TENANT": "ACME", "COMPANY_ID": x.id, "NAME": "Company " + string(rune('A'+i)),
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{"/RT/TENANT": "ACME", "COMPANY_ID": x.id, "NAME": "Company " + string(rune('A'+i)),
 			"COUNTRY": x.country, "STATUS": x.status})
 	}
 	return c
@@ -403,7 +403,7 @@ func TestFrontendStartPage(t *testing.T) {
 		if tiles := h.Spaces[0].Pages[0].Sections[0].Tiles; strings.Join(tiles, " ") != "/TRFDEMO/COMPANIES_TILE /TRFDEMO/ACTIVE_TILE" {
 			t.Errorf("tiles of the section: %v", tiles)
 		}
-		if len(h.Apps) != 1 || h.Apps[0].Title != "Firmen" || h.Apps[0].Target.URL != "/rt/odata/trfin/company_service/" || h.Apps[0].Target.Kind != "LIST" {
+		if len(h.Apps) != 1 || h.Apps[0].Title != "Firmen" || h.Apps[0].Target.URL != "/rt/odata/trdemofin/company_service/" || h.Apps[0].Target.Kind != "LIST" {
 			t.Errorf("apps: %+v", h.Apps)
 		}
 		// Without the start of the service, the app and its tiles are gone.
@@ -442,7 +442,7 @@ func TestFrontendStartPage(t *testing.T) {
 			{"LocalPages", `{"NAME":"/LOCAL/TOOLS_PAGE","LocalPageTexts":[{"LANGUAGE":"en","TITLE":"Tools"}],
 				"LocalPageSections":[{"SECTION":"MAIN","POSITION":1,"LocalPageSectionTiles":[{"POSITION":1,"TILE":"/LOCAL/WIKI_TILE"},{"POSITION":2,"TILE":"/TRFDEMO/ACTIVE_TILE"}]}]}`},
 			{"LocalSpaces", `{"NAME":"/LOCAL/TOOLS_SPACE","LocalSpaceTexts":[{"LANGUAGE":"en","TITLE":"Tools"}],"LocalSpacePages":[{"POSITION":1,"PAGE":"/LOCAL/TOOLS_PAGE"}]}`},
-			{"LocalRoleContents", `{"ROLE":"/TRFIN/COMPANY_CLERK","LocalRoleCollections":[{"APP_COLLECTION":"/LOCAL/TOOLS"}],
+			{"LocalRoleContents", `{"ROLE":"/TRDEMOFIN/COMPANY_CLERK","LocalRoleCollections":[{"APP_COLLECTION":"/LOCAL/TOOLS"}],
 				"LocalRoleSpaces":[{"POSITION":1,"SPACE":"/LOCAL/TOOLS_SPACE"}]}`},
 		} {
 			if a := c.do("POST", configRoot+x.set, adam, x.body); a.status != 201 {
@@ -607,13 +607,13 @@ func TestFrontendExamples(t *testing.T) {
 		if err := k.ActivateHTTPService(ctx, "/trfrontend"); err != nil {
 			t.Fatal(err)
 		}
-		if err := k.ActivateService(ctx, "/TRFIN/COMPANY_SERVICE", "test"); err != nil {
+		if err := k.ActivateService(ctx, "/TRDEMOFIN/COMPANY_SERVICE", "test"); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Users().Create(ctx, "olga", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
 		}
-		for _, role := range []string{"/TRFIN/COMPANY_CLERK", "/TRFIN/ODATA_USER", "/TRFRONTEND/USER", "/TROTTO/SYNC_OPERATOR"} {
+		for _, role := range []string{"/TRDEMOFIN/COMPANY_CLERK", "/TRDEMOFIN/ODATA_USER", "/TRFRONTEND/USER", "/TRDEMOOTTO/SYNC_OPERATOR"} {
 			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "olga", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
 				t.Fatal(err)
 			}
@@ -626,12 +626,12 @@ func TestFrontendExamples(t *testing.T) {
 		for _, s := range h.Spaces {
 			spaces = append(spaces, s.Name+"="+s.Title)
 		}
-		if strings.Join(spaces, " ") != "/TRFINUI/COMPANIES_SPACE=Firmen /TROTTOUI/OTTO_SPACE=OTTO" || len(h.Tiles) != 3 || len(h.Apps) != 2 {
+		if strings.Join(spaces, " ") != "/TRDEMOFINUI/COMPANIES_SPACE=Firmen /TRDEMOOTTOUI/OTTO_SPACE=OTTO" || len(h.Tiles) != 3 || len(h.Apps) != 2 {
 			t.Errorf("start page of the examples: %+v", h)
 		}
-		a := c.do("GET", "/trfrontend/api/tile-value?name="+url.QueryEscape("/TROTTOUI/WITHOUT_PARTNER_TILE"), basicAuth("olga", "secret"), "")
+		a := c.do("GET", "/trfrontend/api/tile-value?name="+url.QueryEscape("/TRDEMOOTTOUI/WITHOUT_PARTNER_TILE"), basicAuth("olga", "secret"), "")
 		if a.status != 200 || !strings.Contains(a.body, `"VALUE":0`) {
-			t.Errorf("metric of TROTTOUI: %d %s", a.status, a.body)
+			t.Errorf("metric of TRDEMOOTTOUI: %d %s", a.status, a.body)
 		}
 	})
 }

@@ -34,8 +34,8 @@ func entries(t *testing.T, js string) []model.ValueEntry {
 }
 
 // TestCheckAuthorization checks the rules for granted values against the
-// fields of /TRFIN/COMPANY (COMPANY_ID CHAR(10), COUNTRY CHAR(2),
-// ACTIVITY), /TRFIN/STATUS_SCOPE (STATUS with fixed values) and an object
+// fields of /TRDEMOFIN/COMPANY (COMPANY_ID CHAR(10), COUNTRY CHAR(2),
+// ACTIVITY), /TRDEMOFIN/STATUS_SCOPE (STATUS with fixed values) and an object
 // with INT4, BOOL and UUID fields.
 func TestCheckAuthorization(t *testing.T) {
 	s := withObject(t, func(o *model.AuthorizationObject) {
@@ -43,7 +43,7 @@ func TestCheckAuthorization(t *testing.T) {
 			authDomain("CODE", "/TRBASE/COUNTRY_CODE"), activityField}
 	})
 	company := func(fields map[string]string) model.Authorization {
-		a := model.Authorization{Object: "/TRFIN/COMPANY", Fields: map[string][]model.ValueEntry{
+		a := model.Authorization{Object: "/TRDEMOFIN/COMPANY", Fields: map[string][]model.ValueEntry{
 			"COMPANY_ID": entries(t, `[{"pattern":"*"}]`), "COUNTRY": entries(t, `[{"value":"DE"}]`), "ACTIVITY": entries(t, `[{"value":"READ"}]`)}}
 		for f, js := range fields {
 			if js == "" {
@@ -74,19 +74,19 @@ func TestCheckAuthorization(t *testing.T) {
 		want string
 	}{
 		{"missing field", company(map[string]string{"COUNTRY": ""}), "field COUNTRY: is missing; write * to grant all values"},
-		{"unknown field", company(map[string]string{"REGION": `[{"pattern":"*"}]`}), "field REGION: is no field of /TRFIN/COMPANY"},
+		{"unknown field", company(map[string]string{"REGION": `[{"pattern":"*"}]`}), "field REGION: is no field of /TRDEMOFIN/COMPANY"},
 		{"number for CHAR", company(map[string]string{"COUNTRY": `[{"value":49}]`}), "expected a string for CHAR"},
 		{"too long", company(map[string]string{"COUNTRY": `[{"value":"DEU"}]`}), "value has 3 characters, CHAR(2) allows 2"},
 		{"prefix too long", company(map[string]string{"COUNTRY": `[{"pattern":"DEU*"}]`}), `pattern "DEU*": value has 3 characters`},
 		{"empty range", company(map[string]string{"COUNTRY": `[{"from":"SK","to":"PL"}]`}), "is empty; from must not be greater than to"},
 		{"pattern inside", company(map[string]string{"COUNTRY": `[{"pattern":"D*E"}]`}), `pattern "D*E" is no pattern`},
 		{"pattern in front", company(map[string]string{"COUNTRY": `[{"pattern":"*E"}]`}), `pattern "*E" is no pattern`},
-		{"activity not allowed", company(map[string]string{"ACTIVITY": `[{"value":"APPROVE"}]`}), "APPROVE is not allowed for /TRFIN/COMPANY"},
+		{"activity not allowed", company(map[string]string{"ACTIVITY": `[{"value":"APPROVE"}]`}), "APPROVE is not allowed for /TRDEMOFIN/COMPANY"},
 		{"no activity", company(map[string]string{"ACTIVITY": `[{"value":"DANCE"}]`}), `"DANCE" is no fixed value of /RT/ACTIVITY`},
 		{"range on ACTIVITY", company(map[string]string{"ACTIVITY": `[{"from":"CREATE","to":"READ"}]`}), "ACTIVITY takes single activities or *"},
 		{"prefix on ACTIVITY", company(map[string]string{"ACTIVITY": `[{"pattern":"RE*"}]`}), "ACTIVITY takes single activities or *"},
-		{"not a fixed value", model.Authorization{Object: "/TRFIN/STATUS_SCOPE", Fields: map[string][]model.ValueEntry{
-			"STATUS": entries(t, `[{"value":"GONE"}]`), "COUNTRY": entries(t, `[{"pattern":"*"}]`)}}, `"GONE" is no fixed value of /TRFIN/COMPANY_STATUS`},
+		{"not a fixed value", model.Authorization{Object: "/TRDEMOFIN/STATUS_SCOPE", Fields: map[string][]model.ValueEntry{
+			"STATUS": entries(t, `[{"value":"GONE"}]`), "COUNTRY": entries(t, `[{"pattern":"*"}]`)}}, `"GONE" is no fixed value of /TRDEMOFIN/COMPANY_STATUS`},
 		{"text for INT4", model.Authorization{Object: "/TRS/COMPANY", Fields: map[string][]model.ValueEntry{"COUNT": entries(t, `[{"value":"7"}]`),
 			"FLAG": entries(t, `[{"pattern":"*"}]`), "ID": entries(t, `[{"pattern":"*"}]`), "CODE": entries(t, `[{"pattern":"*"}]`), "ACTIVITY": entries(t, `[{"pattern":"*"}]`)}},
 			"expected an integer for INT8"},
@@ -96,7 +96,7 @@ func TestCheckAuthorization(t *testing.T) {
 		{"prefix on UUID", model.Authorization{Object: "/TRS/COMPANY", Fields: map[string][]model.ValueEntry{"COUNT": entries(t, `[{"pattern":"*"}]`),
 			"FLAG": entries(t, `[{"pattern":"*"}]`), "ID": entries(t, `[{"pattern":"0F*"}]`), "CODE": entries(t, `[{"pattern":"*"}]`), "ACTIVITY": entries(t, `[{"pattern":"*"}]`)}},
 			"patterns other than * need CHAR, INT4 or INT8, not UUID"},
-		{"unknown object", model.Authorization{Object: "/TRFIN/NOPE"}, "authorization object /TRFIN/NOPE does not exist"},
+		{"unknown object", model.Authorization{Object: "/TRDEMOFIN/NOPE"}, "authorization object /TRDEMOFIN/NOPE does not exist"},
 	} {
 		var got []string
 		for _, p := range model.CheckAuthorization(s, c.auth) {
@@ -134,11 +134,11 @@ func composite(name string, members ...string) model.Role {
 
 // TestRoleRules checks names and references of roles and composite roles.
 func TestRoleRules(t *testing.T) {
-	company := model.Authorization{Object: "/TRFIN/COMPANY", Fields: map[string][]model.ValueEntry{}}
+	company := model.Authorization{Object: "/TRDEMOFIN/COMPANY", Fields: map[string][]model.ValueEntry{}}
 	withRoles := func(roles ...model.Role) *model.Schema {
 		return withTRS(t, trs(model.Package{Roles: roles}))
 	}
-	if err := Schema(withRoles(role("/TRS/CLERK", company), composite("/TRS/ALL", "/TRS/CLERK", "/TRFIN/COMPANY_CLERK")), Options{}); err != nil {
+	if err := Schema(withRoles(role("/TRS/CLERK", company), composite("/TRS/ALL", "/TRS/CLERK", "/TRDEMOFIN/COMPANY_CLERK")), Options{}); err != nil {
 		t.Fatalf("valid roles: %v", err)
 	}
 	for _, c := range []struct {
@@ -147,14 +147,14 @@ func TestRoleRules(t *testing.T) {
 		code  rterr.Code
 		want  string
 	}{
-		{"namespace", []model.Role{role("/TRFIN/MINE")}, rterr.CodeName, "must start with the namespace /TRS/"},
+		{"namespace", []model.Role{role("/TRDEMOFIN/MINE")}, rterr.CodeName, "must start with the namespace /TRS/"},
 		{"unknown object", []model.Role{role("/TRS/X", model.Authorization{Object: "/TRS/NOPE"})}, rterr.CodeRole, "authorization object /TRS/NOPE does not exist"},
-		{"object not required", []model.Role{role("/TRS/X", model.Authorization{Object: "/TROTTO/MARKETPLACE"})}, rterr.CodeNotVisible, "/TROTTO/MARKETPLACE belongs to TROTTO, which TRS does not require"},
+		{"object not required", []model.Role{role("/TRS/X", model.Authorization{Object: "/TRDEMOOTTO/MARKETPLACE"})}, rterr.CodeNotVisible, "/TRDEMOOTTO/MARKETPLACE belongs to TRDEMOOTTO, which TRS does not require"},
 		{"composite in composite", []model.Role{role("/TRS/A"), composite("/TRS/B", "/TRS/A"), composite("/TRS/C", "/TRS/B")}, rterr.CodeRole, "/TRS/B is a composite role"},
 		{"all authorizations", []model.Role{composite("/TRS/B", model.AllAuthorizationsRole)}, rterr.CodeReservedObject, "is no member of composite roles"},
 		{"unknown member", []model.Role{composite("/TRS/B", "/TRS/NOPE")}, rterr.CodeRole, "role /TRS/NOPE does not exist"},
 		{"member twice", []model.Role{role("/TRS/A"), composite("/TRS/B", "/TRS/A", "/TRS/A")}, rterr.CodeDuplicate, "listed twice"},
-		{"member not required", []model.Role{composite("/TRS/B", "/TROTTO/SYNC_OPERATOR")}, rterr.CodeNotVisible, "role /TROTTO/SYNC_OPERATOR belongs to TROTTO"},
+		{"member not required", []model.Role{composite("/TRS/B", "/TRDEMOOTTO/SYNC_OPERATOR")}, rterr.CodeNotVisible, "role /TRDEMOOTTO/SYNC_OPERATOR belongs to TRDEMOOTTO"},
 		{"empty composite", []model.Role{composite("/TRS/B")}, rterr.CodeRole, "at least one role"},
 		{"no English", []model.Role{{Name: "/TRS/X", Texts: map[string]model.Label{"de": {Label: "X"}}}}, rterr.CodeText, "texts in English"},
 	} {
@@ -167,7 +167,7 @@ func TestRoleRules(t *testing.T) {
 	s.Roles["/TRS/B"] = &model.Role{Name: "/TRS/B", Owner: "TRS", Texts: en, Composite: true, Roles: []string{"/LOCAL/MINE"}}
 	expect(t, s, rterr.CodeNotVisible, "role /LOCAL/MINE belongs to LOCAL, which TRS does not require")
 	delete(s.Roles, "/TRS/B")
-	s.Roles["/LOCAL/OPS"] = &model.Role{Name: "/LOCAL/OPS", Owner: model.Local, Texts: en, Composite: true, Roles: []string{"/TROTTO/SYNC_OPERATOR", "/TRS/A"}}
+	s.Roles["/LOCAL/OPS"] = &model.Role{Name: "/LOCAL/OPS", Owner: model.Local, Texts: en, Composite: true, Roles: []string{"/TRDEMOOTTO/SYNC_OPERATOR", "/TRS/A"}}
 	if err := Schema(s, Options{}); err != nil {
 		t.Errorf("local composite role: %v", err)
 	}

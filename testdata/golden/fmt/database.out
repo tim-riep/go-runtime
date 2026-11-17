@@ -3,8 +3,8 @@ public class /TRX/DB
   public static method SYNC(country: STRING) returns INT4
     var audit = open session
     var count = 0
-    for company in select from /TRX/COMPANIES where COUNTRY = country and /TROTTO/OTTO_ID is null order by NAME descending, COMPANY_ID limit 10 using audit
-      company./TROTTO/OTTO_ID = "X" # extension field
+    for company in select from /TRX/COMPANIES where COUNTRY = country and /TRDEMOOTTO/OTTO_ID is null order by NAME descending, COMPANY_ID limit 10 using audit
+      company./TRDEMOOTTO/OTTO_ID = "X" # extension field
       update company
       count = count + 1
     end

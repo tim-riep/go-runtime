@@ -1,0 +1,13 @@
+# Rules for partner IDs on OTTO.
+public class /TRDEMOOTTO/ID_RULES
+
+  public static method BUILD(id: /TRDEMOFIN/COMPANY) returns /TRDEMOOTTO/OTTO_PARTNER
+    return "OTTO-" + id
+  end
+
+  # The countries with an OTTO marketplace.
+  public static method MARKET(country: STRING) returns BOOL
+    return country = "DE" or country = "AT"
+  end
+
+end

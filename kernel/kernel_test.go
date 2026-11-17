@@ -60,12 +60,12 @@ func initialized(t *testing.T, k *kernel.Kernel) {
 }
 
 func examples(t *testing.T) []*model.Package {
-	return []*model.Package{testutil.Example(t, "TROTTO"), testutil.Example(t, "TRFIN")}
+	return []*model.Package{testutil.Example(t, "TRDEMOOTTO"), testutil.Example(t, "TRDEMOFIN")}
 }
 
 // legacyExample loads an example package without structures, array types
 // and includes, for kernel versions before 5: the address included into
-// /TRFIN/COMPANIES becomes its former COUNTRY field.
+// /TRDEMOFIN/COMPANIES becomes its former COUNTRY field.
 func legacyExample(t *testing.T, name string) *model.Package {
 	p := testutil.Example(t, name)
 	p.Structures, p.ArrayTypes, p.StructureExtensions, p.AuthorizationObjects, p.Roles, p.Services = nil, nil, nil, nil, nil, nil
@@ -73,7 +73,7 @@ func legacyExample(t *testing.T, name string) *model.Package {
 	p.DataElements = withoutKernelDomains(p.DataElements)
 	var tables []model.Table
 	for _, tb := range p.Tables {
-		if tb.Name == "/TRFIN/COMPANIES_ARCHIVE" {
+		if tb.Name == "/TRDEMOFIN/COMPANIES_ARCHIVE" {
 			continue
 		}
 		for _, inc := range tb.Includes {
@@ -91,7 +91,7 @@ func legacyExample(t *testing.T, name string) *model.Package {
 }
 
 func legacyExamples(t *testing.T) []*model.Package {
-	return []*model.Package{legacyExample(t, "TROTTO"), legacyExample(t, "TRBASE"), legacyExample(t, "TRFIN")}
+	return []*model.Package{legacyExample(t, "TRDEMOOTTO"), legacyExample(t, "TRBASE"), legacyExample(t, "TRDEMOFIN")}
 }
 
 // sameSchema fails if the repository differs from want.
@@ -182,16 +182,16 @@ func TestInstall(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := p.Summary(); got != "install TRFIN 1.0.0, TROTTO 1.0.0 ("+k.Dialect().Name()+")" {
+		if got := p.Summary(); got != "install TRDEMOFIN 1.0.0, TRDEMOOTTO 1.0.0 ("+k.Dialect().Name()+")" {
 			t.Errorf("summary: %s", got)
 		}
 		if p.LogID == "" {
 			t.Error("no log entry")
 		}
-		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")))
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRDEMOFIN"), testutil.Example(t, "TRDEMOOTTO")))
 
 		var already *rterr.AlreadyInstalled
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); !errors.As(err, &already) {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); !errors.As(err, &already) {
 			t.Fatalf("expected AlreadyInstalled, got %v", err)
 		}
 	})
@@ -200,9 +200,9 @@ func TestInstall(t *testing.T) {
 func TestInstallMissingDependency(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		initialized(t, k)
-		_, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TROTTO")}, kernel.Options{})
+		_, err := k.Install(context.Background(), []*model.Package{testutil.Example(t, "TRDEMOOTTO")}, kernel.Options{})
 		var dep *rterr.DependencyError
-		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyMissing || dep.Required != "TRFIN" {
+		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyMissing || dep.Required != "TRDEMOFIN" {
 			t.Fatalf("got %v", err)
 		}
 	})
@@ -214,7 +214,7 @@ func TestFailedInstallRollsBack(t *testing.T) {
 		initialized(t, k)
 		// A table that already exists outside the repository makes CREATE
 		// TABLE fail after other statements have run.
-		if _, err := k.DB().ExecContext(ctx, `CREATE TABLE "/TRFIN/COUNTRIES" ("X" INTEGER)`); err != nil {
+		if _, err := k.DB().ExecContext(ctx, `CREATE TABLE "/TRDEMOFIN/COUNTRIES" ("X" INTEGER)`); err != nil {
 			t.Fatal(err)
 		}
 		_, err := k.Install(ctx, examples(t), kernel.Options{})
@@ -229,7 +229,7 @@ func TestFailedInstallRollsBack(t *testing.T) {
 		if len(s.Packages) != kernelPackages {
 			t.Fatal("packages recorded after failed install")
 		}
-		for _, name := range []string{"/TRFIN/BANK_ACCOUNTS", "/TRFIN/COMPANIES"} {
+		for _, name := range []string{"/TRDEMOFIN/BANK_ACCOUNTS", "/TRDEMOFIN/COMPANIES"} {
 			var n int
 			if err := k.DB().QueryRowContext(ctx, `SELECT count(*) FROM "`+name+`"`).Scan(&n); err == nil {
 				t.Errorf("table %s survived the rollback", name)

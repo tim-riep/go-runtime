@@ -33,7 +33,7 @@ import (
 const localClerk = `{
   "name": "/LOCAL/CLERK",
   "texts": { "en": { "label": "Local clerk" } },
-  "authorizations": [{ "object": "/TRFIN/COMPANY", "fields": {
+  "authorizations": [{ "object": "/TRDEMOFIN/COMPANY", "fields": {
     "COMPANY_ID": [{ "value": "C1" }], "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } }]
 }`
 
@@ -44,12 +44,12 @@ func importRole(t *testing.T, k *kernel.Kernel, js string) {
 	}
 }
 
-// finWithField returns TRFIN in a new version whose /TRFIN/COMPANY has the
+// finWithField returns TRDEMOFIN in a new version whose /TRDEMOFIN/COMPANY has the
 // field REGION, which its checks in code leave out; with roles, its roles
 // grant it.
 func finWithField(t *testing.T, version string, roles bool) *model.Package {
 	t.Helper()
-	dir := testutil.CopyExample(t, "TRFIN")
+	dir := testutil.CopyExample(t, "TRDEMOFIN")
 	path := filepath.Join(dir, "schema", "authorization-objects", "COMPANY.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -74,9 +74,9 @@ func finWithField(t *testing.T, version string, roles bool) *model.Package {
 	return p
 }
 
-// regionInChecks adds REGION = any to the checks of /TRFIN/COMPANY in the
-// sources of TRFIN in dir, and the city as region to the authorization of
-// the business object /TRFIN/COMPANY.
+// regionInChecks adds REGION = any to the checks of /TRDEMOFIN/COMPANY in the
+// sources of TRDEMOFIN in dir, and the city as region to the authorization of
+// the business object /TRDEMOFIN/COMPANY.
 func regionInChecks(t *testing.T, dir string) {
 	t.Helper()
 	bo, err := os.ReadFile(filepath.Join(dir, "schema", "business-objects", "COMPANY.json"))
@@ -112,35 +112,35 @@ func TestRoleLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 		roles := k.Roles()
-		clerk, err := roles.Get(ctx, "/TRFIN/COMPANY_CLERK")
+		clerk, err := roles.Get(ctx, "/TRDEMOFIN/COMPANY_CLERK")
 		if err != nil || len(clerk.Authorizations) != 1 || len(clerk.Authorizations[0].Problems) != 0 || clerk.Authorizations[0].AllActivities {
 			t.Fatalf("clerk: %+v %v", clerk, err)
 		}
-		if admin, err := roles.Get(ctx, "/TRFIN/COMPANY_ADMIN"); err != nil || !admin.Authorizations[0].AllActivities {
+		if admin, err := roles.Get(ctx, "/TRDEMOFIN/COMPANY_ADMIN"); err != nil || !admin.Authorizations[0].AllActivities {
 			t.Errorf("admin: %+v %v", admin, err)
 		}
 
 		// A package whose role does not fit its object is not installed.
 		dir := t.TempDir()
-		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRROLE", "version": "1.0.0", "requires": [{ "id": "TRFIN" }] }`))
+		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRROLE", "version": "1.0.0", "requires": [{ "id": "TRDEMOFIN" }] }`))
 		testutil.WriteFile(t, dir, "schema/roles/READER.json", []byte(`{ "name": "/TRROLE/READER", "texts": { "en": { "label": "Reader" } },
-			"authorizations": [{ "object": "/TRFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } }] }`))
+			"authorizations": [{ "object": "/TRDEMOFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } }] }`))
 		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{}); err == nil || !strings.Contains(err.Error(), "field COUNTRY: is missing") {
 			t.Fatalf("role without a field: %v", err)
 		}
 		testutil.WriteFile(t, dir, "schema/roles/READER.json", []byte(`{ "name": "/TRROLE/READER", "texts": { "en": { "label": "Reader" } },
-			"authorizations": [{ "object": "/TRFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "value": "DE" }], "ACTIVITY": [{ "value": "READ" }] } }] }`))
+			"authorizations": [{ "object": "/TRDEMOFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "value": "DE" }], "ACTIVITY": [{ "value": "READ" }] } }] }`))
 		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 
 		// Local roles: namespace, values, create, export.
 		var ia *rterr.InvalidArgument
-		if _, err := roles.Import(ctx, []byte(strings.Replace(localClerk, "/LOCAL/CLERK", "/TRFIN/MINE", 1)), "role.json", kernel.RoleOptions{}); !errors.As(err, &ia) {
+		if _, err := roles.Import(ctx, []byte(strings.Replace(localClerk, "/LOCAL/CLERK", "/TRDEMOFIN/MINE", 1)), "role.json", kernel.RoleOptions{}); !errors.As(err, &ia) {
 			t.Errorf("local role outside /LOCAL/: %v", err)
 		}
 		if _, err := roles.Import(ctx, []byte(strings.Replace(localClerk, `"READ"`, `"APPROVE"`, 1)), "role.json", kernel.RoleOptions{}); err == nil ||
-			!strings.Contains(err.Error(), "APPROVE is not allowed for /TRFIN/COMPANY") {
+			!strings.Contains(err.Error(), "APPROVE is not allowed for /TRDEMOFIN/COMPANY") {
 			t.Errorf("activity not allowed: %v", err)
 		}
 		importRole(t, k, localClerk)
@@ -152,16 +152,16 @@ func TestRoleLifecycle(t *testing.T) {
 		if err != nil || !strings.Contains(string(out), `"value": "C1"`) {
 			t.Fatalf("export: %s %v", out, err)
 		}
-		importRole(t, k, `{ "name": "/LOCAL/OPERATIONS", "texts": { "en": { "label": "Operations" } }, "roles": ["/LOCAL/CLERK", "/TRFIN/COMPANY_CLERK", "/TROTTO/SYNC_OPERATOR"] }`)
+		importRole(t, k, `{ "name": "/LOCAL/OPERATIONS", "texts": { "en": { "label": "Operations" } }, "roles": ["/LOCAL/CLERK", "/TRDEMOFIN/COMPANY_CLERK", "/TRDEMOOTTO/SYNC_OPERATOR"] }`)
 		importRole(t, k, `{ "name": "/LOCAL/OTTO", "texts": { "en": { "label": "OTTO" } }, "authorizations": [
-			{ "object": "/TROTTO/MARKETPLACE", "fields": { "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } },
-			{ "object": "/TRFIN/STATUS_SCOPE", "fields": { "STATUS": [{ "value": "ACTIVE" }], "COUNTRY": [{ "pattern": "*" }] } }] }`)
+			{ "object": "/TRDEMOOTTO/MARKETPLACE", "fields": { "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } },
+			{ "object": "/TRDEMOFIN/STATUS_SCOPE", "fields": { "STATUS": [{ "value": "ACTIVE" }], "COUNTRY": [{ "pattern": "*" }] } }] }`)
 		if err := roles.Create(ctx, &model.Role{Name: "/LOCAL/NESTED", Texts: map[string]model.Label{"en": {Label: "x"}}, Composite: true, Roles: []string{"/LOCAL/OPERATIONS"}},
 			kernel.RoleOptions{}); err == nil || !strings.Contains(err.Error(), "/LOCAL/OPERATIONS is a composite role") {
 			t.Errorf("composite role in composite role: %v", err)
 		}
 
-		// A new field of an object: the roles of TRFIN must grant it; other
+		// A new field of an object: the roles of TRDEMOFIN must grant it; other
 		// roles grant nothing on the object until maintained.
 		if _, err := k.Upgrade(ctx, finWithField(t, "1.1.0", false), kernel.Options{}); err == nil || !strings.Contains(err.Error(), "field REGION: is missing") {
 			t.Fatalf("upgrade with roles that miss the new field: %v", err)
@@ -171,7 +171,7 @@ func TestRoleLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 		text := planText(p)
-		for _, want := range []string{"incomplete-authorization /LOCAL/CLERK (authorization 1 on /TRFIN/COMPANY grants nothing: field REGION: is missing",
+		for _, want := range []string{"incomplete-authorization /LOCAL/CLERK (authorization 1 on /TRDEMOFIN/COMPANY grants nothing: field REGION: is missing",
 			"incomplete-authorization /TRROLE/READER"} {
 			if !strings.Contains(text, want) {
 				t.Errorf("plan lacks %q:\n%s", want, text)
@@ -182,8 +182,8 @@ func TestRoleLifecycle(t *testing.T) {
 		}
 		list, _ := roles.List(ctx)
 		for _, r := range list {
-			// SYNC_OPERATOR of TROTTO grants updates of companies.
-			if (r.Name == "/LOCAL/CLERK" || r.Name == "/TRROLE/READER" || r.Name == "/TROTTO/SYNC_OPERATOR") != (r.Incomplete == 1) {
+			// SYNC_OPERATOR of TRDEMOOTTO grants updates of companies.
+			if (r.Name == "/LOCAL/CLERK" || r.Name == "/TRROLE/READER" || r.Name == "/TRDEMOOTTO/SYNC_OPERATOR") != (r.Incomplete == 1) {
 				t.Errorf("list: %+v", r)
 			}
 		}
@@ -200,20 +200,20 @@ func TestRoleLifecycle(t *testing.T) {
 		if err := roles.Delete(ctx, "/LOCAL/CLERK", kernel.RoleOptions{Confirm: true, By: "test"}); err != nil {
 			t.Fatal(err)
 		}
-		if ops, _ := roles.Get(ctx, "/LOCAL/OPERATIONS"); strings.Join(ops.Role.Roles, ",") != "/TRFIN/COMPANY_CLERK,/TROTTO/SYNC_OPERATOR" {
+		if ops, _ := roles.Get(ctx, "/LOCAL/OPERATIONS"); strings.Join(ops.Role.Roles, ",") != "/TRDEMOFIN/COMPANY_CLERK,/TRDEMOOTTO/SYNC_OPERATOR" {
 			t.Errorf("composite role after the deletion: %v", ops.Role.Roles)
 		}
 		var nf *rterr.NotFound
-		if err := roles.Delete(ctx, "/TRFIN/COMPANY_CLERK", kernel.RoleOptions{}); errors.As(err, &nf) || err == nil {
+		if err := roles.Delete(ctx, "/TRDEMOFIN/COMPANY_CLERK", kernel.RoleOptions{}); errors.As(err, &nf) || err == nil {
 			t.Errorf("delete a package role: %v", err)
 		}
 
-		// Uninstalling TROTTO removes its role from the local composite role
+		// Uninstalling TRDEMOOTTO removes its role from the local composite role
 		// and the authorization on its object from the local role.
 		if _, err := k.Uninstall(ctx, "TRROLE", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		p, err = k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true})
+		p, err = k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -221,10 +221,10 @@ func TestRoleLifecycle(t *testing.T) {
 			t.Errorf("uninstall plan:\n%s", text)
 		}
 		s, _ := k.Schema(ctx)
-		if r := s.Roles["/LOCAL/OPERATIONS"]; r == nil || strings.Join(r.Roles, ",") != "/TRFIN/COMPANY_CLERK" {
+		if r := s.Roles["/LOCAL/OPERATIONS"]; r == nil || strings.Join(r.Roles, ",") != "/TRDEMOFIN/COMPANY_CLERK" {
 			t.Errorf("composite role after the uninstall: %+v", r)
 		}
-		if r := s.Roles["/LOCAL/OTTO"]; r == nil || len(r.Authorizations) != 1 || r.Authorizations[0].Object != "/TRFIN/STATUS_SCOPE" {
+		if r := s.Roles["/LOCAL/OTTO"]; r == nil || len(r.Authorizations) != 1 || r.Authorizations[0].Object != "/TRDEMOFIN/STATUS_SCOPE" {
 			t.Errorf("local role after the uninstall: %+v", r)
 		}
 

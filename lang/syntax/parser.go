@@ -176,7 +176,7 @@ func (p *parser) ident() Ident {
 }
 
 // memberName reads a member name, which is a global name for fields
-// added by extensions of other packages, e.g. /TROTTO/OTTO_ID.
+// added by extensions of other packages, e.g. /TRDEMOOTTO/OTTO_ID.
 func (p *parser) memberName() Ident {
 	if p.tok.Kind == GLOBAL {
 		id := Ident{Pos: p.tok.Pos, Name: p.tok.Text}

@@ -88,7 +88,7 @@ func TestAssetStorage(t *testing.T) {
 
 		// Size limit.
 		k.SetMaxAssetSize(100)
-		_, err = k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{})
+		_, err = k.Upgrade(ctx, testutil.Example(t, "TRDEMOFIN"), kernel.Options{})
 		var v *rterr.ValidationError
 		if !errors.As(err, &v) || v.Code != rterr.CodeAsset || !strings.Contains(err.Error(), "the limit is 100") {
 			t.Fatalf("size limit: %v", err)
@@ -96,7 +96,7 @@ func TestAssetStorage(t *testing.T) {
 		k.SetMaxAssetSize(model.DefaultMaxAssetSize)
 
 		// Removing all packages removes all contents.
-		for _, id := range []model.PackageID{"TRDUP", "TROTTO", "TRFIN"} {
+		for _, id := range []model.PackageID{"TRDUP", "TRDEMOOTTO", "TRDEMOFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatal(err)
 			}
@@ -116,9 +116,9 @@ func TestAssetUpgrade(t *testing.T) {
 			t.Fatal(err)
 		}
 		before, _ := k.Schema(ctx)
-		logoTime := before.AssetRepositories[model.AssetRepositoryKey{Package: "TRFIN", ID: "web"}].Entries["images/logo.png"].Content.ModifiedAt
+		logoTime := before.AssetRepositories[model.AssetRepositoryKey{Package: "TRDEMOFIN", ID: "web"}].Entries["images/logo.png"].Content.ModifiedAt
 
-		dir := testutil.CopyExample(t, "TRFIN")
+		dir := testutil.CopyExample(t, "TRDEMOFIN")
 		testutil.WriteFile(t, dir, "assets/web/css/finance.css", []byte(".amount { color: black; }\n")) // changed
 		testutil.WriteFile(t, dir, "assets/web/js/app.js", []byte("console.log('finance');\n"))         // new
 		if err := os.Remove(filepath.Join(dir, "assets/templates/letter/letter_de.xsl")); err != nil {  // variant removed
@@ -149,7 +149,7 @@ func TestAssetUpgrade(t *testing.T) {
 			t.Fatalf("asset changes must not be destructive or need statements: %v", p.Destructive())
 		}
 		after, _ := k.Schema(ctx)
-		web := after.AssetRepositories[model.AssetRepositoryKey{Package: "TRFIN", ID: "web"}]
+		web := after.AssetRepositories[model.AssetRepositoryKey{Package: "TRDEMOFIN", ID: "web"}]
 		if !web.Entries["images/logo.png"].Content.ModifiedAt.Equal(logoTime) {
 			t.Error("unchanged asset got a new time")
 		}
@@ -178,7 +178,7 @@ func TestMigrateFromVersion2(t *testing.T) {
 		consistent(t, k)
 		// The assets of packages installed before arrive with the next
 		// upgrade.
-		if _, err := k.Upgrade(ctx, legacyExample(t, "TRFIN"), kernel.Options{}); err != nil {
+		if _, err := k.Upgrade(ctx, legacyExample(t, "TRDEMOFIN"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		s, _ := k.Schema(ctx)

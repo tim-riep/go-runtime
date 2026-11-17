@@ -150,7 +150,7 @@ func TestNodeCheckDefinitions(t *testing.T) {
 			t.Errorf("any false: %v", err)
 		}
 		// Objects of packages that are not required are not visible.
-		_, err := kernel.LoadDir(node(`{"object":"/TRFIN/COMPANY","fields":{}}`))
+		_, err := kernel.LoadDir(node(`{"object":"/TRDEMOFIN/COMPANY","fields":{}}`))
 		var nv *rterr.NamespaceViolation
 		if !errors.As(err, &nv) {
 			t.Errorf("object of another package: %v", err)

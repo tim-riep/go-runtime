@@ -32,19 +32,19 @@ func TestParse(t *testing.T) {
 		kind     source.SpecKind
 		dir      string
 	}{
-		{"github.com/tim-riep/trfin@v1.2.0", "github.com/tim-riep/trfin@v1.2.0", source.Version, ""},
-		{"github.com/tim-riep/trfin@1.2.0", "github.com/tim-riep/trfin@1.2.0", source.Version, ""},
-		{"github.com/tim-riep/trotto@^1.0", "github.com/tim-riep/trotto@^1.0", source.Constraint, ""},
-		{"github.com/Tim-Riep/TRFIN.git@>=1.2.0 <2.0.0", "github.com/tim-riep/trfin@>=1.2.0 <2.0.0", source.Constraint, ""},
-		{"github.com/tim-riep/trfin", "github.com/tim-riep/trfin", source.Latest, ""},
-		{"github.com/tim-riep/trfin@" + commit, "github.com/tim-riep/trfin@" + commit, source.Commit, ""},
-		{"github.com/tim-riep/trfin@main", "github.com/tim-riep/trfin@main", source.Branch, ""},
-		{"github.com/tim-riep/trfin@feature/x", "github.com/tim-riep/trfin@feature/x", source.Branch, ""},
-		{"https://github.com/tim-riep/trfin", "github.com/tim-riep/trfin", source.Latest, ""},
-		{"https://github.com/tim-riep/trfin/", "github.com/tim-riep/trfin", source.Latest, ""},
-		{"https://github.com/tim-riep/erp-packages/tree/v2.0.0/packages/TRFIN", "github.com/tim-riep/erp-packages/packages/TRFIN@v2.0.0", source.Version, "packages/TRFIN"},
+		{"github.com/tim-riep/trdemofin@v1.2.0", "github.com/tim-riep/trdemofin@v1.2.0", source.Version, ""},
+		{"github.com/tim-riep/trdemofin@1.2.0", "github.com/tim-riep/trdemofin@1.2.0", source.Version, ""},
+		{"github.com/tim-riep/trdemootto@^1.0", "github.com/tim-riep/trdemootto@^1.0", source.Constraint, ""},
+		{"github.com/Tim-Riep/TRDEMOFIN.git@>=1.2.0 <2.0.0", "github.com/tim-riep/trdemofin@>=1.2.0 <2.0.0", source.Constraint, ""},
+		{"github.com/tim-riep/trdemofin", "github.com/tim-riep/trdemofin", source.Latest, ""},
+		{"github.com/tim-riep/trdemofin@" + commit, "github.com/tim-riep/trdemofin@" + commit, source.Commit, ""},
+		{"github.com/tim-riep/trdemofin@main", "github.com/tim-riep/trdemofin@main", source.Branch, ""},
+		{"github.com/tim-riep/trdemofin@feature/x", "github.com/tim-riep/trdemofin@feature/x", source.Branch, ""},
+		{"https://github.com/tim-riep/trdemofin", "github.com/tim-riep/trdemofin", source.Latest, ""},
+		{"https://github.com/tim-riep/trdemofin/", "github.com/tim-riep/trdemofin", source.Latest, ""},
+		{"https://github.com/tim-riep/erp-packages/tree/v2.0.0/packages/TRDEMOFIN", "github.com/tim-riep/erp-packages/packages/TRDEMOFIN@v2.0.0", source.Version, "packages/TRDEMOFIN"},
 		{"https://github.com/tim-riep/erp-packages/tree/main", "github.com/tim-riep/erp-packages@main", source.Branch, ""},
-		{"github.com/tim-riep/erp-packages/packages/TRFIN@^2", "github.com/tim-riep/erp-packages/packages/TRFIN@^2", source.Constraint, "packages/TRFIN"},
+		{"github.com/tim-riep/erp-packages/packages/TRDEMOFIN@^2", "github.com/tim-riep/erp-packages/packages/TRDEMOFIN@^2", source.Constraint, "packages/TRDEMOFIN"},
 		{"ghe.example.com/team/trui@v1.0.0", "ghe.example.com/team/trui@v1.0.0", source.Version, ""},
 	} {
 		a, err := source.Parse(c.in, "ghe.example.com")
@@ -58,13 +58,13 @@ func TestParse(t *testing.T) {
 	}
 	for _, c := range []struct{ in, want string }{
 		{"github.com/tim-riep", "has the form"},
-		{"http://github.com/tim-riep/trfin", "only https"},
-		{"gitlab.com/tim-riep/trfin", "not a configured source"},
-		{"github.com/-bad/trfin", "no valid owner"},
-		{"github.com/tim-riep/trfin/../x", "no valid directory"},
-		{"github.com/tim-riep/trfin@", "nothing follows @"},
-		{"github.com/tim-riep/trfin@bad..branch", "neither a version"},
-		{"https://github.com/tim-riep/trfin/tree/v1.0.0/x@v2.0.0", "names a ref twice"},
+		{"http://github.com/tim-riep/trdemofin", "only https"},
+		{"gitlab.com/tim-riep/trdemofin", "not a configured source"},
+		{"github.com/-bad/trdemofin", "no valid owner"},
+		{"github.com/tim-riep/trdemofin/../x", "no valid directory"},
+		{"github.com/tim-riep/trdemofin@", "nothing follows @"},
+		{"github.com/tim-riep/trdemofin@bad..branch", "neither a version"},
+		{"https://github.com/tim-riep/trdemofin/tree/v1.0.0/x@v2.0.0", "names a ref twice"},
 	} {
 		_, err := source.Parse(c.in)
 		var ia *rterr.InvalidArgument
@@ -72,7 +72,7 @@ func TestParse(t *testing.T) {
 			t.Errorf("%s: %v", c.in, err)
 		}
 	}
-	if !source.IsAddress("github.com/a/b") || !source.IsAddress("https://x/y") || source.IsAddress("examples/TRFIN") || !source.IsAddress("ghe.example.com/a/b", "ghe.example.com") {
+	if !source.IsAddress("github.com/a/b") || !source.IsAddress("https://x/y") || source.IsAddress("examples/TRDEMOFIN") || !source.IsAddress("ghe.example.com/a/b", "ghe.example.com") {
 		t.Error("IsAddress")
 	}
 }
@@ -131,8 +131,8 @@ func TestCache(t *testing.T) {
 	if _, ok := c.Get("../x"); ok {
 		t.Error("path")
 	}
-	if !source.Allowed(source.Address{Host: "github.com", Owner: "tim-riep", Repo: "trfin"}, []string{"acme", "tim-riep/trfin"}) ||
-		source.Allowed(source.Address{Host: "github.com", Owner: "evil", Repo: "trfin"}, []string{"tim-riep"}) {
+	if !source.Allowed(source.Address{Host: "github.com", Owner: "tim-riep", Repo: "trdemofin"}, []string{"acme", "tim-riep/trdemofin"}) ||
+		source.Allowed(source.Address{Host: "github.com", Owner: "evil", Repo: "trdemofin"}, []string{"tim-riep"}) {
 		t.Error("allowed")
 	}
 }

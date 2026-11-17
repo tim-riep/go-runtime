@@ -1,0 +1,26 @@
+{
+  "name": "/TRDEMOOTTOUI/WITHOUT_PARTNER_TILE",
+  "content": {
+    "APP": "/TRDEMOOTTOUI/OTTO_COMPANIES",
+    "KIND": "METRIC",
+    "SIZE": "SMALL",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Without OTTO partner",
+        "UNIT": "companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Ohne OTTO-Partner",
+        "UNIT": "Firmen"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRDEMOFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies",
+      "FILTER": "TRDEMOOTTO_OTTO_ID eq null",
+      "TONE": "CRITICAL"
+    }
+  }
+}

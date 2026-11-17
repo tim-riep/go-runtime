@@ -6,7 +6,7 @@ as far as typical server code: classes, interfaces, closures, collections, check
 exceptions and exact decimals. This document describes language version 1.
 
 Every example in this document is compiled by the tests of the repository against the
-example package [TRORDER](../examples/TRORDER); blocks marked as fragments run as test
+example package [TRDEMOORDER](../examples/TRDEMOORDER); blocks marked as fragments run as test
 methods.
 
 ## Files and objects
@@ -20,16 +20,16 @@ name of the object without its namespace; the extension gives the kind of object
 | `.interface` | interface                                               |
 | `.include`   | members include or statements include                   |
 
-`src/ORDER_RATING.class` defines `/TRORDER/ORDER_RATING`. The manifest states the
+`src/ORDER_RATING.class` defines `/TRDEMOORDER/ORDER_RATING`. The manifest states the
 language version: `"languageVersion": 1`.
 
 ```rt
 # Rates a single order against a fixed limit.
-public class /TRORDER/DOC_SIMPLE
+public class /TRDEMOORDER/DOC_SIMPLE
 
   public constant LIMIT: DEC(15,2) = 500.00
 
-  public static method IS_LARGE(order: /TRORDER/ORDER_INFO) returns BOOL
+  public static method IS_LARGE(order: /TRDEMOORDER/ORDER_INFO) returns BOOL
     return order.AMOUNT > LIMIT
   end
 
@@ -40,13 +40,13 @@ end
 
 - Keywords are lower case: `class`, `method`, `if`, `for`, `raise`.
 - Global names carry the namespace of their package and are upper case:
-  `/TRORDER/ORDER_RATING`. A global name is a single token without spaces.
+  `/TRDEMOORDER/ORDER_RATING`. A global name is a single token without spaces.
 - Member names (methods, attributes, constants, components of structures, constants of
   enums) are upper case without namespace: `LIMIT`, `RATE`.
 - Local names (variables and parameters) are lower case: `order`, `total`.
 - The compiler rejects names in the wrong case; the formatter never renames.
 - `/` right after an operand divides; anywhere else it starts a global name. The
-  canonical form has spaces around binary operators, so `a / /TRORDER/X.LIMIT` divides by
+  canonical form has spaces around binary operators, so `a / /TRDEMOORDER/X.LIMIT` divides by
   a constant. After the words `set` and `by` of database statements a global name
   follows, such as an extension field, and after `extension point` the name of the
   extension point.
@@ -92,9 +92,9 @@ requires, directly as listed in the manifest.
   without `notNull` are optional; key fields of tables never are. A structure or array
   component with `notNull` is never null and starts empty. Tables have no tenant
   field, keys or foreign keys as structs. Fields that other packages add with extensions
-  carry their full name, `company./TROTTO/OTTO_ID`; only the extending package and
+  carry their full name, `company./TRDEMOOTTO/OTTO_ID`; only the extending package and
   packages that require it use them, but every row holds them.
-- New values of structs, as by `var row: /TRORDER/ORDERS` or `new`, have the defaults
+- New values of structs, as by `var row: /TRDEMOORDER/ORDERS` or `new`, have the defaults
   of the schema; fields without default are `null` when optional and the zero value of
   their type otherwise: `""`, `0`, `false`, `1970-01-01`, `1970-01-01T00:00:00Z` and the
   nil UUID.
@@ -104,9 +104,9 @@ requires, directly as listed in the manifest.
   `STRING` are `STRING`, `BLOB` is `BYTES`. Values of the base type can be stored in them;
   the VM checks length, `allowEmpty` and digits when a value is stored and raises
   `/RT/VALUE_ERROR` or `/RT/OVERFLOW`.
-- Domains with fixed values become enums: `/TRORDER/RATING.HIGH`. A fixed value is named
+- Domains with fixed values become enums: `/TRDEMOORDER/RATING.HIGH`. A fixed value is named
   by its attribute `name` or by the value itself if it looks like a member name.
-  `VALUE()` returns the fixed value, `NAME()` the name, and `/TRORDER/RATING.PARSE("H")`
+  `VALUE()` returns the fixed value, `NAME()` the name, and `/TRDEMOORDER/RATING.PARSE("H")`
   the constant or `null`. A placeholder shows the name.
 
 Structs, arrays and maps are values: assignment, passing and returning copy them.
@@ -163,7 +163,7 @@ assert "{1.005 as DEC(5,2)}" = "1.01"
 - `a default b` is `a`, or `b` if `a` is null; it is not optional if `b` is not.
 
 ```rt-fragment
-var order = new /TRORDER/ORDER_INFO(ID: "A1", AMOUNT: 5.00, NOTE: "", PAID: false)
+var order = new /TRDEMOORDER/ORDER_INFO(ID: "A1", AMOUNT: 5.00, NOTE: "", PAID: false)
 assert order.NOTE is not null and order.NOTE is empty
 assert order.COUPON is null
 var coupon = order.COUPON default "none"
@@ -192,7 +192,7 @@ Operators by increasing precedence:
 `=` compares inside expressions and assigns as a statement of its own. `+` joins two
 strings; other values appear in text through placeholders.
 
-New values: `new /TRORDER/ORDER_RATING()` creates an object, `new /TRORDER/ORDER_INFO(ID: "1",
+New values: `new /TRDEMOORDER/ORDER_RATING()` creates an object, `new /TRDEMOORDER/ORDER_INFO(ID: "1",
 AMOUNT: 1.00, PAID: true)` a struct with its components by name, `new array of T` and
 `new map of K to V` empty collections. `[1, 2]` and `["a": 1]` are literals; `[]` and
 `[:]` need a stated type.
@@ -264,7 +264,7 @@ collections or null for optional types; attributes of class types need an initia
 must be optional.
 
 ```rt
-public open class /TRORDER/DOC_ACCOUNT
+public open class /TRDEMOORDER/DOC_ACCOUNT
 
   public attribute BALANCE: DEC(15,2)
 
@@ -276,7 +276,7 @@ end
 ```
 
 ```rt
-public class /TRORDER/DOC_BONUS_ACCOUNT extends /TRORDER/DOC_ACCOUNT
+public class /TRDEMOORDER/DOC_BONUS_ACCOUNT extends /TRDEMOORDER/DOC_ACCOUNT
 
   public override method DEPOSIT(amount: DEC(15,2))
     super.DEPOSIT(amount + 1.00)
@@ -291,9 +291,9 @@ Methods marked `executed by kernel` have no body; the kernel executes them (see
 ## Interfaces
 
 ```rt
-public interface /TRORDER/DOC_PRINTER
+public interface /TRDEMOORDER/DOC_PRINTER
 
-  method PRINT(order: /TRORDER/ORDER_INFO) returns STRING
+  method PRINT(order: /TRDEMOORDER/ORDER_INFO) returns STRING
 
 end
 ```
@@ -341,7 +341,7 @@ An include is an object of its own whose content is inserted where it is include
 first line tells what it contains:
 
 ```rt
-members include /TRORDER/DOC_HELPERS
+members include /TRDEMOORDER/DOC_HELPERS
 
   private method DOUBLE(n: INT4) returns INT4
     return n * 2
@@ -351,7 +351,7 @@ end
 ```
 
 ```rt
-statements include /TRORDER/DOC_COUNT
+statements include /TRDEMOORDER/DOC_COUNT
   count = count + 1
 end
 ```
@@ -365,15 +365,15 @@ errors. Messages and stack traces name the line in the include and the chain of
 inclusions. An include that is included nowhere is only parsed and formatted.
 
 ```rt
-public class /TRORDER/DOC_INCLUDING
+public class /TRDEMOORDER/DOC_INCLUDING
 
-  include /TRORDER/DOC_HELPERS
+  include /TRDEMOORDER/DOC_HELPERS
 
   public static method COUNT_TWICE() returns INT4
     var count = 0
-    include /TRORDER/DOC_COUNT
-    include /TRORDER/DOC_COUNT
-    include /TRORDER/DOC_MISSING if found
+    include /TRDEMOORDER/DOC_COUNT
+    include /TRDEMOORDER/DOC_COUNT
+    include /TRDEMOORDER/DOC_MISSING if found
     return count
   end
 
@@ -406,26 +406,26 @@ filter values and gives a value on which the methods of the interface of the ext
 point are called:
 
 ```
-public interface /TRFIN/COMPANY_CHECKS
+public interface /TRDEMOFIN/COMPANY_CHECKS
 
-  method VALIDATE(company: /TRFIN/COMPANIES) raises /TRFIN/COMPANY_REJECTED
-  method ADJUST(company: /TRFIN/COMPANIES) returns /TRFIN/COMPANIES
+  method VALIDATE(company: /TRDEMOFIN/COMPANIES) raises /TRDEMOFIN/COMPANY_REJECTED
+  method ADJUST(company: /TRDEMOFIN/COMPANIES) returns /TRDEMOFIN/COMPANIES
 
 end
 ```
 
 ```
-public method ADJUST(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
-  var companies = read business object /TRFIN/COMPANY in local mode
-    /TRFIN/COMPANIES fields all keys keys
+public method ADJUST(keys: array of key of /TRDEMOFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+  var companies = read business object /TRDEMOFIN/COMPANY in local mode
+    /TRDEMOFIN/COMPANIES fields all keys keys
   end
-  var adjusted: array of /TRFIN/COMPANIES = []
+  var adjusted: array of /TRDEMOFIN/COMPANIES = []
   for company in companies
-    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = company.COUNTRY default ""
+    var checks = extension point /TRDEMOFIN/COMPANY_CHECKS filters COUNTRY = company.COUNTRY default ""
     adjusted.APPEND(checks.ADJUST(company))
   end
-  modify business object /TRFIN/COMPANY in local mode
-    update /TRFIN/COMPANIES fields (NAME, STATUS) from adjusted
+  modify business object /TRDEMOFIN/COMPANY in local mode
+    update /TRDEMOFIN/COMPANIES fields (NAME, STATUS) from adjusted
   end
 end
 ```
@@ -469,13 +469,13 @@ end
 
 Code reads and writes the tables of the schema. The kernel adds the tenant of the
 execution to every statement on a table with tenant data, so code only sees the rows of
-its tenant. The examples use the table `/TRORDER/ORDERS`.
+its tenant. The examples use the table `/TRDEMOORDER/ORDERS`.
 
 ```rt
-public class /TRORDER/DOC_ORDER_STORE
+public class /TRDEMOORDER/DOC_ORDER_STORE
 
-  public static method ADD(no: INT8, id: STRING, amount: DEC(15,2)) returns /TRORDER/ORDERS
-    var order: /TRORDER/ORDERS
+  public static method ADD(no: INT8, id: STRING, amount: DEC(15,2)) returns /TRDEMOORDER/ORDERS
+    var order: /TRDEMOORDER/ORDERS
     order.ORDER_NO = no
     order.ID = id
     order.AMOUNT = amount
@@ -483,38 +483,38 @@ public class /TRORDER/DOC_ORDER_STORE
     return order
   end
 
-  public static method FIND(no: INT8) returns /TRORDER/ORDERS?
-    return select single from /TRORDER/ORDERS where ORDER_NO = no
+  public static method FIND(no: INT8) returns /TRDEMOORDER/ORDERS?
+    return select single from /TRDEMOORDER/ORDERS where ORDER_NO = no
   end
 
   public static method OPEN_TOTAL() returns DEC(15,2)
     var total = 0.00
-    for order in select from /TRORDER/ORDERS where PAID = false and NOTE is not null order by AMOUNT descending
+    for order in select from /TRDEMOORDER/ORDERS where PAID = false and NOTE is not null order by AMOUNT descending
       total = total + order.AMOUNT
     end
     return total
   end
 
-  public static method LARGEST(n: INT8) returns array of /TRORDER/ORDERS
-    return select from /TRORDER/ORDERS order by AMOUNT descending, ORDER_NO limit n
+  public static method LARGEST(n: INT8) returns array of /TRDEMOORDER/ORDERS
+    return select from /TRDEMOORDER/ORDERS order by AMOUNT descending, ORDER_NO limit n
   end
 
-  public static method PAY(no: INT8) raises /TRORDER/INVALID_ORDER
+  public static method PAY(no: INT8) raises /TRDEMOORDER/INVALID_ORDER
     var order = FIND(no)
     if order is null
-      raise /TRORDER/INVALID_ORDER with "{no}"
+      raise /TRDEMOORDER/INVALID_ORDER with "{no}"
     end
     order.PAID = true
     update order
   end
 
   public static method PAY_ALL(ids: array of STRING) returns INT8
-    return update /TRORDER/ORDERS set PAID = true, NOTE = null where ID in ids
+    return update /TRDEMOORDER/ORDERS set PAID = true, NOTE = null where ID in ids
   end
 
   public static method REMOVE_PAID() returns INT8
-    var count = select count from /TRORDER/ORDERS where PAID = true
-    delete from /TRORDER/ORDERS where PAID = true
+    var count = select count from /TRDEMOORDER/ORDERS where PAID = true
+    delete from /TRDEMOORDER/ORDERS where PAID = true
     return count
   end
 
@@ -548,7 +548,7 @@ end
   types; other values come from the code, and `any` leaves a field out:
 
   ```
-  var companies = select from /TRFIN/COMPANIES where authorized /TRFIN/COMPANY
+  var companies = select from /TRDEMOFIN/COMPANIES where authorized /TRDEMOFIN/COMPANY
     COMPANY_ID = COMPANY_ID
     COUNTRY = COUNTRY
     ACTIVITY = READ
@@ -576,25 +576,25 @@ end
 `select` reads fields and aggregates of the rows, grouped by fields:
 
 ```rt
-public class /TRORDER/DOC_ORDER_TOTALS
+public class /TRDEMOORDER/DOC_ORDER_TOTALS
 
   # The amount and the number of the orders, paid and open.
   public static method BY_PAYMENT() returns array of STRING
     var out: array of STRING = []
-    for row in select PAID, sum(AMOUNT), count() as ORDERS, max(ID) from /TRORDER/ORDERS group by PAID
+    for row in select PAID, sum(AMOUNT), count() as ORDERS, max(ID) from /TRDEMOORDER/ORDERS group by PAID
       out.APPEND("{row.PAID}: {row.ORDERS} orders, {row.SUM_AMOUNT default 0.00}, last {row.MAX_ID default "-"}")
     end
     return out
   end
 
   public static method TOTAL() returns DEC(38,2)
-    var all = select single sum(AMOUNT) as TOTAL, min(NOTE) from /TRORDER/ORDERS
+    var all = select single sum(AMOUNT) as TOTAL, min(NOTE) from /TRDEMOORDER/ORDERS
     return all.TOTAL default 0.00
   end
 
   # Raises the amounts of open orders in the database.
   public static method SURCHARGE(amount: DEC(15,2)) returns INT8
-    return update /TRORDER/ORDERS set AMOUNT = AMOUNT + amount where PAID = false
+    return update /TRDEMOORDER/ORDERS set AMOUNT = AMOUNT + amount where PAID = false
   end
 
 end
@@ -624,13 +624,13 @@ begins with the first statement of a session; `commit` and `rollback` end it, th
 statement begins a new one. Without a session they apply to the default session.
 
 ```rt
-public class /TRORDER/DOC_ORDER_IMPORT
+public class /TRDEMOORDER/DOC_ORDER_IMPORT
 
-  public static method IMPORT(orders: array of /TRORDER/ORDER_INFO) returns INT4
+  public static method IMPORT(orders: array of /TRDEMOORDER/ORDER_INFO) returns INT4
     var protocol = open session
     var count = 0
     for info in orders
-      var order: /TRORDER/ORDERS
+      var order: /TRDEMOORDER/ORDERS
       order.ORDER_NO = count + 1
       order.ID = info.ID
       order.AMOUNT = info.AMOUNT
@@ -644,7 +644,7 @@ public class /TRORDER/DOC_ORDER_IMPORT
   end
 
   private static method PROTOCOL(s: SESSION, count: INT4)
-    var order: /TRORDER/ORDERS
+    var order: /TRDEMOORDER/ORDERS
     order.ORDER_NO = 0
     order.ID = "IMPORT"
     order.AMOUNT = 0.00
@@ -682,21 +682,21 @@ entity statements; `insert`, `update`, `delete`, `update ... set` and `delete fr
 are rejected by the compiler, also in the own package, while `select` stays.
 
 ```
-var companies: array of new of /TRFIN/COMPANIES = []
-var company: new of /TRFIN/COMPANIES
+var companies: array of new of /TRDEMOFIN/COMPANIES = []
+var company: new of /TRDEMOFIN/COMPANIES
 company.LINK = "c1"
 company.COMPANY_ID = id
 company.NAME = name
 company.COUNTRY = country
 companies.APPEND(company)
-var contacts: array of new of /TRFIN/CONTACTS = []
-var contact: new of /TRFIN/CONTACTS
+var contacts: array of new of /TRDEMOFIN/CONTACTS = []
+var contact: new of /TRDEMOFIN/CONTACTS
 contact.PARENT_LINK = "c1"
 contact.NAME = "Anna"
 contacts.APPEND(contact)
-modify business object /TRFIN/COMPANY
-  create /TRFIN/COMPANIES fields (COMPANY_ID, NAME, COUNTRY) from companies
-  create /TRFIN/CONTACTS by parent fields (NAME) from contacts
+modify business object /TRDEMOFIN/COMPANY
+  create /TRDEMOFIN/COMPANIES fields (COMPANY_ID, NAME, COUNTRY) from companies
+  create /TRDEMOFIN/CONTACTS by parent fields (NAME) from contacts
   result created
 end
 if created.FAILURES is not empty
@@ -715,7 +715,7 @@ commit business objects result saved
 - `modify business object NAME` runs its steps in order: `create T [by parent] fields (...)
   from rows`, `update T fields (...) from rows`, `delete T keys rows` and
   `execute T.ACTION [keys rows] [parameter p] [into x]`. An action of an extension of the
-  business object has its full name: `execute /TRFIN/COMPANIES./TROTTO/SYNC keys keys`.
+  business object has its full name: `execute /TRDEMOFIN/COMPANIES./TRDEMOOTTO/SYNC keys keys`.
   `from` takes an array of any
   structure with the named fields, `keys` one with the key fields. Only the named fields
   change; `create` without `by parent` is for the root, with it for dependent entities.
@@ -754,16 +754,16 @@ object of it per execution. Determinations and validations take the keys of the 
 and a `/TRBASE/ENTITY_RESPONSE`, actions also their parameter:
 
 ```
-public method SET_INITIAL_STATUS(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
-  var rows: array of /TRFIN/COMPANIES = []
+public method SET_INITIAL_STATUS(keys: array of key of /TRDEMOFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+  var rows: array of /TRDEMOFIN/COMPANIES = []
   for key in keys
-    var row: /TRFIN/COMPANIES
+    var row: /TRDEMOFIN/COMPANIES
     row.COMPANY_ID = key.COMPANY_ID
-    row.STATUS = /TRFIN/COMPANY_STATUS.ACTIVE
+    row.STATUS = /TRDEMOFIN/COMPANY_STATUS.ACTIVE
     rows.APPEND(row)
   end
-  modify business object /TRFIN/COMPANY in local mode
-    update /TRFIN/COMPANIES fields (STATUS) from rows
+  modify business object /TRDEMOFIN/COMPANY in local mode
+    update /TRDEMOFIN/COMPANIES fields (STATUS) from rows
   end
 end
 ```
@@ -781,7 +781,7 @@ end
   their packages. Their changes trigger other determinations, never the running one;
   determinations that trigger each other more than ten times raise `/RT/VALUE_ERROR`.
 - The methods of an extension carry the names of its determinations, validations and actions
-  without namespace: `/TROTTO/RESERVE_ID` is the method `RESERVE_ID` of its behavior class.
+  without namespace: `/TRDEMOOTTO/RESERVE_ID` is the method `RESERVE_ID` of its behavior class.
 - Validations run once in the save sequence after the determinations. They must not change
   the buffer: the compiler rejects `modify` and actions that change instances in them.
 - The method of late numbering takes the keys of the new root instances with preliminary
@@ -918,7 +918,7 @@ Lists come in the dependency order of the packages that ship the objects, then b
 canonical JSON of the content, which `transform` reads typed:
 
 ```
-for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRDEF/VIEW", /TRBASE/REFERENCE_KIND.ENTITY, "/TRFIN/COMPANIES", null)
+for info in /TRBASE/OBJECTS.BY_REFERENCE("/TRDEF/VIEW", /TRBASE/REFERENCE_KIND.ENTITY, "/TRDEMOFIN/COMPANIES", null)
   var view = transform info.CONTENT using /TRBASE/JSON into /TRDEF/VIEW
 end
 ```
@@ -929,7 +929,7 @@ end
 intervals of the tenant of the execution:
 
 ```
-var number = /TRBASE/NUMBER_RANGE.NEXT("/TRFIN/JOURNAL_ENTRY", type.INTERVAL, company, year)
+var number = /TRBASE/NUMBER_RANGE.NEXT("/TRDEMOFIN/JOURNAL_ENTRY", type.INTERVAL, company, year)
 var partner = /TRBASE/NUMBER_RANGE.NEXT("/TRBP/PARTNER", grouping.INTERVAL, null, null)
 if not /TRBASE/NUMBER_RANGE.CHECK_EXTERNAL("/TRBP/PARTNER", "XX", null, null, given)
   ...
@@ -965,7 +965,7 @@ session. Moving the current number back and deleting an interval that gave numbe
 their format). An object stands for one repository:
 
 ```
-var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRFIN", "templates")
+var repo = /TRBASE/ASSET_REPOSITORY.OPEN("TRDEMOFIN", "templates")
 
 if repo.EXISTS("invoice/invoice.xsl")
   var info = repo.INFO("invoice/invoice.xsl")
@@ -1035,7 +1035,7 @@ end
 authorization objects (see the README), the activities of the kernel and extension points.
 
 ```
-var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRFIN/COMPANY")
+var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT("/TRDEMOFIN/COMPANY")
 for field in obj.FIELDS
   log info "{field.NAME}: {field.LABEL default field.NAME}"
 end
@@ -1082,12 +1082,12 @@ end
 `/RT/NOT_AUTHORIZED` when the user lacks it; `authorized` tells it as `BOOL`:
 
 ```
-check authorization /TRFIN/COMPANY
+check authorization /TRDEMOFIN/COMPANY
   COMPANY_ID = company.ID
   COUNTRY = company.COUNTRY
   ACTIVITY = UPDATE
 end
-if authorized /TRFIN/COMPANY
+if authorized /TRDEMOFIN/COMPANY
   COMPANY_ID = any
   COUNTRY = "DE"
   ACTIVITY = READ
@@ -1123,11 +1123,11 @@ end
 ## Transformations
 
 A transformation is an XSLT stylesheet of a package: `transformations/INVOICE_HTML.xsl` is
-`/TRFIN/INVOICE_HTML`. An optional `transformations/INVOICE_HTML.json` gives its labels per
+`/TRDEMOFIN/INVOICE_HTML`. An optional `transformations/INVOICE_HTML.json` gives its labels per
 language and what it produces:
 
 ```json
-{ "name": "/TRFIN/INVOICE_HTML", "texts": { "en": { "label": "Invoice as HTML" } }, "output": "html" }
+{ "name": "/TRDEMOFIN/INVOICE_HTML", "texts": { "en": { "label": "Invoice as HTML" } }, "output": "html" }
 ```
 
 Installing a package compiles its stylesheets; an error stops the installation with file,
@@ -1139,8 +1139,8 @@ stylesheet.
 `transform` runs a transformation:
 
 ```
-var html = transform invoice using /TRFIN/INVOICE_HTML parameters LANG = "de", MODE = "print"
-var order = transform xml using /TRFIN/ORDER_IMPORT into /TRFIN/ORDER
+var html = transform invoice using /TRDEMOFIN/INVOICE_HTML parameters LANG = "de", MODE = "print"
+var order = transform xml using /TRDEMOFIN/ORDER_IMPORT into /TRDEMOFIN/ORDER
 ```
 
 - The source is XML as `STRING` or `BYTES`, or any value of a structure, table, array, map
@@ -1164,7 +1164,7 @@ without a stylesheet, in the format of `rt run`.
 
 ```
 var json = transform companies using /TRBASE/JSON
-var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRFIN/COMPANIES
+var company = transform request.BODY_TEXT() using /TRBASE/JSON into /TRDEMOFIN/COMPANIES
 ```
 
 - Structures and tables are objects with their components in order, an extension field by
@@ -1188,7 +1188,7 @@ format and reads a sheet back into an array type of the schema:
 
 ```
 var data = transform companies using /TRBASE/XLSX parameters SHEET = "Companies" into BYTES
-var back = transform data using /TRBASE/XLSX parameters SHEET = "Companies" into /TRFIN/COMPANY_ARRAY
+var back = transform data using /TRBASE/XLSX parameters SHEET = "Companies" into /TRDEMOFIN/COMPANY_ARRAY
 ```
 
 - The source is an array of a structure or table whose components are all of simple
@@ -1339,7 +1339,7 @@ var saved = report.SAVE()
 ### Canonical XML format
 
 ```xml
-<value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="/TRFIN/INVOICE">
+<value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="/TRDEMOFIN/INVOICE">
   <INVOICE_ID>R-1</INVOICE_ID>
   <NOTE/>                          <!-- the empty string -->
   <REFERENCE xsi:nil="true"/>      <!-- null -->
@@ -1365,13 +1365,13 @@ var saved = report.SAVE()
 A handler of a service node (see the README) implements `/TRBASE/HTTP_HANDLER`:
 
 ```
-public class /TRFIN/COMPANY_API implements /TRBASE/HTTP_HANDLER
+public class /TRDEMOFIN/COMPANY_API implements /TRBASE/HTTP_HANDLER
 
   public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
     if request.METHOD() <> "GET"
       return false
     end
-    var companies = select from /TRFIN/COMPANIES order by NAME limit 100
+    var companies = select from /TRDEMOFIN/COMPANIES order by NAME limit 100
     response.SET_HEADER("Content-Type", "application/json")
     response.WRITE_TEXT(transform companies using /TRBASE/JSON)
     return true
@@ -1434,15 +1434,15 @@ rows. Within a test, a session does not see what another session committed, and 
 SQLite only one session writes.
 
 ```rt
-public test class /TRORDER/DOC_TEST
+public test class /TRDEMOORDER/DOC_TEST
 
   public test method COUNTS_TWICE()
-    assert /TRORDER/DOC_INCLUDING.COUNT_TWICE() = 2, "two inclusions"
-    assert new /TRORDER/DOC_INCLUDING().USE() = 4
+    assert /TRDEMOORDER/DOC_INCLUDING.COUNT_TWICE() = 2, "two inclusions"
+    assert new /TRDEMOORDER/DOC_INCLUDING().USE() = 4
   end
 
   public test method BONUS()
-    var account = new /TRORDER/DOC_BONUS_ACCOUNT()
+    var account = new /TRDEMOORDER/DOC_BONUS_ACCOUNT()
     account.DEPOSIT(10.00)
     assert account.BALANCE = 11.00
   end
@@ -1554,12 +1554,12 @@ database, and the kernel compiles packages again when something they use changes
 `rt disasm <dir> [class or class.METHOD]` shows the bytecode of a package directory.
 
 ```bash
-rt fmt examples/TRORDER
-rt build examples/TRORDER
-rt install examples/TRORDER
+rt fmt examples/TRDEMOORDER
+rt build examples/TRDEMOORDER
+rt install examples/TRDEMOORDER
 rt tenant create ACME
-rt test TRORDER
-rt run TRORDER /TRORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]' --tenant ACME
+rt test TRDEMOORDER
+rt run TRDEMOORDER /TRDEMOORDER/ORDER_RATING RATE_ALL '[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]' --tenant ACME
 ```
 
 `rt run` calls public static methods of installed packages for a tenant, whose parameters and result are built-in types,

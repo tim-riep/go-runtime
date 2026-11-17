@@ -216,7 +216,7 @@ func (sr *serviceRequest) contextOf(r *http.Request, path *odata.Path, query *od
 }
 
 // resourceBase returns the path of a contained navigation for context
-// URLs, such as Companies('C1')/TROTTO_COMPANY_CHANNELS.
+// URLs, such as Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS.
 func (sr *serviceRequest) resourceBase(r *http.Request, path *odata.Path) string {
 	segs := odataSegments(sr.resource)
 	if len(segs) >= 2 {

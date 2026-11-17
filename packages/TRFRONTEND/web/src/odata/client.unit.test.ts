@@ -57,7 +57,7 @@ describe('metadata', () => {
 
   it('reads entity sets, types, keys and navigations', () => {
     const companies = m.entitySets.Companies;
-    expect(companies?.type.name).toBe('TRFIN.TRFIN_COMPANIES');
+    expect(companies?.type.name).toBe('TRDEMOFIN.TRDEMOFIN_COMPANIES');
     expect(companies?.type.key).toEqual(['COMPANY_ID']);
     const capital = companies?.type.properties.find((p) => p.name === 'CAPITAL');
     expect(capital).toMatchObject({ type: 'Edm.Decimal', precision: 15, scale: 2, nullable: true });
@@ -66,18 +66,18 @@ describe('metadata', () => {
   });
 
   it('reads the annotations of the kernel and of TRFRONTEND', () => {
-    const t = m.entityTypes['TRFIN.TRFIN_COMPANIES'];
+    const t = m.entityTypes['TRDEMOFIN.TRDEMOFIN_COMPANIES'];
     expect(t).toBeDefined();
     const name = t?.properties.find((p) => p.name === 'NAME');
     expect(annotation(m, name?.annotations ?? {}, 'Core.Description')).toBe('Name');
     const list = annotation(m, t?.annotations ?? {}, 'TRFRONTEND.UI.ListPage') as { Columns: Array<{ Property: { $PropertyPath: string } }> };
-    expect(list.Columns.map((c) => c.Property.$PropertyPath)).toEqual(['COMPANY_ID', 'NAME', 'TROTTO_OTTO_ID', 'CITY', 'COUNTRY', 'STATUS']);
+    expect(list.Columns.map((c) => c.Property.$PropertyPath)).toEqual(['COMPANY_ID', 'NAME', 'TRDEMOOTTO_OTTO_ID', 'CITY', 'COUNTRY', 'STATUS']);
     expect(annotation(m, t?.annotations ?? {}, 'Frontend.Header')).toBeDefined();
   });
 
   it('reads bound actions and their parameters', () => {
-    const block = m.actions.find((a) => a.name === 'TRFIN.BLOCK');
-    expect(block?.boundTo).toBe('TRFIN.TRFIN_COMPANIES');
+    const block = m.actions.find((a) => a.name === 'TRDEMOFIN.BLOCK');
+    expect(block?.boundTo).toBe('TRDEMOFIN.TRDEMOFIN_COMPANIES');
     expect(block?.parameters.map((p) => p.name)).toEqual(['TEXT']);
   });
 });
@@ -94,7 +94,7 @@ describe('values', () => {
 
   it('builds key predicates', () => {
     const m = parseMetadata(companyService);
-    const t = m.entityTypes['TRFIN.TRFIN_COMPANIES'];
+    const t = m.entityTypes['TRDEMOFIN.TRDEMOFIN_COMPANIES'];
     if (!t) throw new Error('no type');
     expect(keyPredicate(t, { COMPANY_ID: 'A/1' })).toBe(`(${encodeURIComponent("'A/1'")})`);
     const multi = { ...t, key: ['NAME', 'POSITION'], properties: [...t.properties, { ...t.properties[0], name: 'POSITION', type: 'Edm.Int32' }] };
@@ -110,9 +110,9 @@ describe('values', () => {
 describe('client', () => {
   it('asks for exact numbers and keeps decimals and Int64 as strings', async () => {
     const f = fake([json({ value: [{ COMPANY_ID: 'C1', CAPITAL: '12345678901234567.89', NOTE: '', CITY: null }], '@odata.count': '1' })]);
-    const c = new ODataClient('/rt/odata/trfin/company_service', { fetch: f.fetch, language: () => 'de' });
+    const c = new ODataClient('/rt/odata/trdemofin/company_service', { fetch: f.fetch, language: () => 'de' });
     const page = await c.query('Companies', { count: true, filter: "NAME eq 'A'", top: 10 });
-    expect(f.calls[0]?.url).toBe(`/rt/odata/trfin/company_service/Companies?$filter=${encodeURIComponent("NAME eq 'A'")}&$top=10&$count=true&lang=de`);
+    expect(f.calls[0]?.url).toBe(`/rt/odata/trdemofin/company_service/Companies?$filter=${encodeURIComponent("NAME eq 'A'")}&$top=10&$count=true&lang=de`);
     expect(f.calls[0]?.headers.Accept).toBe('application/json;IEEE754Compatible=true');
     expect(page.count).toBe(1);
     expect(page.value[0]).toEqual({ COMPANY_ID: 'C1', CAPITAL: '12345678901234567.89', NOTE: '', CITY: null });
@@ -120,11 +120,11 @@ describe('client', () => {
 
   it('sends the ETag and the CSRF token with a change and reads the new ETag', async () => {
     const f = fake([metadata, json({ COMPANY_ID: 'C1', NAME: 'New', NOTE: null }, 200, { ETag: 'W/"2"' })]);
-    const c = new ODataClient('/rt/odata/trfin/company_service/', { fetch: f.fetch, csrfToken: () => 'token-1' });
+    const c = new ODataClient('/rt/odata/trdemofin/company_service/', { fetch: f.fetch, csrfToken: () => 'token-1' });
     const r = await c.update('Companies', { COMPANY_ID: 'C1' }, { NAME: 'New', NOTE: null }, 'W/"1"');
     const call = f.calls[1];
     expect(call?.method).toBe('PATCH');
-    expect(call?.url).toBe(`/rt/odata/trfin/company_service/Companies(${encodeURIComponent("'C1'")})`);
+    expect(call?.url).toBe(`/rt/odata/trdemofin/company_service/Companies(${encodeURIComponent("'C1'")})`);
     expect(call?.headers['If-Match']).toBe('W/"1"');
     expect(call?.headers['X-CSRF-Token']).toBe('token-1');
     expect(call?.headers['Content-Type']).toBe('application/json;IEEE754Compatible=true');

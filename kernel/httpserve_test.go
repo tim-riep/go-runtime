@@ -206,8 +206,8 @@ func TestHandlerReferences(t *testing.T) {
 		}
 		// A class of a package that is not required fails the namespace check.
 		dir := testutil.CopyDir(t, httpPackage(t))
-		testutil.WriteFile(t, dir, "schema/http-services/bad.json", []byte(`{"path":"bad","texts":{"en":{"label":"Bad"}},"handlers":[{"class":"/TRFIN/COMPANY_API"}]}`))
-		if _, err := kernel.LoadDir(dir); err == nil || !strings.Contains(err.Error(), "/TRFIN/COMPANY_API") {
+		testutil.WriteFile(t, dir, "schema/http-services/bad.json", []byte(`{"path":"bad","texts":{"en":{"label":"Bad"}},"handlers":[{"class":"/TRDEMOFIN/COMPANY_API"}]}`))
+		if _, err := kernel.LoadDir(dir); err == nil || !strings.Contains(err.Error(), "/TRDEMOFIN/COMPANY_API") {
 			t.Errorf("foreign package: %v", err)
 		}
 

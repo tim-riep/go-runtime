@@ -1,0 +1,19 @@
+{
+  "id": "TRDEMOFINUI",
+  "version": "1.0.0",
+  "description": "Start page content and UI annotations for the companies of TRDEMOFIN",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.10.0"
+    },
+    {
+      "id": "TRFRONTEND",
+      "version": "^1.0.0"
+    },
+    {
+      "id": "TRDEMOFIN",
+      "version": ">=1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,497 @@
+{
+  "definition": {
+    "formatVersion": 1,
+    "kind": "array-type",
+    "name": "/TRDEMOFIN/COMPANY_ARRAY",
+    "owner": "TRDEMOFIN",
+    "texts": {
+      "de": {
+        "label": "Firmen",
+        "description": null
+      },
+      "en": {
+        "label": "Companies",
+        "description": null
+      }
+    },
+    "flat": false,
+    "array": {
+      "row": {
+        "description": null,
+        "kind": "structure",
+        "allowEmpty": null,
+        "notNull": false,
+        "structure": {
+          "formatVersion": 1,
+          "kind": "table",
+          "name": "/TRDEMOFIN/COMPANIES",
+          "owner": "TRDEMOFIN",
+          "texts": {},
+          "flat": true,
+          "components": [
+            {
+              "name": "COMPANY_ID",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRDEMOFIN/COMPANY",
+                "owner": "TRDEMOFIN",
+                "texts": {
+                  "de": {
+                    "short": "Firma",
+                    "medium": "Firma",
+                    "long": "Firmennummer",
+                    "heading": "Firma",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Company",
+                    "medium": "Company",
+                    "long": "Company ID",
+                    "heading": "Company",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRDEMOFIN/COMPANY_ID",
+              "type": "CHAR",
+              "length": 10,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "NAME",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRBASE/NAME",
+                "owner": "TRBASE",
+                "texts": {
+                  "de": {
+                    "short": "Name",
+                    "medium": "Name",
+                    "long": "Bezeichnung",
+                    "heading": "Name",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Name",
+                    "medium": "Name",
+                    "long": "Name",
+                    "heading": "Name",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRBASE/NAME",
+              "type": "CHAR",
+              "length": 80,
+              "allowEmpty": true,
+              "notNull": true
+            },
+            {
+              "name": "STREET",
+              "description": null,
+              "origin": {
+                "declared": "/TRBASE/ADDRESS",
+                "includes": [
+                  "/TRBASE/ADDRESS"
+                ],
+                "extension": null,
+                "package": "TRBASE"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRBASE/STREET",
+                "owner": "TRBASE",
+                "texts": {
+                  "de": {
+                    "short": "Straße",
+                    "medium": "Straße",
+                    "long": "Straße und Hausnummer",
+                    "heading": "Straße",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Street",
+                    "medium": "Street",
+                    "long": "Street and house number",
+                    "heading": "Street",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRBASE/STREET",
+              "type": "CHAR",
+              "length": 60,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "POSTAL_CODE",
+              "description": null,
+              "origin": {
+                "declared": "/TRBASE/ADDRESS",
+                "includes": [
+                  "/TRBASE/ADDRESS"
+                ],
+                "extension": null,
+                "package": "TRBASE"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRBASE/POSTAL_CODE",
+                "owner": "TRBASE",
+                "texts": {
+                  "de": {
+                    "short": "PLZ",
+                    "medium": "Postleitzahl",
+                    "long": "Postleitzahl",
+                    "heading": "PLZ",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Postcode",
+                    "medium": "Postal code",
+                    "long": "Postal code",
+                    "heading": "Postcode",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRBASE/POSTAL_CODE",
+              "type": "CHAR",
+              "length": 10,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "CITY",
+              "description": null,
+              "origin": {
+                "declared": "/TRBASE/ADDRESS",
+                "includes": [
+                  "/TRBASE/ADDRESS"
+                ],
+                "extension": null,
+                "package": "TRBASE"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRBASE/CITY",
+                "owner": "TRBASE",
+                "texts": {
+                  "de": {
+                    "short": "Ort",
+                    "medium": "Ort",
+                    "long": "Ort",
+                    "heading": "Ort",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "City",
+                    "medium": "City",
+                    "long": "City",
+                    "heading": "City",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRBASE/CITY",
+              "type": "CHAR",
+              "length": 40,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "COUNTRY",
+              "description": null,
+              "origin": {
+                "declared": "/TRBASE/ADDRESS",
+                "includes": [
+                  "/TRBASE/ADDRESS"
+                ],
+                "extension": null,
+                "package": "TRBASE"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRBASE/COUNTRY",
+                "owner": "TRBASE",
+                "texts": {
+                  "de": {
+                    "short": "Land",
+                    "medium": "Land",
+                    "long": "Länderschlüssel",
+                    "heading": "Land",
+                    "description": "Code nach ISO 3166-1 alpha-2"
+                  },
+                  "en": {
+                    "short": "Country",
+                    "medium": "Country",
+                    "long": "Country key",
+                    "heading": "Country",
+                    "description": "ISO 3166-1 alpha-2 code"
+                  }
+                }
+              },
+              "domain": "/TRBASE/COUNTRY_CODE",
+              "type": "CHAR",
+              "length": 2,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "/TRDEMOOTTO/PICKUP_POINT",
+              "description": null,
+              "origin": {
+                "declared": "/TRBASE/ADDRESS",
+                "includes": [
+                  "/TRBASE/ADDRESS"
+                ],
+                "extension": "TRDEMOOTTO",
+                "package": "TRDEMOOTTO"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRDEMOOTTO/PICKUP_POINT",
+                "owner": "TRDEMOOTTO",
+                "texts": {
+                  "de": {
+                    "short": "Abholung",
+                    "medium": "Abholstation",
+                    "long": "Abholstation des Marktplatzes",
+                    "heading": "Abholung",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Pickup",
+                    "medium": "Pickup point",
+                    "long": "Marketplace pickup point",
+                    "heading": "Pickup",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRDEMOOTTO/PICKUP_POINT",
+              "type": "CHAR",
+              "length": 20,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "STATUS",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRDEMOFIN/COMPANY_STATUS",
+              "type": "CHAR",
+              "length": 10,
+              "fixedValues": [
+                {
+                  "value": "ACTIVE",
+                  "description": "Active",
+                  "name": null
+                },
+                {
+                  "value": "BLOCKED",
+                  "description": "Blocked for postings",
+                  "name": null
+                },
+                {
+                  "value": "CLOSED",
+                  "description": "Closed",
+                  "name": null
+                }
+              ],
+              "allowEmpty": true,
+              "notNull": true,
+              "default": "ACTIVE"
+            },
+            {
+              "name": "CAPITAL",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/AMOUNT",
+              "type": "DEC",
+              "length": 15,
+              "decimals": 2,
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
+              "name": "FOUNDED_ON",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/DATE",
+              "type": "DATE",
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
+              "name": "CREATED_BY",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/NAME",
+              "type": "CHAR",
+              "length": 80,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "CREATED_AT",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/TIMESTAMP",
+              "type": "TIMESTAMP",
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
+              "name": "CHANGED_BY",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/NAME",
+              "type": "CHAR",
+              "length": 80,
+              "allowEmpty": true,
+              "notNull": false
+            },
+            {
+              "name": "CHANGED_AT",
+              "description": null,
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": null,
+                "package": "TRDEMOFIN"
+              },
+              "kind": "elementary",
+              "domain": "/TRBASE/TIMESTAMP",
+              "type": "TIMESTAMP",
+              "allowEmpty": null,
+              "notNull": false
+            },
+            {
+              "name": "/TRDEMOOTTO/OTTO_ID",
+              "description": "Partner ID of the company",
+              "origin": {
+                "declared": "/TRDEMOFIN/COMPANIES",
+                "includes": [],
+                "extension": "TRDEMOOTTO",
+                "package": "TRDEMOOTTO"
+              },
+              "kind": "elementary",
+              "dataElement": {
+                "name": "/TRDEMOOTTO/OTTO_PARTNER",
+                "owner": "TRDEMOOTTO",
+                "texts": {
+                  "de": {
+                    "short": "Partner",
+                    "medium": "OTTO-Partner",
+                    "long": "Partner-ID bei OTTO",
+                    "heading": "OTTO-Partner",
+                    "description": null
+                  },
+                  "en": {
+                    "short": "Partner",
+                    "medium": "OTTO partner",
+                    "long": "Partner ID on OTTO",
+                    "heading": "OTTO partner",
+                    "description": null
+                  }
+                }
+              },
+              "domain": "/TRDEMOOTTO/OTTO_ID",
+              "type": "CHAR",
+              "length": 20,
+              "allowEmpty": true,
+              "notNull": false
+            }
+          ],
+          "extensions": [
+            "TRDEMOOTTO"
+          ]
+        }
+      },
+      "key": {
+        "fields": [
+          "COMPANY_ID"
+        ],
+        "unique": true
+      }
+    }
+  },
+  "usedBy": [
+    {
+      "kind": "structure",
+      "name": "/TRDEMOFIN/COMPANY_GROUP",
+      "via": "component MEMBERS"
+    }
+  ],
+  "codeUses": [
+    {
+      "package": "TRDEMOFIN",
+      "file": "src/COMPANY_FILES.class",
+      "line": 9,
+      "kind": "array-type",
+      "object": "/TRDEMOFIN/COMPANY_ARRAY",
+      "member": null
+    },
+    {
+      "package": "TRDEMOFIN",
+      "file": "src/COMPANY_FILES.class",
+      "line": 63,
+      "kind": "array-type",
+      "object": "/TRDEMOFIN/COMPANY_ARRAY",
+      "member": null
+    }
+  ]
+}

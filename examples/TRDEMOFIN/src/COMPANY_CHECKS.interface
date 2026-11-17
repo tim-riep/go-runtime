@@ -1,0 +1,8 @@
+# Checks and adjustments when a company is created. Other packages
+# implement them for the extension point /TRDEMOFIN/COMPANY_CHECKS.
+public interface /TRDEMOFIN/COMPANY_CHECKS
+
+  method VALIDATE(company: /TRDEMOFIN/COMPANIES) raises /TRDEMOFIN/COMPANY_REJECTED
+  method ADJUST(company: /TRDEMOFIN/COMPANIES) returns /TRDEMOFIN/COMPANIES
+
+end

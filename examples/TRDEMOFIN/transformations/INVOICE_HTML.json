@@ -1,0 +1,8 @@
+{
+  "name": "/TRDEMOFIN/INVOICE_HTML",
+  "texts": {
+    "en": { "label": "Invoice as HTML" },
+    "de": { "label": "Rechnung als HTML" }
+  },
+  "output": "html"
+}

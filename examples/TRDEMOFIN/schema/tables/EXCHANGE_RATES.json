@@ -1,0 +1,30 @@
+{
+  "name": "/TRDEMOFIN/EXCHANGE_RATES",
+  "description": "Exchange rates, maintained during operation",
+  "tenantSpecific": false,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "FROM_CURRENCY",
+      "domain": "/TRBASE/CURRENCY"
+    },
+    {
+      "name": "TO_CURRENCY",
+      "domain": "/TRBASE/CURRENCY"
+    },
+    {
+      "name": "VALID_FROM",
+      "domain": "/TRBASE/DATE"
+    },
+    {
+      "name": "RATE",
+      "domain": "/TRDEMOFIN/EXCHANGE_RATE",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "FROM_CURRENCY",
+    "TO_CURRENCY",
+    "VALID_FROM"
+  ]
+}

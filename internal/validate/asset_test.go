@@ -44,18 +44,18 @@ func TestExampleAssetsAreValid(t *testing.T) {
 	if err := Schema(s, Options{Languages: map[string]bool{"en": true, "de": true}, MaxAssetSize: model.DefaultMaxAssetSize}); err != nil {
 		t.Fatal(err)
 	}
-	base, fin := assetRepo(s, "TRBASE", "web"), assetRepo(s, "TRFIN", "web")
+	base, fin := assetRepo(s, "TRBASE", "web"), assetRepo(s, "TRDEMOFIN", "web")
 	if base == nil || fin == nil || base == fin {
-		t.Fatal("web of TRBASE and web of TRFIN must be separate repositories")
+		t.Fatal("web of TRBASE and web of TRDEMOFIN must be separate repositories")
 	}
 	if base.Entries["images/logo.png"] != nil || fin.Entries["css/base.css"] != nil {
 		t.Fatal("entries mixed up between the repositories")
 	}
-	inv := assetRepo(s, "TRFIN", "templates").Entries["invoice/invoice.xsl"]
+	inv := assetRepo(s, "TRDEMOFIN", "templates").Entries["invoice/invoice.xsl"]
 	if inv.Content != nil || !slices.Equal(inv.Languages(), []string{"de", "en"}) || inv.MimeType != model.Some("application/xslt+xml") {
 		t.Fatalf("invoice: %+v", inv)
 	}
-	if assetRepo(s, "TRFIN", "templates").Entries["invoice/invoice_de.xsl"] != nil {
+	if assetRepo(s, "TRDEMOFIN", "templates").Entries["invoice/invoice_de.xsl"] != nil {
 		t.Fatal("variant files must not be reachable under their own path")
 	}
 }
@@ -93,14 +93,14 @@ func TestAssetPathRules(t *testing.T) {
 	}
 	e := load(t)
 	s := e.schema(t)
-	r := assetRepo(s, "TRFIN", "web")
+	r := assetRepo(s, "TRDEMOFIN", "web")
 	r.Entries["images/bad name.png"] = &model.AssetEntry{Path: "images/bad name.png", MimeType: model.Some("image/png"), Content: r.Entries["images/logo.png"].Content}
 	expectAsset(t, s, Options{}, "invalid path")
 }
 
 func TestAssetCaseCollision(t *testing.T) {
 	s := load(t).schema(t)
-	r := assetRepo(s, "TRFIN", "web")
+	r := assetRepo(s, "TRDEMOFIN", "web")
 	r.Entries["images/Logo.png"] = &model.AssetEntry{Path: "images/Logo.png", MimeType: model.Some("image/png"), Content: r.Entries["images/logo.png"].Content}
 	expectAsset(t, s, Options{}, "only in upper and lower case")
 }
@@ -112,14 +112,14 @@ func TestAssetSizeLimit(t *testing.T) {
 func TestAssetVariantLanguages(t *testing.T) {
 	err := Schema(load(t).schema(t), Options{Languages: map[string]bool{"en": true}})
 	var ml *rterr.MissingLanguages
-	if !errors.As(err, &ml) || !slices.Contains(ml.Objects, "asset invoice/invoice.xsl in repository templates of package TRFIN") {
+	if !errors.As(err, &ml) || !slices.Contains(ml.Objects, "asset invoice/invoice.xsl in repository templates of package TRDEMOFIN") {
 		t.Fatalf("got %v", err)
 	}
 }
 
 func TestAssetDescriptionNeedsEnglish(t *testing.T) {
 	s := load(t).schema(t)
-	assetRepo(s, "TRFIN", "web").Entries["images/logo.png"].Description = map[string]string{"de": "Logo"}
+	assetRepo(s, "TRDEMOFIN", "web").Entries["images/logo.png"].Description = map[string]string{"de": "Logo"}
 	err := Schema(s, Options{})
 	for _, v := range rterr.All[*rterr.ValidationError](err) {
 		if v.Code == rterr.CodeText && strings.Contains(v.Object, "images/logo.png") {
@@ -131,21 +131,21 @@ func TestAssetDescriptionNeedsEnglish(t *testing.T) {
 
 func TestAssetStructure(t *testing.T) {
 	s := load(t).schema(t)
-	r := assetRepo(s, "TRFIN", "web")
+	r := assetRepo(s, "TRDEMOFIN", "web")
 	delete(r.Entries, "images")
 	expectAsset(t, s, Options{}, "parent folder images does not exist")
 
 	s = load(t).schema(t)
-	r = assetRepo(s, "TRFIN", "web")
+	r = assetRepo(s, "TRDEMOFIN", "web")
 	r.Entries["images"].MimeType = model.Some("image/png")
 	expectAsset(t, s, Options{}, "folders have no content")
 
 	s = load(t).schema(t)
-	assetRepo(s, "TRFIN", "web").Entries["images/logo.png"].MimeType = model.Some("PNG")
+	assetRepo(s, "TRDEMOFIN", "web").Entries["images/logo.png"].MimeType = model.Some("PNG")
 	expectAsset(t, s, Options{}, "invalid media type")
 
 	s = load(t).schema(t)
-	inv := assetRepo(s, "TRFIN", "templates").Entries["invoice/invoice.xsl"]
+	inv := assetRepo(s, "TRDEMOFIN", "templates").Entries["invoice/invoice.xsl"]
 	inv.Variants = nil
 	expectAsset(t, s, Options{}, "neither content nor language variants")
 }
@@ -153,7 +153,7 @@ func TestAssetStructure(t *testing.T) {
 func TestRemoveLanguageRemovesVariants(t *testing.T) {
 	s := load(t).schema(t)
 	n := s.RemoveLanguage("de")
-	r := assetRepo(s, "TRFIN", "templates")
+	r := assetRepo(s, "TRDEMOFIN", "templates")
 	if r.Entries["letter/letter.xsl"].Variants["de"] != nil || r.Entries["invoice/invoice.xsl"].Variants["de"] != nil || n == 0 {
 		t.Fatalf("variants left: %+v", r.Entries["letter/letter.xsl"])
 	}

@@ -1,7 +1,7 @@
 {
   "name": "/TRFDEMO/CLERK_CONTENT",
   "content": {
-    "ROLE": "/TRFIN/COMPANY_CLERK",
+    "ROLE": "/TRDEMOFIN/COMPANY_CLERK",
     "APP_COLLECTIONS": [
       {
         "APP_COLLECTION": "/TRFDEMO/COMPANIES_COLLECTION"

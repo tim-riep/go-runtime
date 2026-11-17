@@ -1,0 +1,11 @@
+{
+  "name": "/TRDEMOORDER/ORDER_INFO",
+  "texts": { "en": { "label": "Order" }, "de": { "label": "Auftrag" } },
+  "components": [
+    { "name": "ID", "dataElement": "/TRDEMOORDER/ORDER_ID", "notNull": true },
+    { "name": "AMOUNT", "domain": "/TRDEMOORDER/AMOUNT", "notNull": true },
+    { "name": "NOTE", "domain": "/TRDEMOORDER/TEXT" },
+    { "name": "COUPON", "domain": "/TRDEMOORDER/TEXT" },
+    { "name": "PAID", "domain": "/TRDEMOORDER/FLAG", "notNull": true }
+  ]
+}

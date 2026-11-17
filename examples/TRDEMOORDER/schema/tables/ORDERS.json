@@ -1,0 +1,12 @@
+{
+  "name": "/TRDEMOORDER/ORDERS",
+  "description": "Rated orders",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    { "name": "ORDER_NO", "domain": "/TRDEMOORDER/COUNTER" },
+    { "include": "/TRDEMOORDER/ORDER_INFO" },
+    { "name": "RATING", "domain": "/TRDEMOORDER/RATING", "notNull": true, "default": "N" }
+  ],
+  "primaryKey": ["ORDER_NO"]
+}

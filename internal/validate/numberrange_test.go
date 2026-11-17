@@ -25,7 +25,7 @@ import (
 // subobject.
 func numberRange() model.NumberRange {
 	return model.NumberRange{Name: "/TRS/DOCUMENT", Texts: en, Length: 10, PerFiscalYear: true, Buffering: model.BufferingNone,
-		WarningPercent: 90, Subobject: model.Some(model.NumberRangeSubobject{Name: "COMPANY", DataElement: model.Some("/TRFIN/COMPANY")})}
+		WarningPercent: 90, Subobject: model.Some(model.NumberRangeSubobject{Name: "COMPANY", DataElement: model.Some("/TRDEMOFIN/COMPANY")})}
 }
 
 func withNumberRange(t *testing.T, change func(n *model.NumberRange)) *model.Schema {
@@ -65,7 +65,7 @@ func TestNumberRangeRules(t *testing.T) {
 		{"block too large", func(n *model.NumberRange) { n.Buffering, n.BlockSize = model.BufferingBuffered, 10001 }, rterr.CodeNumberRange, "1 to 10000 numbers"},
 		{"warning", func(n *model.NumberRange) { n.WarningPercent = 0 }, rterr.CodeNumberRange, "1 to 100 percent, not 0"},
 		{"subobject name", func(n *model.NumberRange) {
-			n.Subobject = sub(model.NumberRangeSubobject{Name: "company", DataElement: model.Some("/TRFIN/COMPANY")})
+			n.Subobject = sub(model.NumberRangeSubobject{Name: "company", DataElement: model.Some("/TRDEMOFIN/COMPANY")})
 		},
 			rterr.CodeName, "the name of a subobject"},
 		{"subobject without type", func(n *model.NumberRange) { n.Subobject = sub(model.NumberRangeSubobject{Name: "COMPANY"}) },
@@ -74,7 +74,7 @@ func TestNumberRangeRules(t *testing.T) {
 			n.Subobject = sub(model.NumberRangeSubobject{Name: "DAY", Domain: model.Some("/TRBASE/DATE")})
 		},
 			rterr.CodeNumberRange, "type DATE is not allowed"},
-		{"namespace", func(n *model.NumberRange) { n.Name = "/TRFIN/MINE" }, rterr.CodeName, "must start with the namespace /TRS/"},
+		{"namespace", func(n *model.NumberRange) { n.Name = "/TRDEMOFIN/MINE" }, rterr.CodeName, "must start with the namespace /TRS/"},
 		{"no English", func(n *model.NumberRange) { n.Texts = map[string]model.Label{"de": {Label: "Belege"}} }, rterr.CodeText, "texts in English"},
 	} {
 		t.Run(c.name, func(t *testing.T) { expect(t, withNumberRange(t, c.change), c.code, c.contains) })

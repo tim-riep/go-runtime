@@ -1,0 +1,19 @@
+# Runs for companies in Germany and Austria when TRDEMOFIN creates them: OTTO
+# needs a name, and the company is created blocked until the next sync
+# connects it. TRDEMOFIN adjusts new companies before it validates them, each
+# on an object of its own.
+public class /TRDEMOOTTO/COMPANY_CHECKS extends /TRDEMOFIN/COMPANY_CHECKS_BASE
+
+  public override method VALIDATE(company: /TRDEMOFIN/COMPANIES) raises /TRDEMOFIN/COMPANY_REJECTED
+    if company.NAME is empty
+      raise /TRDEMOFIN/COMPANY_REJECTED with company.COMPANY_ID, "OTTO needs a name"
+    end
+  end
+
+  public override method ADJUST(company: /TRDEMOFIN/COMPANIES) returns /TRDEMOFIN/COMPANIES
+    company.STATUS = /TRDEMOFIN/COMPANY_STATUS.BLOCKED
+    log info "{company.COMPANY_ID} waits for the OTTO sync as {/TRDEMOOTTO/ID_RULES.BUILD(company.COMPANY_ID)}"
+    return company
+  end
+
+end

@@ -78,28 +78,28 @@ func TestRoleAssignments(t *testing.T) {
 		roles := k.Roles()
 		none := model.None[time.Time]()
 		var ia *rterr.InvalidArgument
-		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_CLERK", Tenant: "GAMMA"}, kernel.RoleOptions{}); !errors.As(err, &ia) ||
+		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_CLERK", Tenant: "GAMMA"}, kernel.RoleOptions{}); !errors.As(err, &ia) ||
 			!strings.Contains(err.Error(), "user anna does not work in tenant GAMMA") {
 			t.Errorf("tenant of another user: %v", err)
 		}
 		var nf *rterr.NotFound
-		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/NOPE", Tenant: "ACME"}, kernel.RoleOptions{}); !errors.As(err, &nf) {
+		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/NOPE", Tenant: "ACME"}, kernel.RoleOptions{}); !errors.As(err, &nf) {
 			t.Errorf("unknown role: %v", err)
 		}
-		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_CLERK", Tenant: "ACME", ValidFrom: day("2026-02-01"), ValidTo: day("2026-01-01")},
+		if _, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_CLERK", Tenant: "ACME", ValidFrom: day("2026-02-01"), ValidTo: day("2026-01-01")},
 			kernel.RoleOptions{}); !errors.As(err, &ia) {
 			t.Errorf("last day before the first: %v", err)
 		}
-		first, _ := assign(t, k, "anna", "/TRFIN/COMPANY_CLERK", "ACME", day("2026-01-01"), day("2026-06-30"))
-		_, overlaps := assign(t, k, "anna", "/TRFIN/COMPANY_CLERK", "ACME", day("2026-06-30"), none)
+		first, _ := assign(t, k, "anna", "/TRDEMOFIN/COMPANY_CLERK", "ACME", day("2026-01-01"), day("2026-06-30"))
+		_, overlaps := assign(t, k, "anna", "/TRDEMOFIN/COMPANY_CLERK", "ACME", day("2026-06-30"), none)
 		if len(overlaps) != 1 || overlaps[0].ID != first.ID {
 			t.Errorf("overlap on the last day: %+v", overlaps)
 		}
-		if _, overlaps := assign(t, k, "anna", "/TRFIN/COMPANY_CLERK", "ACME", none, day("2025-12-31")); len(overlaps) != 0 {
+		if _, overlaps := assign(t, k, "anna", "/TRDEMOFIN/COMPANY_CLERK", "ACME", none, day("2025-12-31")); len(overlaps) != 0 {
 			t.Errorf("no overlap: %+v", overlaps)
 		}
-		assign(t, k, "anna", "/TRFIN/COMPANY_ADMIN", "BETA", none, none)
-		assign(t, k, "anna", "/TROTTO/SYNC_OPERATOR", "ACME", none, none)
+		assign(t, k, "anna", "/TRDEMOFIN/COMPANY_ADMIN", "BETA", none, none)
+		assign(t, k, "anna", "/TRDEMOOTTO/SYNC_OPERATOR", "ACME", none, none)
 		list, err := roles.Assignments(ctx, "anna", "ACME")
 		if err != nil || len(list) != 4 {
 			t.Fatalf("assignments in ACME: %+v %v", list, err)
@@ -112,19 +112,19 @@ func TestRoleAssignments(t *testing.T) {
 		}
 
 		// An upgrade that removes an assigned role is rejected.
-		fin := testutil.CopyExample(t, "TRFIN")
+		fin := testutil.CopyExample(t, "TRDEMOFIN")
 		if err := os.Remove(filepath.Join(fin, "schema", "roles", "COMPANY_ADMIN.json")); err != nil {
 			t.Fatal(err)
 		}
 		pkg := testutil.LoadDir(t, fin)
 		pkg.Manifest.Version = "1.1.0"
 		if _, err := k.Upgrade(ctx, pkg, kernel.Options{AllowDestructive: true}); err == nil ||
-			!strings.Contains(err.Error(), "the operation removes roles that are assigned to users: /TRFIN/COMPANY_ADMIN has 1 assignments") {
+			!strings.Contains(err.Error(), "the operation removes roles that are assigned to users: /TRDEMOFIN/COMPANY_ADMIN has 1 assignments") {
 			t.Errorf("upgrade without an assigned role: %v", err)
 		}
 
-		// Uninstalling TROTTO removes the assignments of its role.
-		p, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true})
+		// Uninstalling TRDEMOOTTO removes the assignments of its role.
+		p, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -155,12 +155,12 @@ func TestRoleAssignments(t *testing.T) {
 			kinds = append(kinds, h.Kind+" "+h.Role.Or("")+" "+h.Tenant.Or("")+" "+h.ChangedBy)
 		}
 		want := []string{
-			"assign /TRFIN/COMPANY_CLERK ACME test", "assign /TRFIN/COMPANY_CLERK ACME test", "assign /TRFIN/COMPANY_CLERK ACME test",
-			"assign /TRFIN/COMPANY_ADMIN BETA test", "assign /TROTTO/SYNC_OPERATOR ACME test",
-			"unassign /TRFIN/COMPANY_CLERK ACME test",
-			"assignment-removed /TROTTO/SYNC_OPERATOR ACME kernel",
-			"assignment-removed /TRFIN/COMPANY_ADMIN BETA test",
-			"assignment-removed /TRFIN/COMPANY_CLERK ACME kernel", "assignment-removed /TRFIN/COMPANY_CLERK ACME kernel",
+			"assign /TRDEMOFIN/COMPANY_CLERK ACME test", "assign /TRDEMOFIN/COMPANY_CLERK ACME test", "assign /TRDEMOFIN/COMPANY_CLERK ACME test",
+			"assign /TRDEMOFIN/COMPANY_ADMIN BETA test", "assign /TRDEMOOTTO/SYNC_OPERATOR ACME test",
+			"unassign /TRDEMOFIN/COMPANY_CLERK ACME test",
+			"assignment-removed /TRDEMOOTTO/SYNC_OPERATOR ACME kernel",
+			"assignment-removed /TRDEMOFIN/COMPANY_ADMIN BETA test",
+			"assignment-removed /TRDEMOFIN/COMPANY_CLERK ACME kernel", "assignment-removed /TRDEMOFIN/COMPANY_CLERK ACME kernel",
 		}
 		if strings.Join(kinds, "\n") != strings.Join(want, "\n") {
 			t.Errorf("history:\n%s", strings.Join(kinds, "\n"))

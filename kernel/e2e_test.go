@@ -48,37 +48,37 @@ func TestEndToEnd(t *testing.T) {
 		}
 		consistent(t, k)
 
-		mustInsert(t, k, "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": "DE", "NAME": "Germany", "CURRENCY": "EUR"})
-		mustInsert(t, k, "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": "AT", "NAME": "Austria", "CURRENCY": "EUR"})
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "NAME": "Acme GmbH", "COUNTRY": "DE",
-			"CAPITAL": "1000000.00", "FOUNDED_ON": time.Date(1999, 12, 31, 0, 0, 0, 0, time.UTC), "/TROTTO/OTTO_ID": "P-ACME"})
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G1", "NAME": "Globex AG", "COUNTRY": "AT"})
-		mustInsert(t, k, "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "ACCOUNT_NO": 1, "IBAN": "DE02120300000000202051",
+		mustInsert(t, k, "/TRDEMOFIN/COUNTRIES", values{"COUNTRY_CODE": "DE", "NAME": "Germany", "CURRENCY": "EUR"})
+		mustInsert(t, k, "/TRDEMOFIN/COUNTRIES", values{"COUNTRY_CODE": "AT", "NAME": "Austria", "CURRENCY": "EUR"})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "NAME": "Acme GmbH", "COUNTRY": "DE",
+			"CAPITAL": "1000000.00", "FOUNDED_ON": time.Date(1999, 12, 31, 0, 0, 0, 0, time.UTC), "/TRDEMOOTTO/OTTO_ID": "P-ACME"})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G1", "NAME": "Globex AG", "COUNTRY": "AT"})
+		mustInsert(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "ACCOUNT_NO": 1, "IBAN": "DE02120300000000202051",
 			"BALANCE": "-12.34", "OPENED_AT": time.Date(2024, 5, 6, 7, 8, 9, 123456000, time.UTC)})
-		mustInsert(t, k, "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G1", "ACCOUNT_NO": 1, "IBAN": "AT611904300234573201"})
+		mustInsert(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G1", "ACCOUNT_NO": 1, "IBAN": "AT611904300234573201"})
 
 		// Upgrade of the extending package.
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
+		if _, err := k.Upgrade(ctx, testutil.Example(t, "upgrade/TRDEMOOTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		consistent(t, k)
-		mustInsert(t, k, "/TROTTO/OTTO_CONNECTIONS", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "ENDPOINT": "https://partner.example"})
-		mustInsert(t, k, "/TROTTO/OTTO_SHOPS", values{model.TenantField: "ACME", "SHOP_ID": "S1", "COMPANY_ID": "A1", "NAME": "Acme Shop"})
-		if _, err := k.DB().ExecContext(ctx, `UPDATE "/TRFIN/COMPANIES" SET "/TROTTO/MAIN_SHOP" = 'S1' WHERE "COMPANY_ID" = 'A1'`); err != nil {
+		mustInsert(t, k, "/TRDEMOOTTO/OTTO_CONNECTIONS", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "ENDPOINT": "https://partner.example"})
+		mustInsert(t, k, "/TRDEMOOTTO/OTTO_SHOPS", values{model.TenantField: "ACME", "SHOP_ID": "S1", "COMPANY_ID": "A1", "NAME": "Acme Shop"})
+		if _, err := k.DB().ExecContext(ctx, `UPDATE "/TRDEMOFIN/COMPANIES" SET "/TRDEMOOTTO/MAIN_SHOP" = 'S1' WHERE "COMPANY_ID" = 'A1'`); err != nil {
 			t.Fatal(err)
 		}
 
 		w := where(k, model.TenantField, "COMPANY_ID")
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "CAPITAL", w, "ACME", "A1"); v != "1000000.00" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "CAPITAL", w, "ACME", "A1"); v != "1000000.00" {
 			t.Errorf("CAPITAL = %v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/BANK_ACCOUNTS", "BALANCE", w, "ACME", "A1"); v != "-12.34" {
+		if v := scalar(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", "BALANCE", w, "ACME", "A1"); v != "-12.34" {
 			t.Errorf("BALANCE = %v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/BANK_ACCOUNTS", "OPENED_AT", w, "ACME", "A1"); !v.(time.Time).Equal(time.Date(2024, 5, 6, 7, 8, 9, 123456000, time.UTC)) {
+		if v := scalar(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", "OPENED_AT", w, "ACME", "A1"); !v.(time.Time).Equal(time.Date(2024, 5, 6, 7, 8, 9, 123456000, time.UTC)) {
 			t.Errorf("OPENED_AT = %v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/OTTO_ID", w, "ACME", "A1"); v != "P-ACME" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/OTTO_ID", w, "ACME", "A1"); v != "P-ACME" {
 			t.Errorf("OTTO_ID after upgrade = %v", v)
 		}
 
@@ -89,22 +89,22 @@ func TestEndToEnd(t *testing.T) {
 			row   values
 			kind  rterr.ViolationKind
 		}{
-			{"unknown country", "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A2", "NAME": "X", "COUNTRY": "FR"}, rterr.ViolationForeignKey},
-			{"unknown company", "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: "ACME", "COMPANY_ID": "NONE", "ACCOUNT_NO": 2, "IBAN": "X"}, rterr.ViolationForeignKey},
-			{"company of another tenant", "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: "GLOBEX", "COMPANY_ID": "A1", "ACCOUNT_NO": 2, "IBAN": "X"}, rterr.ViolationForeignKey},
-			{"shop of another tenant", "/TRFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G2", "NAME": "X", "COUNTRY": "AT", "/TROTTO/MAIN_SHOP": "S1"}, rterr.ViolationForeignKey},
-			{"unknown tenant", "/TRFIN/COMPANIES", values{model.TenantField: "NOBODY", "COMPANY_ID": "N1", "NAME": "X", "COUNTRY": "DE"}, rterr.ViolationForeignKey},
-			{"invalid fixed value", "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A3", "NAME": "X", "COUNTRY": "DE", "STATUS": raw{"MERGED"}}, rterr.ViolationCheck},
-			{"CHAR too long", "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": raw{"DEU"}, "NAME": "X"}, rterr.ViolationCheck},
-			{"invalid date", "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A4", "NAME": "X", "COUNTRY": "DE", "FOUNDED_ON": raw{"2023-02-30"}}, rterr.ViolationCheck},
-			{"missing NOT NULL field", "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A5", "COUNTRY": "DE"}, rterr.ViolationNotNull},
-			{"duplicate key", "/TRFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "NAME": "X", "COUNTRY": "DE"}, rterr.ViolationUnique},
+			{"unknown country", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A2", "NAME": "X", "COUNTRY": "FR"}, rterr.ViolationForeignKey},
+			{"unknown company", "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: "ACME", "COMPANY_ID": "NONE", "ACCOUNT_NO": 2, "IBAN": "X"}, rterr.ViolationForeignKey},
+			{"company of another tenant", "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: "GLOBEX", "COMPANY_ID": "A1", "ACCOUNT_NO": 2, "IBAN": "X"}, rterr.ViolationForeignKey},
+			{"shop of another tenant", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "G2", "NAME": "X", "COUNTRY": "AT", "/TRDEMOOTTO/MAIN_SHOP": "S1"}, rterr.ViolationForeignKey},
+			{"unknown tenant", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "NOBODY", "COMPANY_ID": "N1", "NAME": "X", "COUNTRY": "DE"}, rterr.ViolationForeignKey},
+			{"invalid fixed value", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A3", "NAME": "X", "COUNTRY": "DE", "STATUS": raw{"MERGED"}}, rterr.ViolationCheck},
+			{"CHAR too long", "/TRDEMOFIN/COUNTRIES", values{"COUNTRY_CODE": raw{"DEU"}, "NAME": "X"}, rterr.ViolationCheck},
+			{"invalid date", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A4", "NAME": "X", "COUNTRY": "DE", "FOUNDED_ON": raw{"2023-02-30"}}, rterr.ViolationCheck},
+			{"missing NOT NULL field", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A5", "COUNTRY": "DE"}, rterr.ViolationNotNull},
+			{"duplicate key", "/TRDEMOFIN/COMPANIES", values{model.TenantField: "ACME", "COMPANY_ID": "A1", "NAME": "X", "COUNTRY": "DE"}, rterr.ViolationUnique},
 		}
 		for _, f := range failing {
 			violation(t, insert(t, k, f.table, f.row), f.kind, f.what)
 		}
 		// The same key is fine in another tenant.
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "A1", "NAME": "Globex A1", "COUNTRY": "DE"})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: "GLOBEX", "COMPANY_ID": "A1", "NAME": "Globex A1", "COUNTRY": "DE"})
 
 		// A tenant with data cannot be deleted directly.
 		_, err := k.DB().ExecContext(ctx, `DELETE FROM "/RT/TENANTS" WHERE "TENANT" = 'GLOBEX'`)
@@ -115,13 +115,13 @@ func TestEndToEnd(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(p.Text(), "delete-rows /TRFIN/COMPANIES") {
+		if !strings.Contains(p.Text(), "delete-rows /TRDEMOFIN/COMPANIES") {
 			t.Errorf("plan:\n%s", p.Text())
 		}
-		if n := count(t, k, "/TRFIN/COMPANIES"); n != 1 {
+		if n := count(t, k, "/TRDEMOFIN/COMPANIES"); n != 1 {
 			t.Errorf("companies left: %d", n)
 		}
-		if n := count(t, k, "/TRFIN/BANK_ACCOUNTS"); n != 1 {
+		if n := count(t, k, "/TRDEMOFIN/BANK_ACCOUNTS"); n != 1 {
 			t.Errorf("bank accounts left: %d", n)
 		}
 		if n := count(t, k, model.TenantTable); n != 1 {
@@ -130,14 +130,14 @@ func TestEndToEnd(t *testing.T) {
 		consistent(t, k)
 
 		// Remove all packages again, dependents first.
-		for _, id := range []model.PackageID{"TROTTO", "TRFIN"} {
+		for _, id := range []model.PackageID{"TRDEMOOTTO", "TRDEMOFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatalf("uninstall %s: %v", id, err)
 			}
 			consistent(t, k)
 		}
 		sameSchema(t, k, baseSchema(t, k))
-		for _, table := range []string{"/TRFIN/COUNTRIES", "/TRFIN/COMPANIES", "/TRFIN/BANK_ACCOUNTS", "/TROTTO/OTTO_SHOPS"} {
+		for _, table := range []string{"/TRDEMOFIN/COUNTRIES", "/TRDEMOFIN/COMPANIES", "/TRDEMOFIN/BANK_ACCOUNTS", "/TRDEMOOTTO/OTTO_SHOPS"} {
 			if ok, _ := k.Dialect().TableExists(ctx, k.DB(), table); ok {
 				t.Errorf("table %s still exists", table)
 			}

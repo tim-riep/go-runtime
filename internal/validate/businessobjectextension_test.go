@@ -24,24 +24,24 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
-// extensionFiles are the files of TRS, which extends /TRFIN/COMPANY: a
+// extensionFiles are the files of TRS, which extends /TRDEMOFIN/COMPANY: a
 // field of its own with properties, behavior on the companies, an action
 // with an authorization object of its own and the channels of a company
 // as dependent entity.
 func extensionFiles() map[string]string {
 	return map[string]string{
-		"manifest.json":                    `{ "id": "TRS", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRFIN" }] }`,
-		"schema/extensions/COMPANIES.json": `{ "table": "/TRFIN/COMPANIES", "fields": [{ "name": "/TRS/RATING", "domain": "/TRBASE/COUNTER" }] }`,
+		"manifest.json":                    `{ "id": "TRS", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRDEMOFIN" }] }`,
+		"schema/extensions/COMPANIES.json": `{ "table": "/TRDEMOFIN/COMPANIES", "fields": [{ "name": "/TRS/RATING", "domain": "/TRBASE/COUNTER" }] }`,
 		"schema/tables/CHANNELS.json": `{ "name": "/TRS/CHANNELS", "tenantSpecific": true, "dataClass": "application", "fields": [
-			{ "name": "CHANNEL_ID", "domain": "/TRBASE/GUID" }, { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY", "notNull": true },
+			{ "name": "CHANNEL_ID", "domain": "/TRBASE/GUID" }, { "name": "COMPANY_ID", "dataElement": "/TRDEMOFIN/COMPANY", "notNull": true },
 			{ "name": "CHANNEL", "domain": "/TRBASE/TEXT" } ], "primaryKey": ["CHANNEL_ID"],
-			"foreignKeys": [{ "name": "COMPANY", "table": "/TRFIN/COMPANIES", "fields": [{ "field": "COMPANY_ID", "references": "COMPANY_ID" }] }] }`,
+			"foreignKeys": [{ "name": "COMPANY", "table": "/TRDEMOFIN/COMPANIES", "fields": [{ "field": "COMPANY_ID", "references": "COMPANY_ID" }] }] }`,
 		"schema/authorization-objects/MARKET.json": `{ "name": "/TRS/MARKET", "texts": { "en": { "label": "Market" } },
 			"fields": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }, { "name": "ACTIVITY" }], "activities": ["EXECUTE"] }`,
 		"src/COMPANY_BEHAVIOR.class": "public class /TRS/COMPANY_BEHAVIOR\nend\n",
-		"schema/business-object-extensions/COMPANY.json": `{ "businessObject": "/TRFIN/COMPANY", "behaviorClass": "/TRS/COMPANY_BEHAVIOR",
+		"schema/business-object-extensions/COMPANY.json": `{ "businessObject": "/TRDEMOFIN/COMPANY", "behaviorClass": "/TRS/COMPANY_BEHAVIOR",
 			"entities": {
-				"/TRFIN/COMPANIES": {
+				"/TRDEMOFIN/COMPANIES": {
 					"fields": { "/TRS/RATING": { "readOnly": true } },
 					"determinations": [{ "name": "/TRS/RATE", "when": "save", "on": ["create"] }],
 					"validations": [{ "name": "/TRS/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }],
@@ -50,7 +50,7 @@ func extensionFiles() map[string]string {
 							"authorization": { "object": "/TRS/MARKET", "fields": { "COUNTRY": "COUNTRY" } } },
 						{ "name": "/TRS/RECHECK", "activity": "UPDATE" } ]
 				},
-				"/TRS/CHANNELS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"], "numbering": "uuid" }
+				"/TRS/CHANNELS": { "parent": "/TRDEMOFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"], "numbering": "uuid" }
 			} }`,
 	}
 }
@@ -87,10 +87,10 @@ func TestBusinessObjectExtensionValid(t *testing.T) {
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	b := s.MergedBusinessObject("/TRFIN/COMPANY", nil)
-	root := b.Entity("/TRFIN/COMPANIES")
+	b := s.MergedBusinessObject("/TRDEMOFIN/COMPANY", nil)
+	root := b.Entity("/TRDEMOFIN/COMPANIES")
 	if b.Entity("/TRS/CHANNELS") == nil || b.Entity("/TRS/CHANNELS").Origin != "TRS" || !root.Fields["/TRS/RATING"].ReadOnly ||
-		root.Determinations[len(root.Determinations)-1].Origin != "TRS" || root.Actions[0].Origin != "TRFIN" || len(b.Extensions) != 2 || b.Extensions[1].Package != "TRS" {
+		root.Determinations[len(root.Determinations)-1].Origin != "TRS" || root.Actions[0].Origin != "TRDEMOFIN" || len(b.Extensions) != 2 || b.Extensions[1].Package != "TRS" {
 		t.Errorf("merged: %+v", b)
 	}
 }
@@ -103,57 +103,57 @@ func TestBusinessObjectExtensionRules(t *testing.T) {
 	}{
 		{"properties of a field of the base", func(f map[string]string) {
 			replaceIn(f, extFile, `"/TRS/RATING": { "readOnly": true }`, `"NAME": { "readOnly": true }`)
-		}, "the field NAME belongs to TRFIN; an extension sets the properties of fields of its own package only"},
+		}, "the field NAME belongs to TRDEMOFIN; an extension sets the properties of fields of its own package only"},
 		{"operations of the base", func(f map[string]string) {
 			replaceIn(f, extFile, `"fields": { "/TRS/RATING"`, `"operations": ["create"], "fields": { "/TRS/RATING"`)
-		}, "an extension cannot change the operations of /TRFIN/COMPANIES"},
+		}, "an extension cannot change the operations of /TRDEMOFIN/COMPANIES"},
 		{"authorization of the base", func(f map[string]string) {
 			replaceIn(f, extFile, `"fields": { "/TRS/RATING"`, `"authorization": { "object": "/TRS/MARKET", "activities": {} }, "fields": { "/TRS/RATING"`)
-		}, "an extension cannot change the authorization of /TRFIN/COMPANIES"},
+		}, "an extension cannot change the authorization of /TRDEMOFIN/COMPANIES"},
 		{"ETag of the base", func(f map[string]string) {
 			replaceIn(f, extFile, `"fields": { "/TRS/RATING"`, `"etag": "/TRS/RATING", "fields": { "/TRS/RATING"`)
-		}, "an extension cannot change the ETag of /TRFIN/COMPANIES"},
+		}, "an extension cannot change the ETag of /TRDEMOFIN/COMPANIES"},
 		{"name of the base", func(f map[string]string) {
 			replaceIn(f, extFile, `"/TRS/RECHECK"`, `"/TRS/SYNC"`)
-		}, "/TRS/SYNC is the name of another determination, validation or action of /TRFIN/COMPANY"},
+		}, "/TRS/SYNC is the name of another determination, validation or action of /TRDEMOFIN/COMPANY"},
 		{"activity the base does not allow", func(f map[string]string) {
 			replaceIn(f, extFile, `"activity": "UPDATE"`, `"activity": "APPROVE"`)
-		}, "/TRFIN/COMPANY does not allow the activity APPROVE"},
+		}, "/TRDEMOFIN/COMPANY does not allow the activity APPROVE"},
 		{"action without activity", func(f map[string]string) {
 			replaceIn(f, extFile, `, "activity": "UPDATE"`, ``)
-		}, "the action needs an activity of /TRFIN/COMPANY"},
+		}, "the action needs an activity of /TRDEMOFIN/COMPANY"},
 		{"authorization field missing", func(f map[string]string) {
 			replaceIn(f, extFile, `"fields": { "COUNTRY": "COUNTRY" }`, `"fields": {}`)
-		}, "the field COUNTRY of /TRS/MARKET needs a field of /TRFIN/COMPANIES"},
+		}, "the field COUNTRY of /TRS/MARKET needs a field of /TRDEMOFIN/COMPANIES"},
 		{"unknown trigger field", func(f map[string]string) {
 			replaceIn(f, extFile, `"fields": ["COUNTRY"]`, `"fields": ["COLOR"]`)
-		}, "COLOR is no field of /TRFIN/COMPANIES"},
+		}, "COLOR is no field of /TRDEMOFIN/COMPANIES"},
 		{"behavior without behavior class", func(f map[string]string) {
 			replaceIn(f, extFile, `"behaviorClass": "/TRS/COMPANY_BEHAVIOR",`, ``)
 		}, "it needs a behavior class for its determinations, validations and actions"},
 		{"entity of another package", func(f map[string]string) {
-			replaceIn(f, extFile, `"/TRS/CHANNELS": { "parent"`, `"/TRFIN/PAYMENTS": { "parent"`)
-		}, "table /TRFIN/PAYMENTS belongs to TRFIN; an extension adds dependent entities of tables of its own package"},
+			replaceIn(f, extFile, `"/TRS/CHANNELS": { "parent"`, `"/TRDEMOFIN/PAYMENTS": { "parent"`)
+		}, "table /TRDEMOFIN/PAYMENTS belongs to TRDEMOFIN; an extension adds dependent entities of tables of its own package"},
 		{"foreign key that does not lead to the parent", func(f map[string]string) {
-			replaceIn(f, extFile, `"parent": "/TRFIN/COMPANIES"`, `"parent": "/TRFIN/CONTACTS"`)
-		}, "the foreign key COMPANY references /TRFIN/COMPANIES, not the parent /TRFIN/CONTACTS"},
+			replaceIn(f, extFile, `"parent": "/TRDEMOFIN/COMPANIES"`, `"parent": "/TRDEMOFIN/CONTACTS"`)
+		}, "the foreign key COMPANY references /TRDEMOFIN/COMPANIES, not the parent /TRDEMOFIN/CONTACTS"},
 		{"own entity of another data class", func(f map[string]string) {
 			replaceIn(f, "schema/tables/CHANNELS.json", `"dataClass": "application"`, `"dataClass": "configuration"`)
-		}, "table /TRS/CHANNELS has the data class configuration; business object /TRFIN/COMPANY has application"},
+		}, "table /TRS/CHANNELS has the data class configuration; business object /TRDEMOFIN/COMPANY has application"},
 		{"own entity without parent", func(f map[string]string) {
-			replaceIn(f, extFile, `"parent": "/TRFIN/COMPANIES", `, ``)
-		}, "/TRS/CHANNELS is no entity of /TRFIN/COMPANY; an entity of the extending package needs a parent"},
+			replaceIn(f, extFile, `"parent": "/TRDEMOFIN/COMPANIES", `, ``)
+		}, "/TRS/CHANNELS is no entity of /TRDEMOFIN/COMPANY; an entity of the extending package needs a parent"},
 		{"business object that does not exist", func(f map[string]string) {
-			replaceIn(f, extFile, `"businessObject": "/TRFIN/COMPANY"`, `"businessObject": "/TRFIN/NOPE"`)
+			replaceIn(f, extFile, `"businessObject": "/TRDEMOFIN/COMPANY"`, `"businessObject": "/TRDEMOFIN/NOPE"`)
 			f["schema/business-object-extensions/NOPE.json"] = f[extFile]
 			delete(f, extFile)
-		}, "the business object /TRFIN/NOPE does not exist"},
+		}, "the business object /TRDEMOFIN/NOPE does not exist"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			err := Schema(withExtension(t, c.change), Options{})
 			for _, v := range rterr.All[*rterr.ValidationError](err) {
 				if strings.Contains(v.Error(), c.contains) {
-					if !strings.Contains(v.Error(), "business object extension /TRFIN/") {
+					if !strings.Contains(v.Error(), "business object extension /TRDEMOFIN/") {
 						t.Errorf("the error does not name the extension: %v", v)
 					}
 					return
@@ -173,45 +173,45 @@ func TestBusinessObjectRestrictsExtensions(t *testing.T) {
 		contains string
 	}{
 		{"no extensions", func(b *model.BusinessObject) { b.Extensible = model.Some([]model.ExtensionKind{}) },
-			"/TRFIN/COMPANY does not allow extensions with fieldProperties on /TRFIN/COMPANIES"},
+			"/TRDEMOFIN/COMPANY does not allow extensions with fieldProperties on /TRDEMOFIN/COMPANIES"},
 		{"no actions", func(b *model.BusinessObject) {
 			b.Extensible = model.Some([]model.ExtensionKind{model.ExtendFieldProperties, model.ExtendDeterminations, model.ExtendValidations, model.ExtendEntities})
-		}, "/TRFIN/COMPANY does not allow extensions with actions on /TRFIN/COMPANIES"},
+		}, "/TRDEMOFIN/COMPANY does not allow extensions with actions on /TRDEMOFIN/COMPANIES"},
 		{"no entities below the root", func(b *model.BusinessObject) {
-			b.Entity("/TRFIN/COMPANIES").Extensible = model.Some([]model.ExtensionKind{model.ExtendFieldProperties, model.ExtendDeterminations,
+			b.Entity("/TRDEMOFIN/COMPANIES").Extensible = model.Some([]model.ExtensionKind{model.ExtendFieldProperties, model.ExtendDeterminations,
 				model.ExtendValidations, model.ExtendActions})
-		}, "/TRFIN/COMPANY does not allow extensions with entities on /TRFIN/COMPANIES"},
+		}, "/TRDEMOFIN/COMPANY does not allow extensions with entities on /TRDEMOFIN/COMPANIES"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := withExtension(t, func(map[string]string) {})
-			c.bo(s.BusinessObjects["/TRFIN/COMPANY"])
+			c.bo(s.BusinessObjects["/TRDEMOFIN/COMPANY"])
 			expect(t, s, rterr.CodeBusinessObject, c.contains)
 		})
 	}
 	// An entity cannot allow more than its business object.
 	s := withExtension(t, func(map[string]string) {})
-	b := s.BusinessObjects["/TRFIN/COMPANY"]
+	b := s.BusinessObjects["/TRDEMOFIN/COMPANY"]
 	b.Extensible = model.Some([]model.ExtensionKind{model.ExtendFieldProperties})
-	b.Entity("/TRFIN/CONTACTS").Extensible = model.Some([]model.ExtensionKind{model.ExtendActions})
-	expect(t, s, rterr.CodeBusinessObject, "/TRFIN/COMPANY allows no extensions with actions; an entity narrows what the business object allows")
+	b.Entity("/TRDEMOFIN/CONTACTS").Extensible = model.Some([]model.ExtensionKind{model.ExtendActions})
+	expect(t, s, rterr.CodeBusinessObject, "/TRDEMOFIN/COMPANY allows no extensions with actions; an entity narrows what the business object allows")
 }
 
 // TestBusinessObjectExtensionBrokenByBase rejects changes of the business
 // object that an installed extension depends on, naming the extension.
 func TestBusinessObjectExtensionBrokenByBase(t *testing.T) {
 	s := withExtension(t, func(map[string]string) {})
-	b := s.BusinessObjects["/TRFIN/COMPANY"]
+	b := s.BusinessObjects["/TRDEMOFIN/COMPANY"]
 	var kept []model.Entity
 	for _, e := range b.Entities {
-		if e.Table != "/TRFIN/BANK_ACCOUNTS" {
+		if e.Table != "/TRDEMOFIN/BANK_ACCOUNTS" {
 			kept = append(kept, e)
 		}
 	}
 	b.Entities = kept
 	b.DataClass = model.Configuration
 	err := Schema(s, Options{})
-	if err == nil || !strings.Contains(err.Error(), "business object extension /TRFIN/COMPANY by TRS") ||
-		!strings.Contains(err.Error(), "table /TRS/CHANNELS has the data class application; business object /TRFIN/COMPANY has configuration") {
+	if err == nil || !strings.Contains(err.Error(), "business object extension /TRDEMOFIN/COMPANY by TRS") ||
+		!strings.Contains(err.Error(), "table /TRS/CHANNELS has the data class application; business object /TRDEMOFIN/COMPANY has configuration") {
 		t.Errorf("data class of the base changed: %v", err)
 	}
 }
@@ -227,12 +227,12 @@ func TestBusinessObjectExtensionStructureField(t *testing.T) {
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if !s.MergedBusinessObject("/TRFIN/COMPANY", nil).Entity("/TRFIN/COMPANIES").Fields["/TRS/FLOOR"].Mandatory {
+	if !s.MergedBusinessObject("/TRDEMOFIN/COMPANY", nil).Entity("/TRDEMOFIN/COMPANIES").Fields["/TRS/FLOOR"].Mandatory {
 		t.Error("property of the field of the structure extension")
 	}
 	s = withExtension(t, func(f map[string]string) {
-		replaceIn(f, extFile, `"/TRS/RATING": { "readOnly": true }`, `"/TROTTO/PICKUP_POINT": { "readOnly": true }`)
-		replaceIn(f, "manifest.json", `{ "id": "TRFIN" }`, `{ "id": "TRFIN" }, { "id": "TROTTO" }`)
+		replaceIn(f, extFile, `"/TRS/RATING": { "readOnly": true }`, `"/TRDEMOOTTO/PICKUP_POINT": { "readOnly": true }`)
+		replaceIn(f, "manifest.json", `{ "id": "TRDEMOFIN" }`, `{ "id": "TRDEMOFIN" }, { "id": "TRDEMOOTTO" }`)
 	})
-	expect(t, s, rterr.CodeBusinessObject, "the field /TROTTO/PICKUP_POINT belongs to TROTTO; an extension sets the properties of fields of its own package only")
+	expect(t, s, rterr.CodeBusinessObject, "the field /TRDEMOOTTO/PICKUP_POINT belongs to TRDEMOOTTO; an extension sets the properties of fields of its own package only")
 }

@@ -115,7 +115,7 @@ func TestLanguageRemoveWithTexts(t *testing.T) {
 		consistent(t, k)
 		// Packages with German texts need the language again.
 		var ml *rterr.MissingLanguages
-		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{}); !errors.As(err, &ml) {
+		if _, err := k.Upgrade(ctx, testutil.Example(t, "TRDEMOFIN"), kernel.Options{}); !errors.As(err, &ml) {
 			t.Fatalf("expected MissingLanguages, got %v", err)
 		}
 	})

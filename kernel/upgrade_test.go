@@ -32,22 +32,22 @@ const tenantA = "ACME"
 // withData installs the examples and adds one tenant, country, company and
 // bank account.
 // usesXLSX are the classes of the examples that use workbooks.
-var usesXLSX = map[string]bool{"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true}
+var usesXLSX = map[string]bool{"/TRDEMOFIN/COMPANY_FILES": true, "/TRDEMOFIN/COMPANY_EXPORT": true, "/TRDEMOFIN/COMPANY_UPLOAD": true}
 
 // usesExtensionPoints are the classes and interfaces of the examples that
 // kernels before extension points cannot install.
-var usesExtensionPoints = map[string]bool{"/TRFIN/COMPANY_CHECKS": true, "/TRFIN/COMPANY_CHECKS_BASE": true, "/TROTTO/COMPANY_CHECKS": true}
+var usesExtensionPoints = map[string]bool{"/TRDEMOFIN/COMPANY_CHECKS": true, "/TRDEMOFIN/COMPANY_CHECKS_BASE": true, "/TRDEMOOTTO/COMPANY_CHECKS": true}
 
 // usesBusinessObjects are the classes of the examples that kernels before
 // business objects cannot install: the behavior class and the classes
 // with entity statements or that call them.
-var usesBusinessObjects = map[string]bool{"/TRFIN/COMPANY_BEHAVIOR": true, "/TRFIN/COMPANY_SERVICE": true, "/TRFIN/COMPANY_INTAKE": true,
-	"/TRFIN/COMPANY_FILES": true, "/TRFIN/COMPANY_EXPORT": true, "/TRFIN/COMPANY_UPLOAD": true, "/TROTTO/COMPANY_SYNC": true,
-	"/TROTTO/COMPANY_BEHAVIOR": true}
+var usesBusinessObjects = map[string]bool{"/TRDEMOFIN/COMPANY_BEHAVIOR": true, "/TRDEMOFIN/COMPANY_SERVICE": true, "/TRDEMOFIN/COMPANY_INTAKE": true,
+	"/TRDEMOFIN/COMPANY_FILES": true, "/TRDEMOFIN/COMPANY_EXPORT": true, "/TRDEMOFIN/COMPANY_UPLOAD": true, "/TRDEMOOTTO/COMPANY_SYNC": true,
+	"/TRDEMOOTTO/COMPANY_BEHAVIOR": true}
 
 // usesExtensions are the classes of the examples that kernels before
 // extensions of business objects cannot install.
-var usesExtensions = map[string]bool{"/TROTTO/COMPANY_SYNC": true, "/TROTTO/COMPANY_BEHAVIOR": true}
+var usesExtensions = map[string]bool{"/TRDEMOOTTO/COMPANY_SYNC": true, "/TRDEMOOTTO/COMPANY_BEHAVIOR": true}
 
 // withoutBusinessObjectExtensions removes the extensions of business
 // objects of a package and the classes that use them.
@@ -111,7 +111,7 @@ func withData(t *testing.T, k *kernel.Kernel) {
 			p.ExtensionPoints, p.Implementations = nil, nil
 			p.Sources = slices.DeleteFunc(p.Sources, func(s model.Source) bool { return usesExtensionPoints[s.Name] })
 			for i, s := range p.Sources {
-				p.Sources[i].Text = strings.Replace(s.Text, "\n    var checks = extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = country\n"+
+				p.Sources[i].Text = strings.Replace(s.Text, "\n    var checks = extension point /TRDEMOFIN/COMPANY_CHECKS filters COUNTRY = country\n"+
 					"    checks.VALIDATE(company)\n    company = checks.ADJUST(company)\n", "", 1)
 			}
 		}
@@ -120,17 +120,17 @@ func withData(t *testing.T, k *kernel.Kernel) {
 		t.Fatal(err)
 	}
 	mustInsert(t, k, model.TenantTable, values{"TENANT": tenantA, "CREATED_AT": testutil.Epoch})
-	mustInsert(t, k, "/TRFIN/COUNTRIES", values{"COUNTRY_CODE": "DE", "NAME": "Germany", "CURRENCY": "EUR"})
-	mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C1", "NAME": "Acme GmbH", "COUNTRY": "DE",
-		"CAPITAL": "25000.50", "FOUNDED_ON": "2020-02-29", "/TROTTO/OTTO_ID": "OTTO-1"})
-	mustInsert(t, k, "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: tenantA, "COMPANY_ID": "C1", "ACCOUNT_NO": 1, "IBAN": "DE00123"})
+	mustInsert(t, k, "/TRDEMOFIN/COUNTRIES", values{"COUNTRY_CODE": "DE", "NAME": "Germany", "CURRENCY": "EUR"})
+	mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C1", "NAME": "Acme GmbH", "COUNTRY": "DE",
+		"CAPITAL": "25000.50", "FOUNDED_ON": "2020-02-29", "/TRDEMOOTTO/OTTO_ID": "OTTO-1"})
+	mustInsert(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: tenantA, "COMPANY_ID": "C1", "ACCOUNT_NO": 1, "IBAN": "DE00123"})
 }
 
 func TestUpgradeKeepsData(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		up := testutil.Example(t, "upgrade/TROTTO")
+		up := testutil.Example(t, "upgrade/TRDEMOOTTO")
 		p, err := upgrade(k, ctx, up, kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -139,33 +139,33 @@ func TestUpgradeKeepsData(t *testing.T) {
 			t.Fatalf("unexpected destructive changes: %v", p.Destructive())
 		}
 		w := where(k, model.TenantField, "COMPANY_ID")
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/OTTO_ID", w, tenantA, "C1"); v != "OTTO-1" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/OTTO_ID", w, tenantA, "C1"); v != "OTTO-1" {
 			t.Errorf("OTTO_ID = %v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/ACTIVE", w, tenantA, "C1"); v != false {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/ACTIVE", w, tenantA, "C1"); v != false {
 			t.Errorf("default of new field = %v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "CAPITAL", w, tenantA, "C1"); v != "25000.50" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "CAPITAL", w, tenantA, "C1"); v != "25000.50" {
 			t.Errorf("CAPITAL = %v", v)
 		}
-		if n := count(t, k, "/TRFIN/BANK_ACCOUNTS"); n != 1 {
+		if n := count(t, k, "/TRDEMOFIN/BANK_ACCOUNTS"); n != 1 {
 			t.Errorf("bank accounts after rebuild: %d", n)
 		}
 		// The longer CHAR accepts 32 characters now.
 		long := strings.Repeat("X", 32)
-		mustInsert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C2", "NAME": "Two", "COUNTRY": "DE", "/TROTTO/OTTO_ID": long})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C2", "NAME": "Two", "COUNTRY": "DE", "/TRDEMOOTTO/OTTO_ID": long})
 		// The rebuilt table still enforces its foreign keys.
-		violation(t, insert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C3", "NAME": "Three", "COUNTRY": "XX"}), rterr.ViolationForeignKey, "unknown country")
-		violation(t, insert(t, k, "/TRFIN/BANK_ACCOUNTS", values{model.TenantField: tenantA, "COMPANY_ID": "NOPE", "ACCOUNT_NO": 2, "IBAN": "X"}), rterr.ViolationForeignKey, "unknown company")
+		violation(t, insert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C3", "NAME": "Three", "COUNTRY": "XX"}), rterr.ViolationForeignKey, "unknown country")
+		violation(t, insert(t, k, "/TRDEMOFIN/BANK_ACCOUNTS", values{model.TenantField: tenantA, "COMPANY_ID": "NOPE", "ACCOUNT_NO": 2, "IBAN": "X"}), rterr.ViolationForeignKey, "unknown company")
 
 		s, _ := k.Schema(ctx)
-		if s.Packages["TROTTO"].Manifest.Version != "1.1.0" {
+		if s.Packages["TRDEMOOTTO"].Manifest.Version != "1.1.0" {
 			t.Fatalf("version not updated")
 		}
-		if !s.Packages["TROTTO"].UpdatedAt.After(s.Packages["TROTTO"].InstalledAt) && !s.Packages["TROTTO"].UpdatedAt.Equal(s.Packages["TROTTO"].InstalledAt) {
+		if !s.Packages["TRDEMOOTTO"].UpdatedAt.After(s.Packages["TRDEMOOTTO"].InstalledAt) && !s.Packages["TRDEMOOTTO"].UpdatedAt.Equal(s.Packages["TRDEMOOTTO"].InstalledAt) {
 			t.Error("timestamps")
 		}
-		want := testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN"), up)
+		want := testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRDEMOFIN"), up)
 		sameSchema(t, k, want)
 		consistent(t, k)
 	})
@@ -175,23 +175,23 @@ func TestUpgradeDestructive(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
+		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TRDEMOOTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		// Version 1.2.0 shortens OTTO_ID and drops the shop table.
-		next := testutil.Example(t, "upgrade/TROTTO")
+		next := testutil.Example(t, "upgrade/TRDEMOOTTO")
 		next.Manifest.Version = "1.2.0"
-		next.Tables = next.Tables[:1] // /TROTTO/OTTO_CONNECTIONS
+		next.Tables = next.Tables[:1] // /TRDEMOOTTO/OTTO_CONNECTIONS
 		next.Extensions[0].ForeignKeys = nil
 		next.Extensions[0].Fields = next.Extensions[0].Fields[:2]
 		for i := range next.Domains {
-			if next.Domains[i].Name == "/TROTTO/OTTO_ID" {
+			if next.Domains[i].Name == "/TRDEMOOTTO/OTTO_ID" {
 				next.Domains[i].Length = 10
 			}
 		}
 		var doms []model.Domain
 		for _, d := range next.Domains {
-			if d.Name != "/TROTTO/OTTO_SHOP_ID" {
+			if d.Name != "/TRDEMOOTTO/OTTO_SHOP_ID" {
 				doms = append(doms, d)
 			}
 		}
@@ -209,10 +209,10 @@ func TestUpgradeDestructive(t *testing.T) {
 		if _, err := upgrade(k, ctx, next, kernel.Options{AllowDestructive: true}); err != nil {
 			t.Fatal(err)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/OTTO_ID", where(k, "COMPANY_ID"), "C1"); v != "OTTO-1" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/OTTO_ID", where(k, "COMPANY_ID"), "C1"); v != "OTTO-1" {
 			t.Errorf("OTTO_ID = %v", v)
 		}
-		violation(t, insert(t, k, "/TRFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C9", "NAME": "N", "COUNTRY": "DE", "/TROTTO/OTTO_ID": raw{"ELEVEN-CHAR"}}),
+		violation(t, insert(t, k, "/TRDEMOFIN/COMPANIES", values{model.TenantField: tenantA, "COMPANY_ID": "C9", "NAME": "N", "COUNTRY": "DE", "/TRDEMOOTTO/OTTO_ID": raw{"ELEVEN-CHAR"}}),
 			rterr.ViolationCheck, "shortened field")
 		consistent(t, k)
 	})
@@ -222,7 +222,7 @@ func TestShorteningFailsOnExistingData(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		next := testutil.Example(t, "TROTTO")
+		next := testutil.Example(t, "TRDEMOOTTO")
 		next.Manifest.Version = "1.0.1"
 		next.Domains[0].Length = 3 // "OTTO-1" does not fit
 		_, err := upgrade(k, ctx, next, kernel.Options{AllowDestructive: true})
@@ -231,10 +231,10 @@ func TestShorteningFailsOnExistingData(t *testing.T) {
 			t.Fatalf("expected ExecError, got %v", err)
 		}
 		s, _ := k.Schema(ctx)
-		if s.Packages["TROTTO"].Manifest.Version != "1.0.0" || s.Domains["/TROTTO/OTTO_ID"].Length != 20 {
+		if s.Packages["TRDEMOOTTO"].Manifest.Version != "1.0.0" || s.Domains["/TRDEMOOTTO/OTTO_ID"].Length != 20 {
 			t.Fatal("failed upgrade changed the repository")
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "/TROTTO/OTTO_ID", where(k, "COMPANY_ID"), "C1"); v != "OTTO-1" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/OTTO_ID", where(k, "COMPANY_ID"), "C1"); v != "OTTO-1" {
 			t.Errorf("data changed: %v", v)
 		}
 	})
@@ -243,11 +243,11 @@ func TestShorteningFailsOnExistingData(t *testing.T) {
 func TestUpgradeCannotBreakDependents(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		withData(t, k)
-		fin := testutil.Example(t, "TRFIN")
+		fin := testutil.Example(t, "TRDEMOFIN")
 		fin.Manifest.Version = "1.1.0"
 		var tables []model.Table
 		for _, tb := range fin.Tables {
-			if tb.Name == "/TRFIN/COUNTRIES" {
+			if tb.Name == "/TRDEMOFIN/COUNTRIES" {
 				tables = append(tables, tb)
 			}
 		}
@@ -256,7 +256,7 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 		_, err := upgrade(k, context.Background(), fin, kernel.Options{AllowDestructive: true})
 		var v *rterr.ValidationError
 		if !errors.As(err, &v) || v.Code != rterr.CodeUnknownTable {
-			t.Fatalf("expected the extension of TROTTO to block the upgrade, got %v", err)
+			t.Fatalf("expected the extension of TRDEMOOTTO to block the upgrade, got %v", err)
 		}
 
 		major := testutil.Example(t, "TRBASE")
@@ -265,7 +265,7 @@ func TestUpgradeCannotBreakDependents(t *testing.T) {
 		if _, err := upgrade(k, context.Background(), major, kernel.Options{}); err != nil {
 			t.Fatalf(">=1.0.0 accepts 2.0.0: %v", err)
 		}
-		fin = testutil.Example(t, "TRFIN")
+		fin = testutil.Example(t, "TRDEMOFIN")
 		fin.Manifest.Requires[0].Constraint = model.Some("^1.0.0")
 		_, err = upgrade(k, context.Background(), fin, kernel.Options{})
 		if !errors.As(err, &dep) || dep.Kind != rterr.DependencyVersion {
@@ -279,18 +279,18 @@ func TestUpgradeChecks(t *testing.T) {
 		ctx := context.Background()
 		withData(t, k)
 		var ni *rterr.NotInstalled
-		other := testutil.Example(t, "TROTTO")
+		other := testutil.Example(t, "TRDEMOOTTO")
 		other.Manifest.ID = "TRNEW"
 		if _, err := upgrade(k, ctx, other, kernel.Options{}); !errors.As(err, &ni) {
 			t.Fatalf("expected NotInstalled, got %v", err)
 		}
-		old := testutil.Example(t, "TROTTO")
+		old := testutil.Example(t, "TRDEMOOTTO")
 		old.Manifest.Version = "0.9.0"
 		var ia *rterr.InvalidArgument
 		if _, err := upgrade(k, ctx, old, kernel.Options{}); !errors.As(err, &ia) {
 			t.Fatalf("expected downgrade to be rejected, got %v", err)
 		}
-		p, err := k.Plan(ctx, testutil.Example(t, "upgrade/TROTTO"))
+		p, err := k.Plan(ctx, testutil.Example(t, "upgrade/TRDEMOOTTO"))
 		if err != nil || p.Operation != "upgrade" || p.Executed {
 			t.Fatalf("plan: %v %+v", err, p)
 		}
@@ -301,33 +301,33 @@ func TestUninstall(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		withData(t, k)
-		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TROTTO"), kernel.Options{}); err != nil {
+		if _, err := upgrade(k, ctx, testutil.Example(t, "upgrade/TRDEMOOTTO"), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		var inUse *rterr.InUse
-		if _, err := k.Uninstall(ctx, "TRFIN", kernel.Options{Confirm: true}); !errors.As(err, &inUse) || inUse.RequiredBy[0] != "TROTTO" {
+		if _, err := k.Uninstall(ctx, "TRDEMOFIN", kernel.Options{Confirm: true}); !errors.As(err, &inUse) || inUse.RequiredBy[0] != "TRDEMOOTTO" {
 			t.Fatalf("expected InUse, got %v", err)
 		}
 		var conf *rterr.ConfirmationRequired
-		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{}); !errors.As(err, &conf) {
+		if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{}); !errors.As(err, &conf) {
 			t.Fatalf("expected ConfirmationRequired, got %v", err)
 		}
-		if p, err := k.Uninstall(ctx, "TROTTO", kernel.Options{DryRun: true}); err != nil || p.Executed {
+		if p, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{DryRun: true}); err != nil || p.Executed {
 			t.Fatalf("dry run: %v", err)
 		}
-		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); err != nil {
+		if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("company lost: %v", v)
 		}
-		if exists, _ := k.Dialect().TableExists(ctx, k.DB(), "/TROTTO/OTTO_SHOPS"); exists {
-			t.Error("/TROTTO/OTTO_SHOPS still exists")
+		if exists, _ := k.Dialect().TableExists(ctx, k.DB(), "/TRDEMOOTTO/OTTO_SHOPS"); exists {
+			t.Error("/TRDEMOOTTO/OTTO_SHOPS still exists")
 		}
-		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRFIN")))
+		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), testutil.Example(t, "TRDEMOFIN")))
 		consistent(t, k)
 		var ni *rterr.NotInstalled
-		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); !errors.As(err, &ni) {
+		if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true}); !errors.As(err, &ni) {
 			t.Fatalf("expected NotInstalled, got %v", err)
 		}
 	})

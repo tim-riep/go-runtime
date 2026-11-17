@@ -37,7 +37,7 @@ func TestNamespaceViolationNeverReachesTheDatabase(t *testing.T) {
 		dir := filepath.Join(t.TempDir(), "TRBAD")
 		testutil.WriteFile(t, dir, "manifest.json", []byte(`{"id":"TRBAD","version":"1.0.0","requires":[{"id":"TRBASE"}]}`))
 		testutil.WriteFile(t, dir, "schema/tables/THINGS.json", []byte(`{"name":"/TRBAD/THINGS","tenantSpecific":false,"dataClass":"application",
-			"fields":[{"name":"ID","dataElement":"/TRFIN/COMPANY"},{"name":"NAME","domain":"NAME"}],"primaryKey":["ID"]}`))
+			"fields":[{"name":"ID","dataElement":"/TRDEMOFIN/COMPANY"},{"name":"NAME","domain":"NAME"}],"primaryKey":["ID"]}`))
 		testutil.WriteFile(t, dir, "schema/domains/X.json", []byte(`{"name":"/TRBASE/X","type":"BOOL"}`))
 		pkg, err := kernel.LoadDir(dir)
 		if pkg != nil {
@@ -46,7 +46,7 @@ func TestNamespaceViolationNeverReachesTheDatabase(t *testing.T) {
 		if n := len(rterr.All[*rterr.NamespaceViolation](err)); n != 3 {
 			t.Fatalf("expected 3 violations, got %d: %v", n, err)
 		}
-		if !strings.Contains(err.Error(), "reference /TRFIN/COMPANY: expected namespace /TRBAD/, /TRBASE/, /RT/") {
+		if !strings.Contains(err.Error(), "reference /TRDEMOFIN/COMPANY: expected namespace /TRBAD/, /TRBASE/, /RT/") {
 			t.Errorf("message: %v", err)
 		}
 		log, _ := k.Log(ctx)

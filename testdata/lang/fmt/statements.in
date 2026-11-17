@@ -1,4 +1,4 @@
-statements include /TRFIN/LOG_STEP
+statements include /TRDEMOFIN/LOG_STEP
   # uses the variable step of the including block
   log info "step {step}"
   step = step + 1

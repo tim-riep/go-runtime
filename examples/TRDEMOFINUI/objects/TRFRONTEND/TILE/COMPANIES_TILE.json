@@ -1,0 +1,8 @@
+{
+  "name": "/TRDEMOFINUI/COMPANIES_TILE",
+  "content": {
+    "APP": "/TRDEMOFINUI/COMPANIES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

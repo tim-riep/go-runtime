@@ -41,7 +41,7 @@ func trbase(t *testing.T, version string, change func(*model.Structure)) *model.
 }
 
 // TestStructureExamples runs the example packages through installation,
-// upgrades of the address in TRBASE and the removal of TROTTO, which
+// upgrades of the address in TRBASE and the removal of TRDEMOOTTO, which
 // extends the address.
 func TestStructureExamples(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
@@ -53,12 +53,12 @@ func TestStructureExamples(t *testing.T) {
 		// that declares it, also through two levels of includes.
 		w := where(k, "TABLE_NAME", "FIELD_NAME")
 		for _, c := range []struct{ table, field, include, source string }{
-			{"/TRFIN/COMPANIES", "COUNTRY", "/TRBASE/ADDRESS", "/TRBASE/ADDRESS"},
-			{"/TRFIN/COMPANIES", "/TROTTO/PICKUP_POINT", "/TRBASE/ADDRESS", "/TRBASE/ADDRESS"},
-			{"/TRFIN/COMPANIES_ARCHIVE", "CITY", "/TRFIN/COMPANIES", "/TRBASE/ADDRESS"},
-			{"/TRFIN/COMPANIES_ARCHIVE", "/TROTTO/PICKUP_POINT", "/TRFIN/COMPANIES", "/TRBASE/ADDRESS"},
-			{"/TRFIN/COMPANIES_ARCHIVE", "NAME", "/TRFIN/COMPANIES", "/TRFIN/COMPANIES"},
-			{"/TRFIN/COMPANIES_ARCHIVE", "/TROTTO/OTTO_ID", "/TRFIN/COMPANIES", "/TRFIN/COMPANIES"},
+			{"/TRDEMOFIN/COMPANIES", "COUNTRY", "/TRBASE/ADDRESS", "/TRBASE/ADDRESS"},
+			{"/TRDEMOFIN/COMPANIES", "/TRDEMOOTTO/PICKUP_POINT", "/TRBASE/ADDRESS", "/TRBASE/ADDRESS"},
+			{"/TRDEMOFIN/COMPANIES_ARCHIVE", "CITY", "/TRDEMOFIN/COMPANIES", "/TRBASE/ADDRESS"},
+			{"/TRDEMOFIN/COMPANIES_ARCHIVE", "/TRDEMOOTTO/PICKUP_POINT", "/TRDEMOFIN/COMPANIES", "/TRBASE/ADDRESS"},
+			{"/TRDEMOFIN/COMPANIES_ARCHIVE", "NAME", "/TRDEMOFIN/COMPANIES", "/TRDEMOFIN/COMPANIES"},
+			{"/TRDEMOFIN/COMPANIES_ARCHIVE", "/TRDEMOOTTO/OTTO_ID", "/TRDEMOFIN/COMPANIES", "/TRDEMOFIN/COMPANIES"},
 		} {
 			got := []any{scalar(t, k, "/RT/FIELDS", "ORIGIN", w, c.table, c.field), scalar(t, k, "/RT/FIELDS", "INCLUDE_NAME", w, c.table, c.field),
 				scalar(t, k, "/RT/FIELDS", "SOURCE_NAME", w, c.table, c.field)}
@@ -67,25 +67,25 @@ func TestStructureExamples(t *testing.T) {
 			}
 		}
 		s, _ := k.Schema(ctx)
-		archive := s.Physical().Tables["/TRFIN/COMPANIES_ARCHIVE"]
+		archive := s.Physical().Tables["/TRDEMOFIN/COMPANIES_ARCHIVE"]
 		if archive.Field(model.TenantField) == nil || len(archive.ForeignKeys) != 1 || archive.PrimaryKey[1] != "ARCHIVE_NO" {
 			t.Fatalf("archive takes over keys of the companies: %v %v", archive.PrimaryKey, archive.ForeignKeys)
 		}
 
 		// null and "" stay apart in included columns.
-		mustInsert(t, k, "/TRFIN/COMPANIES_ARCHIVE", values{model.TenantField: tenantA, "ARCHIVE_NO": 1, "ARCHIVED_AT": testutil.Epoch,
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES_ARCHIVE", values{model.TenantField: tenantA, "ARCHIVE_NO": 1, "ARCHIVED_AT": testutil.Epoch,
 			"COMPANY_ID": "C1", "NAME": "Acme GmbH", "STREET": "", "COUNTRY": "DE"})
-		mustInsert(t, k, "/TRFIN/COMPANIES_ARCHIVE", values{model.TenantField: tenantA, "ARCHIVE_NO": 2, "ARCHIVED_AT": testutil.Epoch, "NAME": "Two"})
+		mustInsert(t, k, "/TRDEMOFIN/COMPANIES_ARCHIVE", values{model.TenantField: tenantA, "ARCHIVE_NO": 2, "ARCHIVED_AT": testutil.Epoch, "NAME": "Two"})
 		aw := where(k, model.TenantField, "ARCHIVE_NO")
-		if v := scalar(t, k, "/TRFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 1); v != "" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 1); v != "" {
 			t.Errorf("empty street: %#v", v)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 2); v != nil {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 2); v != nil {
 			t.Errorf("null street: %#v", v)
 		}
 
 		// The resolved definitions are the same in every dialect.
-		for _, name := range []string{"/TRBASE/ADDRESS", "/TRFIN/COMPANY_GROUP", "/TRFIN/COMPANY_ARRAY", "/TRFIN/COMPANIES"} {
+		for _, name := range []string{"/TRBASE/ADDRESS", "/TRDEMOFIN/COMPANY_GROUP", "/TRDEMOFIN/COMPANY_ARRAY", "/TRDEMOFIN/COMPANIES"} {
 			d, err := k.Structure(ctx, name)
 			if err != nil {
 				t.Fatal(err)
@@ -107,21 +107,21 @@ func TestStructureExamples(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, table := range []string{"/TRFIN/COMPANIES", "/TRFIN/COMPANIES_ARCHIVE"} {
+		for _, table := range []string{"/TRDEMOFIN/COMPANIES", "/TRDEMOFIN/COMPANIES_ARCHIVE"} {
 			if c := change(p, plan.AddColumn, table+".REGION"); c == nil || c.Via != "/TRBASE/ADDRESS" || c.Destructive {
 				t.Fatalf("add-column %s.REGION: %+v", table, c)
 			}
 		}
 		testutil.Golden(t, "upgrade-trbase-new-component."+p.Dialect+".sql", p.SQL())
-		if v := scalar(t, k, "/TRFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 1); v != "" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES_ARCHIVE", "STREET", aw, tenantA, 1); v != "" {
 			t.Errorf("street after upgrade: %#v", v)
 		}
 		consistent(t, k)
 
 		// A removed component is destructive in every including table. The
-		// entity statements of TRFIN name the fields of the address; a
+		// entity statements of TRDEMOFIN name the fields of the address; a
 		// version without POSTAL_CODE in them comes first.
-		fin := testutil.Example(t, "TRFIN")
+		fin := testutil.Example(t, "TRDEMOFIN")
 		for i := range fin.Sources {
 			fin.Sources[i].Text = strings.ReplaceAll(fin.Sources[i].Text, "POSTAL_CODE, ", "")
 		}
@@ -143,27 +143,27 @@ func TestStructureExamples(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if c := change(p, plan.DropColumn, "/TRFIN/COMPANIES_ARCHIVE.POSTAL_CODE"); c == nil || c.Via != "/TRBASE/ADDRESS" {
+		if c := change(p, plan.DropColumn, "/TRDEMOFIN/COMPANIES_ARCHIVE.POSTAL_CODE"); c == nil || c.Via != "/TRBASE/ADDRESS" {
 			t.Fatalf("drop-column: %+v", c)
 		}
 		testutil.Golden(t, "upgrade-trbase-removed-component."+p.Dialect+".sql", p.SQL())
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "COUNTRY", where(k, model.TenantField, "COMPANY_ID"), tenantA, "C1"); v != "DE" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "COUNTRY", where(k, model.TenantField, "COMPANY_ID"), tenantA, "C1"); v != "DE" {
 			t.Errorf("country after rebuild: %v", v)
 		}
 		consistent(t, k)
 
-		// Removing TROTTO takes its address component out of all tables.
-		if _, err := k.Uninstall(ctx, "TROTTO", kernel.Options{Confirm: true}); err != nil {
+		// Removing TRDEMOOTTO takes its address component out of all tables.
+		if _, err := k.Uninstall(ctx, "TRDEMOOTTO", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
 		s, _ = k.Schema(ctx)
-		for _, table := range []string{"/TRFIN/COMPANIES", "/TRFIN/COMPANIES_ARCHIVE"} {
-			if s.Physical().Tables[table].Field("/TROTTO/PICKUP_POINT") != nil {
+		for _, table := range []string{"/TRDEMOFIN/COMPANIES", "/TRDEMOFIN/COMPANIES_ARCHIVE"} {
+			if s.Physical().Tables[table].Field("/TRDEMOOTTO/PICKUP_POINT") != nil {
 				t.Errorf("%s keeps the pickup point", table)
 			}
 		}
 		d, err := k.Structure(ctx, "/TRBASE/ADDRESS")
-		if err != nil || len(d.Definition.Extensions) != 0 || d.Definition.Component("/TROTTO/PICKUP_POINT") != nil {
+		if err != nil || len(d.Definition.Extensions) != 0 || d.Definition.Component("/TRDEMOOTTO/PICKUP_POINT") != nil {
 			t.Fatalf("address after uninstall: %v %+v", err, d)
 		}
 		consistent(t, k)

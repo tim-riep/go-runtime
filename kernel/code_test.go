@@ -28,9 +28,9 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
-// orderPackage returns the example TRORDER with changed files.
+// orderPackage returns the example TRDEMOORDER with changed files.
 func orderPackage(t *testing.T, files map[string]string) string {
-	dir := testutil.CopyExample(t, "TRORDER")
+	dir := testutil.CopyExample(t, "TRDEMOORDER")
 	for p, s := range files {
 		testutil.WriteFile(t, dir, p, []byte(s))
 	}
@@ -60,7 +60,7 @@ func TestCompileOnInstall(t *testing.T) {
 			t.Fatal("no packages accepted")
 		}
 		dry, err = k.Plan(ctx, pkg)
-		if err != nil || change(dry, plan.CompilePackage, "TRORDER") == nil || count(t, k, "/RT/BYTECODE") != code0 {
+		if err != nil || change(dry, plan.CompilePackage, "TRDEMOORDER") == nil || count(t, k, "/RT/BYTECODE") != code0 {
 			t.Fatalf("dry run: %v %v", err, dry)
 		}
 
@@ -71,8 +71,8 @@ func TestCompileOnInstall(t *testing.T) {
 			t.Fatalf("stored: %d bytecode, %d sources, generation %d", count(t, k, "/RT/BYTECODE"), count(t, k, "/RT/SOURCES"), generation(t, k))
 		}
 		s, _ := k.Schema(ctx)
-		if len(s.Sources["TRORDER"]) != len(pkg.Sources) || s.Packages["TRORDER"].Manifest.LanguageVersion != 1 {
-			t.Fatalf("sources read back: %d", len(s.Sources["TRORDER"]))
+		if len(s.Sources["TRDEMOORDER"]) != len(pkg.Sources) || s.Packages["TRDEMOORDER"].Manifest.LanguageVersion != 1 {
+			t.Fatalf("sources read back: %d", len(s.Sources["TRDEMOORDER"]))
 		}
 		consistent(t, k)
 
@@ -82,29 +82,29 @@ func TestCompileOnInstall(t *testing.T) {
 		}
 
 		// An error in the code rejects the upgrade; nothing changes.
-		broken := testutil.LoadDir(t, orderPackage(t, map[string]string{"src/BROKEN.class": "public class /TRORDER/BROKEN\n\n  public static method M() returns INT4\n    return \"x\"\n  end\n\nend\n"}))
+		broken := testutil.LoadDir(t, orderPackage(t, map[string]string{"src/BROKEN.class": "public class /TRDEMOORDER/BROKEN\n\n  public static method M() returns INT4\n    return \"x\"\n  end\n\nend\n"}))
 		broken.Manifest.Version = "1.1.0"
 		_, err = k.Upgrade(ctx, broken, kernel.Options{})
 		var ce *rterr.CompileError
-		if !errors.As(err, &ce) || ce.Package != "TRORDER" || !strings.Contains(err.Error(), "src/BROKEN.class:4:12: type:") {
+		if !errors.As(err, &ce) || ce.Package != "TRDEMOORDER" || !strings.Contains(err.Error(), "src/BROKEN.class:4:12: type:") {
 			t.Fatalf("compile error: %v", err)
 		}
 		if _, err := k.Upgrade(ctx, broken, kernel.Options{DryRun: true}); !errors.As(err, &ce) {
 			t.Fatalf("dry run with error: %v", err)
 		}
 		s, _ = k.Schema(ctx)
-		if s.Packages["TRORDER"].Manifest.Version != "1.0.0" || generation(t, k) != gen0+2 {
+		if s.Packages["TRDEMOORDER"].Manifest.Version != "1.0.0" || generation(t, k) != gen0+2 {
 			t.Fatal("the failed upgrade changed the repository")
 		}
 
 		// Files that are not in canonical form are rejected as well.
-		messy := testutil.LoadDir(t, orderPackage(t, map[string]string{"src/MESSY.class": "public class /TRORDER/MESSY\nend\n\n"}))
+		messy := testutil.LoadDir(t, orderPackage(t, map[string]string{"src/MESSY.class": "public class /TRDEMOORDER/MESSY\nend\n\n"}))
 		messy.Manifest.Version = "1.2.0"
 		if _, err := k.Upgrade(ctx, messy, kernel.Options{}); !errors.As(err, &ce) || !strings.Contains(err.Error(), "canonical: the file is not in canonical form") {
 			t.Fatalf("canonical form: %v", err)
 		}
 
-		if _, err := k.Uninstall(ctx, "TRORDER", kernel.Options{Confirm: true}); err != nil {
+		if _, err := k.Uninstall(ctx, "TRDEMOORDER", kernel.Options{Confirm: true}); err != nil {
 			t.Fatal(err)
 		}
 		if count(t, k, "/RT/BYTECODE") != code0 || count(t, k, "/RT/SOURCES") != sources0 {

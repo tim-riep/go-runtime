@@ -39,7 +39,7 @@ func odataPackage(t *testing.T) *model.Package {
 	return testutil.LoadDir(t, filepath.Join(testutil.ModuleRoot(t), "testdata", "odata", "TRODATA"))
 }
 
-// TestODataMetadataGolden compares the metadata of the services of TRFIN
+// TestODataMetadataGolden compares the metadata of the services of TRDEMOFIN
 // and TRODATA in both formats and languages with golden files.
 func TestODataMetadataGolden(t *testing.T) {
 	db := testutil.Databases(t)[0]
@@ -81,7 +81,7 @@ func TestODataMetadataOverHTTP(t *testing.T) {
 		if err := k.ActivateService(ctx, companyService, "test"); err != nil {
 			t.Fatal(err)
 		}
-		const md = "/rt/odata/trfin/company_service/$metadata"
+		const md = "/rt/odata/trdemofin/company_service/$metadata"
 		a := c.do("GET", md, anna, "")
 		etag := a.header.Get("ETag")
 		if a.status != 200 || !strings.HasPrefix(a.header.Get("Content-Type"), "application/xml") || etag == "" ||
@@ -98,7 +98,7 @@ func TestODataMetadataOverHTTP(t *testing.T) {
 		}
 		js := c.do("GET", md, func(r *http.Request) { anna(r); r.Header.Set("Accept", "application/json") }, "")
 		var doc map[string]any
-		if err := json.Unmarshal([]byte(js.body), &doc); err != nil || js.status != 200 || doc["$Version"] != "4.01" || doc["$EntityContainer"] != "TRFIN.Container" ||
+		if err := json.Unmarshal([]byte(js.body), &doc); err != nil || js.status != 200 || doc["$Version"] != "4.01" || doc["$EntityContainer"] != "TRDEMOFIN.Container" ||
 			!strings.HasPrefix(js.header.Get("Content-Type"), "application/json") {
 			t.Errorf("JSON by Accept: %d %v %.200s", js.status, js.header, js.body)
 		}
@@ -115,7 +115,7 @@ func TestODataMetadataOverHTTP(t *testing.T) {
 			t.Errorf("vocabulary in JSON: %d", a.status)
 		}
 		// A new generation, such as an upgrade, builds the document again.
-		next := testutil.Example(t, "TRFIN")
+		next := testutil.Example(t, "TRDEMOFIN")
 		next.Manifest.Version = "1.0.1"
 		next.Services[0].Description["en"] = "Companies and contacts"
 		if _, err := k.Upgrade(ctx, next, kernel.Options{}); err != nil {

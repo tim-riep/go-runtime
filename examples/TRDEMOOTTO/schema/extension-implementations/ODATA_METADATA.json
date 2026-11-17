@@ -1,0 +1,13 @@
+{
+  "name": "/TRDEMOOTTO/ODATA_METADATA",
+  "description": {
+    "en": "Marketplace annotations for the service of companies",
+    "de": "Marktplatz-Annotationen für den Dienst der Firmen"
+  },
+  "extensionPoint": "/TRBASE/ODATA_METADATA",
+  "class": "/TRDEMOOTTO/ODATA_METADATA",
+  "filters": {
+    "PACKAGE_ID": [{ "value": "TRDEMOFIN" }],
+    "SERVICE_NAME": [{ "value": "/TRDEMOFIN/COMPANY_SERVICE" }]
+  }
+}

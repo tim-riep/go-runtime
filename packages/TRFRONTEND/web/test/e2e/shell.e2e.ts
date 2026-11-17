@@ -65,11 +65,11 @@ for (const name of names) {
       await signIn(page, 'clara');
 
       await page.getByRole('tab', { name: 'Companies' }).waitFor();
-      const metric = page.locator('[data-tile-id="/TRFINUI/ACTIVE_COMPANIES_TILE"]');
+      const metric = page.locator('[data-tile-id="/TRDEMOFINUI/ACTIVE_COMPANIES_TILE"]');
       await expect.poll(() => metric.textContent()).toMatch(/\d/);
       expect(await violations(page)).toEqual([]);
 
-      await page.locator('[data-tile-id="/TRFINUI/COMPANIES_TILE"]').click();
+      await page.locator('[data-tile-id="/TRDEMOFINUI/COMPANIES_TILE"]').click();
       await page.getByRole('grid', { name: 'Companies' }).waitFor();
       expect(await violations(page)).toEqual([]);
 
@@ -98,7 +98,7 @@ for (const name of names) {
       const context = await browser.newContext({ locale: 'en-US' });
       const page = await context.newPage();
       await signIn(page, 'clara');
-      await page.locator('[data-tile-id="/TRFINUI/COMPANIES_TILE"]').click();
+      await page.locator('[data-tile-id="/TRDEMOFINUI/COMPANIES_TILE"]').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page.getByRole('button', { name: 'Open value help' }).click();
       const dialog = page.getByRole('dialog');

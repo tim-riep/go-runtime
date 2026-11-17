@@ -1,0 +1,26 @@
+{
+  "name": "/TRDEMOFINUI/ACTIVE_COMPANIES_TILE",
+  "content": {
+    "APP": "/TRDEMOFINUI/COMPANIES",
+    "KIND": "METRIC",
+    "SIZE": "SMALL",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Active companies",
+        "UNIT": "companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Aktive Firmen",
+        "UNIT": "Firmen"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRDEMOFIN/COMPANY_SERVICE",
+      "ENTITY_SET": "Companies",
+      "FILTER": "STATUS eq 'ACTIVE'",
+      "TONE": "GOOD"
+    }
+  }
+}

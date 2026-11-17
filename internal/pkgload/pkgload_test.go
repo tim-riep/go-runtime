@@ -189,15 +189,15 @@ func TestLoadKernel(t *testing.T) {
 func TestRequiresSource(t *testing.T) {
 	fsys := validFS()
 	fsys["manifest.json"] = file(`{"id":"TRX","version":"1.0.0","requires":[{"id":"TRBASE","version":">=1.0.0"},
-		{"id":"TRFIN","version":"^1.0","source":"https://github.com/Tim-Riep/TRFIN"}]}`)
+		{"id":"TRDEMOFIN","version":"^1.0","source":"https://github.com/Tim-Riep/TRDEMOFIN"}]}`)
 	pkg, err := Load(fsys, "mem")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d := pkg.Manifest.Requires[1]; d.Source.Or("") != "github.com/tim-riep/trfin" || pkg.Manifest.Requires[0].Source.Valid() {
+	if d := pkg.Manifest.Requires[1]; d.Source.Or("") != "github.com/tim-riep/trdemofin" || pkg.Manifest.Requires[0].Source.Valid() {
 		t.Errorf("source: %+v", pkg.Manifest.Requires)
 	}
-	fsys["manifest.json"] = file(`{"id":"TRX","version":"1.0.0","requires":[{"id":"TRBASE","version":">=1.0.0"},{"id":"TRFIN","source":"github.com/tim-riep/trfin@v1.0.0"}]}`)
+	fsys["manifest.json"] = file(`{"id":"TRX","version":"1.0.0","requires":[{"id":"TRBASE","version":">=1.0.0"},{"id":"TRDEMOFIN","source":"github.com/tim-riep/trdemofin@v1.0.0"}]}`)
 	if _, err := Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "the version belongs in") {
 		t.Errorf("source with version: %v", err)
 	}

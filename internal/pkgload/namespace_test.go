@@ -66,8 +66,8 @@ func TestMissingNamespace(t *testing.T) {
 func TestReferenceToPackageNotRequired(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/tables/ORDERS.json"] = file(`{"name":"/TRX/ORDERS","tenantSpecific":false,"dataClass":"application",
-		"fields":[{"name":"ORDER_ID","dataElement":"/TRFIN/COMPANY"}],"primaryKey":["ORDER_ID"]}`)
-	expectViolation(t, fsys, "schema/tables/ORDERS.json", "/fields/0/dataElement", "/TRFIN/COMPANY")
+		"fields":[{"name":"ORDER_ID","dataElement":"/TRDEMOFIN/COMPANY"}],"primaryKey":["ORDER_ID"]}`)
+	expectViolation(t, fsys, "schema/tables/ORDERS.json", "/fields/0/dataElement", "/TRDEMOFIN/COMPANY")
 	v := violations(t, fsys)[0]
 	if !v.Reference || !slices.Equal(v.Expected, []string{"/TRX/", "/TRBASE/", "/RT/"}) {
 		t.Fatalf("violation: %+v", v)
@@ -128,8 +128,8 @@ func TestSeveralViolationsReportedTogether(t *testing.T) {
 	fsys := validFS()
 	fsys["schema/domains/QTY.json"] = file(`{"name":"/TRBASE/QTY","type":"INT4"}`)
 	fsys["schema/domains/STATUS.json"] = file(`{"name":"STATUS","type":"CHAR","length":3}`)
-	fsys["schema/business-objects/SETUP.json"] = file(`{"name":"/TRX/SETUP","description":{"en":"Setup"},"root":"/TRFIN/COMPANIES",
-		"entities":{"/TRFIN/COMPANIES":{}}}`)
+	fsys["schema/business-objects/SETUP.json"] = file(`{"name":"/TRX/SETUP","description":{"en":"Setup"},"root":"/TRDEMOFIN/COMPANIES",
+		"entities":{"/TRDEMOFIN/COMPANIES":{}}}`)
 	if n := len(violations(t, fsys)); n != 4 {
 		_, err := Load(fsys, "mem")
 		t.Fatalf("expected 4 violations, got %d:\n%v", n, err)

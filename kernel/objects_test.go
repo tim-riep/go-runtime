@@ -66,18 +66,18 @@ var trdefFiles = map[string]string{
 		"root":"/TRDEF/NOTES","entities":{"/TRDEF/NOTES":{"operations":["create","update","delete"]}}}`,
 }
 
-// TRUSE ships views of the notes of TRDEF and of the companies of TRFIN,
-// with the field that TROTTO adds.
+// TRUSE ships views of the notes of TRDEF and of the companies of TRDEMOFIN,
+// with the field that TRDEMOOTTO adds.
 func truseFiles() map[string]string {
 	return map[string]string{
-		"manifest.json": `{"id":"TRUSE","version":"1.0.0","requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRFIN"},{"id":"TROTTO"}]}`,
+		"manifest.json": `{"id":"TRUSE","version":"1.0.0","requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRDEMOFIN"},{"id":"TRDEMOOTTO"}]}`,
 		"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRDEF/NOTES",
 			"TEXTS":[{"LANGUAGE":"en","TITLE":"Notes"},{"LANGUAGE":"de","TITLE":"Notizen"}],
 			"COLUMNS":[{"FIELD":"TITLE"},{"FIELD":"BODY","WIDTH":20,"IMPORTANCE":"LOW"}],
 			"NEXT":"/TRUSE/COMPANIES"}}`,
-		"objects/TRDEF/VIEW/COMPANIES.json": `{"name":"/TRUSE/COMPANIES","content":{"ENTITY":"/TRFIN/COMPANIES",
+		"objects/TRDEF/VIEW/COMPANIES.json": `{"name":"/TRUSE/COMPANIES","content":{"ENTITY":"/TRDEMOFIN/COMPANIES",
 			"TEXTS":[{"LANGUAGE":"en","TITLE":"Companies"}],
-			"GROUPS":[{"ID":"MAIN","FIELDS":[{"FIELD":"NAME"},{"FIELD":"/TROTTO/OTTO_ID"}]}]}}`,
+			"GROUPS":[{"ID":"MAIN","FIELDS":[{"FIELD":"NAME"},{"FIELD":"/TRDEMOOTTO/OTTO_ID"}]}]}}`,
 		"schema/services/VIEWS.json": `{"name":"/TRUSE/VIEWS","description":{"en":"Views"},
 			"entitySets":{"Views":{"objectType":"/TRDEF/VIEW"},"Notes":{"businessObject":"/TRDEF/NOTE","entity":"/TRDEF/NOTES"}}}`,
 		"schema/roles/VIEWER.json": `{"name":"/TRUSE/VIEWER","texts":{"en":{"label":"Viewer"}},"authorizations":[
@@ -104,7 +104,7 @@ func withFiles(files map[string]string, changes map[string]string) map[string]st
 func installObjects(t *testing.T, k *kernel.Kernel, extra ...*model.Package) (*plan.Plan, error) {
 	t.Helper()
 	initialized(t, k)
-	pkgs := []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO"), writePackage(t, trdefFiles)}
+	pkgs := []*model.Package{testutil.Example(t, "TRDEMOFIN"), testutil.Example(t, "TRDEMOOTTO"), writePackage(t, trdefFiles)}
 	return k.Install(context.Background(), append(pkgs, extra...), kernel.Options{})
 }
 
@@ -151,8 +151,8 @@ func TestObjectsInstall(t *testing.T) {
 		for _, r := range s.Objects["/TRUSE/COMPANIES"].References {
 			refs[string(r.Kind)+" "+r.Target+" "+r.Part+" "+r.Pointer] = true
 		}
-		for _, w := range []string{"entity /TRFIN/COMPANIES  /ENTITY", "field /TRFIN/COMPANIES NAME /GROUPS/0/FIELDS/0/FIELD",
-			"field /TRFIN/COMPANIES /TROTTO/OTTO_ID /GROUPS/0/FIELDS/1/FIELD"} {
+		for _, w := range []string{"entity /TRDEMOFIN/COMPANIES  /ENTITY", "field /TRDEMOFIN/COMPANIES NAME /GROUPS/0/FIELDS/0/FIELD",
+			"field /TRDEMOFIN/COMPANIES /TRDEMOOTTO/OTTO_ID /GROUPS/0/FIELDS/1/FIELD"} {
 			if !refs[w] {
 				t.Errorf("reference %q missing: %v", w, refs)
 			}
@@ -186,14 +186,14 @@ func TestObjectsRejected(t *testing.T) {
 		want    string
 	}{
 		{"reference into a package not required", map[string]string{
-			"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRORDER/ORDERS"}}`,
-		}, "namespace /TRORDER/ORDERS"},
+			"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRDEMOORDER/ORDERS"}}`,
+		}, "namespace /TRDEMOORDER/ORDERS"},
 		{"unknown type", map[string]string{
 			"objects/TRDEF/NOPE/X.json": `{"name":"/TRUSE/X","content":{}}`,
 		}, "object type /TRDEF/NOPE does not exist"},
 		{"type of a package not required", map[string]string{
-			"objects/TRORDER/VIEW/X.json": `{"name":"/TRUSE/X","content":{}}`,
-		}, "namespace /TRORDER/VIEW"},
+			"objects/TRDEMOORDER/VIEW/X.json": `{"name":"/TRUSE/X","content":{}}`,
+		}, "namespace /TRDEMOORDER/VIEW"},
 		{"field that does not exist", map[string]string{
 			"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRDEF/NOTES","COLUMNS":[{"FIELD":"NOPE"}]}}`,
 		}, "NOPE is no field of /TRDEF/NOTES"},
@@ -432,7 +432,7 @@ end
 func truseCode(files map[string]string) map[string]string {
 	return withFiles(files, map[string]string{
 		"manifest.json": `{"id":"TRUSE","version":"1.0.0","languageVersion":1,
-			"requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRFIN"},{"id":"TROTTO"}]}`,
+			"requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRDEMOFIN"},{"id":"TRDEMOOTTO"}]}`,
 		"src/VIEWS.class": `public class /TRUSE/VIEWS
 
   public static method NAMES(pkg: STRING?) returns array of STRING raises /TRBASE/OBJECT_TYPE_NOT_VISIBLE
@@ -477,7 +477,7 @@ func TestObjectBehavior(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		base := []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO"), writePackage(t, trdefBehavior())}
+		base := []*model.Package{testutil.Example(t, "TRDEMOFIN"), testutil.Example(t, "TRDEMOOTTO"), writePackage(t, trdefBehavior())}
 		// CHECK rejects a view with four columns.
 		bad := withFiles(truseFiles(), map[string]string{
 			"objects/TRDEF/VIEW/NOTES.json": `{"name":"/TRUSE/NOTES","content":{"ENTITY":"/TRDEF/NOTES","NEXT":"/TRUSE/COMPANIES",
@@ -509,7 +509,7 @@ func TestObjectBehavior(t *testing.T) {
 		}
 		// CHANGED runs on an upgrade that changes an object ...
 		up := withFiles(files, map[string]string{
-			"manifest.json":                  `{"id":"TRUSE","version":"1.1.0","requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRFIN"},{"id":"TROTTO"}]}`,
+			"manifest.json":                  `{"id":"TRUSE","version":"1.1.0","requires":[{"id":"TRBASE"},{"id":"TRDEF"},{"id":"TRDEMOFIN"},{"id":"TRDEMOOTTO"}]}`,
 			"objects/TRDEF/VIEW/FROZEN.json": `{"name":"/TRUSE/FROZEN","content":{"ENTITY":"/TRDEF/NOTES","NEXT":"/TRUSE/COMPANIES"}}`,
 		})
 		if _, err := k.Upgrade(ctx, writePackage(t, up), kernel.Options{}); err == nil || !strings.Contains(err.Error(), "/TRUSE/FROZEN was CHANGED") {
@@ -550,10 +550,10 @@ func TestObjectsRead(t *testing.T) {
 		if got := run("NAMES", `null`); got != `["/TRUSE/COMPANIES","/TRUSE/NOTES"]` {
 			t.Errorf("all views: %s", got)
 		}
-		if got := run("NAMES", `"TRFIN"`); got != `[]` {
-			t.Errorf("views of TRFIN: %s", got)
+		if got := run("NAMES", `"TRDEMOFIN"`); got != `[]` {
+			t.Errorf("views of TRDEMOFIN: %s", got)
 		}
-		if got := run("USING", `"/TRFIN/COMPANIES"`, `"/TROTTO/OTTO_ID"`); got != `["/TRUSE/COMPANIES"]` {
+		if got := run("USING", `"/TRDEMOFIN/COMPANIES"`, `"/TRDEMOOTTO/OTTO_ID"`); got != `["/TRUSE/COMPANIES"]` {
 			t.Errorf("by field: %s", got)
 		}
 		if got := run("USING", `"/TRDEF/NOTES"`, `null`); got != `["/TRUSE/NOTES"]` {
@@ -612,7 +612,7 @@ func TestObjectEntitySet(t *testing.T) {
 		if texts, _ := notes["TEXTS"].([]any); len(texts) != 2 || texts[0].(map[string]any)["TITLE"] != "Notes" {
 			t.Errorf("texts: %v", notes["TEXTS"])
 		}
-		a = c.do("GET", root+"Views?$filter="+url.QueryEscape("ENTITY eq '/TRFIN/COMPANIES'")+"&$select=NAME", vera, "")
+		a = c.do("GET", root+"Views?$filter="+url.QueryEscape("ENTITY eq '/TRDEMOFIN/COMPANIES'")+"&$select=NAME", vera, "")
 		list.Value = nil
 		if a.status != 200 || json.Unmarshal([]byte(a.body), &list) != nil || len(list.Value) != 1 || list.Value[0]["NAME"] != "/TRUSE/COMPANIES" || len(list.Value[0]) != 1 {
 			t.Errorf("filter: %d %s", a.status, a.body)

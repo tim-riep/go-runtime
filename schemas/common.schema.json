@@ -165,7 +165,7 @@
       }
     },
     "objectName": {
-      "description": "Name of an object of a package, starting with the namespace of the package, e.g. /TRFIN/COMPANIES. The kernel checks the namespace when it imports the package.",
+      "description": "Name of an object of a package, starting with the namespace of the package, e.g. /TRDEMOFIN/COMPANIES. The kernel checks the namespace when it imports the package.",
       "type": "string",
       "pattern": "^(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*$",
       "maxLength": 63

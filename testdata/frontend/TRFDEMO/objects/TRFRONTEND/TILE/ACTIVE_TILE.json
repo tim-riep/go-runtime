@@ -11,7 +11,7 @@
       }
     ],
     "METRIC": {
-      "SERVICE": "/TRFIN/COMPANY_SERVICE",
+      "SERVICE": "/TRDEMOFIN/COMPANY_SERVICE",
       "ENTITY_SET": "Companies",
       "FILTER": "STATUS eq 'ACTIVE'",
       "TONE": "GOOD"

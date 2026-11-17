@@ -1,0 +1,20 @@
+{
+  "name": "/TRDEMOFINUI/COMPANIES_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRDEMOFINUI/COMPANIES_PAGE"
+      }
+    ]
+  }
+}

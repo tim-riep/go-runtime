@@ -33,7 +33,7 @@ import (
 	"github.com/tim-riep/go-runtime/native"
 )
 
-const companyFiles = "/TRFIN/COMPANY_FILES"
+const companyFiles = "/TRDEMOFIN/COMPANY_FILES"
 
 // unzip returns the entries of a zip archive.
 func unzip(t *testing.T, data []byte) map[string][]byte {
@@ -102,24 +102,24 @@ func companiesSheet(t *testing.T, rows ...[]string) []byte {
 	return data
 }
 
-// TestCompanyFiles exports the companies of TRFIN as workbook in a zip
+// TestCompanyFiles exports the companies of TRDEMOFIN as workbook in a zip
 // archive with an invoice and imports them again, in code as rt run does
 // and through the HTTP handlers for download and upload.
 func TestCompanyFiles(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := k.Tenants().Create(ctx, "ACME", model.None[string]()); err != nil {
 			t.Fatal(err)
 		}
 		boss := companyAdmin(t, k, "ACME")
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme GmbH"`, `"DE"`)
-		mustCallAs(t, k, boss, "/TRFIN/COMPANY_SERVICE", "CREATE", `"C2"`, `"Bleu SA"`, `"FR"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `"C1"`, `"Acme GmbH"`, `"DE"`)
+		mustCallAs(t, k, boss, "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `"C2"`, `"Bleu SA"`, `"FR"`)
 
 		if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
@@ -127,8 +127,8 @@ func TestCompanyFiles(t *testing.T) {
 		if _, err := k.Users().Create(ctx, "carl", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
 		}
-		for _, a := range []kernel.Assignment{{User: "anna", Role: "/TRFIN/SERVICE_USER"}, {User: "anna", Role: "/TRFIN/COMPANY_ADMIN"},
-			{User: "carl", Role: "/TRFIN/SERVICE_USER"}, {User: "carl", Role: "/TRFIN/COMPANY_CLERK"}} {
+		for _, a := range []kernel.Assignment{{User: "anna", Role: "/TRDEMOFIN/SERVICE_USER"}, {User: "anna", Role: "/TRDEMOFIN/COMPANY_ADMIN"},
+			{User: "carl", Role: "/TRDEMOFIN/SERVICE_USER"}, {User: "carl", Role: "/TRDEMOFIN/COMPANY_CLERK"}} {
 			a.Tenant = "ACME"
 			if _, _, err := k.Roles().Assign(ctx, a, kernel.RoleOptions{By: "test"}); err != nil {
 				t.Fatal(err)
@@ -142,7 +142,7 @@ func TestCompanyFiles(t *testing.T) {
 			}
 			return out
 		}
-		// rt run TRFIN /TRFIN/COMPANY_FILES EXPORT '["2026-11-08"]' --tenant ACME --user anna
+		// rt run TRDEMOFIN /TRDEMOFIN/COMPANY_FILES EXPORT '["2026-11-08"]' --tenant ACME --user anna
 		archive := unb64(t, run("EXPORT", `"2026-11-08"`))
 		files := unzip(t, archive)
 		if len(files) != 2 {
@@ -168,15 +168,15 @@ func TestCompanyFiles(t *testing.T) {
 		if got := run("IMPORT", js(base64.StdEncoding.EncodeToString(book))); got != "2" {
 			t.Errorf("import workbook: %s", got)
 		}
-		if got := mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme AG"`) {
+		if got := mustCall(t, k, "ACME", "/TRDEMOFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme AG"`) {
 			t.Errorf("C1 not updated: %s", got)
 		}
-		if got := mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "FIND", `"C3"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
+		if got := mustCall(t, k, "ACME", "/TRDEMOFIN/COMPANY_SERVICE", "FIND", `"C3"`); !strings.Contains(got, `"STATUS":"ACTIVE"`) {
 			t.Errorf("C3 not created with the default status: %s", got)
 		}
 
 		// Through HTTP.
-		if err := k.ActivateHTTPService(ctx, "/trfin"); err != nil {
+		if err := k.ActivateHTTPService(ctx, "/trdemofin"); err != nil {
 			t.Fatal(err)
 		}
 		srv := httptest.NewServer(k.HTTPHandler())
@@ -184,7 +184,7 @@ func TestCompanyFiles(t *testing.T) {
 		c := client{t, srv.URL}
 		anna, carl := basicAuth("anna", "secret"), basicAuth("carl", "secret")
 
-		a := c.do("GET", "/trfin/companies/export", anna, "")
+		a := c.do("GET", "/trdemofin/companies/export", anna, "")
 		if a.status != 200 || a.header.Get("Content-Type") != "application/zip" || !strings.Contains(a.header.Get("Content-Disposition"), "companies.zip") {
 			t.Fatalf("export: %d %v", a.status, a.header)
 		}
@@ -192,40 +192,40 @@ func TestCompanyFiles(t *testing.T) {
 		if rows := sheetRows(t, unzip(t, download)["companies.xlsx"], "Companies"); len(rows) != 4 {
 			t.Errorf("download: %q", rows)
 		}
-		a = c.do("GET", "/trfin/companies/export?file=companies.xlsx", anna, "")
+		a = c.do("GET", "/trdemofin/companies/export?file=companies.xlsx", anna, "")
 		if a.status != 200 || !strings.HasPrefix(a.header.Get("Content-Type"), "application/vnd.openxmlformats") || len(sheetRows(t, []byte(a.body), "Companies")) != 4 {
 			t.Errorf("one file: %d %v", a.status, a.header)
 		}
-		if a := c.do("GET", "/trfin/companies/export?file=other.txt", anna, ""); a.status != 404 {
+		if a := c.do("GET", "/trdemofin/companies/export?file=other.txt", anna, ""); a.status != 404 {
 			t.Errorf("missing file: %d", a.status)
 		}
 		// The clerk may not export: the sheet has the headings only and
 		// the archive no invoice.
-		a = c.do("GET", "/trfin/companies/export", carl, "")
+		a = c.do("GET", "/trdemofin/companies/export", carl, "")
 		if files := unzip(t, []byte(a.body)); a.status != 200 || len(files) != 1 || len(sheetRows(t, files["companies.xlsx"], "Companies")) != 1 {
 			t.Errorf("clerk export: %d %d", a.status, len(files))
 		}
 
-		if a := c.do("POST", "/trfin/companies/import", anna, string(download)); a.status != 200 || a.body != `{"imported":3}` {
+		if a := c.do("POST", "/trdemofin/companies/import", anna, string(download)); a.status != 200 || a.body != `{"imported":3}` {
 			t.Errorf("upload: %d %s", a.status, a.body)
 		}
 		bad := companiesSheet(t, []string{"Company", "Name", "Country"}, []string{"C4", "", "DE"}, []string{"C5", "Fünf", "XYZ"})
-		a = c.do("POST", "/trfin/companies/import", anna, string(bad))
+		a = c.do("POST", "/trdemofin/companies/import", anna, string(bad))
 		var violations []map[string]any
 		if err := json.Unmarshal([]byte(a.body), &violations); a.status != 422 || err != nil || len(violations) != 2 ||
 			violations[0]["COMPONENT"] != "NAME" || violations[1]["COLUMN_NAME"] != "C" || violations[1]["RAW"] != "XYZ" {
 			t.Errorf("violations: %d %s", a.status, a.body)
 		}
-		if a := c.do("POST", "/trfin/companies/import", anna, "no archive"); a.status != 400 {
+		if a := c.do("POST", "/trdemofin/companies/import", anna, "no archive"); a.status != 400 {
 			t.Errorf("no archive: %d %s", a.status, a.body)
 		}
 		// The clerk may update C1 in Germany but not create C9: nothing is
 		// stored.
 		upload := companiesSheet(t, []string{"Company", "Name", "Country"}, []string{"C1", "Acme SE", "DE"}, []string{"C9", "Neun", "DE"})
-		if a := c.do("POST", "/trfin/companies/import", carl, string(upload)); a.status != http.StatusForbidden {
+		if a := c.do("POST", "/trdemofin/companies/import", carl, string(upload)); a.status != http.StatusForbidden {
 			t.Errorf("clerk upload: %d %s", a.status, a.body)
 		}
-		if got := mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme AG"`) {
+		if got := mustCall(t, k, "ACME", "/TRDEMOFIN/COMPANY_SERVICE", "FIND", `"C1"`); !strings.Contains(got, `"NAME":"Acme AG"`) {
 			t.Errorf("C1 after the rolled back upload: %s", got)
 		}
 	})

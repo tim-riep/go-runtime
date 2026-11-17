@@ -32,7 +32,7 @@ import (
 )
 
 // TestAssetLifecycle installs the examples with a large file added to
-// TRFIN, reads assets in several ways, upgrades TRFIN and removes all
+// TRDEMOFIN, reads assets in several ways, upgrades TRDEMOFIN and removes all
 // packages again.
 func TestAssetLifecycle(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
@@ -40,40 +40,40 @@ func TestAssetLifecycle(t *testing.T) {
 		initialized(t, k)
 		// The kernel package TRBASE brings assets of its own.
 		blobs0, chunks0 := count(t, k, tBlobs), count(t, k, tChunks)
-		fin := testutil.CopyExample(t, "TRFIN")
+		fin := testutil.CopyExample(t, "TRDEMOFIN")
 		big := bytes.Repeat([]byte("0123456789abcdef"), 40000) // 640000 bytes, three chunks
 		testutil.WriteFile(t, fin, "assets/web/data/report.bin", big)
-		pkgs := []*model.Package{testutil.LoadDir(t, fin), testutil.Example(t, "TROTTO")}
+		pkgs := []*model.Package{testutil.LoadDir(t, fin), testutil.Example(t, "TRDEMOOTTO")}
 		if _, err := k.Install(ctx, pkgs, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 
 		// Same folder name in two packages: two repositories.
 		baseCSS, _ := readAsset(t, k, "TRBASE", "web", "css/base.css", model.None[string]())
-		finCSS, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", model.None[string]())
-		if !bytes.Equal(baseCSS, exampleFile(t, "TRBASE", "web/css/base.css")) || !bytes.Equal(finCSS, exampleFile(t, "TRFIN", "web/css/finance.css")) {
+		finCSS, _ := readAsset(t, k, "TRDEMOFIN", "web", "css/finance.css", model.None[string]())
+		if !bytes.Equal(baseCSS, exampleFile(t, "TRBASE", "web/css/base.css")) || !bytes.Equal(finCSS, exampleFile(t, "TRDEMOFIN", "web/css/finance.css")) {
 			t.Fatal("contents differ from the package files")
 		}
 		if ok, _ := k.AssetExists(ctx, "TRBASE", "web", "css/finance.css"); ok {
-			t.Fatal("repositories web of TRBASE and TRFIN are mixed up")
+			t.Fatal("repositories web of TRBASE and TRDEMOFIN are mixed up")
 		}
 
 		// With and without language, with fallback.
-		de, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
-		if !bytes.Equal(de, exampleFile(t, "TRFIN", "templates/invoice/invoice_de.xsl")) || info.Language != model.Some("de") {
+		de, info := readAsset(t, k, "TRDEMOFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
+		if !bytes.Equal(de, exampleFile(t, "TRDEMOFIN", "templates/invoice/invoice_de.xsl")) || info.Language != model.Some("de") {
 			t.Fatalf("German version: %+v", info)
 		}
-		pl, info := readAsset(t, k, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("pl"))
-		if !bytes.Equal(pl, exampleFile(t, "TRFIN", "templates/invoice/invoice_en.xsl")) || info.Language != model.Some("en") {
+		pl, info := readAsset(t, k, "TRDEMOFIN", "templates", "invoice/invoice.xsl", model.Some("pl"))
+		if !bytes.Equal(pl, exampleFile(t, "TRDEMOFIN", "templates/invoice/invoice_en.xsl")) || info.Language != model.Some("en") {
 			t.Fatalf("fallback to English: %+v", info)
 		}
-		neutral, info := readAsset(t, k, "TRFIN", "templates", "letter/letter.xsl", model.Some("fr"))
-		if !bytes.Equal(neutral, exampleFile(t, "TRFIN", "templates/letter/letter.xsl")) || info.Language.Valid() {
+		neutral, info := readAsset(t, k, "TRDEMOFIN", "templates", "letter/letter.xsl", model.Some("fr"))
+		if !bytes.Equal(neutral, exampleFile(t, "TRDEMOFIN", "templates/letter/letter.xsl")) || info.Language.Valid() {
 			t.Fatalf("fallback to the language-independent version: %+v", info)
 		}
 
 		// Streaming a file larger than one chunk with a small buffer.
-		r, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", model.None[string]())
+		r, err := k.OpenAsset(ctx, "TRDEMOFIN", "web", "data/report.bin", model.None[string]())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,7 +86,7 @@ func TestAssetLifecycle(t *testing.T) {
 		}
 
 		// A repository as file system.
-		fsys, err := k.AssetFS(ctx, "TRFIN", "templates", model.Some("de"))
+		fsys, err := k.AssetFS(ctx, "TRDEMOFIN", "templates", model.Some("de"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -102,7 +102,7 @@ func TestAssetLifecycle(t *testing.T) {
 		if !slices.Equal(files, []string{"invoice/invoice.xsl", "letter/letter.xsl"}) {
 			t.Fatalf("files: %v", files)
 		}
-		if b, _ := fs.ReadFile(fsys, "letter/letter.xsl"); !bytes.Equal(b, exampleFile(t, "TRFIN", "templates/letter/letter_de.xsl")) {
+		if b, _ := fs.ReadFile(fsys, "letter/letter.xsl"); !bytes.Equal(b, exampleFile(t, "TRDEMOFIN", "templates/letter/letter_de.xsl")) {
 			t.Fatal("file system returned the wrong version")
 		}
 
@@ -119,16 +119,16 @@ func TestAssetLifecycle(t *testing.T) {
 		if _, err := k.Upgrade(ctx, next, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "web", "css/finance.css", model.None[string]()); string(b) != ".amount { color: black; }\n" {
+		if b, _ := readAsset(t, k, "TRDEMOFIN", "web", "css/finance.css", model.None[string]()); string(b) != ".amount { color: black; }\n" {
 			t.Fatalf("changed asset: %q", b)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "web", "js/app.js", model.None[string]()); string(b) != "console.log('finance');\n" {
+		if b, _ := readAsset(t, k, "TRDEMOFIN", "web", "js/app.js", model.None[string]()); string(b) != "console.log('finance');\n" {
 			t.Fatalf("new asset: %q", b)
 		}
-		if _, err := k.OpenAsset(ctx, "TRFIN", "web", "data/report.bin", model.None[string]()); !errors.Is(err, fs.ErrNotExist) {
+		if _, err := k.OpenAsset(ctx, "TRDEMOFIN", "web", "data/report.bin", model.None[string]()); !errors.Is(err, fs.ErrNotExist) {
 			t.Fatalf("removed asset still readable: %v", err)
 		}
-		if b, _ := readAsset(t, k, "TRFIN", "mail", "welcome.html", model.None[string]()); string(b) != "<p>Welcome</p>\n" {
+		if b, _ := readAsset(t, k, "TRDEMOFIN", "mail", "welcome.html", model.None[string]()); string(b) != "<p>Welcome</p>\n" {
 			t.Fatalf("new repository: %q", b)
 		}
 		s, _ := k.Schema(ctx)
@@ -138,7 +138,7 @@ func TestAssetLifecycle(t *testing.T) {
 		consistent(t, k)
 
 		// Uninstalling removes every repository and content.
-		for _, id := range []model.PackageID{"TROTTO", "TRFIN"} {
+		for _, id := range []model.PackageID{"TRDEMOOTTO", "TRDEMOFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{Confirm: true}); err != nil {
 				t.Fatal(err)
 			}

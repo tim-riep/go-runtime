@@ -67,8 +67,8 @@ func TestSourceErrors(t *testing.T) {
 		{func(f fstest.MapFS) { f["src/OTHER.class"] = file("public class /TRX/NAMED\nend\n") }, "must be named NAMED.class"},
 		{func(f fstest.MapFS) { f["src/sub/A.class"] = file("public class /TRX/A\nend\n") }, "does not belong to any known object type"},
 		{func(f fstest.MapFS) {
-			f["src/USES.class"] = file("public class /TRX/USES\n\n  public constant A: /TROTTO/X = 1\n\nend\n")
-		}, "file src/USES.class, line 3, column 22: reference /TROTTO/X"},
+			f["src/USES.class"] = file("public class /TRX/USES\n\n  public constant A: /TRDEMOOTTO/X = 1\n\nend\n")
+		}, "file src/USES.class, line 3, column 22: reference /TRDEMOOTTO/X"},
 		{func(f fstest.MapFS) { f["src/FOREIGN.class"] = file("public class /TRZ/FOREIGN\nend\n") }, "line 1, column 14: definition /TRZ/FOREIGN"},
 	} {
 		fsys := sourceFS()
@@ -92,12 +92,12 @@ func TestSourceErrors(t *testing.T) {
 // of any package, but no other reference.
 func TestIncludeIfFoundIsExempt(t *testing.T) {
 	fsys := sourceFS()
-	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TROTTO/HOOK if found\n  end\n\nend\n")
+	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TRDEMOOTTO/HOOK if found\n  end\n\nend\n")
 	if _, err := Load(fsys, "mem"); err != nil {
 		t.Fatalf("if found: %v", err)
 	}
-	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TROTTO/HOOK\n  end\n\nend\n")
-	if _, err := Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "reference /TROTTO/HOOK") {
+	fsys["src/HOOKED.class"] = file("public class /TRX/HOOKED\n\n  public method M()\n    include /TRDEMOOTTO/HOOK\n  end\n\nend\n")
+	if _, err := Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "reference /TRDEMOOTTO/HOOK") {
 		t.Fatalf("plain include: %v", err)
 	}
 }

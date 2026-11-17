@@ -38,87 +38,87 @@ func TestCLI(t *testing.T) {
 				{[]string{"list"}, exitError, "run rt init"},
 				{[]string{"init"}, exitOK, "Executed"},
 				{[]string{"init"}, exitOK, "Nothing to do"},
-				{[]string{"install", "--dry-run", filepath.Join(ex, "TRFIN")}, exitInvalid, "not set up: de"},
+				{[]string{"install", "--dry-run", filepath.Join(ex, "TRDEMOFIN")}, exitInvalid, "not set up: de"},
 				{[]string{"language", "add", "de"}, exitOK, "German"},
-				{[]string{"install", "--dry-run", filepath.Join(ex, "TRFIN")}, exitOK, "Dry run"},
-				{[]string{"install", filepath.Join(ex, "TROTTO")}, exitInvalid, "requires TRFIN"},
+				{[]string{"install", "--dry-run", filepath.Join(ex, "TRDEMOFIN")}, exitOK, "Dry run"},
+				{[]string{"install", filepath.Join(ex, "TRDEMOOTTO")}, exitInvalid, "requires TRDEMOFIN"},
 				{[]string{"install", filepath.Join(testutil.ModuleRoot(t), "kernelpkg", "TRBASE")}, exitInvalid, "TRBASE is a kernel package"},
 				{[]string{"natives", "list"}, exitOK, "TRBASE:/TRBASE/HASH.SHA256"},
-				{[]string{"install", filepath.Join(ex, "TRFIN"), filepath.Join(ex, "TROTTO")}, exitOK, "Executed"},
-				{[]string{"extension-point", "list", "TRFIN"}, exitOK, "/TRFIN/COMPANY_CHECKS  TRFIN    multiple  /TRFIN/COMPANY_CHECKS  COUNTRY  1"},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "implementation 1: /TROTTO/COMPANY_CHECKS (package TROTTO, class /TROTTO/COMPANY_CHECKS, order 100)"},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, `COUNTRY: "DE" "AT"`},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "used by TRFIN src/COMPANY_BEHAVIOR.class:"},
-				{[]string{"business-object", "list"}, exitOK, "/TRFIN/COMPANY  TRFIN    application    /TRFIN/COMPANIES  4         /TRFIN/COMPANY_BEHAVIOR  TROTTO"},
-				{[]string{"business-object", "list", "--data-class", "configuration"}, exitOK, "/TRFIN/COUNTRY"},
+				{[]string{"install", filepath.Join(ex, "TRDEMOFIN"), filepath.Join(ex, "TRDEMOOTTO")}, exitOK, "Executed"},
+				{[]string{"extension-point", "list", "TRDEMOFIN"}, exitOK, "/TRDEMOFIN/COMPANY_CHECKS  TRDEMOFIN  multiple  /TRDEMOFIN/COMPANY_CHECKS  COUNTRY  1"},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS"}, exitOK, "implementation 1: /TRDEMOOTTO/COMPANY_CHECKS (package TRDEMOOTTO, class /TRDEMOOTTO/COMPANY_CHECKS, order 100)"},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS"}, exitOK, `COUNTRY: "DE" "AT"`},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS"}, exitOK, "used by TRDEMOFIN src/COMPANY_BEHAVIOR.class:"},
+				{[]string{"business-object", "list"}, exitOK, "/TRDEMOFIN/COMPANY  TRDEMOFIN  application    /TRDEMOFIN/COMPANIES  4         /TRDEMOFIN/COMPANY_BEHAVIOR  TRDEMOOTTO"},
+				{[]string{"business-object", "list", "--data-class", "configuration"}, exitOK, "/TRDEMOFIN/COUNTRY"},
 				{[]string{"business-object", "list", "--data-class", "nope"}, exitError, "the data class is application, configuration or runtimeConfiguration"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "extended by TROTTO, behavior class /TROTTO/COMPANY_BEHAVIOR"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "determination /TROTTO/RESERVE_ID on save (create)  (TROTTO)"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "authorization /TROTTO/MARKETPLACE  (TROTTO)"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "numbering uuid  (TROTTO)"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY", "--json"}, exitOK, `"origin": "TROTTO"`},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "entity /TRFIN/CONTACTS  key (CONTACT_ID)  operations create, update, delete  numbering uuid"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "field CHANGED_AT  TIMESTAMP"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "action BLOCK  instance  parameter /TRFIN/BLOCK_REASON  result self  modifies true  activity UPDATE"},
-				{[]string{"business-object", "show", "/TRFIN/COMPANY"}, exitOK, "used by TRFIN src/COMPANY_SERVICE.class:"},
-				{[]string{"business-object", "show", "--json", "/TRFIN/COMPANY"}, exitOK, `"behaviorClass": "/TRFIN/COMPANY_BEHAVIOR"`},
-				{[]string{"business-object", "show", "/TRFIN/NOPE"}, exitError, "business object /TRFIN/NOPE"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "extended by TRDEMOOTTO, behavior class /TRDEMOOTTO/COMPANY_BEHAVIOR"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "determination /TRDEMOOTTO/RESERVE_ID on save (create)  (TRDEMOOTTO)"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "authorization /TRDEMOOTTO/MARKETPLACE  (TRDEMOOTTO)"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "numbering uuid  (TRDEMOOTTO)"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY", "--json"}, exitOK, `"origin": "TRDEMOOTTO"`},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "entity /TRDEMOFIN/CONTACTS  key (CONTACT_ID)  operations create, update, delete  numbering uuid"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "field CHANGED_AT  TIMESTAMP"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "action BLOCK  instance  parameter /TRDEMOFIN/BLOCK_REASON  result self  modifies true  activity UPDATE"},
+				{[]string{"business-object", "show", "/TRDEMOFIN/COMPANY"}, exitOK, "used by TRDEMOFIN src/COMPANY_SERVICE.class:"},
+				{[]string{"business-object", "show", "--json", "/TRDEMOFIN/COMPANY"}, exitOK, `"behaviorClass": "/TRDEMOFIN/COMPANY_BEHAVIOR"`},
+				{[]string{"business-object", "show", "/TRDEMOFIN/NOPE"}, exitError, "business object /TRDEMOFIN/NOPE"},
 				{[]string{"business-object", "list", "NOPE"}, exitError, "NOPE"},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS", "--json"}, exitOK, `"use": "multiple"`},
-				{[]string{"extension-point", "show", "/TRFIN/NOPE"}, exitError, "not found"},
-				{[]string{"implementation", "deactivate", "/TROTTO/COMPANY_CHECKS"}, exitOK, "Implementation /TROTTO/COMPANY_CHECKS deactivated globally."},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "globally: inactive"},
-				{[]string{"implementation", "reset", "/TROTTO/COMPANY_CHECKS"}, exitOK, "is active again"},
-				{[]string{"implementation", "history", "/TROTTO/COMPANY_CHECKS"}, exitOK, "cli     reset       /TROTTO/COMPANY_CHECKS  -       inactive  -"},
-				{[]string{"implementation", "activate", "/TROTTO/NOPE"}, exitError, "not found"},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS", "--json"}, exitOK, `"use": "multiple"`},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/NOPE"}, exitError, "not found"},
+				{[]string{"implementation", "deactivate", "/TRDEMOOTTO/COMPANY_CHECKS"}, exitOK, "Implementation /TRDEMOOTTO/COMPANY_CHECKS deactivated globally."},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS"}, exitOK, "globally: inactive"},
+				{[]string{"implementation", "reset", "/TRDEMOOTTO/COMPANY_CHECKS"}, exitOK, "is active again"},
+				{[]string{"implementation", "history", "/TRDEMOOTTO/COMPANY_CHECKS"}, exitOK, "cli     reset       /TRDEMOOTTO/COMPANY_CHECKS  -       inactive  -"},
+				{[]string{"implementation", "activate", "/TRDEMOOTTO/NOPE"}, exitError, "not found"},
 				{[]string{"implementation", "frobnicate"}, exitUsage, ""},
-				{[]string{"plan", filepath.Join(ex, "upgrade", "TROTTO")}, exitOK, "upgrade TROTTO 1.0.0 -> 1.1.0"},
-				{[]string{"upgrade", filepath.Join(ex, "upgrade", "TROTTO")}, exitOK, "Executed"},
-				{[]string{"list"}, exitOK, "TROTTO  1.1.0"},
-				{[]string{"show", "/TRFIN/COMPANIES"}, exitOK, "/TROTTO/OTTO_ID"},
-				{[]string{"show", "/TRFIN/COMPANY_STATUS"}, exitOK, `value "BLOCKED"`},
+				{[]string{"plan", filepath.Join(ex, "upgrade", "TRDEMOOTTO")}, exitOK, "upgrade TRDEMOOTTO 1.0.0 -> 1.1.0"},
+				{[]string{"upgrade", filepath.Join(ex, "upgrade", "TRDEMOOTTO")}, exitOK, "Executed"},
+				{[]string{"list"}, exitOK, "TRDEMOOTTO  1.1.0"},
+				{[]string{"show", "/TRDEMOFIN/COMPANIES"}, exitOK, "/TRDEMOOTTO/OTTO_ID"},
+				{[]string{"show", "/TRDEMOFIN/COMPANY_STATUS"}, exitOK, `value "BLOCKED"`},
 				{[]string{"show", "/TRBASE/COUNTRY"}, exitOK, "Länderschlüssel"},
 				{[]string{"show", "/TRBASE/NAME"}, exitError, "domain:/TRBASE/NAME or data-element:/TRBASE/NAME"},
-				{[]string{"show", "data-element:/TRBASE/NAME"}, exitOK, "used by /TRFIN/COMPANIES.NAME"},
-				{[]string{"show", "TRFIN"}, exitOK, "required by [TROTTO]"},
+				{[]string{"show", "data-element:/TRBASE/NAME"}, exitOK, "used by /TRDEMOFIN/COMPANIES.NAME"},
+				{[]string{"show", "TRDEMOFIN"}, exitOK, "required by [TRDEMOOTTO]"},
 				{[]string{"show", "NOPE"}, exitError, "not found"},
 				{[]string{"check"}, exitOK, "match"},
-				{[]string{"show", "/TRFIN/COMPANY"}, exitError, "names a data-element and an authorization-object"},
-				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "activity EXPORT: Export"},
-				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "COUNTRY     /TRBASE/COUNTRY"},
-				{[]string{"show", "--json", "authorization-object:/TROTTO/MARKETPLACE"}, exitOK, `"code": "SEND"`},
-				{[]string{"authorization-objects", "list", "TROTTO"}, exitOK, "OTTO marketplace  COUNTRY, ACTIVITY"},
+				{[]string{"show", "/TRDEMOFIN/COMPANY"}, exitError, "names a data-element and an authorization-object"},
+				{[]string{"show", "authorization-object:/TRDEMOFIN/COMPANY"}, exitOK, "activity EXPORT: Export"},
+				{[]string{"show", "authorization-object:/TRDEMOFIN/COMPANY"}, exitOK, "COUNTRY     /TRBASE/COUNTRY"},
+				{[]string{"show", "--json", "authorization-object:/TRDEMOOTTO/MARKETPLACE"}, exitOK, `"code": "SEND"`},
+				{[]string{"authorization-objects", "list", "TRDEMOOTTO"}, exitOK, "OTTO marketplace  COUNTRY, ACTIVITY"},
 				{[]string{"authorization-objects", "list", "NOPE"}, exitError, "NOPE"},
 				{[]string{"activities", "list", "--lang", "de"}, exitOK, "APPROVE     Genehmigen"},
 				{[]string{"activities", "list"}, exitOK, "ADMINISTER  Administer"},
-				{[]string{"asset", "repos"}, exitOK, "TRFIN    templates"},
+				{[]string{"asset", "repos"}, exitOK, "TRDEMOFIN  templates"},
 				{[]string{"asset", "repos", "TRBASE"}, exitOK, "Base styles and fonts"},
-				{[]string{"asset", "list", "TRFIN", "templates"}, exitOK, "letter/"},
-				{[]string{"asset", "list", "TRFIN", "templates", "invoice"}, exitOK, "de, en"},
-				{[]string{"asset", "show", "TRFIN", "templates", "invoice/invoice.xsl"}, exitOK, "invoice/invoice_de.xsl"},
-				{[]string{"asset", "show", "TRFIN", "web", "images"}, exitOK, "Folder images"},
-				{[]string{"asset", "get", "TRFIN", "templates", "invoice/invoice.xsl", "--lang", "de", "-o", "-"}, exitOK, "Rechnung"},
-				{[]string{"asset", "get", "TRFIN", "templates", "invoice/invoice.xsl", "--lang", "pl", "-o", "-"}, exitOK, "Invoice"},
-				{[]string{"asset", "get", "TRFIN", "web", "images/logo.png", "-o", filepath.Join(t.TempDir(), "logo.png")}, exitOK, "image/png"},
-				{[]string{"asset", "get", "TRFIN", "web", "nope.png", "-o", "-"}, exitError, "not found"},
+				{[]string{"asset", "list", "TRDEMOFIN", "templates"}, exitOK, "letter/"},
+				{[]string{"asset", "list", "TRDEMOFIN", "templates", "invoice"}, exitOK, "de, en"},
+				{[]string{"asset", "show", "TRDEMOFIN", "templates", "invoice/invoice.xsl"}, exitOK, "invoice/invoice_de.xsl"},
+				{[]string{"asset", "show", "TRDEMOFIN", "web", "images"}, exitOK, "Folder images"},
+				{[]string{"asset", "get", "TRDEMOFIN", "templates", "invoice/invoice.xsl", "--lang", "de", "-o", "-"}, exitOK, "Rechnung"},
+				{[]string{"asset", "get", "TRDEMOFIN", "templates", "invoice/invoice.xsl", "--lang", "pl", "-o", "-"}, exitOK, "Invoice"},
+				{[]string{"asset", "get", "TRDEMOFIN", "web", "images/logo.png", "-o", filepath.Join(t.TempDir(), "logo.png")}, exitOK, "image/png"},
+				{[]string{"asset", "get", "TRDEMOFIN", "web", "nope.png", "-o", "-"}, exitError, "not found"},
 				{[]string{"install", filepath.Join(bos, "TRSET"), filepath.Join(bos, "TRSETX")}, exitOK, "Executed"},
 				{[]string{"upgrade", filepath.Join(bos, "upgrade", "TRSETX")}, exitOK, "Executed"},
 				{[]string{"show", "/TRSETX/SHOPS"}, exitOK, "entity of business object /TRSET/PARTNER"},
-				{[]string{"show", "/TRFIN/PAYMENTS"}, exitOK, "data class application"},
+				{[]string{"show", "/TRDEMOFIN/PAYMENTS"}, exitOK, "data class application"},
 				{[]string{"business-object", "list", "TRSET"}, exitOK, "/TRSET/PARTNER  TRSET    configuration"},
 				{[]string{"business-object", "show", "/TRSET/PARTNER"}, exitOK, "authorization for configuration: /TRBASE/CONFIGURATION"},
 				{[]string{"business-object", "show", "/TRSET/PARTNER"}, exitOK, "entity /TRSETX/SHOPS"},
 				{[]string{"setting", "list"}, exitUsage, `unknown command "setting"`},
-				{[]string{"show", "/TRBASE/ADDRESS"}, exitOK, "used by table /TRFIN/COMPANIES (include)"},
-				{[]string{"show", "/TRFIN/COMPANY_GROUP"}, exitOK, "SEAT"},
-				{[]string{"show", "/TRFIN/COMPANY_ARRAY", "--json"}, exitOK, `"kind": "array-type"`},
-				{[]string{"show", "/TRFIN/COMPANIES_ARCHIVE"}, exitOK, "INCLUDE via /TRBASE/ADDRESS (include /TRFIN/COMPANIES)"},
+				{[]string{"show", "/TRBASE/ADDRESS"}, exitOK, "used by table /TRDEMOFIN/COMPANIES (include)"},
+				{[]string{"show", "/TRDEMOFIN/COMPANY_GROUP"}, exitOK, "SEAT"},
+				{[]string{"show", "/TRDEMOFIN/COMPANY_ARRAY", "--json"}, exitOK, `"kind": "array-type"`},
+				{[]string{"show", "/TRDEMOFIN/COMPANIES_ARCHIVE"}, exitOK, "INCLUDE via /TRBASE/ADDRESS (include /TRDEMOFIN/COMPANIES)"},
 				{[]string{"check"}, exitOK, "match"},
 				{[]string{"language", "add", "xx"}, exitError, "ISO 639-1"},
 				{[]string{"language", "list"}, exitOK, "English"},
 				{[]string{"language", "remove", "en"}, exitError, "cannot be removed"},
 				{[]string{"tenant", "create", "ACME", "--description", "Acme Corp"}, exitOK, "created"},
-				{[]string{"run", "TRFIN", "/TRFIN/INVOICE_RENDERER", "RENDER", `[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/INVOICE_RENDERER", "RENDER", `[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,
 					"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]`, "--tenant", "ACME"}, exitOK, "Rechnung R-1"},
 				{[]string{"effects", "list"}, exitOK, "No failed effects."},
 				{[]string{"user", "create", "anna", "--tenant", "ACME", "--lang", "de"}, exitOK, "User anna created."},
@@ -128,13 +128,13 @@ func TestCLI(t *testing.T) {
 				{[]string{"user", "lock", "anna"}, exitOK, "locked"},
 				{[]string{"user", "unlock", "anna"}, exitOK, "unlocked"},
 				{[]string{"user", "tenant", "remove", "anna", "BETA"}, exitError, "not found"},
-				{[]string{"http", "list", "TRFIN"}, exitOK, "/trfin"},
+				{[]string{"http", "list", "TRDEMOFIN"}, exitOK, "/trdemofin"},
 				{[]string{"tenant", "list"}, exitOK, "Acme Corp"},
 				{[]string{"tenant", "delete", "ACME"}, exitNeedsPermit, "--yes"},
 				{[]string{"tenant", "delete", "ACME", "--yes"}, exitOK, "Executed"},
-				{[]string{"uninstall", "TRFIN", "--yes"}, exitError, "required by TROTTO"},
-				{[]string{"uninstall", "TROTTO"}, exitNeedsPermit, "--yes"},
-				{[]string{"uninstall", "TROTTO", "--yes"}, exitOK, "[DESTRUCTIVE]"},
+				{[]string{"uninstall", "TRDEMOFIN", "--yes"}, exitError, "required by TRDEMOOTTO"},
+				{[]string{"uninstall", "TRDEMOOTTO"}, exitNeedsPermit, "--yes"},
+				{[]string{"uninstall", "TRDEMOOTTO", "--yes"}, exitOK, "[DESTRUCTIVE]"},
 				{[]string{"log", "--json"}, exitOK, `"operation": "UNINSTALL"`},
 				{[]string{"bogus"}, exitUsage, "unknown command"},
 			}
@@ -183,8 +183,8 @@ func TestFmt(t *testing.T) {
 
 func TestBuild(t *testing.T) {
 	var out, errOut bytes.Buffer
-	dir := filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "TRFIN")
-	if code := run(context.Background(), []string{"build", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "build of TRFIN succeeded: 2 classes") {
+	dir := filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "TRLANGFIN")
+	if code := run(context.Background(), []string{"build", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "build of TRLANGFIN succeeded: 2 classes") {
 		t.Fatalf("build: %d %s %s", code, out.String(), errOut.String())
 	}
 	broken := t.TempDir()
@@ -202,47 +202,47 @@ func TestBuild(t *testing.T) {
 }
 
 func TestDisasm(t *testing.T) {
-	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRFIN")
+	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRDEMOFIN")
 	var out, errOut bytes.Buffer
-	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/TEMPLATE_RENDERER"}, &out, &errOut); code != exitOK {
+	if code := run(context.Background(), []string{"disasm", dir, "/TRDEMOFIN/TEMPLATE_RENDERER"}, &out, &errOut); code != exitOK {
 		t.Fatalf("disasm: %d %s", code, errOut.String())
 	}
 	for _, want := range []string{
-		"/TRFIN/TEMPLATE_RENDERER.TEMPLATE (static, 1 parameters, 2 locals)",
-		`; src/TEMPLATE_RENDERER.class:6  var templates = /TRBASE/ASSET_REPOSITORY.OPEN("TRFIN", "templates")`,
+		"/TRDEMOFIN/TEMPLATE_RENDERER.TEMPLATE (static, 1 parameters, 2 locals)",
+		`; src/TEMPLATE_RENDERER.class:6  var templates = /TRBASE/ASSET_REPOSITORY.OPEN("TRDEMOFIN", "templates")`,
 		`; "templates"`,
 		"; /TRBASE/ASSET_REPOSITORY.OPEN",
 		"; /TRBASE/ASSET_REPOSITORY.GET_IN_LANGUAGE",
 		"; /TRBASE/XSLT_STYLESHEET.COMPILE",
-		"/TRFIN/TEMPLATE_RENDERER.RENDER_ALL (static, 2 parameters,",
+		"/TRDEMOFIN/TEMPLATE_RENDERER.RENDER_ALL (static, 2 parameters,",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing %q in\n%s", want, out.String())
 		}
 	}
-	if strings.Contains(out.String(), "/TRFIN/COMPANY_SERVICE") {
+	if strings.Contains(out.String(), "/TRDEMOFIN/COMPANY_SERVICE") {
 		t.Error("the listing has functions of other classes")
 	}
 	out.Reset()
-	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; select /TRFIN/COMPANIES") ||
-		!strings.Contains(out.String(), "ENTITY 21") || !strings.Contains(out.String(), "; business object /TRFIN/COMPANY") {
+	if code := run(context.Background(), []string{"disasm", dir, "/TRDEMOFIN/COMPANY_SERVICE.BLOCK_COUNTRY"}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "; select /TRDEMOFIN/COMPANIES") ||
+		!strings.Contains(out.String(), "ENTITY 21") || !strings.Contains(out.String(), "; business object /TRDEMOFIN/COMPANY") {
 		t.Errorf("database statement: %d %s", code, out.String())
 	}
 	errOut.Reset()
-	if code := run(context.Background(), []string{"disasm", dir, "/TRFIN/NOPE"}, &out, &errOut); code != exitError || !strings.Contains(errOut.String(), "package TRFIN has no function /TRFIN/NOPE") {
+	if code := run(context.Background(), []string{"disasm", dir, "/TRDEMOFIN/NOPE"}, &out, &errOut); code != exitError || !strings.Contains(errOut.String(), "package TRDEMOFIN has no function /TRDEMOFIN/NOPE") {
 		t.Errorf("unknown name: %d %s", code, errOut.String())
 	}
 }
 
 func TestLanguageCommands(t *testing.T) {
-	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRORDER")
+	dir := filepath.Join(testutil.ModuleRoot(t), "examples", "TRDEMOORDER")
 	for _, s := range []struct {
 		args     []string
 		code     int
 		contains string
 	}{
 		{[]string{"fmt", "--check", dir}, exitOK, ""},
-		{[]string{"build", dir}, exitOK, "include /TRORDER/AUDIT does not exist and is skipped"},
+		{[]string{"build", dir}, exitOK, "include /TRDEMOORDER/AUDIT does not exist and is skipped"},
 	} {
 		var out, errOut bytes.Buffer
 		code := run(context.Background(), s.args, &out, &errOut)
@@ -260,7 +260,7 @@ func TestLanguageCommands(t *testing.T) {
 	if code := run(context.Background(), []string{"--db", db.DSN, "language", "add", "de"}, &out, &errOut); code != exitOK {
 		t.Fatalf("language: %s", errOut.String())
 	}
-	if code := run(context.Background(), []string{"--db", db.DSN, "install", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "/TRORDER/ORDERS") {
+	if code := run(context.Background(), []string{"--db", db.DSN, "install", dir}, &out, &errOut); code != exitOK || !strings.Contains(out.String(), "/TRDEMOORDER/ORDERS") {
 		t.Fatalf("install: %d %s %s", code, out.String(), errOut.String())
 	}
 	if code := run(context.Background(), []string{"--db", db.DSN, "tenant", "create", "ACME"}, &out, &errOut); code != exitOK {
@@ -272,16 +272,16 @@ func TestLanguageCommands(t *testing.T) {
 		contains string
 	}{
 		{[]string{"test", dir}, exitOK, "3 tests, 3 passed, 0 failed"},
-		{[]string{"test", "TRORDER"}, exitOK, "3 tests, 3 passed, 0 failed"},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"A1": "HIGH"`},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "TO_ROWS", `[[{"ID":"A1","AMOUNT":"1","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"NOTE": "",
+		{[]string{"test", "TRDEMOORDER"}, exitOK, "3 tests, 3 passed, 0 failed"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A1","AMOUNT":"1500.00","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"A1": "HIGH"`},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "TO_ROWS", `[[{"ID":"A1","AMOUNT":"1","NOTE":"","PAID":false}]]`, "--tenant", "ACME"}, exitOK, `"NOTE": "",
     "COUPON": null`},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A3","AMOUNT":"-1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "/TRORDER/CHECKS included from src/ORDER_RATING.class"},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE", "--tenant", "ACME"}, exitError, "no public static method RATE"},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"","AMOUNT":"1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "does not allow the empty string"},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", "[[]]"}, exitUsage, "--tenant"},
-		{[]string{"run", "TRORDER", "/TRORDER/ORDER_RATING", "RATE_ALL", "[[]]", "--tenant", "NOBODY"}, exitError, "tenant NOBODY not found"},
-		{[]string{"run", "TRFIN", "/TRFIN/X", "Y", "--tenant", "ACME"}, exitError, "package TRFIN not found"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"A3","AMOUNT":"-1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "/TRDEMOORDER/CHECKS included from src/ORDER_RATING.class"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE", "--tenant", "ACME"}, exitError, "no public static method RATE"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE_ALL", `[[{"ID":"","AMOUNT":"1","PAID":false}]]`, "--tenant", "ACME"}, exitError, "does not allow the empty string"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE_ALL", "[[]]"}, exitUsage, "--tenant"},
+		{[]string{"run", "TRDEMOORDER", "/TRDEMOORDER/ORDER_RATING", "RATE_ALL", "[[]]", "--tenant", "NOBODY"}, exitError, "tenant NOBODY not found"},
+		{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/X", "Y", "--tenant", "ACME"}, exitError, "package TRDEMOFIN not found"},
 	} {
 		var out, errOut bytes.Buffer
 		code := run(context.Background(), append([]string{"--db", db.DSN}, s.args...), &out, &errOut)
@@ -299,9 +299,9 @@ func TestRoleCommands(t *testing.T) {
 			dir := t.TempDir()
 			local := filepath.Join(dir, "ops.json")
 			testutil.WriteFile(t, dir, "ops.json", []byte(`{ "name": "/LOCAL/OPS", "texts": { "en": { "label": "Operations" } },
-				"roles": ["/TRFIN/COMPANY_CLERK", "/TROTTO/SYNC_OPERATOR"] }`))
+				"roles": ["/TRDEMOFIN/COMPANY_CLERK", "/TRDEMOOTTO/SYNC_OPERATOR"] }`))
 			testutil.WriteFile(t, dir, "all.json", []byte(`{ "name": "/LOCAL/ALL", "texts": { "en": { "label": "All" } },
-				"authorizations": [{ "object": "/TRFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } }] }`))
+				"authorizations": [{ "object": "/TRDEMOFIN/COMPANY", "fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "pattern": "*" }], "ACTIVITY": [{ "pattern": "*" }] } }] }`))
 			steps := []struct {
 				args     []string
 				code     int
@@ -309,34 +309,34 @@ func TestRoleCommands(t *testing.T) {
 			}{
 				{[]string{"init", "--admin", "root", "--tenant", "ACME"}, exitOK, "User root created with all authorizations in tenant ACME"},
 				{[]string{"language", "add", "de"}, exitOK, "German"},
-				{[]string{"install", filepath.Join(ex, "TRFIN"), filepath.Join(ex, "TROTTO")}, exitOK, "create-role /TRFIN/COMPANY_CLERK"},
+				{[]string{"install", filepath.Join(ex, "TRDEMOFIN"), filepath.Join(ex, "TRDEMOOTTO")}, exitOK, "create-role /TRDEMOFIN/COMPANY_CLERK"},
 				{[]string{"user", "create", "anna", "--tenant", "ACME"}, exitOK, "created"},
-				{[]string{"role", "list"}, exitOK, "/TROTTO/SYNC_OPERATOR   TROTTO   single"},
-				{[]string{"run", "TRFIN", "/TRFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "ACME", "--user", "anna"}, exitOK, "null"},
-				{[]string{"run", "TRFIN", "/TRFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "ACME", "--user", "nobody"}, exitError, "user nobody not found"},
+				{[]string{"role", "list"}, exitOK, "/TRDEMOOTTO/SYNC_OPERATOR  TRDEMOOTTO  single"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "ACME", "--user", "anna"}, exitOK, "null"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "ACME", "--user", "nobody"}, exitError, "user nobody not found"},
 				{[]string{"tenant", "create", "BETA"}, exitOK, "BETA"},
-				{[]string{"run", "TRFIN", "/TRFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "BETA", "--user", "anna"}, exitUsage, "does not work in tenant BETA"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/ORDER_INTAKE", "FIND", `["X"]`, "--tenant", "BETA", "--user", "anna"}, exitUsage, "does not work in tenant BETA"},
 				{[]string{"role", "show", "/RT/ALL_AUTHORIZATIONS"}, exitOK, "objects and activities installed later are included"},
 				{[]string{"role", "delete", "/RT/ALL_AUTHORIZATIONS"}, exitError, "is a role of the kernel; it cannot change"},
-				{[]string{"role", "show", "/TRFIN/COMPANY_CLERK"}, exitOK, `COUNTRY      "DE" "AT" "PL".."SK"`},
-				{[]string{"role", "show", "/TRFIN/COMPANY_ADMIN"}, exitOK, "note: * on ACTIVITY includes activities the object allows later"},
+				{[]string{"role", "show", "/TRDEMOFIN/COMPANY_CLERK"}, exitOK, `COUNTRY      "DE" "AT" "PL".."SK"`},
+				{[]string{"role", "show", "/TRDEMOFIN/COMPANY_ADMIN"}, exitOK, "note: * on ACTIVITY includes activities the object allows later"},
 				{[]string{"role", "import", local}, exitOK, "Role /LOCAL/OPS saved."},
-				{[]string{"role", "create", filepath.Join(dir, "all.json")}, exitOK, "grants * on ACTIVITY of /TRFIN/COMPANY"},
+				{[]string{"role", "create", filepath.Join(dir, "all.json")}, exitOK, "grants * on ACTIVITY of /TRDEMOFIN/COMPANY"},
 				{[]string{"role", "create", local}, exitError, "exists already"},
-				{[]string{"role", "show", "--json", "/LOCAL/OPS"}, exitOK, `"role": "/TROTTO/SYNC_OPERATOR"`},
+				{[]string{"role", "show", "--json", "/LOCAL/OPS"}, exitOK, `"role": "/TRDEMOOTTO/SYNC_OPERATOR"`},
 				{[]string{"role", "list", "--package", "LOCAL"}, exitOK, "/LOCAL/OPS  LOCAL    composite"},
 				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "ACME", "--from", "2026-01-01"}, exitOK, "Role /LOCAL/OPS assigned to anna"},
 				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "ACME", "--to", "2026-03-01"}, exitOK, "overlaps (2026-01-01 to open)"},
 				{[]string{"role", "assign", "anna", "/LOCAL/OPS", "--tenant", "BETA"}, exitError, "does not work in tenant BETA"},
 				{[]string{"user", "roles", "anna"}, exitOK, "(overlaps)"},
-				{[]string{"user", "authorizations", "anna", "--tenant", "ACME", "--date", "2026-02-01"}, exitOK, "from /TROTTO/SYNC_OPERATOR in /LOCAL/OPS"},
+				{[]string{"user", "authorizations", "anna", "--tenant", "ACME", "--date", "2026-02-01"}, exitOK, "from /TRDEMOOTTO/SYNC_OPERATOR in /LOCAL/OPS"},
 				{[]string{"user", "authorizations", "anna", "--tenant", "ACME", "--date", "2026-02-01"}, exitOK, `COUNTRY      "AT" "CH" D*`},
 				{[]string{"user", "authorizations", "root", "--tenant", "ACME"}, exitOK, "ALL AUTHORIZATIONS from /RT/ALL_AUTHORIZATIONS"},
-				{[]string{"user", "authorizations", "--json", "anna", "--tenant", "ACME", "--date", "2025-12-01"}, exitOK, `"/TRFIN/COMPANY": {`},
+				{[]string{"user", "authorizations", "--json", "anna", "--tenant", "ACME", "--date", "2025-12-01"}, exitOK, `"/TRDEMOFIN/COMPANY": {`},
 				{[]string{"install", filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "auth", "TRAUTH")}, exitOK, "compile-package TRAUTH"},
 				{[]string{"run", "TRAUTH", "/TRAUTH/CHECKS", "UPDATE_COMPANY", `["C1", "AT"]`, "--tenant", "ACME", "--user", "anna"}, exitOK, "updated C1"},
 				{[]string{"run", "TRAUTH", "/TRAUTH/CHECKS", "UPDATE_COMPANY", `["C1", "FR"]`, "--tenant", "ACME", "--user", "anna"}, exitNotAuthorized,
-					`check: /TRFIN/COMPANY ACTIVITY="UPDATE" COMPANY_ID="C1" COUNTRY="FR"`},
+					`check: /TRDEMOFIN/COMPANY ACTIVITY="UPDATE" COMPANY_ID="C1" COUNTRY="FR"`},
 				{[]string{"run", "TRAUTH", "/TRAUTH/CHECKS", "UPDATE_COMPANY", `["C1", "AT"]`, "--tenant", "ACME"}, exitNotAuthorized, "--user"},
 				{[]string{"user", "last-failed-check", "anna", "--tenant", "ACME"}, exitOK, `values: ACTIVITY="UPDATE" COMPANY_ID="C1" COUNTRY="FR"`},
 				{[]string{"user", "last-failed-check", "anna", "--tenant", "ACME"}, exitOK, "place:  /TRAUTH/CHECKS.UPDATE_COMPANY (package TRAUTH, line 6)"},
@@ -344,25 +344,25 @@ func TestRoleCommands(t *testing.T) {
 				{[]string{"user", "last-failed-check", "root", "--tenant", "ACME"}, exitError, "not found"},
 				{[]string{"trace", "authorizations", "start", "anna", "--tenant", "ACME", "--max", "5"}, exitOK, "Tracing the authorization checks of anna in ACME"},
 				{[]string{"run", "TRAUTH", "/TRAUTH/CHECKS", "CAN", `["FR", "READ"]`, "--tenant", "ACME", "--user", "anna"}, exitOK, "false"},
-				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, "expression  /TRFIN/COMPANY  denied"},
+				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, "expression  /TRDEMOFIN/COMPANY  denied"},
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, `ACTIVITY="READ" COMPANY_ID=any COUNTRY="FR"`},
 				{[]string{"trace", "authorizations", "stop", "anna"}, exitOK, "Trace of anna stopped."},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `["DE", "Germany"]`, "--tenant", "ACME", "--user", "root"}, exitOK, "null"},
-				// The business object /TRFIN/COMPANY checks the creation; anna
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `["DE", "Germany"]`, "--tenant", "ACME", "--user", "root"}, exitOK, "null"},
+				// The business object /TRDEMOFIN/COMPANY checks the creation; anna
 				// may only update companies.
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "anna"}, exitError, "NOT_AUTHORIZED"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "anna"}, exitError, "NOT_AUTHORIZED"},
 				{[]string{"trace", "extension-points", "start", "root", "--tenant", "ACME"}, exitOK, "Tracing the extension points that root runs in ACME"},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "BLOCKED"`},
-				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TRFIN/COMPANY_CHECKS  COUNTRY=\"DE\""},
-				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TROTTO/COMPANY_CHECKS: selected"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `["C9", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "BLOCKED"`},
+				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TRDEMOFIN/COMPANY_CHECKS  COUNTRY=\"DE\""},
+				{[]string{"trace", "extension-points", "show", "root"}, exitOK, "/TRDEMOOTTO/COMPANY_CHECKS: selected"},
 				{[]string{"trace", "extension-points", "stop", "root"}, exitOK, "Trace of root stopped."},
-				{[]string{"implementation", "deactivate", "/TROTTO/COMPANY_CHECKS", "--tenant", "ACME"}, exitOK, "deactivated in tenant ACME"},
-				{[]string{"run", "TRFIN", "/TRFIN/COMPANY_SERVICE", "CREATE", `["C10", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "ACTIVE"`},
-				{[]string{"extension-point", "show", "/TRFIN/COMPANY_CHECKS"}, exitOK, "in tenant ACME: inactive"},
+				{[]string{"implementation", "deactivate", "/TRDEMOOTTO/COMPANY_CHECKS", "--tenant", "ACME"}, exitOK, "deactivated in tenant ACME"},
+				{[]string{"run", "TRDEMOFIN", "/TRDEMOFIN/COMPANY_SERVICE", "CREATE", `["C10", "Neu", "DE"]`, "--tenant", "ACME", "--user", "root"}, exitOK, `"STATUS": "ACTIVE"`},
+				{[]string{"extension-point", "show", "/TRDEMOFIN/COMPANY_CHECKS"}, exitOK, "in tenant ACME: inactive"},
 				{[]string{"trace", "authorizations", "show", "anna"}, exitOK, "No trace of anna runs."},
-				{[]string{"show", "authorization-object:/TRFIN/COMPANY"}, exitOK, "Used in code:\n  TRAUTH src/CHECKS.class:6\n"},
-				{[]string{"role", "export", "/TRFIN/COMPANY_CLERK"}, exitOK, `"from": "PL"`},
-				{[]string{"role", "delete", "/TRFIN/COMPANY_CLERK"}, exitError, "package roles change with their package"},
+				{[]string{"show", "authorization-object:/TRDEMOFIN/COMPANY"}, exitOK, "Used in code:\n  TRAUTH src/CHECKS.class:6\n"},
+				{[]string{"role", "export", "/TRDEMOFIN/COMPANY_CLERK"}, exitOK, `"from": "PL"`},
+				{[]string{"role", "delete", "/TRDEMOFIN/COMPANY_CLERK"}, exitError, "package roles change with their package"},
 				{[]string{"role", "delete", "/LOCAL/OPS"}, exitNeedsPermit, "--yes"},
 				{[]string{"role", "delete", "/LOCAL/OPS", "--yes"}, exitOK, "deleted"},
 				{[]string{"role", "history", "--user", "anna"}, exitOK, "assignment-removed  /LOCAL/OPS"},
@@ -459,16 +459,16 @@ func TestObjectCommands(t *testing.T) {
 	}{
 		{[]string{"init"}, exitOK, "Executed"},
 		{[]string{"language", "add", "de"}, exitOK, "German"},
-		{[]string{"install", filepath.Join(ex, "TRFIN"), filepath.Join(ex, "TROTTO")}, exitOK, "Executed"},
+		{[]string{"install", filepath.Join(ex, "TRDEMOFIN"), filepath.Join(ex, "TRDEMOOTTO")}, exitOK, "Executed"},
 		{[]string{"install", filepath.Join(objs, "TRDEF"), filepath.Join(objs, "TRUSE")}, exitOK, "create-object /TRUSE/NOTES"},
 		{[]string{"object-type", "list"}, exitOK, "/TRDEF/VIEW  TRDEF    /TRDEF/VIEW  /TRDEF/VIEW_BEHAVIOR  2        View"},
 		{[]string{"object-type", "show", "/TRDEF/VIEW"}, exitOK, "COLUMNS"},
 		{[]string{"object-type", "schema", "/TRDEF/VIEW"}, exitOK, `"additionalProperties": false`},
 		{[]string{"object", "list", "/TRDEF/VIEW"}, exitOK, "/TRUSE/NOTES"},
 		{[]string{"object", "list", "/TRDEF/NOPE"}, exitError, "object type /TRDEF/NOPE"},
-		{[]string{"object", "show", "/TRUSE/COMPANIES"}, exitOK, "refers to field /TRFIN/COMPANIES /TROTTO/OTTO_ID at /GROUPS/0/FIELDS/1/FIELD"},
+		{[]string{"object", "show", "/TRUSE/COMPANIES"}, exitOK, "refers to field /TRDEMOFIN/COMPANIES /TRDEMOOTTO/OTTO_ID at /GROUPS/0/FIELDS/1/FIELD"},
 		{[]string{"show", "/TRUSE/NOTES"}, exitOK, "Object /TRUSE/NOTES of type /TRDEF/VIEW"},
-		{[]string{"show", "/TRFIN/COMPANIES"}, exitOK, "used by object /TRUSE/COMPANIES of package TRUSE at /ENTITY (entity)"},
+		{[]string{"show", "/TRDEMOFIN/COMPANIES"}, exitOK, "used by object /TRUSE/COMPANIES of package TRUSE at /ENTITY (entity)"},
 		{[]string{"show", "/TRDEF/VIEW"}, exitError, "ambiguous"},
 		{[]string{"show", "object-type:/TRDEF/VIEW"}, exitOK, "used by object /TRUSE/NOTES of package TRUSE at /NEXT (object)"},
 		{[]string{"service", "show", "/TRUSE/VIEWS"}, exitOK, "Views"},

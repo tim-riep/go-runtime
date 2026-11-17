@@ -8,21 +8,21 @@ the business objects. A package writes no code for it.
 
 ## Defining a service
 
-`TRFIN/schema/services/COMPANY_SERVICE.json`:
+`TRDEMOFIN/schema/services/COMPANY_SERVICE.json`:
 
 ```json
 {
-  "name": "/TRFIN/COMPANY_SERVICE",
+  "name": "/TRDEMOFIN/COMPANY_SERVICE",
   "description": { "en": "Companies", "de": "Firmen" },
   "entitySets": {
     "Companies": {
-      "businessObject": "/TRFIN/COMPANY",
-      "entity": "/TRFIN/COMPANIES",
+      "businessObject": "/TRDEMOFIN/COMPANY",
+      "entity": "/TRDEMOFIN/COMPANIES",
       "navigations": { "COUNTRY": "Country" }
     },
-    "Contacts": { "businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/CONTACTS" },
-    "Countries": { "businessObject": "/TRFIN/COUNTRY", "entity": "/TRFIN/COUNTRIES", "readOnly": true },
-    "ExchangeRates": { "table": "/TRFIN/EXCHANGE_RATES" }
+    "Contacts": { "businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/CONTACTS" },
+    "Countries": { "businessObject": "/TRDEMOFIN/COUNTRY", "entity": "/TRDEMOFIN/COUNTRIES", "readOnly": true },
+    "ExchangeRates": { "table": "/TRDEMOFIN/EXCHANGE_RATES" }
   }
 }
 ```
@@ -62,13 +62,13 @@ service. Services hold no data; removing one is not destructive.
 ### Public names
 
 Names without namespace stay as they are (`COMPANY_ID`, `BLOCK`). Names with namespace
-become `<PACKAGE>_<NAME>`: `/TROTTO/OTTO_ID` is `TROTTO_OTTO_ID`, the action
-`/TROTTO/SYNC` is `TROTTO_SYNC`. Package IDs have no underscore, so the first underscore
+become `<PACKAGE>_<NAME>`: `/TRDEMOOTTO/OTTO_ID` is `TRDEMOOTTO_OTTO_ID`, the action
+`/TRDEMOOTTO/SYNC` is `TRDEMOOTTO_SYNC`. Package IDs have no underscore, so the first underscore
 separates package and name again. Two names that map to the same public name in an entity
 type, in the actions of a type or in the entity container fail the installation.
 
-The schema of the metadata has the namespace of the package (`TRFIN`), entity types the
-mapped name of their table (`TRFIN_COMPANIES`) and complex types that of their structure.
+The schema of the metadata has the namespace of the package (`TRDEMOFIN`), entity types the
+mapped name of their table (`TRDEMOFIN_COMPANIES`) and complex types that of their structure.
 
 ### Navigations
 
@@ -78,7 +78,7 @@ mapped name of their table (`TRFIN_COMPANIES`) and complex types that of their s
 - Along a foreign key to another entity set of the service: a navigation to one entity,
   named after the target entity set unless `navigations` names it.
 - Dependent entities of extensions of other packages are contained navigations of their
-  parent (`Companies('C1')/TROTTO_COMPANY_CHANNELS`): the package of the service cannot name
+  parent (`Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS`): the package of the service cannot name
   them, since it does not require the extending package.
 
 ## Serving and activation
@@ -108,12 +108,12 @@ it the request answers 403. The authorizations of the business object apply afte
 `GET /rt/odata/` lists the active services the user may start:
 
 ```json
-{ "value": [ { "package": "TRFIN", "name": "/TRFIN/COMPANY_SERVICE",
-               "description": "Firmen", "url": "/rt/odata/trfin/company_service/" } ] }
+{ "value": [ { "package": "TRDEMOFIN", "name": "/TRDEMOFIN/COMPANY_SERVICE",
+               "description": "Firmen", "url": "/rt/odata/trdemofin/company_service/" } ] }
 ```
 
 An incompatible version of a service is a new service with a name of its own, such as
-`/TRFIN/COMPANY_SERVICE_V2`; the path has no version.
+`/TRDEMOFIN/COMPANY_SERVICE_V2`; the path has no version.
 
 ## Metadata
 
@@ -168,7 +168,7 @@ The implementations run whenever the kernel builds metadata, chained in their or
 result of one is the argument of the next. `/TRBASE/ODATA_METADATA` holds the entity sets,
 entity types, complex types, actions and action imports with technical and public names,
 the annotations of the kernel and the references to vocabularies. An annotation has a
-target such as `TRFIN.TRFIN_COMPANIES/NAME`, a term such as `Core.Description`, an optional
+target such as `TRDEMOFIN.TRDEMOFIN_COMPANIES/NAME`, a term such as `Core.Description`, an optional
 qualifier and a value as a flat tree of nodes `/TRBASE/ODATA_VALUE`: `ID`, `PARENT` (none
 for the root), `MEMBER` for members of records, `KIND` (`STRING`, `BOOLEAN`, `INTEGER`,
 `DECIMAL`, `DATE`, `DATE_TIME_OFFSET`, `GUID`, `ENUM_MEMBER`, `PATH`, `PROPERTY_PATH`,
@@ -177,15 +177,15 @@ form and `TYPE` of records. `/TRBASE/ODATA_ANNOTATIONS` builds annotations with 
 values:
 
 ```
-public class /TROTTO/ODATA_METADATA implements /TRBASE/ODATA_METADATA_EXTENSION
+public class /TRDEMOOTTO/ODATA_METADATA implements /TRBASE/ODATA_METADATA_EXTENSION
 
   public method ADJUST(metadata: /TRBASE/ODATA_METADATA) returns /TRBASE/ODATA_METADATA
     var vocabulary: /TRBASE/ODATA_REFERENCE
-    vocabulary.URI = "urn:trotto:vocabularies:TROTTO.Marketplace"
-    vocabulary.NAMESPACE = "TROTTO.Marketplace"
+    vocabulary.URI = "urn:trdemootto:vocabularies:TRDEMOOTTO.Marketplace"
+    vocabulary.NAMESPACE = "TRDEMOOTTO.Marketplace"
     vocabulary.ALIAS = "Marketplace"
     metadata.REFERENCES.APPEND(vocabulary)
-    metadata.ANNOTATIONS.APPEND(/TRBASE/ODATA_ANNOTATIONS.TAG(metadata.NAMESPACE + ".TRFIN_COMPANIES/TROTTO_OTTO_ID", "Marketplace.PartnerId"))
+    metadata.ANNOTATIONS.APPEND(/TRBASE/ODATA_ANNOTATIONS.TAG(metadata.NAMESPACE + ".TRDEMOFIN_COMPANIES/TRDEMOOTTO_OTTO_ID", "Marketplace.PartnerId"))
     return metadata
   end
 
@@ -278,7 +278,7 @@ or string and never pass through floating point.
 ## Actions
 
 Instance actions of a business object and of its extensions are bound actions:
-`POST Companies('C1')/TRFIN.BLOCK` with the components of the parameter structure as members
+`POST Companies('C1')/TRDEMOFIN.BLOCK` with the components of the parameter structure as members
 of the body, such as `{"TEXT": "audit"}`. Static actions are action imports at the root of
 the service: `POST STATS`. An action with result `self` answers with the entity, one with a
 structure with a complex value, one without result with 204. Actions of instances check
@@ -331,11 +331,11 @@ OASIS (`testdata/odata/oasis`).
 
 Spreadsheet applications import OData feeds:
 
-1. Activate the service and give the user the roles to start it, for TRFIN
-   `/TRFIN/ODATA_USER` and a role for the companies such as `/TRFIN/COMPANY_CLERK`. The user
+1. Activate the service and give the user the roles to start it, for TRDEMOFIN
+   `/TRDEMOFIN/ODATA_USER` and a role for the companies such as `/TRDEMOFIN/COMPANY_CLERK`. The user
    needs a default tenant, since a spreadsheet sends no `X-Tenant` header.
 2. In the spreadsheet, choose the import of data from an OData feed and enter the URL of the
-   service, such as `https://host/rt/odata/trfin/company_service/`.
+   service, such as `https://host/rt/odata/trdemofin/company_service/`.
 3. Sign in with basic authentication, user and password, or with an API token as password.
 4. Select the entity sets, such as `Companies`, and load them. Refreshing reads them again;
    the service pages large sets with `@odata.nextLink`, which the import follows.

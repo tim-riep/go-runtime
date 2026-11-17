@@ -27,23 +27,23 @@ import (
 
 const serviceFile = "schema/services/SHOP.json"
 
-// serviceFiles are the files of TRSV, which offers the companies of TRFIN
-// with the extension of TROTTO, the countries for reading, the exchange
+// serviceFiles are the files of TRSV, which offers the companies of TRDEMOFIN
+// with the extension of TRDEMOOTTO, the countries for reading, the exchange
 // rates as table of configuration and a business object of its own that
 // allows only updates.
 func serviceFiles() map[string]string {
 	return map[string]string{
-		"manifest.json": `{ "id": "TRSV", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRFIN" }] }`,
+		"manifest.json": `{ "id": "TRSV", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRDEMOFIN" }] }`,
 		"schema/tables/SETUP.json": `{ "name": "/TRSV/SETUP", "tenantSpecific": false, "dataClass": "configuration", "fields": [
 			{ "name": "SETUP_ID", "domain": "/TRBASE/NAME" }, { "name": "VALUE", "domain": "/TRBASE/TEXT" } ], "primaryKey": ["SETUP_ID"] }`,
 		"schema/business-objects/SETUP.json": `{ "name": "/TRSV/SETUP", "description": { "en": "Setup" }, "dataClass": "configuration",
 			"root": "/TRSV/SETUP", "entities": { "/TRSV/SETUP": { "operations": ["update"] } } }`,
 		serviceFile: `{ "name": "/TRSV/SHOP", "description": { "en": "Shop", "de": "Laden" },
 			"entitySets": {
-				"Companies": { "businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/COMPANIES", "actions": ["BLOCK"], "hiddenFields": ["CAPITAL"] },
-				"Contacts": { "businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/CONTACTS" },
-				"Countries": { "businessObject": "/TRFIN/COUNTRY", "entity": "/TRFIN/COUNTRIES", "readOnly": true },
-				"ExchangeRates": { "table": "/TRFIN/EXCHANGE_RATES" },
+				"Companies": { "businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/COMPANIES", "actions": ["BLOCK"], "hiddenFields": ["CAPITAL"] },
+				"Contacts": { "businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/CONTACTS" },
+				"Countries": { "businessObject": "/TRDEMOFIN/COUNTRY", "entity": "/TRDEMOFIN/COUNTRIES", "readOnly": true },
+				"ExchangeRates": { "table": "/TRDEMOFIN/EXCHANGE_RATES" },
 				"Setup": { "businessObject": "/TRSV/SETUP", "entity": "/TRSV/SETUP" }
 			} }`,
 	}
@@ -79,11 +79,11 @@ func TestServiceModel(t *testing.T) {
 		t.Errorf("path %s", got)
 	}
 	companies := m.Set("Companies").Type
-	if companies.Name != "TRFIN_COMPANIES" || companies.Property("TROTTO_OTTO_ID") == nil || companies.Property("CAPITAL") != nil ||
+	if companies.Name != "TRDEMOFIN_COMPANIES" || companies.Property("TRDEMOOTTO_OTTO_ID") == nil || companies.Property("CAPITAL") != nil ||
 		companies.Property("/RT/TENANT") != nil || len(companies.Key) != 1 || companies.Key[0].Name != "COMPANY_ID" || companies.ETag.Name != "CHANGED_AT" {
 		t.Errorf("companies: %+v", companies)
 	}
-	if p := companies.Property("TROTTO_OTTO_ID"); !p.Computed || p.Field.Name != "/TROTTO/OTTO_ID" {
+	if p := companies.Property("TRDEMOOTTO_OTTO_ID"); !p.Computed || p.Field.Name != "/TRDEMOOTTO/OTTO_ID" {
 		t.Errorf("extension field: %+v", p)
 	}
 	if p := companies.Property("STATUS"); !p.Computed || companies.Property("COMPANY_ID").Computed || !companies.Property("COMPANY_ID").Immutable ||
@@ -94,8 +94,8 @@ func TestServiceModel(t *testing.T) {
 	for _, a := range companies.Actions {
 		actions = append(actions, a.Name)
 	}
-	if strings.Join(actions, ",") != "BLOCK,TROTTO_SYNC" {
-		t.Errorf("actions %v: listed ones of TRFIN, those of the extension of TROTTO", actions)
+	if strings.Join(actions, ",") != "BLOCK,TRDEMOOTTO_SYNC" {
+		t.Errorf("actions %v: listed ones of TRDEMOFIN, those of the extension of TRDEMOOTTO", actions)
 	}
 	contacts := companies.Navigation("Contacts")
 	if contacts == nil || !contacts.Collection || contacts.Partner != "Companies" || contacts.Target.Name != "Contacts" {
@@ -107,7 +107,7 @@ func TestServiceModel(t *testing.T) {
 	if n := companies.Navigation("Countries"); n == nil || n.Collection || n.ForeignKey != "COUNTRY" {
 		t.Errorf("navigation along the foreign key: %+v", n)
 	}
-	channels := companies.Navigation("TROTTO_COMPANY_CHANNELS")
+	channels := companies.Navigation("TRDEMOOTTO_COMPANY_CHANNELS")
 	if channels == nil || !channels.Contained || channels.Target != nil || len(m.Contained) != 1 || !channels.Type.Allows(model.OperationCreate) {
 		t.Errorf("contained channels: %+v", channels)
 	}
@@ -126,8 +126,8 @@ func TestServiceModel(t *testing.T) {
 	})
 	m, _ = odata.Build(none, nil, none.Services["/TRSV/SHOP"])
 	companies = m.Set("Companies").Type
-	if companies.Property("TROTTO_OTTO_ID") != nil || companies.Action("TROTTO_SYNC") != nil || companies.Navigation("TROTTO_COMPANY_CHANNELS") != nil {
-		t.Errorf("a service without extensions offers those of TROTTO: %+v", companies)
+	if companies.Property("TRDEMOOTTO_OTTO_ID") != nil || companies.Action("TRDEMOOTTO_SYNC") != nil || companies.Navigation("TRDEMOOTTO_COMPANY_CHANNELS") != nil {
+		t.Errorf("a service without extensions offers those of TRDEMOOTTO: %+v", companies)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestServiceRules(t *testing.T) {
 		}, "/TRSV/SETUP of /TRSV/SETUP does not allow create; a service offers at most the operations of the entity"},
 		{"unknown action", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"actions": ["BLOCK"]`, `"actions": ["BLOCK", "ARCHIVE"]`)
-		}, "/TRFIN/COMPANIES of /TRFIN/COMPANY has no action ARCHIVE"},
+		}, "/TRDEMOFIN/COMPANIES of /TRDEMOFIN/COMPANY has no action ARCHIVE"},
 		{"hidden key field", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"hiddenFields": ["CAPITAL"]`, `"hiddenFields": ["COMPANY_ID"]`)
 		}, "the key field COMPANY_ID cannot be hidden"},
@@ -151,28 +151,28 @@ func TestServiceRules(t *testing.T) {
 		}, "the mandatory field NAME cannot be hidden"},
 		{"hidden unknown field", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"hiddenFields": ["CAPITAL"]`, `"hiddenFields": ["CAPITOL"]`)
-		}, "/TRFIN/COMPANIES has no field CAPITOL"},
+		}, "/TRDEMOFIN/COMPANIES has no field CAPITOL"},
 		{"collision of public names", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"Countries": {`, `"COUNTRY": {`)
-		}, "COUNTRY and the navigation COUNTRY of /TRFIN/COMPANIES both have the public name COUNTRY"},
+		}, "COUNTRY and the navigation COUNTRY of /TRDEMOFIN/COMPANIES both have the public name COUNTRY"},
 		{"named navigation colliding", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"hiddenFields": ["CAPITAL"]`, `"hiddenFields": ["CAPITAL"], "navigations": { "COUNTRY": "NAME" }`)
-		}, "NAME and the navigation COUNTRY of /TRFIN/COMPANIES both have the public name NAME"},
+		}, "NAME and the navigation COUNTRY of /TRDEMOFIN/COMPANIES both have the public name NAME"},
 		{"table of application data", func(f map[string]string) {
-			replaceIn(f, serviceFile, `"table": "/TRFIN/EXCHANGE_RATES"`, `"table": "/TRFIN/ORDERS"`)
-		}, "/TRFIN/ORDERS has the data class application; a service offers tables without business object only of configuration"},
+			replaceIn(f, serviceFile, `"table": "/TRDEMOFIN/EXCHANGE_RATES"`, `"table": "/TRDEMOFIN/ORDERS"`)
+		}, "/TRDEMOFIN/ORDERS has the data class application; a service offers tables without business object only of configuration"},
 		{"table of a business object", func(f map[string]string) {
-			replaceIn(f, serviceFile, `"table": "/TRFIN/EXCHANGE_RATES"`, `"table": "/TRFIN/COUNTRIES"`)
-		}, "/TRFIN/COUNTRIES belongs to the business object /TRFIN/COUNTRY; offer it with businessObject and entity"},
+			replaceIn(f, serviceFile, `"table": "/TRDEMOFIN/EXCHANGE_RATES"`, `"table": "/TRDEMOFIN/COUNTRIES"`)
+		}, "/TRDEMOFIN/COUNTRIES belongs to the business object /TRDEMOFIN/COUNTRY; offer it with businessObject and entity"},
 		{"read only with operations", func(f map[string]string) {
 			replaceIn(f, serviceFile, `"readOnly": true }`, `"readOnly": true, "operations": ["update"] }`)
 		}, "a read-only entity set offers no operations"},
 		{"entity of another business object", func(f map[string]string) {
-			replaceIn(f, serviceFile, `"businessObject": "/TRFIN/COUNTRY", "entity": "/TRFIN/COUNTRIES"`, `"businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/COUNTRIES"`)
-		}, "/TRFIN/COUNTRIES is not an entity of /TRFIN/COMPANY"},
+			replaceIn(f, serviceFile, `"businessObject": "/TRDEMOFIN/COUNTRY", "entity": "/TRDEMOFIN/COUNTRIES"`, `"businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/COUNTRIES"`)
+		}, "/TRDEMOFIN/COUNTRIES is not an entity of /TRDEMOFIN/COMPANY"},
 		{"entity offered twice", func(f map[string]string) {
-			replaceIn(f, serviceFile, `"Setup": {`, `"People": { "businessObject": "/TRFIN/COMPANY", "entity": "/TRFIN/CONTACTS" }, "Setup": {`)
-		}, "/TRFIN/CONTACTS is offered by the entity sets Contacts and People; offer an entity once"},
+			replaceIn(f, serviceFile, `"Setup": {`, `"People": { "businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/CONTACTS" }, "Setup": {`)
+		}, "/TRDEMOFIN/CONTACTS is offered by the entity sets Contacts and People; offer an entity once"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			expect(t, withService(t, c.change), rterr.CodeService, c.contains)
@@ -199,7 +199,7 @@ func TestServiceOfPackageNotRequired(t *testing.T) {
 		fsys[name] = &fstest.MapFile{Data: []byte(text)}
 	}
 	_, err := pkgload.Load(fsys, "TRSV")
-	if err == nil || !strings.Contains(err.Error(), "/TRFIN/COMPANY") {
-		t.Fatalf("expected a namespace error naming /TRFIN/COMPANY, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "/TRDEMOFIN/COMPANY") {
+		t.Fatalf("expected a namespace error naming /TRDEMOFIN/COMPANY, got %v", err)
 	}
 }

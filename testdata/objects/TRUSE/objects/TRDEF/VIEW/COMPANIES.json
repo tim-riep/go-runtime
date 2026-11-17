@@ -1,7 +1,7 @@
 {
   "name": "/TRUSE/COMPANIES",
   "content": {
-    "ENTITY": "/TRFIN/COMPANIES",
+    "ENTITY": "/TRDEMOFIN/COMPANIES",
     "TEXTS": [
       {
         "LANGUAGE": "en",
@@ -16,7 +16,7 @@
             "FIELD": "NAME"
           },
           {
-            "FIELD": "/TROTTO/OTTO_ID"
+            "FIELD": "/TRDEMOOTTO/OTTO_ID"
           }
         ]
       }

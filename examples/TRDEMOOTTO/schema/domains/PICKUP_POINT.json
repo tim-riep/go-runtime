@@ -1,0 +1,6 @@
+{
+  "name": "/TRDEMOOTTO/PICKUP_POINT",
+  "description": "Pickup point of the marketplace",
+  "type": "CHAR",
+  "length": 20
+}

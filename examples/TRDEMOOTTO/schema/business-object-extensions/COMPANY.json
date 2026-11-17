@@ -1,0 +1,32 @@
+{
+  "businessObject": "/TRDEMOFIN/COMPANY",
+  "behaviorClass": "/TRDEMOOTTO/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRDEMOFIN/COMPANIES": {
+      "fields": {
+        "/TRDEMOOTTO/OTTO_ID": { "readOnly": true }
+      },
+      "determinations": [
+        { "name": "/TRDEMOOTTO/RESERVE_ID", "when": "save", "on": ["create"] }
+      ],
+      "validations": [
+        { "name": "/TRDEMOOTTO/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }
+      ],
+      "actions": [
+        {
+          "name": "/TRDEMOOTTO/SYNC",
+          "instance": true,
+          "result": "self",
+          "activity": "EXECUTE",
+          "authorization": { "object": "/TRDEMOOTTO/MARKETPLACE", "fields": { "COUNTRY": "COUNTRY" } }
+        }
+      ]
+    },
+    "/TRDEMOOTTO/COMPANY_CHANNELS": {
+      "parent": "/TRDEMOFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid"
+    }
+  }
+}

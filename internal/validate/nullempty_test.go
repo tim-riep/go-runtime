@@ -42,36 +42,36 @@ func tableOf(p *model.Package, name string) *model.Table {
 
 func TestThreeDefaultKinds(t *testing.T) {
 	e := load(t)
-	f := tableOf(e.fin, "/TRFIN/COUNTRIES").Fields // COUNTRIES: COUNTRY_CODE, NAME, CURRENCY
+	f := tableOf(e.fin, "/TRDEMOFIN/COUNTRIES").Fields // COUNTRIES: COUNTRY_CODE, NAME, CURRENCY
 	f[2].DefaultJSON = json.RawMessage(`null`)
 	s := e.schema(t)
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	c := s.Tables["/TRFIN/COUNTRIES"]
+	c := s.Tables["/TRDEMOFIN/COUNTRIES"]
 	if c.Field("CURRENCY").Default != model.NullDefault() || c.Field("NAME").Default != model.NoDefault() {
 		t.Fatalf("defaults: %+v %+v", c.Field("CURRENCY").Default, c.Field("NAME").Default)
 	}
 	e = load(t)
-	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[2].DefaultJSON = json.RawMessage(`""`)
+	tableOf(e.fin, "/TRDEMOFIN/COUNTRIES").Fields[2].DefaultJSON = json.RawMessage(`""`)
 	s = e.schema(t)
 	if err := Schema(s, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if got := s.Tables["/TRFIN/COUNTRIES"].Field("CURRENCY").Default; got != model.ValueDefault("") {
+	if got := s.Tables["/TRDEMOFIN/COUNTRIES"].Field("CURRENCY").Default; got != model.ValueDefault("") {
 		t.Fatalf(`default "": %+v`, got)
 	}
 }
 
 func TestDefaultNullOnNotNullField(t *testing.T) {
 	e := load(t)
-	tableOf(e.fin, "/TRFIN/COUNTRIES").Fields[1].DefaultJSON = json.RawMessage(`null`) // COUNTRIES.NAME is notNull
+	tableOf(e.fin, "/TRDEMOFIN/COUNTRIES").Fields[1].DefaultJSON = json.RawMessage(`null`) // COUNTRIES.NAME is notNull
 	expect(t, e.schema(t), rterr.CodeDefault, "cannot have the default null")
 }
 
 func TestDomainDefaultNullOnNotNullField(t *testing.T) {
 	e := load(t)
-	domainOf(e.fin, "/TRFIN/IBAN").DefaultJSON = json.RawMessage(`null`) // BANK_ACCOUNTS.IBAN is notNull
+	domainOf(e.fin, "/TRDEMOFIN/IBAN").DefaultJSON = json.RawMessage(`null`) // BANK_ACCOUNTS.IBAN is notNull
 	expect(t, e.schema(t), rterr.CodeDefault, "cannot have the default null")
 }
 
@@ -84,13 +84,13 @@ func TestExtensionFieldNeedsValueDefault(t *testing.T) {
 
 func TestAllowEmptyOnlyForStrings(t *testing.T) {
 	e := load(t)
-	domainOf(e.fin, "/TRFIN/ACCOUNT_NO").AllowEmpty = model.Some(false)
+	domainOf(e.fin, "/TRDEMOFIN/ACCOUNT_NO").AllowEmpty = model.Some(false)
 	expect(t, e.schema(t), rterr.CodeTypeParams, "allowEmpty applies only to CHAR and STRING")
 }
 
 func TestEmptyFixedValueContradictsAllowEmpty(t *testing.T) {
 	e := load(t)
-	d := domainOf(e.fin, "/TRFIN/COMPANY_STATUS")
+	d := domainOf(e.fin, "/TRDEMOFIN/COMPANY_STATUS")
 	d.Values = append(d.Values, model.FixedValue{Value: ""})
 	if err := Schema(e.schema(t), Options{}); err != nil {
 		t.Fatalf(`"" is a valid fixed value: %v`, err)
@@ -101,14 +101,14 @@ func TestEmptyFixedValueContradictsAllowEmpty(t *testing.T) {
 
 func TestEmptyDefaultContradictsAllowEmpty(t *testing.T) {
 	e := load(t)
-	domainOf(e.fin, "/TRFIN/IBAN").AllowEmpty = model.Some(false)
+	domainOf(e.fin, "/TRDEMOFIN/IBAN").AllowEmpty = model.Some(false)
 	e.fin.Tables[0].Fields[2].DefaultJSON = json.RawMessage(`""`) // BANK_ACCOUNTS.IBAN
 	expect(t, e.schema(t), rterr.CodeDefault, "does not allow")
 }
 
 func TestFixedValueNames(t *testing.T) {
 	e := load(t)
-	d := domainOf(e.fin, "/TRFIN/COMPANY_STATUS") // ACTIVE, BLOCKED, CLOSED
+	d := domainOf(e.fin, "/TRDEMOFIN/COMPANY_STATUS") // ACTIVE, BLOCKED, CLOSED
 	d.Values[2].Name = model.Some("ACTIVE")
 	expect(t, e.schema(t), rterr.CodeFixedValue, `fixed values "ACTIVE" and "CLOSED" have the same name ACTIVE in code`)
 }

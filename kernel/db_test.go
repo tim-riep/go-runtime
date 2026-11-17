@@ -298,16 +298,16 @@ func TestTestIsolation(t *testing.T) {
 	})
 }
 
-// companyAdmin creates the user boss with the role /TRFIN/COMPANY_ADMIN in
+// companyAdmin creates the user boss with the role /TRDEMOFIN/COMPANY_ADMIN in
 // a tenant and returns the options to run code as boss there. The
-// business object /TRFIN/COMPANY checks the authorization of every change.
+// business object /TRDEMOFIN/COMPANY checks the authorization of every change.
 func companyAdmin(t *testing.T, k *kernel.Kernel, tenant string) kernel.ExecOptions {
 	t.Helper()
 	ctx := context.Background()
 	if _, err := k.Users().Create(ctx, "boss", "secret", kernel.UserOptions{Tenant: model.Some(tenant)}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "boss", Role: "/TRFIN/COMPANY_ADMIN", Tenant: tenant}, kernel.RoleOptions{By: "test"}); err != nil {
+	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "boss", Role: "/TRDEMOFIN/COMPANY_ADMIN", Tenant: tenant}, kernel.RoleOptions{By: "test"}); err != nil {
 		t.Fatal(err)
 	}
 	return kernel.ExecOptions{Tenant: tenant, User: model.Some("boss")}

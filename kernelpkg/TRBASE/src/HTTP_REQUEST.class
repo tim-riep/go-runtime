@@ -5,7 +5,7 @@ public class /TRBASE/HTTP_REQUEST executed by kernel
   # GET, POST, ...
   public method METHOD() returns STRING executed by kernel
 
-  # The full path, e.g. /trfin/companies/42.
+  # The full path, e.g. /trdemofin/companies/42.
   public method PATH() returns STRING executed by kernel
 
   # The path below the service node, e.g. 42, "" at the node itself.

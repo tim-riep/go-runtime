@@ -34,15 +34,15 @@ const token = "ghp_secret_token_1234567890"
 func setup(t *testing.T) (*fakegithub.Server, *github.GitHub, func(string) source.Address) {
 	t.Helper()
 	srv := fakegithub.New(t)
-	fin := srv.Repo("tim-riep/trfin")
+	fin := srv.Repo("tim-riep/trdemofin")
 	c1, c2, c3 := fin.Commit([]byte("archive 1.0.0")), fin.Commit([]byte("archive 1.1.0")), fin.Commit([]byte("archive main"))
 	fin.Tags["v1.0.0"], fin.Tags["v1.1.0"], fin.Tags["v2.0.0-rc.1"] = c1, c2, c3
 	fin.Branches["main"] = c3
-	fin.Releases["v1.1.0"] = []fakegithub.Asset{{Name: "TRFIN-1.1.0.zip", Data: []byte("asset 1.1.0")}, {Name: "notes.txt", Data: []byte("n")}}
+	fin.Releases["v1.1.0"] = []fakegithub.Asset{{Name: "TRDEMOFIN-1.1.0.zip", Data: []byte("asset 1.1.0")}, {Name: "notes.txt", Data: []byte("n")}}
 	multi := srv.Repo("tim-riep/erp")
 	m := multi.Commit([]byte("erp archive"))
 	multi.Tags["v2.0.0"] = m
-	multi.Releases["v2.0.0"] = []fakegithub.Asset{{Name: "TRFIN-2.0.0.zip", Data: []byte("fin")}, {Name: "TROTTO-2.0.0.zip", Data: []byte("otto")}}
+	multi.Releases["v2.0.0"] = []fakegithub.Asset{{Name: "TRDEMOFIN-2.0.0.zip", Data: []byte("fin")}, {Name: "TRDEMOOTTO-2.0.0.zip", Data: []byte("otto")}}
 	priv := srv.Repo("tim-riep/secret")
 	priv.Private = true
 	priv.Tags["v1.0.0"] = priv.Commit([]byte("secret"))
@@ -82,34 +82,34 @@ func TestResolveAndFetch(t *testing.T) {
 		}
 		return r, a
 	}
-	r, a := fetch(h+"/tim-riep/trfin@^1.0", false, "")
-	if r.Tag != "v1.1.0" || a.Kind != source.Asset || a.Name != "TRFIN-1.1.0.zip" || string(a.Data) != "asset 1.1.0" || a.SHA256 != source.SHA256(a.Data) {
+	r, a := fetch(h+"/tim-riep/trdemofin@^1.0", false, "")
+	if r.Tag != "v1.1.0" || a.Kind != source.Asset || a.Name != "TRDEMOFIN-1.1.0.zip" || string(a.Data) != "asset 1.1.0" || a.SHA256 != source.SHA256(a.Data) {
 		t.Errorf("asset: %+v %+v", r, a)
 	}
-	if r, a := fetch(h+"/tim-riep/trfin@v1.0.0", false, ""); r.Version != "1.0.0" || a.Kind != source.SourceArchive || string(a.Data) != "archive 1.0.0" {
+	if r, a := fetch(h+"/tim-riep/trdemofin@v1.0.0", false, ""); r.Version != "1.0.0" || a.Kind != source.SourceArchive || string(a.Data) != "archive 1.0.0" {
 		t.Errorf("archive: %+v %+v", r, a)
 	}
-	if r, _ := fetch(h+"/tim-riep/trfin", false, ""); r.Tag != "v1.1.0" {
+	if r, _ := fetch(h+"/tim-riep/trdemofin", false, ""); r.Tag != "v1.1.0" {
 		t.Errorf("latest stable: %+v", r)
 	}
-	if r, a := fetch(h+"/tim-riep/trfin@"+srv.Repo("tim-riep/trfin").Tags["v1.0.0"], false, ""); r.Tag != "" || string(a.Data) != "archive 1.0.0" {
+	if r, a := fetch(h+"/tim-riep/trdemofin@"+srv.Repo("tim-riep/trdemofin").Tags["v1.0.0"], false, ""); r.Tag != "" || string(a.Data) != "archive 1.0.0" {
 		t.Errorf("commit: %+v %+v", r, a)
 	}
-	if _, err := source.Resolve(ctx, g, addr(h+"/tim-riep/trfin@main"), false); err == nil || !strings.Contains(err.Error(), "--allow-branch") {
+	if _, err := source.Resolve(ctx, g, addr(h+"/tim-riep/trdemofin@main"), false); err == nil || !strings.Contains(err.Error(), "--allow-branch") {
 		t.Errorf("branch without permission: %v", err)
 	}
-	if r, a := fetch(h+"/tim-riep/trfin@main", true, ""); string(a.Data) != "archive main" || r.Commit != srv.Repo("tim-riep/trfin").Branches["main"] {
+	if r, a := fetch(h+"/tim-riep/trdemofin@main", true, ""); string(a.Data) != "archive main" || r.Commit != srv.Repo("tim-riep/trdemofin").Branches["main"] {
 		t.Errorf("branch: %+v", r)
 	}
 	// Several package assets: the directory or the package chooses.
-	if _, a := fetch(h+"/tim-riep/erp/packages/TROTTO@v2.0.0", false, ""); string(a.Data) != "otto" {
+	if _, a := fetch(h+"/tim-riep/erp/packages/TRDEMOOTTO@v2.0.0", false, ""); string(a.Data) != "otto" {
 		t.Errorf("by directory: %q", a.Data)
 	}
-	if _, a := fetch(h+"/tim-riep/erp@v2.0.0", false, "TRFIN"); string(a.Data) != "fin" {
+	if _, a := fetch(h+"/tim-riep/erp@v2.0.0", false, "TRDEMOFIN"); string(a.Data) != "fin" {
 		t.Errorf("by package: %q", a.Data)
 	}
 	r, _ = source.Resolve(ctx, g, addr(h+"/tim-riep/erp@v2.0.0"), false)
-	if _, err := g.Fetch(ctx, r, "", 1<<20); err == nil || !strings.Contains(err.Error(), "TRFIN-2.0.0.zip, TROTTO-2.0.0.zip") {
+	if _, err := g.Fetch(ctx, r, "", 1<<20); err == nil || !strings.Contains(err.Error(), "TRDEMOFIN-2.0.0.zip, TRDEMOOTTO-2.0.0.zip") {
 		t.Errorf("ambiguous: %v", err)
 	}
 	// The private repository needs the token; downloads never get it.
@@ -146,11 +146,11 @@ func TestFailures(t *testing.T) {
 		t.Errorf("private without token: %v", err)
 	}
 	srv.Failures = 2
-	if _, err := g.Tags(ctx, addr(h+"/tim-riep/trfin")); err != nil {
+	if _, err := g.Tags(ctx, addr(h+"/tim-riep/trdemofin")); err != nil {
 		t.Errorf("after two failures: %v", err)
 	}
 	srv.Failures = 10
-	_, err = g.Tags(ctx, addr(h+"/tim-riep/trfin"))
+	_, err = g.Tags(ctx, addr(h+"/tim-riep/trdemofin"))
 	var se *rterr.SourceError
 	if !errors.As(err, &se) || se.Status != 503 {
 		t.Errorf("lasting failure: %v", err)
@@ -158,7 +158,7 @@ func TestFailures(t *testing.T) {
 	srv.Failures = 0
 	reset := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
 	srv.RateLimited = reset
-	_, err = g.Tags(ctx, addr(h+"/tim-riep/trfin"))
+	_, err = g.Tags(ctx, addr(h+"/tim-riep/trdemofin"))
 	var rl *rterr.RateLimited
 	if !errors.As(err, &rl) || !rl.Reset.Equal(reset) || !strings.Contains(err.Error(), "2026-11-08T12:00:00Z") {
 		t.Errorf("rate limit: %v", err)
@@ -171,7 +171,7 @@ func TestFailures(t *testing.T) {
 	c := srv.Config()
 	c.Hosts = []string{"example.com"}
 	gb, _ := github.New(c)
-	if _, err := gb.Tags(ctx, addr(h+"/tim-riep/trfin")); err == nil || !strings.Contains(err.Error(), "not allowed") {
+	if _, err := gb.Tags(ctx, addr(h+"/tim-riep/trdemofin")); err == nil || !strings.Contains(err.Error(), "not allowed") {
 		t.Errorf("host: %v", err)
 	}
 	if strings.Contains(logs.String(), token) {
@@ -186,7 +186,7 @@ func TestFailures(t *testing.T) {
 func TestETag(t *testing.T) {
 	srv, g, addr := setup(t)
 	ctx := context.Background()
-	a := addr(srv.Host() + "/tim-riep/trfin")
+	a := addr(srv.Host() + "/tim-riep/trdemofin")
 	first, err := g.Tags(ctx, a)
 	if err != nil {
 		t.Fatal(err)

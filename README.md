@@ -12,7 +12,7 @@ transaction together with its own bookkeeping.
 ## Concepts
 
 - **Package**: a directory with a manifest and schema files. Its ID consists of upper-case
-  letters and digits and starts with a letter, e.g. `TRBASE`, `TRFIN`, `TROTTO`.
+  letters and digits and starts with a letter, e.g. `TRBASE`, `TRDEMOFIN`, `TRDEMOOTTO`.
 - **Kernel package**: a package embedded in the kernel binary (`kernelpkg/`), marked with
   `"kernelPackage": true` in its manifest and with the version of the kernel packages of the
   kernel. `rt init` installs it, a newer kernel upgrades it when it opens a database and
@@ -23,8 +23,8 @@ transaction together with its own bookkeeping.
   package: base domains, data elements, the address structure, `/TRBASE/AUDIT_LOG` and the
   classes executed by kernel.
 - **Ownership and namespace**: every object belongs to exactly one package, and its name
-  starts with the namespace of that package: `/TRFIN/COMPANIES` belongs to `TRFIN`, even if
-  `TROTTO` extends it. The full name is used everywhere, in package files for definitions and
+  starts with the namespace of that package: `/TRDEMOFIN/COMPANIES` belongs to `TRDEMOFIN`, even if
+  `TRDEMOOTTO` extends it. The full name is used everywhere, in package files for definitions and
   references alike.
 - **Domain**: base type, length, decimals and optional fixed values. Usable by the owning
   package and by every package that requires it directly or transitively.
@@ -33,8 +33,8 @@ transaction together with its own bookkeeping.
 - **Table**: fields, a primary key, foreign keys and the mandatory attributes
   `tenantSpecific` and `dataClass`.
 - **Extension**: additional fields and foreign keys for a table of a required package. Their
-  names carry the namespace of the extending package, e.g. the column `/TROTTO/OTTO_ID` in
-  `/TRFIN/COMPANIES`. Extension fields are never key fields and must be nullable or have a
+  names carry the namespace of the extending package, e.g. the column `/TRDEMOOTTO/OTTO_ID` in
+  `/TRDEMOFIN/COMPANIES`. Extension fields are never key fields and must be nullable or have a
   default. Several packages can extend the same table without collisions. Fields and foreign
   keys declared by the table itself have no namespace.
 - **Repository**: kernel tables that describe all installed objects, their owners and the
@@ -77,7 +77,7 @@ transaction together with its own bookkeeping.
 ## Package format
 
 ```
-TRFIN/
+TRDEMOFIN/
   manifest.json
   schema/
     domains/*.json             one domain per file, named <NAME>.json
@@ -115,10 +115,10 @@ TRFIN/
 
 ```json
 {
-  "id": "TROTTO",
+  "id": "TRDEMOOTTO",
   "version": "1.0.0",
   "description": "Connection of companies to the OTTO marketplace",
-  "requires": [{ "id": "TRFIN", "version": ">=1.0.0" }]
+  "requires": [{ "id": "TRDEMOFIN", "version": ">=1.0.0" }]
 }
 ```
 
@@ -131,34 +131,34 @@ Version constraints are comparisons separated by commas or spaces: `=1.2.3`, `>=
 Domain, table and extension (abridged; see [examples](examples)):
 
 ```json
-{ "name": "/TRFIN/COMPANY_STATUS", "type": "CHAR", "length": 10,
+{ "name": "/TRDEMOFIN/COMPANY_STATUS", "type": "CHAR", "length": 10,
   "values": [{ "value": "ACTIVE" }, { "value": "c", "name": "CLOSED" }] }
 ```
 
-A fixed value is addressed in code by its `name`, e.g. `/TRFIN/COMPANY_STATUS.CLOSED`.
+A fixed value is addressed in code by its `name`, e.g. `/TRDEMOFIN/COMPANY_STATUS.CLOSED`.
 Without a name, the value itself is the name if it consists of upper-case letters, digits
 and underscores and starts with a letter. Names are unique within a domain.
 
 ```json
 {
-  "name": "/TRFIN/COMPANIES",
+  "name": "/TRDEMOFIN/COMPANIES",
   "tenantSpecific": true,
   "dataClass": "configuration",
   "fields": [
-    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COMPANY_ID", "dataElement": "/TRDEMOFIN/COMPANY" },
     { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY", "notNull": true },
-    { "name": "STATUS", "domain": "/TRFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" },
+    { "name": "STATUS", "domain": "/TRDEMOFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" },
     { "name": "NOTE", "domain": "/TRBASE/TEXT", "default": null }
   ],
   "primaryKey": ["COMPANY_ID"],
   "foreignKeys": [
-    { "name": "COUNTRY", "table": "/TRFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
+    { "name": "COUNTRY", "table": "/TRDEMOFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
   ]
 }
 ```
 
 ```json
-{ "table": "/TRFIN/COMPANIES", "fields": [{ "name": "/TROTTO/OTTO_ID", "dataElement": "/TROTTO/OTTO_PARTNER" }] }
+{ "table": "/TRDEMOFIN/COMPANIES", "fields": [{ "name": "/TRDEMOOTTO/OTTO_ID", "dataElement": "/TRDEMOOTTO/OTTO_PARTNER" }] }
 ```
 
 Every file is validated against the JSON Schemas in [schemas](schemas). Errors name the
@@ -222,30 +222,30 @@ place where the components go, in `components` as in `fields`.
 
 ```json
 {
-  "name": "/TRFIN/COMPANIES",
+  "name": "/TRDEMOFIN/COMPANIES",
   "fields": [
-    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COMPANY_ID", "dataElement": "/TRDEMOFIN/COMPANY" },
     { "include": "/TRBASE/ADDRESS" },
-    { "name": "STATUS", "domain": "/TRFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" }
+    { "name": "STATUS", "domain": "/TRDEMOFIN/COMPANY_STATUS", "notNull": true, "default": "ACTIVE" }
   ],
   "primaryKey": ["COMPANY_ID"],
   "foreignKeys": [
-    { "name": "COUNTRY", "table": "/TRFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
+    { "name": "COUNTRY", "table": "/TRDEMOFIN/COUNTRIES", "fields": [{ "field": "COUNTRY", "references": "COUNTRY_CODE" }] }
   ]
 }
 ```
 
 ```json
 {
-  "name": "/TRFIN/COMPANY_ARRAY",
+  "name": "/TRDEMOFIN/COMPANY_ARRAY",
   "texts": { "en": { "label": "Companies" } },
-  "rowType": { "structure": "/TRFIN/COMPANIES" },
+  "rowType": { "structure": "/TRDEMOFIN/COMPANIES" },
   "key": { "fields": ["COMPANY_ID"], "unique": true }
 }
 ```
 
 ```json
-{ "structure": "/TRBASE/ADDRESS", "components": [{ "name": "/TROTTO/PICKUP_POINT", "dataElement": "/TROTTO/PICKUP_POINT" }] }
+{ "structure": "/TRBASE/ADDRESS", "components": [{ "name": "/TRDEMOOTTO/PICKUP_POINT", "dataElement": "/TRDEMOOTTO/PICKUP_POINT" }] }
 ```
 
 ## Rules
@@ -274,7 +274,7 @@ place where the components go, in `components` as in `fields`.
 
 ### Asset repositories
 
-`assets/templates/asset.json` of `TRFIN`:
+`assets/templates/asset.json` of `TRDEMOFIN`:
 
 ```json
 {
@@ -290,7 +290,7 @@ place where the components go, in `components` as in `fields`.
 ```
 
 - The repository ID is the folder name: up to 32 lower-case letters, digits, `_` and `-`,
-  starting with a letter. `web` of `TRBASE` and `web` of `TRFIN` are separate repositories.
+  starting with a letter. `web` of `TRBASE` and `web` of `TRDEMOFIN` are separate repositories.
   Repositories and assets are always addressed by package ID, repository ID and path.
 - `description` (the label) is mandatory and needs English. `folders` adds descriptions and
   folders that may be missing on disk. `files` sets the media type, a description and
@@ -318,12 +318,12 @@ place where the components go, in `components` as in `fields`.
 Reading at runtime:
 
 ```go
-r, err := k.OpenAsset(ctx, "TRFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
+r, err := k.OpenAsset(ctx, "TRDEMOFIN", "templates", "invoice/invoice.xsl", model.Some("de"))
 defer r.Close()
 info := r.Info() // MimeType, Size, ETag(), ModifiedAt, Language
 io.Copy(w, r)    // r is an io.ReadSeeker
 
-fsys, err := k.AssetFS(ctx, "TRFIN", "templates", model.Some("de")) // io/fs.FS for one language
+fsys, err := k.AssetFS(ctx, "TRDEMOFIN", "templates", model.Some("de")) // io/fs.FS for one language
 tmpl, err := template.ParseFS(fsys, "mail/*.html")
 ```
 
@@ -400,7 +400,7 @@ texts can only be removed with confirmation, which removes its texts as well.
   `notNull` is never null: new values start with an empty structure or array.
 - Array keys consist of elementary top-level components of a structure or table row type.
 - A change of a structure changes the columns of every table that includes it, in every
-  package; the plan shows the structure, e.g. `add-column /TRFIN/COMPANIES.REGION (CHAR(80))
+  package; the plan shows the structure, e.g. `add-column /TRDEMOFIN/COMPANIES.REGION (CHAR(80))
   via /TRBASE/ADDRESS`. A removed or narrowed component is destructive. A change that makes an
   object of another package invalid is rejected and names that object. Uninstalling a package
   removes its structures, array types and structure extensions with their columns, after
@@ -420,17 +420,17 @@ included columns.
 
 An authorization object names the fields whose values grants will give, and with the field
 `ACTIVITY` the activities that can be granted (`schema/authorization-objects/COMPANY.json` of
-`TRFIN`):
+`TRDEMOFIN`):
 
 ```json
 {
-  "name": "/TRFIN/COMPANY",
+  "name": "/TRDEMOFIN/COMPANY",
   "texts": {
     "en": { "label": "Company master data", "description": "Reading and changing companies by company and country" },
     "de": { "label": "Stammdaten Firma" }
   },
   "fields": [
-    { "name": "COMPANY_ID", "dataElement": "/TRFIN/COMPANY" },
+    { "name": "COMPANY_ID", "dataElement": "/TRDEMOFIN/COMPANY" },
     { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" },
     { "name": "ACTIVITY" }
   ],
@@ -479,22 +479,22 @@ later version, not to the codes.
 `kernel.AuthorizationObject`, `AuthorizationObjects` and `Activities` return the resolved
 definitions from package [reflector](reflector): per field the data element with its labels
 in all languages set up, the domain, type, length and fixed values, and for `ACTIVITY` the
-allowed activities with their texts. `rt show authorization-object:/TRFIN/COMPANY`,
+allowed activities with their texts. `rt show authorization-object:/TRDEMOFIN/COMPANY`,
 `rt authorization-objects list [package]` and `rt activities list` show them, with `--json`
 in the form of the reflector. Code reads them with `/TRBASE/REFLECTOR`.
 
 ### Roles
 
 A role bundles authorizations on authorization objects (`schema/roles/COMPANY_CLERK.json` of
-`TRFIN`):
+`TRDEMOFIN`):
 
 ```json
 {
-  "name": "/TRFIN/COMPANY_CLERK",
+  "name": "/TRDEMOFIN/COMPANY_CLERK",
   "texts": { "en": { "label": "Company clerk" }, "de": { "label": "Sachbearbeitung Firma" } },
   "authorizations": [
     {
-      "object": "/TRFIN/COMPANY",
+      "object": "/TRDEMOFIN/COMPANY",
       "fields": {
         "COMPANY_ID": [{ "pattern": "*" }],
         "COUNTRY": [{ "value": "DE" }, { "value": "AT" }, { "from": "PL", "to": "SK" }],
@@ -625,49 +625,49 @@ roles their user has; every test method starts without authorizations, and outsi
 `rt test` the methods fail:
 
 ```
-/TRBASE/TEST_AUTHORIZATIONS.GRANT("/TRFIN/COMPANY", ["COMPANY_ID=*", "COUNTRY=D*", "ACTIVITY=UPDATE"])
-/TRBASE/TEST_AUTHORIZATIONS.GRANT_ROLE("/TRFIN/COMPANY_CLERK")
+/TRBASE/TEST_AUTHORIZATIONS.GRANT("/TRDEMOFIN/COMPANY", ["COMPANY_ID=*", "COUNTRY=D*", "ACTIVITY=UPDATE"])
+/TRBASE/TEST_AUTHORIZATIONS.GRANT_ROLE("/TRDEMOFIN/COMPANY_CLERK")
 /TRBASE/TEST_AUTHORIZATIONS.GRANT_ALL()
 /TRBASE/TEST_AUTHORIZATIONS.CLEAR()
 ```
 
-The examples check as well: `/TRFIN/COMPANY_API` lists the companies the user may read,
-`/TRFIN/COMPANY_INTAKE` creates only companies the user may create, and
-`/TROTTO/COMPANY_SYNC` needs `EXECUTE` on `/TROTTO/SYNC` for the country.
+The examples check as well: `/TRDEMOFIN/COMPANY_API` lists the companies the user may read,
+`/TRDEMOFIN/COMPANY_INTAKE` creates only companies the user may create, and
+`/TRDEMOOTTO/COMPANY_SYNC` needs `EXECUTE` on `/TRDEMOOTTO/SYNC` for the country.
 
 ### Extension points
 
 An extension point lets other packages run code at a place of the own code, typed, filtered
-and switchable per tenant. `TRFIN` defines `/TRFIN/COMPANY_CHECKS`
+and switchable per tenant. `TRDEMOFIN` defines `/TRDEMOFIN/COMPANY_CHECKS`
 (`schema/extension-points/COMPANY_CHECKS.json`) on the interface of the same name:
 
 ```json
 {
-  "name": "/TRFIN/COMPANY_CHECKS",
+  "name": "/TRDEMOFIN/COMPANY_CHECKS",
   "description": { "en": "Checks when a company is created", "de": "Prüfungen beim Anlegen einer Company" },
-  "interface": "/TRFIN/COMPANY_CHECKS",
+  "interface": "/TRDEMOFIN/COMPANY_CHECKS",
   "use": "multiple",
   "filters": [{ "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }],
   "fallback": null
 }
 ```
 
-`TROTTO` implements it for Germany and Austria
+`TRDEMOOTTO` implements it for Germany and Austria
 (`schema/extension-implementations/COMPANY_CHECKS.json`):
 
 ```json
 {
-  "name": "/TROTTO/COMPANY_CHECKS",
+  "name": "/TRDEMOOTTO/COMPANY_CHECKS",
   "description": { "en": "Companies wait for the OTTO sync" },
-  "extensionPoint": "/TRFIN/COMPANY_CHECKS",
-  "class": "/TROTTO/COMPANY_CHECKS",
+  "extensionPoint": "/TRDEMOFIN/COMPANY_CHECKS",
+  "class": "/TRDEMOOTTO/COMPANY_CHECKS",
   "filters": { "COUNTRY": [{ "value": "DE" }, { "value": "AT" }] },
   "order": 100
 }
 ```
 
-and the behavior class `/TRFIN/COMPANY_BEHAVIOR` of the business object `/TRFIN/COMPANY`
-runs it with `extension point /TRFIN/COMPANY_CHECKS filters COUNTRY = ...` when it adjusts
+and the behavior class `/TRDEMOFIN/COMPANY_BEHAVIOR` of the business object `/TRDEMOFIN/COMPANY`
+runs it with `extension point /TRDEMOFIN/COMPANY_CHECKS filters COUNTRY = ...` when it adjusts
 and validates new companies; see the [language reference](docs/language.md#extension-points).
 
 - **Extension point**: a name in the namespace of the package, unique among extension points,
@@ -705,7 +705,7 @@ and validates new companies; see the [language reference](docs/language.md#exten
 - **Upgrades**: new methods in the interface and changed texts are allowed; implementations then
   have to implement the new methods. The interface has no default methods: a package that wants
   to add methods later offers a `public open` class implementing the interface, which
-  implementations extend, as `/TRFIN/COMPANY_CHECKS_BASE`. A new filter field needs a `default`
+  implementations extend, as `/TRDEMOFIN/COMPANY_CHECKS_BASE`. A new filter field needs a `default`
   (entries as in implementations) for implementations that do not name it. Removing an
   extension point or a filter field, changing the type of a field, switching between `single`
   and `multiple`, another interface and forbidding commits are destructive and need
@@ -746,17 +746,17 @@ itself, such as members or statements that use its private parts.
 A business object combines a root table and dependent tables of the own package, its
 entities, into one object with fixed behavior. Code changes its tables only with entity
 statements (see [docs/language.md](docs/language.md)), which work in a transaction buffer
-and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
+and go through a fixed save sequence. `TRDEMOFIN` defines `/TRDEMOFIN/COMPANY`
 (`schema/business-objects/COMPANY.json`):
 
 ```json
 {
-  "name": "/TRFIN/COMPANY",
+  "name": "/TRDEMOFIN/COMPANY",
   "description": { "en": "Company", "de": "Firma" },
-  "root": "/TRFIN/COMPANIES",
-  "behaviorClass": "/TRFIN/COMPANY_BEHAVIOR",
+  "root": "/TRDEMOFIN/COMPANIES",
+  "behaviorClass": "/TRDEMOFIN/COMPANY_BEHAVIOR",
   "entities": {
-    "/TRFIN/COMPANIES": {
+    "/TRDEMOFIN/COMPANIES": {
       "operations": ["create", "update", "delete"],
       "numbering": "external",
       "fields": { "NAME": { "mandatory": true }, "STATUS": { "readOnly": true } },
@@ -767,15 +767,15 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
         { "name": "ADJUST", "when": "save", "on": ["create"] }
       ],
       "validations": [{ "name": "CHECK_COUNTRY", "on": ["create", "update"], "fields": ["COUNTRY"] }],
-      "actions": [{ "name": "BLOCK", "parameter": "/TRFIN/BLOCK_REASON", "result": "self" }],
+      "actions": [{ "name": "BLOCK", "parameter": "/TRDEMOFIN/BLOCK_REASON", "result": "self" }],
       "authorization": {
-        "object": "/TRFIN/COMPANY",
+        "object": "/TRDEMOFIN/COMPANY",
         "fields": { "COMPANY_ID": "COMPANY_ID", "COUNTRY": "COUNTRY" },
         "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "BLOCK": "UPDATE" }
       }
     },
-    "/TRFIN/CONTACTS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"], "numbering": "uuid" },
-    "/TRFIN/BANK_ACCOUNTS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"] }
+    "/TRDEMOFIN/CONTACTS": { "parent": "/TRDEMOFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"], "numbering": "uuid" },
+    "/TRDEMOFIN/BANK_ACCOUNTS": { "parent": "/TRDEMOFIN/COMPANIES", "foreignKey": "COMPANY", "operations": ["create", "update", "delete"] }
   }
 }
 ```
@@ -824,29 +824,29 @@ and go through a fixed save sequence. `TRFIN` defines `/TRFIN/COMPANY`
   destructive. A table that becomes an entity fails the upgrade with every place of code
   that still writes it.
 
-Configuration is maintained the same way: `TRFIN` keeps its countries in the business object
-`/TRFIN/COUNTRY` of the data class `configuration` without behavior class and authorization,
+Configuration is maintained the same way: `TRDEMOFIN` keeps its countries in the business object
+`/TRDEMOFIN/COUNTRY` of the data class `configuration` without behavior class and authorization,
 and the test package [testdata/businessobjects/TRSET](testdata/businessobjects/TRSET) has
 partners with their accounts. Code writes no table of a business object directly.
 
 #### Extensions of business objects
 
 A package extends a business object of a package it requires in
-`schema/business-object-extensions/<NAME>.json`. `TROTTO` extends `/TRFIN/COMPANY`:
+`schema/business-object-extensions/<NAME>.json`. `TRDEMOOTTO` extends `/TRDEMOFIN/COMPANY`:
 
 ```json
 {
-  "businessObject": "/TRFIN/COMPANY",
-  "behaviorClass": "/TROTTO/COMPANY_BEHAVIOR",
+  "businessObject": "/TRDEMOFIN/COMPANY",
+  "behaviorClass": "/TRDEMOOTTO/COMPANY_BEHAVIOR",
   "entities": {
-    "/TRFIN/COMPANIES": {
-      "fields": { "/TROTTO/OTTO_ID": { "readOnly": true } },
-      "determinations": [{ "name": "/TROTTO/RESERVE_ID", "when": "save", "on": ["create"] }],
-      "validations": [{ "name": "/TROTTO/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }],
-      "actions": [{ "name": "/TROTTO/SYNC", "result": "self", "activity": "EXECUTE",
-        "authorization": { "object": "/TROTTO/MARKETPLACE", "fields": { "COUNTRY": "COUNTRY" } } }]
+    "/TRDEMOFIN/COMPANIES": {
+      "fields": { "/TRDEMOOTTO/OTTO_ID": { "readOnly": true } },
+      "determinations": [{ "name": "/TRDEMOOTTO/RESERVE_ID", "when": "save", "on": ["create"] }],
+      "validations": [{ "name": "/TRDEMOOTTO/CHECK_MARKET", "on": ["create", "update"], "fields": ["COUNTRY"] }],
+      "actions": [{ "name": "/TRDEMOOTTO/SYNC", "result": "self", "activity": "EXECUTE",
+        "authorization": { "object": "/TRDEMOOTTO/MARKETPLACE", "fields": { "COUNTRY": "COUNTRY" } } }]
     },
-    "/TROTTO/COMPANY_CHANNELS": { "parent": "/TRFIN/COMPANIES", "foreignKey": "COMPANY",
+    "/TRDEMOOTTO/COMPANY_CHANNELS": { "parent": "/TRDEMOFIN/COMPANIES", "foreignKey": "COMPANY",
       "operations": ["create", "update", "delete"], "numbering": "uuid" }
   }
 }
@@ -858,7 +858,7 @@ A package extends a business object of a package it requires in
   off behavior of other packages.
 - Determinations, validations and actions carry the namespace of the extending package; the
   methods of its behavior class have their names without it (`RESERVE_ID`). Code runs an
-  action of an extension with its full name: `execute /TRFIN/COMPANIES./TROTTO/SYNC`.
+  action of an extension with its full name: `execute /TRDEMOFIN/COMPANIES./TRDEMOOTTO/SYNC`.
 - An action on an entity of the business object takes an `activity` of its authorization or
   of an `authorization` object of the extending package with fields of the entity.
 - Dependent entities of the extending package follow the rules of entities, have the data
@@ -949,10 +949,10 @@ kernel gives from intervals:
 
 ```json
 {
-  "name": "/TRFIN/JOURNAL_ENTRY",
+  "name": "/TRDEMOFIN/JOURNAL_ENTRY",
   "texts": { "en": { "label": "Journal entries" }, "de": { "label": "Belege" } },
   "length": 10,
-  "subobject": { "name": "COMPANY", "dataElement": "/TRFIN/COMPANY" },
+  "subobject": { "name": "COMPANY", "dataElement": "/TRDEMOFIN/COMPANY" },
   "perFiscalYear": true,
   "buffering": { "mode": "none" },
   "warningPercent": 90
@@ -985,10 +985,10 @@ confirmation, are logged with `audit=true` and recorded with every other change 
 `/RT/NUMBER_RANGE_HISTORY`.
 
 ```bash
-rt number-range list TRFIN
-rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999
-rt number-range interval list /TRFIN/JOURNAL_ENTRY --tenant ACME
-rt number-range interval change /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999 --current 41 --yes
+rt number-range list TRDEMOFIN
+rt number-range interval add /TRDEMOFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999
+rt number-range interval list /TRDEMOFIN/JOURNAL_ENTRY --tenant ACME
+rt number-range interval change /TRDEMOFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999 --current 41 --yes
 rt number-range history --tenant ACME
 ```
 
@@ -1043,10 +1043,10 @@ Packages come from directories, ZIP files or GitHub repositories, one package pe
 or several in directories of one:
 
 ```bash
-rt install github.com/tim-riep/trfin@v1.2.0
-rt install github.com/tim-riep/trotto@^1.0
-rt install https://github.com/tim-riep/erp-packages/tree/v2.0.0/packages/TRFIN
-rt upgrade TRFIN
+rt install github.com/tim-riep/trdemofin@v1.2.0
+rt install github.com/tim-riep/trdemootto@^1.0
+rt install https://github.com/tim-riep/erp-packages/tree/v2.0.0/packages/TRDEMOFIN
+rt upgrade TRDEMOFIN
 rt outdated
 ```
 
@@ -1069,8 +1069,8 @@ rt outdated
   README.md and the like. The manifest decides the ID, and its version must be that of the
   tag. Then the usual path follows: validation, namespace check, dependencies, compiling,
   plan, one transaction.
-- **Dependencies**: a requirement may name a source, `{ "id": "TRFIN", "version": "^1.0",
-  "source": "github.com/tim-riep/trfin" }`. A required package that is missing, or installed
+- **Dependencies**: a requirement may name a source, `{ "id": "TRDEMOFIN", "version": "^1.0",
+  "source": "github.com/tim-riep/trdemofin" }`. A required package that is missing, or installed
   but too old, comes from its source at the highest version that every known constraint of
   the set and of the installed packages allows; a later constraint that excludes it is a
   conflict. Without source the package must be installed. Upgrades of installed packages need
@@ -1121,7 +1121,7 @@ rt outdated
   (default 2 seconds), every statement runs in a savepoint and cursors are fetched in
   portions. On SQLite sessions begin their transactions deferred and read in parallel,
   but only one session of an execution writes at a time: a second writing session gets
-  `/RT/SESSION_ERROR` at once instead of waiting for itself. `/TROTTO/COMPANY_SYNC`, which
+  `/RT/SESSION_ERROR` at once instead of waiting for itself. `/TRDEMOOTTO/COMPANY_SYNC`, which
   updates companies in the default session and writes the audit log in another one, thus
   works on PostgreSQL and on SQLite only when no company needs an update.
 
@@ -1130,23 +1130,23 @@ rt outdated
 Packages contain code in the go-runtime language in `src/`: classes, interfaces,
 exception and test classes, and includes. The [language reference](docs/language.md)
 describes syntax, types and rules; its examples are compiled by the tests. The example
-package [TRORDER](examples/TRORDER) shows classes, an interface, schema types (a
+package [TRDEMOORDER](examples/TRDEMOORDER) shows classes, an interface, schema types (a
 structure, a table used as structure, an array type with a unique key and a domain with
 fixed values as enum), an exception class, a test class and both kinds of includes.
 
 ```
-public class /TRORDER/ORDER_RATING implements /TRORDER/RATER
+public class /TRDEMOORDER/ORDER_RATING implements /TRDEMOORDER/RATER
 
   public constant LIMIT: DEC(15,2) = 1000.00
-  private attribute HISTORY: array of /TRORDER/ORDER_INFO
+  private attribute HISTORY: array of /TRDEMOORDER/ORDER_INFO
 
-  public method RATE(order: /TRORDER/ORDER_INFO) returns /TRORDER/RATING raises /TRORDER/INVALID_ORDER
+  public method RATE(order: /TRDEMOORDER/ORDER_INFO) returns /TRDEMOORDER/RATING raises /TRDEMOORDER/INVALID_ORDER
     var note = order.NOTE default ""
     HISTORY.APPEND(order)
     if order.AMOUNT > LIMIT
-      return /TRORDER/RATING.HIGH
+      return /TRDEMOORDER/RATING.HIGH
     end
-    return /TRORDER/RATING.NORMAL
+    return /TRDEMOORDER/RATING.NORMAL
   end
 
 end
@@ -1170,10 +1170,10 @@ program and its binary encoding with format version), `vm` (the machine with lim
   of other packages by direct indexes and offsets, so the kernel compiles a package again
   in the same transaction when a package it requires, a package with an include it names
   or an object it uses changes. The plan shows these steps as `compile-package` with the
-  reason, such as `compile-package TROTTO (requires TRFIN)`. Implementations of extension
+  reason, such as `compile-package TRDEMOOTTO (requires TRDEMOFIN)`. Implementations of extension
   points need no compilation of the package that defines the extension point.
 - `/RT/CODE_USES` records every reference of code with package, file and line;
-  `rt show /TRFIN/COMPANIES` lists them, and `rt show class:/TRFIN/COMPANY_SERVICE` shows a
+  `rt show /TRDEMOFIN/COMPANIES` lists them, and `rt show class:/TRDEMOFIN/COMPANY_SERVICE` shows a
   class. `/RT/CODE_INCLUDES` keeps the includes, also those not found.
 - Every change of code starts a new generation in `/RT/CODE_GENERATION`. An execution
   uses the generation that was current when it started until its end; the next one
@@ -1183,10 +1183,10 @@ program and its binary encoding with format version), `vm` (the machine with lim
   restricted to the tenant of the execution, and controls transactions over several
   sessions; see the [language reference](docs/language.md#database-access). Tables of
   business objects change only with entity statements. The example packages show it:
-  `TRFIN` reads companies in `/TRFIN/COMPANY_SERVICE` and changes them through the business
-  object `/TRFIN/COMPANY`, and `TROTTO` syncs them in `/TROTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
-  of its own and checks new companies of `TRFIN` through the extension point
-  `/TRFIN/COMPANY_CHECKS`.
+  `TRDEMOFIN` reads companies in `/TRDEMOFIN/COMPANY_SERVICE` and changes them through the business
+  object `/TRDEMOFIN/COMPANY`, and `TRDEMOOTTO` syncs them in `/TRDEMOOTTO/COMPANY_SYNC`, writes `/TRBASE/AUDIT_LOG` in a session
+  of its own and checks new companies of `TRDEMOFIN` through the extension point
+  `/TRDEMOFIN/COMPANY_CHECKS`.
 
 - Kernel packages contain methods executed by kernel: Go functions registered in the
   package `native` with the signature they implement, which the compiler checks against
@@ -1201,11 +1201,11 @@ program and its binary encoding with format version), `vm` (the machine with lim
   [language reference](docs/language.md#methods-executed-by-kernel).
 - Transformations are XSLT stylesheets of packages, compiled with
   [go-xslt](https://github.com/tim-riep/go-xslt) on installation and kept compiled per
-  generation. `transform value using /TRFIN/INVOICE_HTML parameters LANG = "de"` runs one on
+  generation. `transform value using /TRDEMOFIN/INVOICE_HTML parameters LANG = "de"` runs one on
   XML or on a value in a canonical XML format, and `into T` reads the result back; see the
-  [language reference](docs/language.md#transformations). `TRFIN` renders invoices with
-  `/TRFIN/INVOICE_HTML`, imports orders with `/TRFIN/ORDER_IMPORT` into the table
-  `/TRFIN/ORDERS` and renders a print template of its asset repository with
+  [language reference](docs/language.md#transformations). `TRDEMOFIN` renders invoices with
+  `/TRDEMOFIN/INVOICE_HTML`, imports orders with `/TRDEMOFIN/ORDER_IMPORT` into the table
+  `/TRDEMOFIN/ORDERS` and renders a print template of its asset repository with
   `/TRBASE/XSLT_UTILITIES` and `/TRBASE/XSLT_STYLESHEET`.
 - TRBASE reads and writes zip archives (`/TRBASE/ZIP_ARCHIVE`), gzip data (`/TRBASE/GZIP`)
   and workbooks in xlsx format, cell by cell with `/TRBASE/XLSX_WORKBOOK` and as whole
@@ -1213,20 +1213,20 @@ program and its binary encoding with format version), `vm` (the machine with lim
   headings of the data elements in all languages and reports all values that do not fit
   at once. Limits against archives that unpack to far more than they claim are measured
   while unpacking and set with `kernel.Config.Formats`; see the
-  [language reference](docs/language.md#xlsx). `TRFIN` exports its companies with
-  `/TRFIN/COMPANY_FILES` as workbook in a zip archive with an invoice and imports them
-  again, from code and through the nodes `/trfin/companies/export` and
-  `/trfin/companies/import`:
+  [language reference](docs/language.md#xlsx). `TRDEMOFIN` exports its companies with
+  `/TRDEMOFIN/COMPANY_FILES` as workbook in a zip archive with an invoice and imports them
+  again, from code and through the nodes `/trdemofin/companies/export` and
+  `/trdemofin/companies/import`:
 
   ```bash
-  rt run TRFIN /TRFIN/COMPANY_FILES EXPORT '["2026-11-08"]' --tenant ACME --user anna | jq -r . | base64 -d > companies.zip
-  rt run TRFIN /TRFIN/COMPANY_FILES IMPORT "[\"$(base64 < companies.zip | tr -d '\n')\"]" --tenant ACME --user anna
+  rt run TRDEMOFIN /TRDEMOFIN/COMPANY_FILES EXPORT '["2026-11-08"]' --tenant ACME --user anna | jq -r . | base64 -d > companies.zip
+  rt run TRDEMOFIN /TRDEMOFIN/COMPANY_FILES IMPORT "[\"$(base64 < companies.zip | tr -d '\n')\"]" --tenant ACME --user anna
   ```
 
 ```go
-out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TROTTO/COMPANY_SYNC", "SYNC",
+out, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME"}, "/TRDEMOOTTO/COMPANY_SYNC", "SYNC",
 	[]json.RawMessage{json.RawMessage(`"DE"`)})
-results, err := k.Test(ctx, "TRFIN", nil, kernel.ExecOptions{})
+results, err := k.Test(ctx, "TRDEMOFIN", nil, kernel.ExecOptions{})
 ```
 
 ## HTTP services
@@ -1238,7 +1238,7 @@ node `/<package ID in lower case>`; a file in `schema/http-services` adds a node
 {
   "path": "companies",
   "texts": { "en": { "label": "Companies" }, "de": { "label": "Firmen" } },
-  "handlers": [{ "class": "/TRFIN/COMPANY_API" }, { "class": "/TRFIN/COMPANY_INTAKE" }],
+  "handlers": [{ "class": "/TRDEMOFIN/COMPANY_API" }, { "class": "/TRDEMOFIN/COMPANY_INTAKE" }],
   "settings": { "maxBodySize": 65536 }
 }
 ```
@@ -1323,7 +1323,7 @@ request, with the package of the node, its full path and the activity `EXECUTE`:
 
 ```json
 { "object": "/TRBASE/HTTP_SERVICE",
-  "fields": { "PACKAGE_ID": [{ "value": "TRFIN" }], "SERVICE_PATH": [{ "pattern": "/trfin*" }],
+  "fields": { "PACKAGE_ID": [{ "value": "TRDEMOFIN" }], "SERVICE_PATH": [{ "pattern": "/trdemofin*" }],
               "ACTIVITY": [{ "value": "EXECUTE" }] } }
 ```
 
@@ -1334,7 +1334,7 @@ to the package, a required one or the kernel, and the activity must be one of th
 
 ```json
 "settings": {
-  "authorization": { "object": "/TRFIN/COMPANY",
+  "authorization": { "object": "/TRDEMOFIN/COMPANY",
                      "fields": { "COMPANY_ID": { "any": true }, "COUNTRY": { "any": true }, "ACTIVITY": "READ" } }
 }
 ```
@@ -1377,14 +1377,14 @@ TRBASE ships two handlers and two nodes:
 rt user create anna --tenant ACME < password.txt
 rt token create anna --label cli
 rt http activate /trbase
-rt http activate /trfin
+rt http activate /trdemofin
 rt serve --addr :8080
 curl localhost:8080/trbase/ping
-curl -u anna localhost:8080/trfin/companies
-curl -H "Authorization: Bearer rt_..." -H "X-Tenant: ACME" localhost:8080/trfin/companies
-curl -u anna -o companies.zip localhost:8080/trfin/companies/export
-curl -u anna -o companies.xlsx "localhost:8080/trfin/companies/export?file=companies.xlsx"
-curl -u anna --data-binary @companies.zip localhost:8080/trfin/companies/import
+curl -u anna localhost:8080/trdemofin/companies
+curl -H "Authorization: Bearer rt_..." -H "X-Tenant: ACME" localhost:8080/trdemofin/companies
+curl -u anna -o companies.zip localhost:8080/trdemofin/companies/export
+curl -u anna -o companies.xlsx "localhost:8080/trdemofin/companies/export?file=companies.xlsx"
+curl -u anna --data-binary @companies.zip localhost:8080/trdemofin/companies/import
 ```
 
 `rt serve` serves until SIGINT or SIGTERM. Then it accepts no new connections and gives
@@ -1441,24 +1441,24 @@ export RT_DATABASE=sqlite:rt.db
 rt init --admin admin --tenant ACME
 rt language add de
 make trfrontend
-rt install packages/TRFRONTEND/dist/TRFRONTEND examples/TRFIN examples/TROTTO examples/TRFINUI examples/TROTTOUI --yes
+rt install packages/TRFRONTEND/dist/TRFRONTEND examples/TRDEMOFIN examples/TRDEMOOTTO examples/TRDEMOFINUI examples/TRDEMOOTTOUI --yes
 rt http activate /trui
 rt http activate /trfrontend
-rt service activate /TRFIN/COMPANY_SERVICE
+rt service activate /TRDEMOFIN/COMPANY_SERVICE
 rt service activate /TRFRONTEND/CONFIGURATION_SERVICE
 rt user create clara --tenant ACME
 rt role assign clara /TRFRONTEND/USER --tenant ACME
-rt role assign clara /TRFIN/COMPANY_CLERK --tenant ACME
-rt role assign clara /TRFIN/COMPANY_ADMIN --tenant ACME
-rt role assign clara /TRFIN/ODATA_USER --tenant ACME
+rt role assign clara /TRDEMOFIN/COMPANY_CLERK --tenant ACME
+rt role assign clara /TRDEMOFIN/COMPANY_ADMIN --tenant ACME
+rt role assign clara /TRDEMOFIN/ODATA_USER --tenant ACME
 rt role assign admin /TRFRONTEND/ADMINISTRATOR --tenant ACME
-rt run TRFIN /TRFIN/COMPANY_SERVICE ADD_COUNTRY '["DE", "Germany"]' --tenant ACME --user admin
+rt run TRDEMOFIN /TRDEMOFIN/COMPANY_SERVICE ADD_COUNTRY '["DE", "Germany"]' --tenant ACME --user admin
 rt serve --insecure-session-cookie
 ```
 
 `rt init` and `rt user create` read the passwords from standard input; the examples have
-German texts, hence `rt language add de`. `/TRFIN/COMPANY_CLERK` gives clara the start page
-of companies, `/TRFIN/COMPANY_ADMIN` lets her create them. `rt install` of TRFRONTEND brings
+German texts, hence `rt language add de`. `/TRDEMOFIN/COMPANY_CLERK` gives clara the start page
+of companies, `/TRDEMOFIN/COMPANY_ADMIN` lets her create them. `rt install` of TRFRONTEND brings
 TRUI from GitHub along, since the manifest names its
 source. Instead of `make trfrontend`, a release of TRFRONTEND installs directly:
 `rt install github.com/tim-riep/go-runtime/packages/TRFRONTEND@1.0.2`. Then open
@@ -1475,7 +1475,7 @@ defer k.Close()
 
 if _, err := k.Init(ctx, kernel.Options{}); err != nil { ... }
 
-fin, _ := kernel.LoadDir("examples/TRFIN") // TRBASE is a kernel package, installed by Init
+fin, _ := kernel.LoadDir("examples/TRDEMOFIN") // TRBASE is a kernel package, installed by Init
 p, err := k.Install(ctx, []*model.Package{fin}, kernel.Options{})
 fmt.Print(p.Text())
 
@@ -1511,19 +1511,19 @@ Windows; a tag `v<version>` releases it with `.github/workflows/rt-release.yml`.
 export RT_DATABASE=sqlite:app.db
 rt init
 rt language add de
-rt install examples/TRFIN examples/TROTTO
-rt plan examples/upgrade/TROTTO
-rt upgrade examples/upgrade/TROTTO
+rt install examples/TRDEMOFIN examples/TRDEMOOTTO
+rt plan examples/upgrade/TRDEMOOTTO
+rt upgrade examples/upgrade/TRDEMOOTTO
 rt list
-rt show /TRFIN/COMPANIES
+rt show /TRDEMOFIN/COMPANIES
 rt check
 rt install testdata/businessobjects/TRSET testdata/businessobjects/TRSETX
 rt business-object list --data-class configuration
 rt business-object show /TRSET/PARTNER
 rt service list
-rt service show /TRFIN/COMPANY_SERVICE
-rt service activate /TRFIN/COMPANY_SERVICE
-rt service metadata /TRFIN/COMPANY_SERVICE --lang de --format json
+rt service show /TRDEMOFIN/COMPANY_SERVICE
+rt service activate /TRDEMOFIN/COMPANY_SERVICE
+rt service metadata /TRDEMOFIN/COMPANY_SERVICE --lang de --format json
 rt http configure /rt/odata --max-page-size 100
 rt install testdata/objects/TRDEF testdata/objects/TRUSE
 rt object-type list
@@ -1532,61 +1532,61 @@ rt object list /TRDEF/VIEW
 rt object show /TRUSE/COMPANIES
 rt show data-element:/TRBASE/COUNTRY
 rt show /TRBASE/ADDRESS
-rt show number-range:/TRFIN/JOURNAL_ENTRY
-rt show /TRFIN/COMPANY_ARRAY --json
-rt show /TRFIN/COMPANIES_ARCHIVE
+rt show number-range:/TRDEMOFIN/JOURNAL_ENTRY
+rt show /TRDEMOFIN/COMPANY_ARRAY --json
+rt show /TRDEMOFIN/COMPANIES_ARCHIVE
 rt asset repos
-rt asset list TRFIN templates invoice
-rt asset show TRFIN templates invoice/invoice.xsl
-rt asset get TRFIN templates invoice/invoice.xsl --lang de -o invoice.xsl
+rt asset list TRDEMOFIN templates invoice
+rt asset show TRDEMOFIN templates invoice/invoice.xsl
+rt asset get TRDEMOFIN templates invoice/invoice.xsl --lang de -o invoice.xsl
 rt tenant create ACME --description "Acme Corp"
 rt tenant delete ACME --yes
-rt uninstall TROTTO --yes
+rt uninstall TRDEMOOTTO --yes
 rt log
 ```
 
 ```bash
-rt fmt examples/TRORDER
+rt fmt examples/TRDEMOORDER
 rt fmt --check .
-rt build examples/TRORDER
-rt disasm examples/TRORDER /TRORDER/ORDER_RATING
-rt install examples/TRORDER
-rt install TRFIN-1.0.0.zip
+rt build examples/TRDEMOORDER
+rt disasm examples/TRDEMOORDER /TRDEMOORDER/ORDER_RATING
+rt install examples/TRDEMOORDER
+rt install TRDEMOFIN-1.0.0.zip
 rt tenant create ACME
-rt run TROTTO /TROTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME --user anna
-rt run TRFIN /TRFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]' --tenant ACME
-rt test TRORDER
-rt test examples/TRORDER
+rt run TRDEMOOTTO /TRDEMOOTTO/COMPANY_SYNC SYNC '["DE"]' --tenant ACME --user anna
+rt run TRDEMOFIN /TRDEMOFIN/INVOICE_RENDERER RENDER '[{"INVOICE_ID":"R-1","COMPANY_ID":"C1","ISSUED_ON":"2026-11-07","NOTE":null,"REFERENCE":null,"TOTAL":"10.00","ITEMS":[]}]' --tenant ACME
+rt test TRDEMOORDER
+rt test examples/TRDEMOORDER
 rt natives list
 rt user create anna --tenant ACME
 rt user tenant add anna BETA
 rt user list
 rt token create anna --label cli --expires 2027-01-31
 rt token list anna
-rt show authorization-object:/TRFIN/COMPANY
-rt authorization-objects list TRFIN
+rt show authorization-object:/TRDEMOFIN/COMPANY
+rt authorization-objects list TRDEMOFIN
 rt activities list --lang de
 rt user last-failed-check anna --tenant ACME
 rt trace authorizations start anna --tenant ACME
 rt init --admin root --tenant ACME < password.txt
 rt role list --incomplete
-rt role show /TRFIN/COMPANY_CLERK
+rt role show /TRDEMOFIN/COMPANY_CLERK
 rt role import operations.json
 rt role export /LOCAL/OPERATIONS -o operations.json
 rt role assign anna /LOCAL/OPERATIONS --tenant ACME --from 2027-01-01
 rt user roles anna
 rt user authorizations anna --tenant ACME --date 2027-01-15
 rt role history --user anna
-rt extension-point list TRFIN
-rt extension-point show /TRFIN/COMPANY_CHECKS
-rt business-object list TRFIN
-rt business-object show /TRFIN/COMPANY
-rt implementation deactivate /TROTTO/COMPANY_CHECKS --tenant ACME
-rt implementation history /TROTTO/COMPANY_CHECKS
+rt extension-point list TRDEMOFIN
+rt extension-point show /TRDEMOFIN/COMPANY_CHECKS
+rt business-object list TRDEMOFIN
+rt business-object show /TRDEMOFIN/COMPANY
+rt implementation deactivate /TRDEMOOTTO/COMPANY_CHECKS --tenant ACME
+rt implementation history /TRDEMOOTTO/COMPANY_CHECKS
 rt trace extension-points start anna --tenant ACME
-rt http list TRFIN
-rt http show /trfin/companies
-rt http activate /trfin
+rt http list TRDEMOFIN
+rt http show /trdemofin/companies
+rt http activate /trdemofin
 rt serve --addr :8443 --tls-cert cert.pem --tls-key key.pem
 rt effects list
 rt gen natives testdata/lang/native/TRTEST --go-package nativetest -o types_gen.go
@@ -1595,7 +1595,7 @@ rt gen natives testdata/lang/native/TRTEST --go-package nativetest -o types_gen.
 `fmt`, `build` and `disasm` work on package directories and need no database; `build`
 and `disasm` look up the packages a package requires next to it, in a directory named
 after their ID. `disasm` lists the bytecode of all functions, of a class or of one
-method (`/TRORDER/ORDER_RATING.RATE`), with the source line before its instructions and
+method (`/TRDEMOORDER/ORDER_RATING.RATE`), with the source line before its instructions and
 comments that name the called methods, classes, constants, types, transformations and
 database statements. `run`
 calls a public static method of an installed package for a tenant. `test` runs the test

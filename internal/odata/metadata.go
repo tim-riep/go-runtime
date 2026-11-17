@@ -107,7 +107,7 @@ type MetaActionImport struct {
 // Annotation applies a term to a target.
 type Annotation struct {
 	// Target is the path of the annotated element, such as
-	// TRFIN.TRFIN_COMPANIES/NAME or TRFIN.Container/Companies.
+	// TRDEMOFIN.TRDEMOFIN_COMPANIES/NAME or TRDEMOFIN.Container/Companies.
 	Target    string
 	Term      string
 	Qualifier string

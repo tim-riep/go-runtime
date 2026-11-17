@@ -1,0 +1,7 @@
+# Something that rates orders and keeps their total.
+public interface /TRDEMOORDER/RATER
+
+  method RATE(order: /TRDEMOORDER/ORDER_INFO) returns /TRDEMOORDER/RATING raises /TRDEMOORDER/INVALID_ORDER
+  method OPEN_TOTAL() returns DEC(15,2)
+
+end

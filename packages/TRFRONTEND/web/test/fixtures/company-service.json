@@ -1,6 +1,6 @@
 {
   "$Version": "4.01",
-  "$EntityContainer": "TRFIN.Container",
+  "$EntityContainer": "TRDEMOFIN.Container",
   "$Reference": {
     "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml": {
       "$Include": [
@@ -42,17 +42,17 @@
         }
       ]
     },
-    "urn:trotto:vocabularies:TROTTO.Marketplace": {
+    "urn:trdemootto:vocabularies:TRDEMOOTTO.Marketplace": {
       "$Include": [
         {
-          "$Namespace": "TROTTO.Marketplace",
+          "$Namespace": "TRDEMOOTTO.Marketplace",
           "$Alias": "Marketplace"
         }
       ]
     }
   },
-  "TRFIN": {
-    "TRFIN_COMPANIES": {
+  "TRDEMOFIN": {
+    "TRDEMOFIN_COMPANIES": {
       "$Kind": "EntityType",
       "$Key": [
         "COMPANY_ID"
@@ -79,7 +79,7 @@
         "$Nullable": true,
         "$MaxLength": 2
       },
-      "TROTTO_PICKUP_POINT": {
+      "TRDEMOOTTO_PICKUP_POINT": {
         "$Nullable": true,
         "$MaxLength": 20
       },
@@ -114,32 +114,32 @@
         "$Nullable": true,
         "$Precision": 6
       },
-      "TROTTO_OTTO_ID": {
+      "TRDEMOOTTO_OTTO_ID": {
         "$Nullable": true,
         "$MaxLength": 20
       },
       "Contacts": {
         "$Kind": "NavigationProperty",
         "$Collection": true,
-        "$Type": "TRFIN.TRFIN_CONTACTS",
+        "$Type": "TRDEMOFIN.TRDEMOFIN_CONTACTS",
         "$Partner": "Companies"
       },
-      "TROTTO_COMPANY_CHANNELS": {
+      "TRDEMOOTTO_COMPANY_CHANNELS": {
         "$Kind": "NavigationProperty",
         "$Collection": true,
-        "$Type": "TRFIN.TROTTO_COMPANY_CHANNELS",
+        "$Type": "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS",
         "$ContainsTarget": true
       },
       "Country": {
         "$Kind": "NavigationProperty",
-        "$Type": "TRFIN.TRFIN_COUNTRIES",
+        "$Type": "TRDEMOFIN.TRDEMOFIN_COUNTRIES",
         "$Nullable": true,
         "$ReferentialConstraint": {
           "COUNTRY": "COUNTRY_CODE"
         }
       }
     },
-    "TRFIN_CONTACTS": {
+    "TRDEMOFIN_CONTACTS": {
       "$Kind": "EntityType",
       "$Key": [
         "CONTACT_ID"
@@ -159,14 +159,14 @@
       },
       "Companies": {
         "$Kind": "NavigationProperty",
-        "$Type": "TRFIN.TRFIN_COMPANIES",
+        "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES",
         "$Partner": "Contacts",
         "$ReferentialConstraint": {
           "COMPANY_ID": "COMPANY_ID"
         }
       }
     },
-    "TRFIN_COUNTRIES": {
+    "TRDEMOFIN_COUNTRIES": {
       "$Kind": "EntityType",
       "$Key": [
         "COUNTRY_CODE"
@@ -182,7 +182,7 @@
         "$MaxLength": 3
       }
     },
-    "TRFIN_EXCHANGE_RATES": {
+    "TRDEMOFIN_EXCHANGE_RATES": {
       "$Kind": "EntityType",
       "$Key": [
         "FROM_CURRENCY",
@@ -204,7 +204,7 @@
         "$Scale": 6
       }
     },
-    "TROTTO_COMPANY_CHANNELS": {
+    "TRDEMOOTTO_COMPANY_CHANNELS": {
       "$Kind": "EntityType",
       "$Key": [
         "CHANNEL_ID"
@@ -225,7 +225,7 @@
         "$Parameter": [
           {
             "$Name": "_it",
-            "$Type": "TRFIN.TRFIN_COMPANIES"
+            "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES"
           },
           {
             "$Name": "TEXT",
@@ -233,11 +233,11 @@
           }
         ],
         "$ReturnType": {
-          "$Type": "TRFIN.TRFIN_COMPANIES"
+          "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES"
         }
       }
     ],
-    "TROTTO_SYNC": [
+    "TRDEMOOTTO_SYNC": [
       {
         "$Kind": "Action",
         "$IsBound": true,
@@ -245,11 +245,11 @@
         "$Parameter": [
           {
             "$Name": "_it",
-            "$Type": "TRFIN.TRFIN_COMPANIES"
+            "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES"
           }
         ],
         "$ReturnType": {
-          "$Type": "TRFIN.TRFIN_COMPANIES"
+          "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES"
         }
       }
     ],
@@ -257,7 +257,7 @@
       "$Kind": "EntityContainer",
       "Companies": {
         "$Collection": true,
-        "$Type": "TRFIN.TRFIN_COMPANIES",
+        "$Type": "TRDEMOFIN.TRDEMOFIN_COMPANIES",
         "$NavigationPropertyBinding": {
           "Contacts": "Contacts",
           "Country": "Countries"
@@ -265,25 +265,25 @@
       },
       "Contacts": {
         "$Collection": true,
-        "$Type": "TRFIN.TRFIN_CONTACTS",
+        "$Type": "TRDEMOFIN.TRDEMOFIN_CONTACTS",
         "$NavigationPropertyBinding": {
           "Companies": "Companies"
         }
       },
       "Countries": {
         "$Collection": true,
-        "$Type": "TRFIN.TRFIN_COUNTRIES"
+        "$Type": "TRDEMOFIN.TRDEMOFIN_COUNTRIES"
       },
       "ExchangeRates": {
         "$Collection": true,
-        "$Type": "TRFIN.TRFIN_EXCHANGE_RATES"
+        "$Type": "TRDEMOFIN.TRDEMOFIN_EXCHANGE_RATES"
       }
     },
     "$Annotations": {
-      "TRFIN.Container": {
+      "TRDEMOFIN.Container": {
         "@Core.Description": "Companies"
       },
-      "TRFIN.TRFIN_COMPANIES/COMPANY_ID": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/COMPANY_ID": {
         "@Core.Description": "Company",
         "@Core.LongDescription": "Company ID",
         "@RT.ShortLabel": "Company",
@@ -292,7 +292,7 @@
         "@RT.Heading": "Company",
         "@Core.Immutable": true
       },
-      "TRFIN.TRFIN_COMPANIES/NAME": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/NAME": {
         "@Core.Description": "Name",
         "@Core.LongDescription": "Name",
         "@RT.ShortLabel": "Name",
@@ -301,7 +301,7 @@
         "@RT.Heading": "Name",
         "@RT.Mandatory": true
       },
-      "TRFIN.TRFIN_COMPANIES/STREET": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/STREET": {
         "@Core.Description": "Street",
         "@Core.LongDescription": "Street and house number",
         "@RT.ShortLabel": "Street",
@@ -309,7 +309,7 @@
         "@RT.LongLabel": "Street and house number",
         "@RT.Heading": "Street"
       },
-      "TRFIN.TRFIN_COMPANIES/POSTAL_CODE": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/POSTAL_CODE": {
         "@Core.Description": "Postal code",
         "@Core.LongDescription": "Postal code",
         "@RT.ShortLabel": "Postcode",
@@ -317,7 +317,7 @@
         "@RT.LongLabel": "Postal code",
         "@RT.Heading": "Postcode"
       },
-      "TRFIN.TRFIN_COMPANIES/CITY": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/CITY": {
         "@Core.Description": "City",
         "@Core.LongDescription": "City",
         "@RT.ShortLabel": "City",
@@ -325,7 +325,7 @@
         "@RT.LongLabel": "City",
         "@RT.Heading": "City"
       },
-      "TRFIN.TRFIN_COMPANIES/COUNTRY": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/COUNTRY": {
         "@Core.Description": "Country",
         "@Core.LongDescription": "ISO 3166-1 alpha-2 code",
         "@RT.ShortLabel": "Country",
@@ -344,7 +344,7 @@
           ]
         }
       },
-      "TRFIN.TRFIN_COMPANIES/TROTTO_PICKUP_POINT": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/TRDEMOOTTO_PICKUP_POINT": {
         "@Core.Description": "Pickup point",
         "@Core.LongDescription": "Marketplace pickup point",
         "@RT.ShortLabel": "Pickup",
@@ -353,7 +353,7 @@
         "@RT.Heading": "Pickup",
         "@Marketplace.PickupPoint": true
       },
-      "TRFIN.TRFIN_COMPANIES/STATUS": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/STATUS": {
         "@Core.Computed": true,
         "@Validation.AllowedValues": [
           {
@@ -370,19 +370,19 @@
           }
         ]
       },
-      "TRFIN.TRFIN_COMPANIES/CREATED_BY": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/CREATED_BY": {
         "@Core.Computed": true
       },
-      "TRFIN.TRFIN_COMPANIES/CREATED_AT": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/CREATED_AT": {
         "@Core.Computed": true
       },
-      "TRFIN.TRFIN_COMPANIES/CHANGED_BY": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/CHANGED_BY": {
         "@Core.Computed": true
       },
-      "TRFIN.TRFIN_COMPANIES/CHANGED_AT": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/CHANGED_AT": {
         "@Core.Computed": true
       },
-      "TRFIN.TRFIN_COMPANIES/TROTTO_OTTO_ID": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES/TRDEMOOTTO_OTTO_ID": {
         "@Core.Description": "OTTO partner",
         "@Core.LongDescription": "Partner ID on OTTO",
         "@RT.ShortLabel": "Partner",
@@ -392,7 +392,7 @@
         "@Core.Computed": true,
         "@Marketplace.PartnerId": true
       },
-      "TRFIN.TRFIN_COMPANIES": {
+      "TRDEMOFIN.TRDEMOFIN_COMPANIES": {
         "@Core.Description": "Company",
         "@RT.DataClass": "application",
         "@Frontend.Header": {
@@ -426,7 +426,7 @@
             },
             {
               "Property": {
-                "$PropertyPath": "TROTTO_OTTO_ID"
+                "$PropertyPath": "TRDEMOOTTO_OTTO_ID"
               },
               "Width": 10,
               "Importance": "HIGH"
@@ -462,7 +462,7 @@
               "$PropertyPath": "STATUS"
             },
             {
-              "$PropertyPath": "TROTTO_OTTO_ID"
+              "$PropertyPath": "TRDEMOOTTO_OTTO_ID"
             }
           ],
           "SortOrder": [
@@ -474,8 +474,8 @@
             }
           ],
           "Actions": [
-            "TRFIN.BLOCK",
-            "TRFIN.TROTTO_SYNC"
+            "TRDEMOFIN.BLOCK",
+            "TRDEMOFIN.TRDEMOOTTO_SYNC"
           ]
         },
         "@Frontend.DetailPage": {
@@ -495,7 +495,7 @@
                       "$PropertyPath": "NAME"
                     },
                     {
-                      "$PropertyPath": "TROTTO_OTTO_ID"
+                      "$PropertyPath": "TRDEMOOTTO_OTTO_ID"
                     },
                     {
                       "$PropertyPath": "STATUS"
@@ -526,15 +526,15 @@
               ]
             },
             {
-              "Id": "/TROTTOUI/MARKETPLACE",
+              "Id": "/TRDEMOOTTOUI/MARKETPLACE",
               "Title": "Marketplace",
               "Groups": [
                 {
-                  "Id": "/TROTTOUI/OTTO",
+                  "Id": "/TRDEMOOTTOUI/OTTO",
                   "Title": "OTTO",
                   "Fields": [
                     {
-                      "$PropertyPath": "TROTTO_OTTO_ID"
+                      "$PropertyPath": "TRDEMOOTTO_OTTO_ID"
                     }
                   ]
                 }
@@ -550,14 +550,14 @@
             }
           ],
           "Actions": [
-            "TRFIN.BLOCK"
+            "TRDEMOFIN.BLOCK"
           ]
         }
       },
-      "TRFIN.TRFIN_CONTACTS/CONTACT_ID": {
+      "TRDEMOFIN.TRDEMOFIN_CONTACTS/CONTACT_ID": {
         "@Core.Computed": true
       },
-      "TRFIN.TRFIN_CONTACTS/COMPANY_ID": {
+      "TRDEMOFIN.TRDEMOFIN_CONTACTS/COMPANY_ID": {
         "@Core.Description": "Company",
         "@Core.LongDescription": "Company ID",
         "@RT.ShortLabel": "Company",
@@ -577,7 +577,7 @@
           ]
         }
       },
-      "TRFIN.TRFIN_CONTACTS/NAME": {
+      "TRDEMOFIN.TRDEMOFIN_CONTACTS/NAME": {
         "@Core.Description": "Name",
         "@Core.LongDescription": "Name",
         "@RT.ShortLabel": "Name",
@@ -586,7 +586,7 @@
         "@RT.Heading": "Name",
         "@RT.Mandatory": true
       },
-      "TRFIN.TRFIN_CONTACTS": {
+      "TRDEMOFIN.TRDEMOFIN_CONTACTS": {
         "@Core.Description": "Company",
         "@RT.DataClass": "application",
         "@Frontend.Header": {
@@ -638,7 +638,7 @@
           "Actions": []
         }
       },
-      "TRFIN.TRFIN_COUNTRIES/COUNTRY_CODE": {
+      "TRDEMOFIN.TRDEMOFIN_COUNTRIES/COUNTRY_CODE": {
         "@Core.Description": "Country",
         "@Core.LongDescription": "ISO 3166-1 alpha-2 code",
         "@RT.ShortLabel": "Country",
@@ -647,7 +647,7 @@
         "@RT.Heading": "Country",
         "@Core.Immutable": true
       },
-      "TRFIN.TRFIN_COUNTRIES/NAME": {
+      "TRDEMOFIN.TRDEMOFIN_COUNTRIES/NAME": {
         "@Core.Description": "Name",
         "@Core.LongDescription": "Name",
         "@RT.ShortLabel": "Name",
@@ -656,7 +656,7 @@
         "@RT.Heading": "Name",
         "@RT.Mandatory": true
       },
-      "TRFIN.TRFIN_COUNTRIES/CURRENCY": {
+      "TRDEMOFIN.TRDEMOFIN_COUNTRIES/CURRENCY": {
         "@Core.Description": "Currency",
         "@Core.LongDescription": "ISO 4217 code",
         "@RT.ShortLabel": "Currency",
@@ -664,18 +664,18 @@
         "@RT.LongLabel": "Currency key",
         "@RT.Heading": "Currency"
       },
-      "TRFIN.TRFIN_COUNTRIES": {
+      "TRDEMOFIN.TRDEMOFIN_COUNTRIES": {
         "@Core.Description": "Country",
         "@RT.DataClass": "configuration"
       },
-      "TRFIN.TRFIN_EXCHANGE_RATES": {
+      "TRDEMOFIN.TRDEMOFIN_EXCHANGE_RATES": {
         "@Core.Description": "Exchange rates, maintained during operation",
         "@RT.DataClass": "runtimeConfiguration"
       },
-      "TRFIN.TROTTO_COMPANY_CHANNELS/CHANNEL_ID": {
+      "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS/CHANNEL_ID": {
         "@Core.Computed": true
       },
-      "TRFIN.TROTTO_COMPANY_CHANNELS/COMPANY_ID": {
+      "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS/COMPANY_ID": {
         "@Core.Description": "Company",
         "@Core.LongDescription": "Company ID",
         "@RT.ShortLabel": "Company",
@@ -684,11 +684,11 @@
         "@RT.Heading": "Company",
         "@Core.Computed": true
       },
-      "TRFIN.TROTTO_COMPANY_CHANNELS": {
+      "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS": {
         "@Core.Description": "Company",
         "@RT.DataClass": "application"
       },
-      "TRFIN.Container/Companies": {
+      "TRDEMOFIN.Container/Companies": {
         "@Core.OptimisticConcurrency": [
           {
             "$PropertyPath": "CHANGED_AT"
@@ -731,7 +731,7 @@
           "RestrictedProperties": [
             {
               "NavigationProperty": {
-                "$NavigationPropertyPath": "TROTTO_COMPANY_CHANNELS"
+                "$NavigationPropertyPath": "TRDEMOOTTO_COMPANY_CHANNELS"
               },
               "InsertRestrictions": {
                 "Insertable": true
@@ -746,7 +746,7 @@
           ]
         }
       },
-      "TRFIN.Container/Contacts": {
+      "TRDEMOFIN.Container/Contacts": {
         "@Capabilities.InsertRestrictions": {
           "Insertable": true
         },
@@ -781,7 +781,7 @@
           "ContentIDSupported": false
         }
       },
-      "TRFIN.Container/Countries": {
+      "TRDEMOFIN.Container/Countries": {
         "@Capabilities.InsertRestrictions": {
           "Insertable": false
         },
@@ -816,7 +816,7 @@
           "ContentIDSupported": false
         }
       },
-      "TRFIN.Container/ExchangeRates": {
+      "TRDEMOFIN.Container/ExchangeRates": {
         "@Capabilities.InsertRestrictions": {
           "Insertable": false
         },
@@ -851,7 +851,7 @@
           "ContentIDSupported": false
         }
       },
-      "TRFIN.TROTTO_SYNC": {
+      "TRDEMOFIN.TRDEMOOTTO_SYNC": {
         "@Core.Description": "Gives the company a partner ID at OTTO"
       }
     }

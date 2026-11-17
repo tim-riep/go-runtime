@@ -34,7 +34,7 @@ import (
 )
 
 // openCheckKernel opens a kernel with the test natives and the examples,
-// and the user anna with the role /TRFIN/COMPANY_CLERK in ACME.
+// and the user anna with the role /TRDEMOFIN/COMPANY_CLERK in ACME.
 func openCheckKernel(tb testing.TB, dsn string) *kernel.Kernel {
 	ctx := context.Background()
 	pkgs, err := kernelpkg.Packages()
@@ -57,13 +57,13 @@ func openCheckKernel(tb testing.TB, dsn string) *kernel.Kernel {
 		tb.Fatal(err)
 	}
 	trauth := testutil.LoadDir(tb, filepath.Join(testutil.ModuleRoot(tb), "testdata", "lang", "auth", "TRAUTH"))
-	if _, err := k.Install(ctx, []*model.Package{testutil.Example(tb, "TROTTO"), testutil.Example(tb, "TRFIN"), trauth}, kernel.Options{}); err != nil {
+	if _, err := k.Install(ctx, []*model.Package{testutil.Example(tb, "TRDEMOOTTO"), testutil.Example(tb, "TRDEMOFIN"), trauth}, kernel.Options{}); err != nil {
 		tb.Fatal(err)
 	}
 	if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 		tb.Fatal(err)
 	}
-	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+	if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
 		tb.Fatal(err)
 	}
 	return k
@@ -86,16 +86,16 @@ func TestAuthorize(t *testing.T) {
 				}
 			}
 			_, err := call(k, anna, N, "AUTHORIZE", `"FR"`, "false")
-			if exceptionClass(err) != model.NotAuthorizedClass || !strings.Contains(err.Error(), "no authorization for /TRFIN/COMPANY") ||
+			if exceptionClass(err) != model.NotAuthorizedClass || !strings.Contains(err.Error(), "no authorization for /TRDEMOFIN/COMPANY") ||
 				strings.Contains(err.Error(), "--user") {
 				t.Errorf("FR: %v", err)
 			}
-			if got, err := call(k, anna, N, "CAUGHT", `"FR"`); err != nil || got != `"/TRFIN/COMPANY ACTIVITY=READ COMPANY_ID=any COUNTRY=FR"` {
+			if got, err := call(k, anna, N, "CAUGHT", `"FR"`); err != nil || got != `"/TRDEMOFIN/COMPANY ACTIVITY=READ COMPANY_ID=any COUNTRY=FR"` {
 				t.Errorf("caught: %s, %v", got, err)
 			}
 			de := anna
 			de.Language = "de"
-			if _, err := call(k, de, N, "AUTHORIZE", `"FR"`, "false"); !strings.Contains(err.Error(), "keine Berechtigung für /TRFIN/COMPANY") {
+			if _, err := call(k, de, N, "AUTHORIZE", `"FR"`, "false"); !strings.Contains(err.Error(), "keine Berechtigung für /TRDEMOFIN/COMPANY") {
 				t.Errorf("German: %v", err)
 			}
 			if _, err := call(k, kernel.ExecOptions{Tenant: "ACME"}, N, "AUTHORIZE", `"DE"`, "false"); exceptionClass(err) != model.NotAuthorizedClass ||
@@ -126,7 +126,7 @@ func TestCheckStatements(t *testing.T) {
 			if got, err := call(k, anna, C, "UPDATE_COMPANY", `"12345678901234567890123"`, `"DE"`); err == nil {
 				t.Errorf("too long: %s", got)
 			}
-			if got, err := call(k, anna, C, "DELETE_COMPANY", `"C1"`); err != nil || got != `"/TRFIN/COMPANY: no authorization for /TRFIN/COMPANY"` {
+			if got, err := call(k, anna, C, "DELETE_COMPANY", `"C1"`); err != nil || got != `"/TRDEMOFIN/COMPANY: no authorization for /TRDEMOFIN/COMPANY"` {
 				t.Errorf("DELETE_COMPANY: %s, %v", got, err)
 			}
 			for _, c := range []struct {
@@ -141,10 +141,10 @@ func TestCheckStatements(t *testing.T) {
 			}
 
 			// A new field of the object breaks the checks of TRAUTH.
-			dir := testutil.CopyExample(t, "TRFIN")
-			testutil.WriteFile(t, dir, "schema/authorization-objects/COMPANY.json", []byte(`{"name":"/TRFIN/COMPANY",
+			dir := testutil.CopyExample(t, "TRDEMOFIN")
+			testutil.WriteFile(t, dir, "schema/authorization-objects/COMPANY.json", []byte(`{"name":"/TRDEMOFIN/COMPANY",
 				"texts":{"en":{"label":"Company master data"},"de":{"label":"Stammdaten Firma"}},
-				"fields":[{"name":"COMPANY_ID","dataElement":"/TRFIN/COMPANY"},{"name":"COUNTRY","dataElement":"/TRBASE/COUNTRY"},
+				"fields":[{"name":"COMPANY_ID","dataElement":"/TRDEMOFIN/COMPANY"},{"name":"COUNTRY","dataElement":"/TRBASE/COUNTRY"},
 				{"name":"REGION","dataElement":"/TRBASE/NAME"},{"name":"ACTIVITY"}],"activities":["READ","CREATE","UPDATE","DELETE","EXPORT"]}`))
 			regionInChecks(t, dir)
 			up := testutil.LoadDir(t, dir)
@@ -155,7 +155,7 @@ func TestCheckStatements(t *testing.T) {
 				!strings.Contains(err.Error(), "needs the field REGION") {
 				t.Errorf("upgrade: %v", err)
 			}
-			uses, err := k.CodeUses(context.Background(), "/TRFIN/COMPANY")
+			uses, err := k.CodeUses(context.Background(), "/TRDEMOFIN/COMPANY")
 			found := map[string]bool{}
 			for _, u := range uses {
 				found[fmt.Sprintf("%s %d %s", u.Package, u.Line, u.Member.Or(""))] = true

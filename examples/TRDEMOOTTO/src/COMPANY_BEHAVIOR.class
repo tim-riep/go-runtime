@@ -1,0 +1,51 @@
+# The behavior that TRDEMOOTTO adds to the business object /TRDEMOFIN/COMPANY:
+# new companies in a country of the marketplace get their partner ID when
+# they are saved, a company with a partner ID stays in such a country, and
+# the action /TRDEMOOTTO/SYNC gives companies created before TRDEMOOTTO their ID.
+public class /TRDEMOOTTO/COMPANY_BEHAVIOR
+
+  public method RESERVE_ID(keys: array of key of /TRDEMOFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRDEMOFIN/COMPANY in local mode
+      /TRDEMOFIN/COMPANIES fields (COUNTRY) keys keys
+    end
+    var ids: array of key of /TRDEMOFIN/COMPANIES = []
+    for company in companies
+      if /TRDEMOOTTO/ID_RULES.MARKET(company.COUNTRY default "")
+        var key: key of /TRDEMOFIN/COMPANIES
+        key.COMPANY_ID = company.COMPANY_ID
+        ids.APPEND(key)
+      end
+    end
+    SET_IDS(ids)
+  end
+
+  public method CHECK_MARKET(keys: array of key of /TRDEMOFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRDEMOFIN/COMPANY in local mode
+      /TRDEMOFIN/COMPANIES fields (COUNTRY, /TRDEMOOTTO/OTTO_ID) keys keys
+    end
+    for i, company in companies
+      var country = company.COUNTRY default ""
+      if company./TRDEMOOTTO/OTTO_ID is not null and not /TRDEMOOTTO/ID_RULES.MARKET(country)
+        response.FIELD_ERROR(i, "COUNTRY", "{company.COMPANY_ID} is on OTTO, which has no marketplace in {country}")
+      end
+    end
+  end
+
+  public method SYNC(keys: array of key of /TRDEMOFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    SET_IDS(keys)
+  end
+
+  private method SET_IDS(keys: array of key of /TRDEMOFIN/COMPANIES)
+    var rows: array of /TRDEMOFIN/COMPANIES = []
+    for key in keys
+      var row: /TRDEMOFIN/COMPANIES
+      row.COMPANY_ID = key.COMPANY_ID
+      row./TRDEMOOTTO/OTTO_ID = /TRDEMOOTTO/ID_RULES.BUILD(key.COMPANY_ID)
+      rows.APPEND(row)
+    end
+    modify business object /TRDEMOFIN/COMPANY in local mode
+      update /TRDEMOFIN/COMPANIES fields (/TRDEMOOTTO/OTTO_ID) from rows
+    end
+  end
+
+end

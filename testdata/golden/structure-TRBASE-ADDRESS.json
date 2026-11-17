@@ -161,18 +161,18 @@
         "notNull": false
       },
       {
-        "name": "/TROTTO/PICKUP_POINT",
+        "name": "/TRDEMOOTTO/PICKUP_POINT",
         "description": null,
         "origin": {
           "declared": "/TRBASE/ADDRESS",
           "includes": [],
-          "extension": "TROTTO",
-          "package": "TROTTO"
+          "extension": "TRDEMOOTTO",
+          "package": "TRDEMOOTTO"
         },
         "kind": "elementary",
         "dataElement": {
-          "name": "/TROTTO/PICKUP_POINT",
-          "owner": "TROTTO",
+          "name": "/TRDEMOOTTO/PICKUP_POINT",
+          "owner": "TRDEMOOTTO",
           "texts": {
             "de": {
               "short": "Abholung",
@@ -190,7 +190,7 @@
             }
           }
         },
-        "domain": "/TROTTO/PICKUP_POINT",
+        "domain": "/TRDEMOOTTO/PICKUP_POINT",
         "type": "CHAR",
         "length": 20,
         "allowEmpty": true,
@@ -198,23 +198,23 @@
       }
     ],
     "extensions": [
-      "TROTTO"
+      "TRDEMOOTTO"
     ]
   },
   "usedBy": [
     {
       "kind": "structure",
-      "name": "/TRFIN/COMPANY_GROUP",
+      "name": "/TRDEMOFIN/COMPANY_GROUP",
       "via": "component SEAT"
     },
     {
       "kind": "structure-extension",
-      "name": "TROTTO",
+      "name": "TRDEMOOTTO",
       "via": "extension"
     },
     {
       "kind": "table",
-      "name": "/TRFIN/COMPANIES",
+      "name": "/TRDEMOFIN/COMPANIES",
       "via": "include"
     }
   ],

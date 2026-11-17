@@ -1,0 +1,37 @@
+{
+  "name": "/TRDEMOOTTO/OTTO_SHOPS",
+  "description": "Shops of a tenant on the OTTO marketplace",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "SHOP_ID",
+      "domain": "/TRDEMOOTTO/OTTO_SHOP_ID"
+    },
+    {
+      "name": "COMPANY_ID",
+      "dataElement": "/TRDEMOFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBASE/NAME",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "SHOP_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "CONNECTION",
+      "table": "/TRDEMOOTTO/OTTO_CONNECTIONS",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

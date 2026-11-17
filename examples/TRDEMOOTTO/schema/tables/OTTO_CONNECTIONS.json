@@ -1,0 +1,38 @@
+{
+  "name": "/TRDEMOOTTO/OTTO_CONNECTIONS",
+  "description": "Connection of a company to the OTTO marketplace",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "dataElement": "/TRDEMOFIN/COMPANY"
+    },
+    {
+      "name": "ENDPOINT",
+      "domain": "/TRBASE/TEXT",
+      "notNull": true
+    },
+    {
+      "name": "ACTIVE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true,
+      "default": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRDEMOFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

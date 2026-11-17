@@ -73,40 +73,40 @@ func TestODataActions(t *testing.T) {
 	})
 }
 
-// TestODataExtensionOfTRFIN runs the action and the dependent entity that
-// TROTTO adds to the companies of TRFIN through the service of TRFIN.
-func TestODataExtensionOfTRFIN(t *testing.T) {
+// TestODataExtensionOfTRDEMOFIN runs the action and the dependent entity that
+// TRDEMOOTTO adds to the companies of TRDEMOFIN through the service of TRDEMOFIN.
+func TestODataExtensionOfTRDEMOFIN(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		c := odataKernel(t, k)
-		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TROTTO/SYNC_OPERATOR", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOOTTO/SYNC_OPERATOR", Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := k.ActivateService(ctx, companyService, "test"); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY",
+		if _, err := k.Run(ctx, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY",
 			[]json.RawMessage{json.RawMessage(`"FR"`), json.RawMessage(`"France"`)}); err != nil {
 			t.Fatal(err)
 		}
 		anna := basicAuth("anna", "secret")
-		const root = "/rt/odata/trfin/company_service/"
+		const root = "/rt/odata/trdemofin/company_service/"
 		a := c.do("POST", root+"Companies", with(anna), `{"COMPANY_ID":"C1","NAME":"Acme","COUNTRY":"FR","Contacts":[{"NAME":"Ann","EMAIL":"ann@example.com"}]}`)
-		if a.status != 201 || !strings.Contains(a.body, `"TROTTO_OTTO_ID":null`) {
+		if a.status != 201 || !strings.Contains(a.body, `"TRDEMOOTTO_OTTO_ID":null`) {
 			t.Fatalf("POST company: %d %s", a.status, a.body)
 		}
-		if a := c.do("POST", root+"Companies('C1')/TROTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"web"}`); a.status != 201 ||
-			!strings.Contains(a.header.Get("Location"), "Companies('C1')/TROTTO_COMPANY_CHANNELS(") {
+		if a := c.do("POST", root+"Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"web"}`); a.status != 201 ||
+			!strings.Contains(a.header.Get("Location"), "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(") {
 			t.Errorf("POST along the contained navigation: %d %v %s", a.status, a.header, a.body)
 		}
-		if a := c.do("GET", root+"Companies('C1')?$expand=TROTTO_COMPANY_CHANNELS,Contacts", anna, ""); !strings.Contains(a.body, `"CHANNEL":"web"`) ||
+		if a := c.do("GET", root+"Companies('C1')?$expand=TRDEMOOTTO_COMPANY_CHANNELS,Contacts", anna, ""); !strings.Contains(a.body, `"CHANNEL":"web"`) ||
 			!strings.Contains(a.body, `"EMAIL":"ann@example.com"`) {
 			t.Errorf("expanded: %s", a.body)
 		}
 		// The action of the extension: FR has no marketplace, so the
-		// authorization of /TROTTO/MARKETPLACE fails.
-		if a := c.do("POST", root+"Companies('C1')/TRFIN.TROTTO_SYNC", with(anna), ""); a.status != 403 {
-			t.Errorf("TROTTO_SYNC in France: %d %s", a.status, a.body)
+		// authorization of /TRDEMOOTTO/MARKETPLACE fails.
+		if a := c.do("POST", root+"Companies('C1')/TRDEMOFIN.TRDEMOOTTO_SYNC", with(anna), ""); a.status != 403 {
+			t.Errorf("TRDEMOOTTO_SYNC in France: %d %s", a.status, a.body)
 		}
 	})
 }

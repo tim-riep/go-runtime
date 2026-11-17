@@ -1,0 +1,20 @@
+{
+  "name": "/TRDEMOOTTOUI/OTTO_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "OTTO"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "OTTO"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRDEMOOTTOUI/OTTO_PAGE"
+      }
+    ]
+  }
+}

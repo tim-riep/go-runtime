@@ -1,0 +1,16 @@
+{
+  "name": "/TRDEMOFIN/COMPANY_CHECKS",
+  "description": {
+    "en": "Checks when a company is created",
+    "de": "Prüfungen beim Anlegen einer Company"
+  },
+  "interface": "/TRDEMOFIN/COMPANY_CHECKS",
+  "use": "multiple",
+  "filters": [
+    {
+      "name": "COUNTRY",
+      "dataElement": "/TRBASE/COUNTRY"
+    }
+  ],
+  "fallback": null
+}

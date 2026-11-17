@@ -1,0 +1,47 @@
+{
+  "name": "/TRDEMOFIN/BANK_ACCOUNTS",
+  "description": "Bank accounts of a company",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "dataElement": "/TRDEMOFIN/COMPANY"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "/TRDEMOFIN/ACCOUNT_NO"
+    },
+    {
+      "name": "IBAN",
+      "domain": "/TRDEMOFIN/IBAN",
+      "notNull": true
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRBASE/AMOUNT",
+      "notNull": true,
+      "default": "0"
+    },
+    {
+      "name": "OPENED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID",
+    "ACCOUNT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRDEMOFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        }
+      ]
+    }
+  ]
+}

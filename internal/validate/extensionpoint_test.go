@@ -77,7 +77,7 @@ func TestExtensionPointRules(t *testing.T) {
 		code     rterr.Code
 		contains string
 	}{
-		{"namespace", func(p *model.ExtensionPoint, _ *model.Implementation) { p.Name = "/TRFIN/CHECKS" }, rterr.CodeName, "must start with the namespace /TRS/"},
+		{"namespace", func(p *model.ExtensionPoint, _ *model.Implementation) { p.Name = "/TRDEMOFIN/CHECKS" }, rterr.CodeName, "must start with the namespace /TRS/"},
 		{"no English", func(p *model.ExtensionPoint, _ *model.Implementation) {
 			p.Description = map[string]string{"de": "Prüfungen"}
 		},
@@ -114,8 +114,8 @@ func TestExtensionPointRules(t *testing.T) {
 			rterr.CodeExtensionPoint, "extension point /TRS/NOPE does not exist"},
 		{"class missing", func(_ *model.ExtensionPoint, impl *model.Implementation) { impl.Class = "/TRS/NOPE" },
 			rterr.CodeExtensionPoint, "the class /TRS/NOPE does not exist in TRS"},
-		{"class of another package", func(_ *model.ExtensionPoint, impl *model.Implementation) { impl.Class = "/TRFIN/COMPANY_SERVICE" },
-			rterr.CodeExtensionPoint, "the class /TRFIN/COMPANY_SERVICE must belong to TRS"},
+		{"class of another package", func(_ *model.ExtensionPoint, impl *model.Implementation) { impl.Class = "/TRDEMOFIN/COMPANY_SERVICE" },
+			rterr.CodeExtensionPoint, "the class /TRDEMOFIN/COMPANY_SERVICE must belong to TRS"},
 		{"missing filter field", func(_ *model.ExtensionPoint, impl *model.Implementation) {
 			impl.Filters = map[string][]model.ValueEntry{}
 		},

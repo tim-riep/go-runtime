@@ -32,7 +32,7 @@ export type Annotations = Record<string, AnnotationValue>;
 
 export interface Property {
   name: string;
-  /** The qualified type, e.g. Edm.String, Edm.Decimal or TRFIN.TRFIN_ADDRESS. */
+  /** The qualified type, e.g. Edm.String, Edm.Decimal or TRDEMOFIN.TRDEMOFIN_ADDRESS. */
   type: string;
   collection: boolean;
   nullable: boolean;
@@ -54,7 +54,7 @@ export interface Navigation {
 }
 
 export interface EntityType {
-  /** Qualified name, e.g. TRFIN.TRFIN_COMPANIES. */
+  /** Qualified name, e.g. TRDEMOFIN.TRDEMOFIN_COMPANIES. */
   name: string;
   key: string[];
   properties: Property[];
@@ -69,7 +69,7 @@ export interface Parameter {
 }
 
 export interface Action {
-  /** Qualified name, e.g. TRFIN.BLOCK. */
+  /** Qualified name, e.g. TRDEMOFIN.BLOCK. */
   name: string;
   /** The qualified entity type of bound actions, null for action imports. */
   boundTo: string | null;

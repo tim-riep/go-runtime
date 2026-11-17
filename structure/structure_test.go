@@ -36,7 +36,7 @@ func schema(t *testing.T) *model.Schema {
 	country := elem("COUNTRY", model.TypeDataElement, "/TRBASE/COUNTRY")
 	country.Component.DefaultJSON = []byte(`""`)
 	pkg := &model.Package{
-		Manifest: model.Manifest{ID: "TRS", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRBASE"}, {ID: "TRFIN"}}},
+		Manifest: model.Manifest{ID: "TRS", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRBASE"}, {ID: "TRDEMOFIN"}}},
 		Structures: []model.Structure{
 			{Name: "/TRS/ADDRESS", Texts: en, Elements: []model.Element{elem("STREET", model.TypeDomain, "/TRBASE/TEXT"), country}},
 			{Name: "/TRS/GROUP", Texts: en, Elements: []model.Element{elem("SEAT", model.TypeStructure, "/TRS/ADDRESS"),
@@ -45,13 +45,13 @@ func schema(t *testing.T) *model.Schema {
 		ArrayTypes: []model.ArrayType{{Name: "/TRS/SITE_ARRAY", Texts: en, Row: model.TypeRef{Kind: model.TypeStructure, Name: "/TRS/SITES"},
 			Key: &model.ArrayKey{Fields: []string{"SITE_ID"}}}},
 		Tables: []model.Table{{Name: "/TRS/SITES", TenantSpecific: true, DataClass: model.Application,
-			Fields:   []model.Field{{Name: "SITE_ID", LocalName: "SITE_ID", Origin: model.OriginTable, DataElement: model.Some("/TRFIN/COMPANY")}},
+			Fields:   []model.Field{{Name: "SITE_ID", LocalName: "SITE_ID", Origin: model.OriginTable, DataElement: model.Some("/TRDEMOFIN/COMPANY")}},
 			Includes: []model.TableInclude{{Name: "/TRS/ADDRESS", After: 1}}, PrimaryKey: []string{"SITE_ID"}}},
 	}
 	ext := &model.Package{Manifest: model.Manifest{ID: "TRX", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRS"}, {ID: "TRBASE"}}},
 		StructureExtensions: []model.StructureExtension{{Structure: "/TRS/ADDRESS",
 			Components: []model.Component{{Name: "/TRX/PICKUP", Type: model.TypeRef{Kind: model.TypeDomain, Name: "/TRBASE/TEXT"}}}}}}
-	s := testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRFIN"), pkg, ext)
+	s := testutil.AddPackages(t, testutil.KernelSchema(t), testutil.Example(t, "TRBASE"), testutil.Example(t, "TRDEMOFIN"), pkg, ext)
 	if err := validate.Schema(s, validate.Options{}); err != nil {
 		t.Fatal(err)
 	}

@@ -51,9 +51,9 @@ func TestKernelPackagesFromBinaryOnly(t *testing.T) {
 		if _, err := k.Uninstall(ctx, "TRBASE", kernel.Options{Confirm: true}); !errors.As(err, &kp) {
 			t.Errorf("uninstall: %v", err)
 		}
-		fake := testutil.Example(t, "TRFIN")
+		fake := testutil.Example(t, "TRDEMOFIN")
 		fake.Manifest.KernelPackage = true
-		if _, err := k.Install(ctx, []*model.Package{fake}, kernel.Options{}); !errors.As(err, &kp) || kp.Package != "TRFIN" {
+		if _, err := k.Install(ctx, []*model.Package{fake}, kernel.Options{}); !errors.As(err, &kp) || kp.Package != "TRDEMOFIN" {
 			t.Errorf("a package marked as kernel package: %v", err)
 		}
 		dir := testutil.CopyExample(t, "TRBASE")
@@ -75,7 +75,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 				t.Fatal(err)
 			}
 			initialized(t, k)
-			if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+			if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 				t.Fatal(err)
 			}
 			gen := generation(t, k)
@@ -93,7 +93,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 				t.Fatalf("TRBASE was not upgraded: %s", s.Packages["TRBASE"].Manifest.Version)
 			}
 			if g := generation(t, k); g <= gen {
-				t.Errorf("TRFIN was not compiled again: generation %d -> %d", gen, g)
+				t.Errorf("TRDEMOFIN was not compiled again: generation %d -> %d", gen, g)
 			}
 			log, _ := k.Log(ctx)
 			upgraded := false
@@ -107,7 +107,7 @@ func TestKernelPackageUpgradeOnOpen(t *testing.T) {
 			}
 			k.Close()
 
-			// A TRBASE without the domain the code of TRFIN uses.
+			// A TRBASE without the domain the code of TRDEMOFIN uses.
 			broken := testutil.Example(t, "TRBASE")
 			broken.Manifest.Version = "60.1.0"
 			for i, d := range broken.DataElements {

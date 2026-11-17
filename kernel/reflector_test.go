@@ -39,11 +39,11 @@ func TestReflector(t *testing.T) {
 		if _, err := k.Install(ctx, examples(t), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		o, err := k.AuthorizationObject(ctx, "/TRFIN/COMPANY")
+		o, err := k.AuthorizationObject(ctx, "/TRDEMOFIN/COMPANY")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if o.Package != "TRFIN" || o.Texts["de"].Label != "Stammdaten Firma" || o.Texts["en"].Description != model.Some("Reading and changing companies by company and country") ||
+		if o.Package != "TRDEMOFIN" || o.Texts["de"].Label != "Stammdaten Firma" || o.Texts["en"].Description != model.Some("Reading and changing companies by company and country") ||
 			len(o.Fields) != 3 || len(o.Activities) != 5 || o.Activities[4].Code != "EXPORT" || o.Activities[4].Texts["de"].Label != "Exportieren" {
 			t.Fatalf("object: %+v", o)
 		}
@@ -57,7 +57,7 @@ func TestReflector(t *testing.T) {
 			act.Length != model.Some(16) || len(act.Values) != 5 || act.Values[0].Value != "READ" || act.Values[0].Texts["de"].Label != "Lesen" {
 			t.Errorf("ACTIVITY: %+v", act)
 		}
-		status, err := k.AuthorizationObject(ctx, "/TRFIN/STATUS_SCOPE")
+		status, err := k.AuthorizationObject(ctx, "/TRDEMOFIN/STATUS_SCOPE")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -69,14 +69,14 @@ func TestReflector(t *testing.T) {
 			t.Errorf("STATUS_SCOPE: %+v", status)
 		}
 		var nf *rterr.NotFound
-		if _, err := k.AuthorizationObject(ctx, "/TRFIN/NOPE"); !errors.As(err, &nf) {
+		if _, err := k.AuthorizationObject(ctx, "/TRDEMOFIN/NOPE"); !errors.As(err, &nf) {
 			t.Errorf("unknown object: %v", err)
 		}
-		list, err := k.AuthorizationObjects(ctx, "TRFIN")
-		if err != nil || len(list) != 2 || list[0].Name != "/TRFIN/COMPANY" || list[1].Name != "/TRFIN/STATUS_SCOPE" {
-			t.Errorf("objects of TRFIN: %v %v", list, err)
+		list, err := k.AuthorizationObjects(ctx, "TRDEMOFIN")
+		if err != nil || len(list) != 2 || list[0].Name != "/TRDEMOFIN/COMPANY" || list[1].Name != "/TRDEMOFIN/STATUS_SCOPE" {
+			t.Errorf("objects of TRDEMOFIN: %v %v", list, err)
 		}
-		if all, err := k.AuthorizationObjects(ctx, ""); err != nil || len(all) != 10 || all[9].Name != "/TROTTO/MARKETPLACE" {
+		if all, err := k.AuthorizationObjects(ctx, ""); err != nil || len(all) != 10 || all[9].Name != "/TRDEMOOTTO/MARKETPLACE" {
 			t.Errorf("all objects: %v %v", all, err)
 		}
 		acts, err := k.Activities(ctx)
@@ -87,7 +87,7 @@ func TestReflector(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		testutil.Golden(t, "reflector-TRFIN-COMPANY.json", string(b)+"\n")
+		testutil.Golden(t, "reflector-TRDEMOFIN-COMPANY.json", string(b)+"\n")
 	})
 }
 
@@ -103,7 +103,7 @@ func TestReflectorLanguages(t *testing.T) {
 			t.Errorf("activities in English only: %v %v", acts, err)
 		}
 		var ni *rterr.NotInstalled
-		if _, err := k.AuthorizationObjects(ctx, "TRFIN"); !errors.As(err, &ni) {
+		if _, err := k.AuthorizationObjects(ctx, "TRDEMOFIN"); !errors.As(err, &ni) {
 			t.Errorf("objects of a package not installed: %v", err)
 		}
 	})
@@ -134,7 +134,7 @@ func TestReflectorInCode(t *testing.T) {
 			}
 			return out
 		}
-		const R, F = "/TRREFL/READER", "/TRFIN/COMPANY_AUTHORIZATION"
+		const R, F = "/TRREFL/READER", "/TRDEMOFIN/COMPANY_AUTHORIZATION"
 		if got := run("de", F, "FIELDS"); got != `["COMPANY_ID: Firma","COUNTRY: Land","ACTIVITY: Aktivität"]` {
 			t.Errorf("FIELDS in German = %s", got)
 		}
@@ -166,16 +166,16 @@ func TestReflectorInCode(t *testing.T) {
 			}
 			ACTIVITY_CODES []string
 		}
-		if err := json.Unmarshal([]byte(run("de", R, "OBJECT", `"/TRFIN/COMPANY"`)), &o); err != nil {
+		if err := json.Unmarshal([]byte(run("de", R, "OBJECT", `"/TRDEMOFIN/COMPANY"`)), &o); err != nil {
 			t.Fatal(err)
 		}
 		act := o.FIELDS[2]
-		if o.PACKAGE_ID != "TRFIN" || *o.LABEL != "Stammdaten Firma" || !act.IS_ACTIVITY || *act.DATA_ELEMENT != "/RT/ACTIVITY" || *act.LENGTH != 16 ||
+		if o.PACKAGE_ID != "TRDEMOFIN" || *o.LABEL != "Stammdaten Firma" || !act.IS_ACTIVITY || *act.DATA_ELEMENT != "/RT/ACTIVITY" || *act.LENGTH != 16 ||
 			act.VALUES[0].VALUE != "READ" || *act.VALUES[0].DESCRIPTION != "Lesen" || *o.ACTIVITIES[1].LABEL != "Anlegen" || len(o.ACTIVITY_CODES) != 5 {
 			t.Errorf("object in German: %+v", o)
 		}
 		// Missing texts are null: no German text, no description, a domain field without labels.
-		if err := json.Unmarshal([]byte(run("de", R, "OBJECT", `"/TRFIN/STATUS_SCOPE"`)), &o); err != nil {
+		if err := json.Unmarshal([]byte(run("de", R, "OBJECT", `"/TRDEMOFIN/STATUS_SCOPE"`)), &o); err != nil {
 			t.Fatal(err)
 		}
 		status := o.FIELDS[0]
@@ -183,22 +183,22 @@ func TestReflectorInCode(t *testing.T) {
 			len(status.VALUES) != 3 || *status.VALUES[1].NAME != "BLOCKED" || len(o.ACTIVITIES) != 0 {
 			t.Errorf("object without German texts: %+v", o)
 		}
-		if got := run("en", R, "OBJECT", `"/TRFIN/NOPE"`); got != "/TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND: authorization object /TRFIN/NOPE does not exist" {
+		if got := run("en", R, "OBJECT", `"/TRDEMOFIN/NOPE"`); got != "/TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND: authorization object /TRDEMOFIN/NOPE does not exist" {
 			t.Errorf("unknown object: %s", got)
 		}
-		if run("en", R, "EXISTS", `"/TRFIN/COMPANY"`) != "true" || run("en", R, "EXISTS", `"/TRFIN/NOPE"`) != "false" {
+		if run("en", R, "EXISTS", `"/TRDEMOFIN/COMPANY"`) != "true" || run("en", R, "EXISTS", `"/TRDEMOFIN/NOPE"`) != "false" {
 			t.Error("EXISTS")
 		}
-		if got := run("en", R, "NAMES", `"TROTTO"`); got != `["/TROTTO/MARKETPLACE"]` {
-			t.Errorf("objects of TROTTO: %s", got)
+		if got := run("en", R, "NAMES", `"TRDEMOOTTO"`); got != `["/TRDEMOOTTO/MARKETPLACE"]` {
+			t.Errorf("objects of TRDEMOOTTO: %s", got)
 		}
-		if got := run("en", R, "NAMES", "null"); got != `["/TRBASE/CONFIGURATION","/TRBASE/HTTP_SERVICE","/TRBASE/NUMBER_RANGE","/TRBASE/ODATA_SERVICE","/TRBASE/ROLE_ADMIN","/TRBASE/ROLE_ASSIGNMENT","/TRBASE/USER_ADMIN","/TRFIN/COMPANY","/TRFIN/STATUS_SCOPE","/TROTTO/MARKETPLACE"]` {
+		if got := run("en", R, "NAMES", "null"); got != `["/TRBASE/CONFIGURATION","/TRBASE/HTTP_SERVICE","/TRBASE/NUMBER_RANGE","/TRBASE/ODATA_SERVICE","/TRBASE/ROLE_ADMIN","/TRBASE/ROLE_ASSIGNMENT","/TRBASE/USER_ADMIN","/TRDEMOFIN/COMPANY","/TRDEMOFIN/STATUS_SCOPE","/TRDEMOOTTO/MARKETPLACE"]` {
 			t.Errorf("all objects: %s", got)
 		}
-		if got := run("en", R, "CODES", `"/TRFIN/COMPANY"`); got != `"true false 5"` {
+		if got := run("en", R, "CODES", `"/TRDEMOFIN/COMPANY"`); got != `"true false 5"` {
 			t.Errorf("CODES: %s", got)
 		}
-		if got := run("en", R, "OTTO"); got != `"TROTTO"` {
+		if got := run("en", R, "OTTO"); got != `"TRDEMOOTTO"` {
 			t.Errorf("object of a package not required: %s", got)
 		}
 		var acts []struct{ CODE, LABEL, DESCRIPTION string }
@@ -218,22 +218,22 @@ func TestReflectorLiterals(t *testing.T) {
 		if _, err := k.Install(ctx, examples(t), kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		uses, err := k.CodeUses(ctx, "/TRFIN/COMPANY")
+		uses, err := k.CodeUses(ctx, "/TRDEMOFIN/COMPANY")
 		found := false
 		for _, u := range uses {
-			found = found || u.Kind == "authorization-object" && u.Package == "TRFIN"
+			found = found || u.Kind == "authorization-object" && u.Package == "TRDEMOFIN"
 		}
 		if err != nil || !found {
-			t.Fatalf("uses of /TRFIN/COMPANY: %+v %v", uses, err)
+			t.Fatalf("uses of /TRDEMOFIN/COMPANY: %+v %v", uses, err)
 		}
 		dir := t.TempDir()
-		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRUSEA", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRFIN" }] }`))
-		testutil.WriteFile(t, dir, "src/USE.class", []byte("public class /TRUSEA/USE\n\n  public static method M() raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND\n    var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT(\"/TRFIN/NOPE\")\n  end\n\nend\n"))
+		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRUSEA", "version": "1.0.0", "languageVersion": 1, "requires": [{ "id": "TRBASE" }, { "id": "TRDEMOFIN" }] }`))
+		testutil.WriteFile(t, dir, "src/USE.class", []byte("public class /TRUSEA/USE\n\n  public static method M() raises /TRBASE/AUTHORIZATION_OBJECT_NOT_FOUND\n    var obj = /TRBASE/REFLECTOR.AUTHORIZATION_OBJECT(\"/TRDEMOFIN/NOPE\")\n  end\n\nend\n"))
 		var ce *rterr.CompileError
-		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{}); !errors.As(err, &ce) || !strings.Contains(err.Error(), "authorization object /TRFIN/NOPE does not exist") {
+		if _, err := k.Install(ctx, []*model.Package{testutil.LoadDir(t, dir)}, kernel.Options{}); !errors.As(err, &ce) || !strings.Contains(err.Error(), "authorization object /TRDEMOFIN/NOPE does not exist") {
 			t.Errorf("unknown object with a literal: %v", err)
 		}
-		fin := testutil.CopyExample(t, "TRFIN")
+		fin := testutil.CopyExample(t, "TRDEMOFIN")
 		for _, f := range []string{"authorization-objects/COMPANY.json", "roles/COMPANY_CLERK.json", "roles/COMPANY_ADMIN.json"} {
 			if err := os.Remove(filepath.Join(fin, "schema", filepath.FromSlash(f))); err != nil {
 				t.Fatal(err)
@@ -242,8 +242,8 @@ func TestReflectorLiterals(t *testing.T) {
 		pkg := testutil.LoadDir(t, fin)
 		pkg.Manifest.Version = "1.1.0"
 		_, err = k.Upgrade(ctx, pkg, kernel.Options{AllowDestructive: true})
-		// The role of TROTTO and the business object of TRFIN need it as well.
-		if err == nil || !strings.Contains(err.Error(), "authorization object /TRFIN/COMPANY does not exist") {
+		// The role of TRDEMOOTTO and the business object of TRDEMOFIN need it as well.
+		if err == nil || !strings.Contains(err.Error(), "authorization object /TRDEMOFIN/COMPANY does not exist") {
 			t.Errorf("upgrade without the object: %v", err)
 		}
 	})

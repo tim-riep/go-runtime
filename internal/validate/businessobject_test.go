@@ -56,7 +56,7 @@ func boPackage() model.Package {
 				Validations: []model.Validation{{Name: "CHECK_NAME", Trigger: model.Trigger{On: []model.EntityOperation{model.OperationUpdate},
 					Fields: []string{"NAME"}}}},
 				Actions: []model.Action{{Name: "CLOSE", Instance: true, Parameter: model.Some("/TRBASE/ADDRESS"), Result: model.Some(model.ResultSelf), Modifies: true}},
-				Authorization: &model.EntityAuthorization{Object: "/TRFIN/COMPANY", Fields: map[string]string{"COMPANY_ID": "ORDER_ID", "COUNTRY": "NAME"},
+				Authorization: &model.EntityAuthorization{Object: "/TRDEMOFIN/COMPANY", Fields: map[string]string{"COMPANY_ID": "ORDER_ID", "COUNTRY": "NAME"},
 					Activities: map[string]string{"read": "READ", "create": "CREATE", "update": "UPDATE", "delete": "DELETE", "CLOSE": "UPDATE"}}},
 			{Table: "/TRS/ITEMS", Parent: model.Some("/TRS/ORDERS"), ForeignKey: model.Some("ORDER"), Operations: all, Numbering: model.NumberingExternal,
 				Fields: map[string]model.FieldProperties{}},
@@ -108,9 +108,9 @@ func TestBusinessObjectRules(t *testing.T) {
 		contains string
 	}{
 		{"table of another package", func(_ *model.Package, b *model.BusinessObject) {
-			b.Entities = append(b.Entities, model.Entity{Table: "/TRFIN/BANK_ACCOUNTS", Parent: model.Some("/TRS/ORDERS"), ForeignKey: model.Some("COMPANY"),
+			b.Entities = append(b.Entities, model.Entity{Table: "/TRDEMOFIN/BANK_ACCOUNTS", Parent: model.Some("/TRS/ORDERS"), ForeignKey: model.Some("COMPANY"),
 				Numbering: model.NumberingExternal})
-		}, "table /TRFIN/BANK_ACCOUNTS belongs to TRFIN; the entities of a business object are tables of its own package"},
+		}, "table /TRDEMOFIN/BANK_ACCOUNTS belongs to TRDEMOFIN; the entities of a business object are tables of its own package"},
 		{"foreign key to another table", func(p *model.Package, b *model.BusinessObject) {
 			entity(b, "/TRS/ITEMS").Parent = model.Some("/TRS/NOTES")
 		}, "the foreign key ORDER references /TRS/ORDERS, not the parent /TRS/NOTES"},
@@ -156,16 +156,16 @@ func TestBusinessObjectRules(t *testing.T) {
 		}, "fields trigger on update, which is not among the operations"},
 		{"authorization with an unknown field", func(_ *model.Package, b *model.BusinessObject) {
 			entity(b, "/TRS/ORDERS").Authorization.Fields["REGION"] = "NAME"
-		}, "REGION is no field of /TRFIN/COMPANY that an entity field gives"},
+		}, "REGION is no field of /TRDEMOFIN/COMPANY that an entity field gives"},
 		{"authorization field missing", func(_ *model.Package, b *model.BusinessObject) {
 			delete(entity(b, "/TRS/ORDERS").Authorization.Fields, "COUNTRY")
-		}, "the field COUNTRY of /TRFIN/COMPANY needs a field of /TRS/ORDERS"},
+		}, "the field COUNTRY of /TRDEMOFIN/COMPANY needs a field of /TRS/ORDERS"},
 		{"authorization with an unknown entity field", func(_ *model.Package, b *model.BusinessObject) {
 			entity(b, "/TRS/ORDERS").Authorization.Fields["COUNTRY"] = "NOPE"
 		}, "NOPE is no field of /TRS/ORDERS"},
 		{"activity not allowed", func(_ *model.Package, b *model.BusinessObject) {
 			entity(b, "/TRS/ORDERS").Authorization.Activities["CLOSE"] = "APPROVE"
-		}, "/TRFIN/COMPANY does not allow the activity APPROVE; it allows READ, CREATE, UPDATE, DELETE, EXPORT"},
+		}, "/TRDEMOFIN/COMPANY does not allow the activity APPROVE; it allows READ, CREATE, UPDATE, DELETE, EXPORT"},
 		{"activity missing", func(_ *model.Package, b *model.BusinessObject) {
 			delete(entity(b, "/TRS/ORDERS").Authorization.Activities, "read")
 		}, "the activity for read is missing"},

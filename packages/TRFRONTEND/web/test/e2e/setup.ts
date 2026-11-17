@@ -14,7 +14,7 @@
 
 
 // Sets up go-runtime for the browser tests as the README describes: a new
-// SQLite database, TRUI, the built TRFRONTEND, TRFIN, TROTTO and their UI
+// SQLite database, TRUI, the built TRFRONTEND, TRDEMOFIN, TRDEMOOTTO and their UI
 // packages, active nodes and services, the users clara and admin, and
 // rt serve on a free port. TRUI comes from TRUI_PACKAGE, a directory or ZIP
 // of the package (the release asset of tim-riep/trui).
@@ -58,14 +58,14 @@ export async function setup(project: TestProject) {
   const run = (args: string[], input?: string) => execFileSync(rt, args, { cwd: repo, env, input, stdio: ['pipe', 'pipe', 'inherit'] });
   run(['init', '--admin', 'admin', '--tenant', 'ACME'], 'secret\n');
   run(['language', 'add', 'de']);
-  run(['install', trui, pkg, join(examples, 'TRFIN'), join(examples, 'TROTTO'), join(examples, 'TRFINUI'), join(examples, 'TROTTOUI'), '--yes']);
+  run(['install', trui, pkg, join(examples, 'TRDEMOFIN'), join(examples, 'TRDEMOOTTO'), join(examples, 'TRDEMOFINUI'), join(examples, 'TRDEMOOTTOUI'), '--yes']);
   for (const node of ['/trui', '/trfrontend']) run(['http', 'activate', node]);
-  for (const service of ['/TRFIN/COMPANY_SERVICE', '/TRFRONTEND/CONFIGURATION_SERVICE']) run(['service', 'activate', service]);
+  for (const service of ['/TRDEMOFIN/COMPANY_SERVICE', '/TRFRONTEND/CONFIGURATION_SERVICE']) run(['service', 'activate', service]);
   run(['user', 'create', 'clara', '--tenant', 'ACME'], 'secret\n');
-  for (const role of ['/TRFRONTEND/USER', '/TRFIN/COMPANY_CLERK', '/TRFIN/COMPANY_ADMIN', '/TRFIN/ODATA_USER']) run(['role', 'assign', 'clara', role, '--tenant', 'ACME']);
+  for (const role of ['/TRFRONTEND/USER', '/TRDEMOFIN/COMPANY_CLERK', '/TRDEMOFIN/COMPANY_ADMIN', '/TRDEMOFIN/ODATA_USER']) run(['role', 'assign', 'clara', role, '--tenant', 'ACME']);
   run(['role', 'assign', 'admin', '/TRFRONTEND/ADMINISTRATOR', '--tenant', 'ACME']);
   for (const [code, country] of [['DE', 'Germany'], ['AT', 'Austria']]) {
-    run(['run', 'TRFIN', '/TRFIN/COMPANY_SERVICE', 'ADD_COUNTRY', JSON.stringify([code, country]), '--tenant', 'ACME', '--user', 'admin']);
+    run(['run', 'TRDEMOFIN', '/TRDEMOFIN/COMPANY_SERVICE', 'ADD_COUNTRY', JSON.stringify([code, country]), '--tenant', 'ACME', '--user', 'admin']);
   }
 
   const port = await freePort();

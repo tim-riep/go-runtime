@@ -86,16 +86,16 @@ func TestParseJSON(t *testing.T) {
 }
 
 func TestGeneratedName(t *testing.T) {
-	short := "/TRFIN/COMPANIES#FK#COUNTRY"
+	short := "/TRDEMOFIN/COMPANIES#FK#COUNTRY"
 	if GeneratedName(short) != short {
 		t.Fatal("short names must stay unchanged")
 	}
-	long := "/TRFIN/BANK_ACCOUNT_STATEMENT_LINES#FK#/TROTTO/STATEMENT_LINE_ORIGIN_SHOP"
+	long := "/TRDEMOFIN/BANK_ACCOUNT_STATEMENT_LINES#FK#/TRDEMOOTTO/STATEMENT_LINE_ORIGIN_SHOP"
 	g := GeneratedName(long)
 	if len(g) != MaxIdentifierBytes || g[:52] != long[:52] || g[52] != '~' || GeneratedName(long) != g {
 		t.Fatalf("generated %q", g)
 	}
-	other := "/TRFIN/BANK_ACCOUNT_STATEMENT_LINES#FK#/TROTTO/STATEMENT_LINE_ORIGIN_SHIP"
+	other := "/TRDEMOFIN/BANK_ACCOUNT_STATEMENT_LINES#FK#/TRDEMOOTTO/STATEMENT_LINE_ORIGIN_SHIP"
 	if GeneratedName(other) == g {
 		t.Fatal("names with the same prefix must differ")
 	}

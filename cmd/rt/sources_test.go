@@ -53,8 +53,8 @@ func publishExample(t *testing.T, srv *fakegithub.Server, name, repo, tag, versi
 	}
 }
 
-// TestSourceCommands installs TROTTO from one repository with TRFIN from
-// another as its dependency, lists outdated packages, upgrades TRFIN,
+// TestSourceCommands installs TRDEMOOTTO from one repository with TRDEMOFIN from
+// another as its dependency, lists outdated packages, upgrades TRDEMOFIN,
 // installs the lock into a second database and uninstalls.
 func TestSourceCommands(t *testing.T) {
 	for _, db := range testutil.Databases(t) {
@@ -69,12 +69,12 @@ func TestSourceCommands(t *testing.T) {
 			t.Cleanup(func() { newSources = old })
 			input = strings.NewReader("")
 			h := srv.Host()
-			publishExample(t, srv, "TRFIN", "tim-riep/trfin", "v1.0.0", "1.0.0", true, nil)
-			publishExample(t, srv, "TROTTO", "tim-riep/trotto", "v1.0.0", "1.0.0", false, func(m string) string {
-				return strings.Replace(m, `"id": "TRFIN",
-      "version": ">=1.0.0"`, `"id": "TRFIN",
+			publishExample(t, srv, "TRDEMOFIN", "tim-riep/trdemofin", "v1.0.0", "1.0.0", true, nil)
+			publishExample(t, srv, "TRDEMOOTTO", "tim-riep/trdemootto", "v1.0.0", "1.0.0", false, func(m string) string {
+				return strings.Replace(m, `"id": "TRDEMOFIN",
+      "version": ">=1.0.0"`, `"id": "TRDEMOFIN",
       "version": "^1.0",
-      "source": "`+h+`/tim-riep/trfin"`, 1)
+      "source": "`+h+`/tim-riep/trdemofin"`, 1)
 			})
 			lock := filepath.Join(t.TempDir(), "rt.lock")
 			db2 := testutil.Another(t, db).DSN
@@ -86,13 +86,13 @@ func TestSourceCommands(t *testing.T) {
 			}{
 				{db.DSN, []string{"init"}, exitOK, ""},
 				{db.DSN, []string{"language", "add", "de"}, exitOK, ""},
-				{db.DSN, []string{"install", h + "/tim-riep/trotto", "--dry-run"}, exitOK, "TRFIN 1.0.0 from " + h + "/tim-riep/trfin, tag v1.0.0"},
-				{db.DSN, []string{"install", h + "/tim-riep/trotto"}, exitNeedsPermit, "rerun with --yes"},
-				{db.DSN, []string{"install", h + "/tim-riep/trotto", "--yes"}, exitOK, "Executed"},
-				{db.DSN, []string{"show", "TROTTO"}, exitOK, "origin: " + h + "/tim-riep/trotto, archive, tag v1.0.0"},
-				{db.DSN, []string{"show", "TROTTO"}, exitOK, `requires TRFIN "^1.0" from ` + h + "/tim-riep/trfin"},
-				{db.DSN, []string{"show", "TRFIN"}, exitOK, "asset TRFIN-1.0.0.zip"},
-				{db.DSN, []string{"outdated"}, exitOK, "TRFIN     1.0.0      1.0.0     1.0.0"},
+				{db.DSN, []string{"install", h + "/tim-riep/trdemootto", "--dry-run"}, exitOK, "TRDEMOFIN 1.0.0 from " + h + "/tim-riep/trdemofin, tag v1.0.0"},
+				{db.DSN, []string{"install", h + "/tim-riep/trdemootto"}, exitNeedsPermit, "rerun with --yes"},
+				{db.DSN, []string{"install", h + "/tim-riep/trdemootto", "--yes"}, exitOK, "Executed"},
+				{db.DSN, []string{"show", "TRDEMOOTTO"}, exitOK, "origin: " + h + "/tim-riep/trdemootto, archive, tag v1.0.0"},
+				{db.DSN, []string{"show", "TRDEMOOTTO"}, exitOK, `requires TRDEMOFIN "^1.0" from ` + h + "/tim-riep/trdemofin"},
+				{db.DSN, []string{"show", "TRDEMOFIN"}, exitOK, "asset TRDEMOFIN-1.0.0.zip"},
+				{db.DSN, []string{"outdated"}, exitOK, "TRDEMOFIN     1.0.0      1.0.0     1.0.0"},
 			} {
 				var out, errOut bytes.Buffer
 				code := run(context.Background(), append([]string{"--db", s.dsn}, s.args...), &out, &errOut)
@@ -101,26 +101,26 @@ func TestSourceCommands(t *testing.T) {
 					t.Fatalf("rt %s: exit %d (want %d), output:\n%s", strings.Join(s.args, " "), code, s.code, all)
 				}
 			}
-			publishExample(t, srv, "TRFIN", "tim-riep/trfin", "v1.1.0", "1.1.0", false, nil)
-			publishExample(t, srv, "TRFIN", "tim-riep/trfin", "v2.0.0", "2.0.0", false, nil)
+			publishExample(t, srv, "TRDEMOFIN", "tim-riep/trdemofin", "v1.1.0", "1.1.0", false, nil)
+			publishExample(t, srv, "TRDEMOFIN", "tim-riep/trdemofin", "v2.0.0", "2.0.0", false, nil)
 			for _, s := range []struct {
 				dsn      string
 				args     []string
 				code     int
 				contains string
 			}{
-				{db.DSN, []string{"outdated"}, exitOK, "TRFIN *   1.0.0      1.1.0     2.0.0"},
-				{db.DSN, []string{"upgrade", "TRFIN", "--yes"}, exitOK, "upgrade"},
-				{db.DSN, []string{"show", "TRFIN"}, exitOK, "archive, tag v1.1.0"},
-				{db.DSN, []string{"upgrade", "TRFIN", "--yes"}, exitOK, "TRFIN 1.1.0 is up to date."},
-				{db.DSN, []string{"upgrade", "TRFIN@v2.0.0", "--yes"}, exitError, "matching ^1.0 and =2.0.0"},
+				{db.DSN, []string{"outdated"}, exitOK, "TRDEMOFIN *   1.0.0      1.1.0     2.0.0"},
+				{db.DSN, []string{"upgrade", "TRDEMOFIN", "--yes"}, exitOK, "upgrade"},
+				{db.DSN, []string{"show", "TRDEMOFIN"}, exitOK, "archive, tag v1.1.0"},
+				{db.DSN, []string{"upgrade", "TRDEMOFIN", "--yes"}, exitOK, "TRDEMOFIN 1.1.0 is up to date."},
+				{db.DSN, []string{"upgrade", "TRDEMOFIN@v2.0.0", "--yes"}, exitError, "matching ^1.0 and =2.0.0"},
 				{db.DSN, []string{"export", "lock", "-o", lock}, exitOK, "Lock of 2 packages"},
 				{db2, []string{"init"}, exitOK, ""},
 				{db2, []string{"language", "add", "de"}, exitOK, ""},
 				{db2, []string{"install", "--lock", lock, "--yes"}, exitOK, "Executed"},
-				{db2, []string{"show", "TRFIN"}, exitOK, "tag v1.1.0"},
-				{db.DSN, []string{"uninstall", "TROTTO", "--yes"}, exitOK, "Executed"},
-				{db.DSN, []string{"uninstall", "TRFIN", "--yes"}, exitOK, "Executed"},
+				{db2, []string{"show", "TRDEMOFIN"}, exitOK, "tag v1.1.0"},
+				{db.DSN, []string{"uninstall", "TRDEMOOTTO", "--yes"}, exitOK, "Executed"},
+				{db.DSN, []string{"uninstall", "TRDEMOFIN", "--yes"}, exitOK, "Executed"},
 				{db.DSN, []string{"outdated"}, exitOK, "No packages from sources."},
 			} {
 				var out, errOut bytes.Buffer
@@ -135,4 +135,6 @@ func TestSourceCommands(t *testing.T) {
 }
 
 // norm collapses runs of spaces, so that column widths do not matter.
-func norm(s string) string { return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return r == ' ' }), " ") }
+func norm(s string) string {
+	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return r == ' ' }), " ")
+}

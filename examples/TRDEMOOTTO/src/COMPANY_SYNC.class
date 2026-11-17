@@ -1,0 +1,59 @@
+# Gives the companies of a country that have no partner ID on OTTO one
+# through the action /TRDEMOOTTO/SYNC of the business object /TRDEMOFIN/COMPANY,
+# which checks the authorization of the user for the country, and writes a
+# line to the audit log in a session of its own, which stays even if the
+# sync is rolled back.
+public class /TRDEMOOTTO/COMPANY_SYNC
+
+  public static method SYNC(country: /TRDEMOFIN/COUNTRY_CODE) returns INT8
+    var audit = open session
+    var keys: array of key of /TRDEMOFIN/COMPANIES = []
+    for company in select from /TRDEMOFIN/COMPANIES where COUNTRY = country and /TRDEMOOTTO/OTTO_ID is null
+      var key: key of /TRDEMOFIN/COMPANIES
+      key.COMPANY_ID = company.COMPANY_ID
+      keys.APPEND(key)
+    end
+    modify business object /TRDEMOFIN/COMPANY
+      execute /TRDEMOFIN/COMPANIES./TRDEMOOTTO/SYNC keys keys into synced
+    end
+    var count = synced.LENGTH()
+
+    var entry: /TRBASE/AUDIT_LOG
+    entry.LOG_ID = UUID.RANDOM()
+    entry.TEXT = "Synced {count} companies for {country}"
+    insert entry using audit
+    commit audit
+
+    if count > 1000
+      rollback business objects
+      return 0
+    end
+    return count
+  end
+
+  # Connects a company to OTTO through a sales channel: it gets its
+  # partner ID if it has none and the channel below it.
+  public static method CONNECT(id: /TRDEMOFIN/COMPANY, channel: STRING) returns /TRBASE/ENTITY_RESULT
+    var companies: array of key of /TRDEMOFIN/COMPANIES = []
+    var key: key of /TRDEMOFIN/COMPANIES
+    key.COMPANY_ID = id
+    companies.APPEND(key)
+    var channels: array of /TRDEMOOTTO/COMPANY_CHANNELS = []
+    var row: /TRDEMOOTTO/COMPANY_CHANNELS
+    row.COMPANY_ID = id
+    row.CHANNEL = channel
+    channels.APPEND(row)
+    modify business object /TRDEMOFIN/COMPANY
+      execute /TRDEMOFIN/COMPANIES./TRDEMOOTTO/SYNC keys companies
+      create /TRDEMOOTTO/COMPANY_CHANNELS by parent fields (CHANNEL) from channels
+      result outcome
+    end
+    if outcome.FAILURES is not empty
+      rollback business objects
+      return outcome
+    end
+    commit business objects result saved
+    return saved
+  end
+
+end

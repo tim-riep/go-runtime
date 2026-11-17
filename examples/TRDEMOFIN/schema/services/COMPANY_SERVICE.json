@@ -1,0 +1,14 @@
+{
+  "name": "/TRDEMOFIN/COMPANY_SERVICE",
+  "description": { "en": "Companies", "de": "Firmen" },
+  "entitySets": {
+    "Companies": {
+      "businessObject": "/TRDEMOFIN/COMPANY",
+      "entity": "/TRDEMOFIN/COMPANIES",
+      "navigations": { "COUNTRY": "Country" }
+    },
+    "Contacts": { "businessObject": "/TRDEMOFIN/COMPANY", "entity": "/TRDEMOFIN/CONTACTS" },
+    "Countries": { "businessObject": "/TRDEMOFIN/COUNTRY", "entity": "/TRDEMOFIN/COUNTRIES", "readOnly": true },
+    "ExchangeRates": { "table": "/TRDEMOFIN/EXCHANGE_RATES" }
+  }
+}

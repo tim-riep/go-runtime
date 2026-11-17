@@ -1,4 +1,4 @@
-public open class /TRFIN/LAYOUT extends /TRFIN/BASE
+public open class /TRDEMOFIN/LAYOUT extends /TRDEMOFIN/BASE
 
   public static attribute COUNT: INT8 = 0
   private attribute NAMES: map of STRING to array of STRING?
@@ -12,7 +12,7 @@ public open class /TRFIN/LAYOUT extends /TRFIN/BASE
     var m = ["a": 1, "b": 2]
     var e = [:]
     var n = new map of STRING to INT4
-    var o = new /TRFIN/ORDER_INFO(ID: "1", AMOUNT: 10.00)
+    var o = new /TRDEMOFIN/ORDER_INFO(ID: "1", AMOUNT: 10.00)
     var k = (a + b) * c mod 2 / d
     var g = x is not null and not (x is empty) or y = 1
     for i from 1 to 10 step 2
@@ -31,14 +31,14 @@ public open class /TRFIN/LAYOUT extends /TRFIN/BASE
     super.SHOW(x)
     list[1] = list[2] as INT8
     commit
-    include /TRFIN/STEPS if found
+    include /TRDEMOFIN/STEPS if found
 
     return "x"
   end
 
   public method N() returns INT4 executed by kernel
 
-  public constructor(a: INT4) raises /TRFIN/E
+  public constructor(a: INT4) raises /TRDEMOFIN/E
     super(a)
   end
 

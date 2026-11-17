@@ -1,0 +1,32 @@
+{
+  "name": "/TRDEMOFIN/COMPANY_ADMIN",
+  "texts": {
+    "en": { "label": "Company administrator", "description": "All activities on all companies" },
+    "de": { "label": "Administration Firma" }
+  },
+  "authorizations": [
+    {
+      "object": "/TRDEMOFIN/COMPANY",
+      "fields": {
+        "COMPANY_ID": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "*" }],
+        "ACTIVITY": [{ "pattern": "*" }]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [{ "pattern": "/TRDEMOFIN/*" }],
+        "DATA_CLASS": [{ "pattern": "*" }],
+        "ACTIVITY": [{ "pattern": "*" }]
+      }
+    },
+    {
+      "object": "/TRDEMOFIN/STATUS_SCOPE",
+      "fields": {
+        "STATUS": [{ "pattern": "*" }],
+        "COUNTRY": [{ "pattern": "*" }]
+      }
+    }
+  ]
+}

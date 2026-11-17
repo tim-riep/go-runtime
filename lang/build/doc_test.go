@@ -32,14 +32,14 @@ import (
 )
 
 // TestLanguageReference compiles every example of docs/language.md with
-// the example package TRORDER and runs the fragments as tests.
+// the example package TRDEMOORDER and runs the fragments as tests.
 func TestLanguageReference(t *testing.T) {
 	root := testutil.ModuleRoot(t)
 	doc, err := os.ReadFile(filepath.Join(root, "docs", "language.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	pkg, err := pkgload.Load(os.DirFS(filepath.Join(root, "examples", "TRORDER")), "TRORDER")
+	pkg, err := pkgload.Load(os.DirFS(filepath.Join(root, "examples", "TRDEMOORDER")), "TRDEMOORDER")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestLanguageReference(t *testing.T) {
 			for _, l := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
 				body.WriteString("    " + l + "\n")
 			}
-			name := fmt.Sprintf("/TRORDER/DOC_FRAGMENT_%d", fragments)
+			name := fmt.Sprintf("/TRDEMOORDER/DOC_FRAGMENT_%d", fragments)
 			text = "public test class " + name + "\n\n  public test method RUN()\n" + body.String() + "  end\n\nend\n"
 			out, errs := syntax.Format(where, text)
 			if len(errs) > 0 {
@@ -98,7 +98,7 @@ func TestLanguageReference(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	results, err := testrun.Run(context.Background(), image, "TRORDER", vm.Options{})
+	results, err := testrun.Run(context.Background(), image, "TRDEMOORDER", vm.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

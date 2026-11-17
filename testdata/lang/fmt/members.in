@@ -1,4 +1,4 @@
-members include /TRFIN/CHECKS   # helper members
+members include /TRDEMOFIN/CHECKS   # helper members
   private constant MIN: INT4 = 1
   private method CHECK(v: INT4) returns BOOL
     return v >= MIN

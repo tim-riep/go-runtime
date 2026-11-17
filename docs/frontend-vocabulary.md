@@ -11,13 +11,13 @@ them.
 ## UI annotations of a package
 
 A package that requires `TRFRONTEND` and the package of the business object ships
-`objects/TRFRONTEND/UI_ANNOTATIONS/<NAME>.json`, e.g. `examples/TRFINUI`:
+`objects/TRFRONTEND/UI_ANNOTATIONS/<NAME>.json`, e.g. `examples/TRDEMOFINUI`:
 
 ```json
 {
-  "name": "/TRFINUI/COMPANIES_UI",
+  "name": "/TRDEMOFINUI/COMPANIES_UI",
   "content": {
-    "ENTITY": "/TRFIN/COMPANIES",
+    "ENTITY": "/TRDEMOFIN/COMPANIES",
     "HEADER": { "TITLE_FIELD": "NAME", "SUBTITLE_FIELD": "COMPANY_ID",
                 "TEXTS": [{ "LANGUAGE": "en", "TYPE_NAME": "Company", "TYPE_NAME_PLURAL": "Companies" }] },
     "LIST": {
@@ -30,7 +30,7 @@ A package that requires `TRFRONTEND` and the package of the business object ship
       "SECTIONS": [
         { "ID": "GENERAL", "TEXTS": [{ "LANGUAGE": "en", "TITLE": "General" }],
           "GROUPS": [{ "ID": "MAIN", "FIELDS": [{ "FIELD": "COMPANY_ID" }, { "FIELD": "NAME" }] }] },
-        { "ID": "CONTACTS", "TEXTS": [{ "LANGUAGE": "en", "TITLE": "Contacts" }], "TABLE": { "ENTITY": "/TRFIN/CONTACTS" } }
+        { "ID": "CONTACTS", "TEXTS": [{ "LANGUAGE": "en", "TITLE": "Contacts" }], "TABLE": { "ENTITY": "/TRDEMOFIN/CONTACTS" } }
       ],
       "ACTIONS": [{ "ACTION": "BLOCK" }]
     }
@@ -61,8 +61,8 @@ packages; the first is the base. A later package adds:
 - actions at the end; a header, sort order or merged set only where the base has none.
 
 Sections and groups that a package adds carry its namespace in their ID, e.g.
-`/TROTTOUI/MARKETPLACE`. `examples/TROTTOUI` shows the partner ID of `TROTTO` this way in the
-list and the detail page of the companies of `TRFIN`.
+`/TRDEMOOTTOUI/MARKETPLACE`. `examples/TRDEMOOTTOUI` shows the partner ID of `TRDEMOOTTO` this way in the
+list and the detail page of the companies of `TRDEMOFIN`.
 
 ## Terms
 

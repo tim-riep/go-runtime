@@ -29,12 +29,12 @@ import (
 )
 
 // TestShippedHandlers runs the ping and asset handlers of TRBASE and the
-// company handlers of TRFIN.
+// company handlers of TRDEMOFIN.
 func TestShippedHandlers(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		ctx := context.Background()
 		initialized(t, k)
-		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRFIN")}, kernel.Options{}); err != nil {
+		if _, err := k.Install(ctx, []*model.Package{testutil.Example(t, "TRDEMOFIN")}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		for _, id := range []string{"ACME", "BETA"} {
@@ -45,12 +45,12 @@ func TestShippedHandlers(t *testing.T) {
 		if _, err := k.Users().Create(ctx, "anna", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
 		}
-		for _, role := range []string{"/TRFIN/SERVICE_USER", "/TRFIN/COMPANY_ADMIN"} {
+		for _, role := range []string{"/TRDEMOFIN/SERVICE_USER", "/TRDEMOFIN/COMPANY_ADMIN"} {
 			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
 				t.Fatal(err)
 			}
 		}
-		for _, p := range []string{"/trbase", "/trfin"} {
+		for _, p := range []string{"/trbase", "/trdemofin"} {
 			if err := k.ActivateHTTPService(ctx, p); err != nil {
 				t.Fatal(err)
 			}
@@ -94,58 +94,58 @@ func TestShippedHandlers(t *testing.T) {
 		}
 
 		// Companies: POST creates, GET lists the companies of the tenant.
-		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
-		a = c.do("POST", "/trfin/companies", anna, `{"COMPANY_ID":"C1","NAME":"Acme","COUNTRY":"DE","STATUS":"ACTIVE"}`)
+		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"DE"`, `"Germany"`)
+		a = c.do("POST", "/trdemofin/companies", anna, `{"COMPANY_ID":"C1","NAME":"Acme","COUNTRY":"DE","STATUS":"ACTIVE"}`)
 		if a.status != 201 || !strings.Contains(a.body, `"NAME":"Acme"`) {
 			t.Fatalf("POST: %d %s", a.status, a.body)
 		}
-		if a := c.do("POST", "/trfin/companies", anna, `{"NAME":1}`); a.status != 400 {
+		if a := c.do("POST", "/trdemofin/companies", anna, `{"NAME":1}`); a.status != 400 {
 			t.Errorf("invalid body: %d %s", a.status, a.body)
 		}
-		a = c.do("GET", "/trfin/companies", anna, "")
+		a = c.do("GET", "/trdemofin/companies", anna, "")
 		var list []map[string]any
 		if err := json.Unmarshal([]byte(a.body), &list); a.status != 200 || err != nil || len(list) != 1 || list[0]["COMPANY_ID"] != "C1" {
 			t.Fatalf("GET: %d %s", a.status, a.body)
 		}
 		// A clerk reads the companies of its countries and creates none:
 		// the request is rolled back.
-		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
-		if a := c.do("POST", "/trfin/companies", anna, `{"COMPANY_ID":"C2","NAME":"Bleu","COUNTRY":"FR","STATUS":"ACTIVE"}`); a.status != 201 {
+		mustCallAs(t, k, kernel.ExecOptions{Tenant: "ACME", User: model.Some("anna")}, "/TRDEMOFIN/COMPANY_SERVICE", "ADD_COUNTRY", `"FR"`, `"France"`)
+		if a := c.do("POST", "/trdemofin/companies", anna, `{"COMPANY_ID":"C2","NAME":"Bleu","COUNTRY":"FR","STATUS":"ACTIVE"}`); a.status != 201 {
 			t.Fatalf("POST FR: %d %s", a.status, a.body)
 		}
 		if _, err := k.Users().Create(ctx, "carl", "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
 			t.Fatal(err)
 		}
-		for _, role := range []string{"/TRFIN/SERVICE_USER", "/TRFIN/COMPANY_CLERK"} {
+		for _, role := range []string{"/TRDEMOFIN/SERVICE_USER", "/TRDEMOFIN/COMPANY_CLERK"} {
 			if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "carl", Role: role, Tenant: "ACME"}, kernel.RoleOptions{By: "test"}); err != nil {
 				t.Fatal(err)
 			}
 		}
 		carl := basicAuth("carl", "secret")
-		if a := c.do("GET", "/trfin/companies", carl, ""); a.status != 200 || !strings.Contains(a.body, `"C1"`) || strings.Contains(a.body, `"C2"`) {
+		if a := c.do("GET", "/trdemofin/companies", carl, ""); a.status != 200 || !strings.Contains(a.body, `"C1"`) || strings.Contains(a.body, `"C2"`) {
 			t.Errorf("GET as clerk: %d %s", a.status, a.body)
 		}
-		if a := c.do("POST", "/trfin/companies", carl, `{"COMPANY_ID":"C3","NAME":"Drei","COUNTRY":"DE","STATUS":"ACTIVE"}`); a.status != 403 ||
+		if a := c.do("POST", "/trdemofin/companies", carl, `{"COMPANY_ID":"C3","NAME":"Drei","COUNTRY":"DE","STATUS":"ACTIVE"}`); a.status != 403 ||
 			!strings.Contains(a.body, `"forbidden"`) {
 			t.Errorf("POST as clerk: %d %s", a.status, a.body)
 		}
-		if got := mustCall(t, k, "ACME", "/TRFIN/COMPANY_SERVICE", "FIND", `"C3"`); got != "null" {
+		if got := mustCall(t, k, "ACME", "/TRDEMOFIN/COMPANY_SERVICE", "FIND", `"C3"`); got != "null" {
 			t.Errorf("C3 was stored: %s", got)
 		}
-		if f, err := k.LastFailedCheck(ctx, "carl", "ACME"); err != nil || string(f.Values["ACTIVITY"]) != `"CREATE"` || f.Site.Class.Or("") != "/TRFIN/COMPANY_INTAKE" {
+		if f, err := k.LastFailedCheck(ctx, "carl", "ACME"); err != nil || string(f.Values["ACTIVITY"]) != `"CREATE"` || f.Site.Class.Or("") != "/TRDEMOFIN/COMPANY_INTAKE" {
 			t.Errorf("last failed: %+v %v", f, err)
 		}
 		if err := k.Users().AddTenant(ctx, "anna", "BETA"); err != nil {
 			t.Fatal(err)
 		}
-		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/SERVICE_USER", Tenant: "BETA"}, kernel.RoleOptions{By: "test"}); err != nil {
+		if _, _, err := k.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/SERVICE_USER", Tenant: "BETA"}, kernel.RoleOptions{By: "test"}); err != nil {
 			t.Fatal(err)
 		}
-		a = c.do("GET", "/trfin/companies", func(r *http.Request) { anna(r); r.Header.Set("X-Tenant", "BETA") }, "")
+		a = c.do("GET", "/trdemofin/companies", func(r *http.Request) { anna(r); r.Header.Set("X-Tenant", "BETA") }, "")
 		if a.status != 200 || a.body != "[]" {
 			t.Errorf("BETA: %d %s", a.status, a.body)
 		}
-		if a := c.do("DELETE", "/trfin/companies", anna, ""); a.status != 404 {
+		if a := c.do("DELETE", "/trdemofin/companies", anna, ""); a.status != 404 {
 			t.Errorf("DELETE: %d", a.status)
 		}
 	})

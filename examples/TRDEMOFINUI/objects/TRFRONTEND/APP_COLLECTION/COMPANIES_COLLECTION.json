@@ -1,0 +1,23 @@
+{
+  "name": "/TRDEMOFINUI/COMPANIES_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Firmen"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRDEMOFINUI/COMPANIES_TILE"
+      },
+      {
+        "TILE": "/TRDEMOFINUI/ACTIVE_COMPANIES_TILE"
+      }
+    ]
+  }
+}

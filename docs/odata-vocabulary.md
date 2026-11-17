@@ -22,7 +22,7 @@ collection of `ValueListParameter` with `LocalProperty`, the path of the propert
 annotated entity, and `ValueListProperty`, the name of the property of the entity set:
 
 ```json
-"TRFIN.TRFIN_COMPANIES/COUNTRY": {
+"TRDEMOFIN.TRDEMOFIN_COMPANIES/COUNTRY": {
   "@RT.ValueList": {
     "EntitySet": "Countries",
     "Parameters": [{ "LocalProperty": { "$PropertyPath": "COUNTRY" }, "ValueListProperty": "COUNTRY_CODE" }]

@@ -39,7 +39,7 @@
             "type": "string"
           },
           "source": {
-            "description": "Address without version where the package is installed from when it is missing, e.g. \"github.com/tim-riep/trfin\" or \"github.com/tim-riep/erp-packages/packages/TRFIN\". Kernel packages have none.",
+            "description": "Address without version where the package is installed from when it is missing, e.g. \"github.com/tim-riep/trdemofin\" or \"github.com/tim-riep/erp-packages/packages/TRDEMOFIN\". Kernel packages have none.",
             "type": "string",
             "maxLength": 400
           }

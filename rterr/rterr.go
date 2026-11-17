@@ -548,7 +548,7 @@ func (e *KernelPackageUpgrade) Unwrap() error { return e.Err }
 // whole operation is rejected.
 type CompileError struct {
 	Package     string
-	Reason      string // why the package was compiled, e.g. "installed" or "requires TRFIN"
+	Reason      string // why the package was compiled, e.g. "installed" or "requires TRDEMOFIN"
 	Diagnostics []CompileDiagnostic
 }
 

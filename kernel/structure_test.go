@@ -37,7 +37,7 @@ func dataField(name, dataElement string) model.Field {
 	return model.Field{Name: name, LocalName: name, Origin: model.OriginTable, DataElement: model.Some(dataElement)}
 }
 
-var countryFK = model.ForeignKey{Name: "COUNTRY", Origin: model.OriginTable, Target: "/TRFIN/COUNTRIES",
+var countryFK = model.ForeignKey{Name: "COUNTRY", Origin: model.OriginTable, Target: "/TRDEMOFIN/COUNTRIES",
 	Columns: []model.ColumnPair{{Field: "COUNTRY", References: "COUNTRY_CODE"}}}
 
 // trs is a package with an address structure included into a table.
@@ -53,7 +53,7 @@ func trs(version string) *model.Package {
 		elems = elems[:2]
 	}
 	return &model.Package{
-		Manifest: model.Manifest{ID: "TRS", Version: version, Requires: []model.Dependency{{ID: "TRBASE"}, {ID: "TRFIN"}}},
+		Manifest: model.Manifest{ID: "TRS", Version: version, Requires: []model.Dependency{{ID: "TRBASE"}, {ID: "TRDEMOFIN"}}},
 		Structures: []model.Structure{
 			{Name: "/TRS/ADDRESS", Texts: labelEn, Elements: elems},
 			{Name: "/TRS/GROUP", Texts: labelEn, Elements: []model.Element{component("NAME", "/TRBASE/NAME"),
@@ -63,7 +63,7 @@ func trs(version string) *model.Package {
 		ArrayTypes: []model.ArrayType{{Name: "/TRS/SITE_ARRAY", Texts: labelEn, Row: model.TypeRef{Kind: model.TypeStructure, Name: "/TRS/SITES"},
 			Key: &model.ArrayKey{Fields: []string{"SITE_ID"}, Unique: true}}},
 		Tables: []model.Table{{Name: "/TRS/SITES", TenantSpecific: true, DataClass: model.Application,
-			Fields: []model.Field{dataField("SITE_ID", "/TRFIN/COMPANY")}, Includes: []model.TableInclude{{Name: "/TRS/ADDRESS", After: 1}},
+			Fields: []model.Field{dataField("SITE_ID", "/TRDEMOFIN/COMPANY")}, Includes: []model.TableInclude{{Name: "/TRS/ADDRESS", After: 1}},
 			PrimaryKey: []string{"SITE_ID"}}},
 	}
 }
@@ -72,11 +72,11 @@ func trs(version string) *model.Package {
 // with a foreign key over the included COUNTRY.
 func trx() *model.Package {
 	return &model.Package{
-		Manifest: model.Manifest{ID: "TRX", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRS"}, {ID: "TRFIN"}, {ID: "TRBASE"}}},
+		Manifest: model.Manifest{ID: "TRX", Version: "1.0.0", Requires: []model.Dependency{{ID: "TRS"}, {ID: "TRDEMOFIN"}, {ID: "TRBASE"}}},
 		StructureExtensions: []model.StructureExtension{{Structure: "/TRS/ADDRESS",
 			Components: []model.Component{{Name: "/TRX/PICKUP", Type: model.TypeRef{Kind: model.TypeDataElement, Name: "/TRBASE/NAME"}}}}},
 		Tables: []model.Table{{Name: "/TRX/DEPOTS", DataClass: model.Application,
-			Fields: []model.Field{dataField("DEPOT_ID", "/TRFIN/COMPANY")}, Includes: []model.TableInclude{{Name: "/TRS/ADDRESS", After: 1}},
+			Fields: []model.Field{dataField("DEPOT_ID", "/TRDEMOFIN/COMPANY")}, Includes: []model.TableInclude{{Name: "/TRS/ADDRESS", After: 1}},
 			PrimaryKey: []string{"DEPOT_ID"}, ForeignKeys: []model.ForeignKey{countryFK}}},
 	}
 }
@@ -97,7 +97,7 @@ func TestStructureLifecycle(t *testing.T) {
 		if _, err := k.Install(ctx, []*model.Package{trs("1.0.0"), trx()}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
-		examples := []*model.Package{testutil.Example(t, "TRFIN"), testutil.Example(t, "TROTTO")}
+		examples := []*model.Package{testutil.Example(t, "TRDEMOFIN"), testutil.Example(t, "TRDEMOOTTO")}
 		sameSchema(t, k, testutil.AddPackages(t, baseSchema(t, k), append(examples, trs("1.0.0"), trx())...))
 		consistent(t, k)
 

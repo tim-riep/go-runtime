@@ -24,7 +24,7 @@ import (
 
 // TestAssignmentExample builds the example of the language assignment.
 func TestAssignmentExample(t *testing.T) {
-	r, err := build.Dir(filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "TRFIN"))
+	r, err := build.Dir(filepath.Join(testutil.ModuleRoot(t), "testdata", "lang", "TRLANGFIN"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,16 @@
+{
+  "name": "/TRDEMOFINUI/CLERK_CONTENT",
+  "content": {
+    "ROLE": "/TRDEMOFIN/COMPANY_CLERK",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRDEMOFINUI/COMPANIES_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRDEMOFINUI/COMPANIES_SPACE"
+      }
+    ]
+  }
+}

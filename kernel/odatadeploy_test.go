@@ -33,7 +33,7 @@ const odataNodeRole = `{ "name": "/LOCAL/ODATA_NODE", "texts": { "en": { "label"
 	{ "object": "/TRBASE/HTTP_SERVICE", "fields": { "PACKAGE_ID": [{ "value": "RT" }], "SERVICE_PATH": [{ "value": "/rt/odata" }],
 		"ACTIVITY": [{ "value": "EXECUTE" }] } } ] }`
 
-// odataKernel installs TRFIN and TROTTO with three users in ACME: anna
+// odataKernel installs TRDEMOFIN and TRDEMOOTTO with three users in ACME: anna
 // may use the service of companies, bob may call the node of OData but no
 // service, carl nothing.
 func odataKernel(t *testing.T, k *kernel.Kernel) client {
@@ -49,9 +49,9 @@ func odataKernel(t *testing.T, k *kernel.Kernel) client {
 		t.Fatal(err)
 	}
 	roles := map[string][]string{
-		"anna": {"/TRFIN/ODATA_USER", "/TRFIN/COMPANY_ADMIN"},
-		"bob":  {"/LOCAL/ODATA_NODE", "/TRFIN/COMPANY_ADMIN"},
-		"carl": {"/TRFIN/COMPANY_ADMIN"},
+		"anna": {"/TRDEMOFIN/ODATA_USER", "/TRDEMOFIN/COMPANY_ADMIN"},
+		"bob":  {"/LOCAL/ODATA_NODE", "/TRDEMOFIN/COMPANY_ADMIN"},
+		"carl": {"/TRDEMOFIN/COMPANY_ADMIN"},
 	}
 	for _, user := range []string{"anna", "bob", "carl"} {
 		if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
@@ -88,7 +88,7 @@ func TestODataDeployment(t *testing.T) {
 		ctx := context.Background()
 		c := odataKernel(t, k)
 		anna, bob, carl := basicAuth("anna", "secret"), basicAuth("bob", "secret"), basicAuth("carl", "secret")
-		const root = "/rt/odata/trfin/company_service/"
+		const root = "/rt/odata/trdemofin/company_service/"
 
 		// The node of the kernel exists and is active after rt init.
 		node, err := k.HTTPService(ctx, "/rt/odata")
@@ -114,10 +114,10 @@ func TestODataDeployment(t *testing.T) {
 			t.Fatalf("service document: %d %s", a.status, a.body)
 		}
 		// Package and service ignore case.
-		if a := c.do("GET", "/rt/odata/TRFIN/Company_Service/", anna, ""); a.status != 200 {
+		if a := c.do("GET", "/rt/odata/TRDEMOFIN/Company_Service/", anna, ""); a.status != 200 {
 			t.Errorf("path in other case: %d %s", a.status, a.body)
 		}
-		if a := c.do("GET", "/rt/odata/trfin/nothing/", anna, ""); a.status != 404 {
+		if a := c.do("GET", "/rt/odata/trdemofin/nothing/", anna, ""); a.status != 404 {
 			t.Errorf("unknown service: %d", a.status)
 		}
 
@@ -146,7 +146,7 @@ func TestODataDeployment(t *testing.T) {
 			}
 			return doc.Value
 		}
-		if l := list(anna); len(l) != 1 || l[0]["name"] != companyService || l[0]["package"] != "TRFIN" || l[0]["url"] != root ||
+		if l := list(anna); len(l) != 1 || l[0]["name"] != companyService || l[0]["package"] != "TRDEMOFIN" || l[0]["url"] != root ||
 			l[0]["description"] != "Companies" {
 			t.Errorf("list of anna: %v", l)
 		}
@@ -176,7 +176,7 @@ func TestODataDeployment(t *testing.T) {
 		if err := k.ConfigureHTTPService(ctx, "/rt/odata", kernel.KernelNodeChange{Authentication: model.Some([]string{})}, "test"); !errors.As(err, &inv) {
 			t.Errorf("without authentication: %v", err)
 		}
-		if err := k.ConfigureHTTPService(ctx, "/trfin/companies", kernel.KernelNodeChange{MaxPageSize: model.Some[int64](5)}, "test"); !errors.As(err, &inv) {
+		if err := k.ConfigureHTTPService(ctx, "/trdemofin/companies", kernel.KernelNodeChange{MaxPageSize: model.Some[int64](5)}, "test"); !errors.As(err, &inv) {
 			t.Errorf("node of a package: %v", err)
 		}
 		if err := k.ConfigureHTTPService(ctx, "/rt/odata", kernel.KernelNodeChange{Reset: true}, "test"); err != nil {
@@ -187,7 +187,7 @@ func TestODataDeployment(t *testing.T) {
 		}
 
 		// The node belongs to no package: it stays when all packages go.
-		for _, id := range []model.PackageID{"TROTTO", "TRFIN"} {
+		for _, id := range []model.PackageID{"TRDEMOOTTO", "TRDEMOFIN"} {
 			if _, err := k.Uninstall(ctx, id, kernel.Options{AllowDestructive: true, Confirm: true}); err != nil {
 				t.Fatal(err)
 			}

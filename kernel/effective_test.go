@@ -55,7 +55,7 @@ func TestEffectiveAuthorizations(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				return e.Allows("/TRFIN/COMPANY", values), k.EffectiveComputed() - before
+				return e.Allows("/TRDEMOFIN/COMPANY", values), k.EffectiveComputed() - before
 			}
 			step := func(name string, change func(), wantAllowed bool) {
 				t.Helper()
@@ -71,7 +71,7 @@ func TestEffectiveAuthorizations(t *testing.T) {
 			step("no roles", func() {}, false)
 			var clerk kernel.RoleAssignment
 			step("assigned by another kernel", func() {
-				a, _, err := other.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{})
+				a, _, err := other.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -93,14 +93,14 @@ func TestEffectiveAuthorizations(t *testing.T) {
 				}
 			}, false)
 			step("local role", func() {
-				importRole(t, other, `{ "name": "/LOCAL/READER", "texts": { "en": { "label": "Reader" } }, "authorizations": [{ "object": "/TRFIN/COMPANY",
+				importRole(t, other, `{ "name": "/LOCAL/READER", "texts": { "en": { "label": "Reader" } }, "authorizations": [{ "object": "/TRDEMOFIN/COMPANY",
 					"fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "value": "AT" }], "ACTIVITY": [{ "value": "READ" }] } }] }`)
 				if _, _, err := other.Roles().Assign(ctx, kernel.Assignment{User: "anna", Role: "/LOCAL/READER", Tenant: "ACME"}, kernel.RoleOptions{}); err != nil {
 					t.Fatal(err)
 				}
 			}, false)
 			step("local role changed", func() {
-				importRole(t, other, `{ "name": "/LOCAL/READER", "texts": { "en": { "label": "Reader" } }, "authorizations": [{ "object": "/TRFIN/COMPANY",
+				importRole(t, other, `{ "name": "/LOCAL/READER", "texts": { "en": { "label": "Reader" } }, "authorizations": [{ "object": "/TRDEMOFIN/COMPANY",
 					"fields": { "COMPANY_ID": [{ "pattern": "*" }], "COUNTRY": [{ "pattern": "D*" }], "ACTIVITY": [{ "value": "READ" }] } }] }`)
 			}, true)
 			step("upgrade with a new field", func() {
@@ -131,19 +131,19 @@ func TestAllAuthorizationsSignIn(t *testing.T) {
 			t.Fatal(err)
 		}
 		e, err := k.EffectiveAuthorizations(ctx, "anna", "ACME", time.Now())
-		if err != nil || !e.All || !e.Allows("/TROTTO/MARKETPLACE", nil) {
+		if err != nil || !e.All || !e.Allows("/TRDEMOOTTO/MARKETPLACE", nil) {
 			t.Fatalf("all authorizations: %+v %v", e, err)
 		}
 		if e, _ := k.EffectiveAuthorizations(ctx, "anna", "BETA", time.Now()); e.All {
 			t.Error("all authorizations in another tenant")
 		}
-		if err := k.ActivateHTTPService(ctx, "/trfin"); err != nil {
+		if err := k.ActivateHTTPService(ctx, "/trdemofin"); err != nil {
 			t.Fatal(err)
 		}
 		srv := httptest.NewServer(k.HTTPHandler())
 		defer srv.Close()
 		for _, tenant := range []string{"ACME", "ACME", "BETA"} {
-			r, _ := http.NewRequest("GET", srv.URL+"/trfin/companies", nil)
+			r, _ := http.NewRequest("GET", srv.URL+"/trdemofin/companies", nil)
 			r.SetBasicAuth("anna", "secret")
 			r.Header.Set("X-Tenant", tenant)
 			resp, err := http.DefaultClient.Do(r)

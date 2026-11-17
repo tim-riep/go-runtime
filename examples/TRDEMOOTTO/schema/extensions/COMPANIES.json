@@ -1,0 +1,11 @@
+{
+  "table": "/TRDEMOFIN/COMPANIES",
+  "description": "OTTO partner data of a company",
+  "fields": [
+    {
+      "name": "/TRDEMOOTTO/OTTO_ID",
+      "dataElement": "/TRDEMOOTTO/OTTO_PARTNER",
+      "description": "Partner ID of the company"
+    }
+  ]
+}

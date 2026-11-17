@@ -51,7 +51,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 				notices[c.Table] = c.Detail
 			}
 		}
-		if notices["/TRFIN/COMPANIES"] != "none -> application, provisional until package TRFIN is applied again" || notices[model.TenantTable] != "" {
+		if notices["/TRDEMOFIN/COMPANIES"] != "none -> application, provisional until package TRDEMOFIN is applied again" || notices[model.TenantTable] != "" {
 			t.Fatalf("migration notices: %v", notices)
 		}
 		consistent(t, k)
@@ -60,16 +60,16 @@ func TestMigrateFromVersion1(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Application {
-			t.Errorf("provisional class of /TRFIN/COMPANIES = %q", c)
+		if c := s.Tables["/TRDEMOFIN/COMPANIES"].DataClass; c != model.Application {
+			t.Errorf("provisional class of /TRDEMOFIN/COMPANIES = %q", c)
 		}
 		if c := s.Tables[model.TenantTable].DataClass; c != model.System {
 			t.Errorf("class of the tenant table = %q", c)
 		}
-		if len(s.Packages) != 3 || s.Packages["TRFIN"].InstalledAt.IsZero() {
+		if len(s.Packages) != 3 || s.Packages["TRDEMOFIN"].InstalledAt.IsZero() {
 			t.Fatalf("packages after migration: %v", s.PackageIDs())
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("data lost: %v", v)
 		}
 
@@ -78,7 +78,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 		if _, err := k.Languages().Add(ctx, "de", ""); err != nil {
 			t.Fatal(err)
 		}
-		up, err := k.Upgrade(ctx, testutil.Example(t, "TRFIN"), kernel.Options{})
+		up, err := k.Upgrade(ctx, testutil.Example(t, "TRDEMOFIN"), kernel.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,7 +86,7 @@ func TestMigrateFromVersion1(t *testing.T) {
 			t.Fatalf("class changes must be notices: %+v", up.Changes)
 		}
 		s, _ = k.Schema(ctx)
-		if c := s.Tables["/TRFIN/COMPANIES"].DataClass; c != model.Application {
+		if c := s.Tables["/TRDEMOFIN/COMPANIES"].DataClass; c != model.Application {
 			t.Errorf("class after upgrade = %q", c)
 		}
 		consistent(t, k)
@@ -112,7 +112,7 @@ func TestMigrateFromVersion4(t *testing.T) {
 			t.Fatalf("migration plan:\n%s", p.Text())
 		}
 		consistent(t, k)
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("data lost: %v", v)
 		}
 		if _, err := k.Install(ctx, []*model.Package{trs("1.0.0"), trx()}, kernel.Options{}); err != nil {
@@ -134,7 +134,7 @@ func TestMigrateByteOrder(t *testing.T) {
 			return
 		}
 		for _, s := range []string{
-			`ALTER TABLE "/TRFIN/COMPANIES" ALTER COLUMN "COMPANY_ID" TYPE VARCHAR(10) COLLATE "default", ALTER COLUMN "NAME" TYPE VARCHAR(80) COLLATE "default"`,
+			`ALTER TABLE "/TRDEMOFIN/COMPANIES" ALTER COLUMN "COMPANY_ID" TYPE VARCHAR(10) COLLATE "default", ALTER COLUMN "NAME" TYPE VARCHAR(80) COLLATE "default"`,
 			`ALTER TABLE "/RT/USERS" ALTER COLUMN "USER_NAME" TYPE VARCHAR(64) COLLATE "default"`,
 		} {
 			if _, err := k.DB().ExecContext(ctx, s); err != nil {
@@ -148,10 +148,10 @@ func TestMigrateByteOrder(t *testing.T) {
 		consistent(t, k)
 		var coll string
 		if err := k.DB().QueryRowContext(ctx, `SELECT collation_name FROM information_schema.columns
-			WHERE table_schema = current_schema() AND table_name = '/TRFIN/COMPANIES' AND column_name = 'COMPANY_ID'`).Scan(&coll); err != nil || coll != "C" {
+			WHERE table_schema = current_schema() AND table_name = '/TRDEMOFIN/COMPANIES' AND column_name = 'COMPANY_ID'`).Scan(&coll); err != nil || coll != "C" {
 			t.Errorf("collation %q, %v", coll, err)
 		}
-		if v := scalar(t, k, "/TRFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
+		if v := scalar(t, k, "/TRDEMOFIN/COMPANIES", "NAME", where(k, "COMPANY_ID"), "C1"); v != "Acme GmbH" {
 			t.Errorf("data lost: %v", v)
 		}
 	})
@@ -178,7 +178,7 @@ func TestMigrateKeepsCode(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if change(p, plan.CompilePackage, "TRFIN") == nil || !p.Executed {
+		if change(p, plan.CompilePackage, "TRDEMOFIN") == nil || !p.Executed {
 			t.Fatal("nothing migrated")
 		}
 		if n := programs(); n != before {
@@ -194,7 +194,7 @@ func TestMigrateKeepsCode(t *testing.T) {
 			}
 		}
 		// Before business objects, the fixture has no COMPANY_SERVICE.
-		if got := mustCall(t, k, tenantA, "/TRFIN/ORDER_INTAKE", "FIND", `"O-1"`); got != "null" {
+		if got := mustCall(t, k, tenantA, "/TRDEMOFIN/ORDER_INTAKE", "FIND", `"O-1"`); got != "null" {
 			t.Errorf("code after the migration: %s", got)
 		}
 		consistent(t, k)

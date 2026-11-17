@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tim-riep/go-runtime/schemas/extension.schema.json",
   "title": "Extension",
-  "description": "Additional fields and foreign keys for a table of a required package (schema/extensions/*.json). Field and key names carry the namespace of the extending package, e.g. /TROTTO/OTTO_ID.",
+  "description": "Additional fields and foreign keys for a table of a required package (schema/extensions/*.json). Field and key names carry the namespace of the extending package, e.g. /TRDEMOOTTO/OTTO_ID.",
   "type": "object",
   "additionalProperties": false,
   "required": [

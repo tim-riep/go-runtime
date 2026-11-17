@@ -1,5 +1,0 @@
-{
-  "name": "/TRFIN/ACCOUNT_NO",
-  "description": "Bank account number within a company",
-  "type": "INT4"
-}

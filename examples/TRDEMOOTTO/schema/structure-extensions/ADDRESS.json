@@ -1,0 +1,9 @@
+{
+  "structure": "/TRBASE/ADDRESS",
+  "components": [
+    {
+      "name": "/TRDEMOOTTO/PICKUP_POINT",
+      "dataElement": "/TRDEMOOTTO/PICKUP_POINT"
+    }
+  ]
+}

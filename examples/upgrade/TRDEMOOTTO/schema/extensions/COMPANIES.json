@@ -1,0 +1,35 @@
+{
+  "table": "/TRDEMOFIN/COMPANIES",
+  "description": "OTTO partner data of a company",
+  "fields": [
+    {
+      "name": "/TRDEMOOTTO/OTTO_ID",
+      "dataElement": "/TRDEMOOTTO/OTTO_PARTNER",
+      "description": "Partner ID of the company"
+    },
+    {
+      "name": "/TRDEMOOTTO/ACTIVE",
+      "domain": "/TRBASE/FLAG",
+      "notNull": true,
+      "default": false,
+      "description": "Whether the connection is active"
+    },
+    {
+      "name": "/TRDEMOOTTO/MAIN_SHOP",
+      "domain": "/TRDEMOOTTO/OTTO_SHOP_ID",
+      "description": "Default shop of the company"
+    }
+  ],
+  "foreignKeys": [
+    {
+      "name": "/TRDEMOOTTO/MAIN_SHOP",
+      "table": "/TRDEMOOTTO/OTTO_SHOPS",
+      "fields": [
+        {
+          "field": "/TRDEMOOTTO/MAIN_SHOP",
+          "references": "SHOP_ID"
+        }
+      ]
+    }
+  ]
+}

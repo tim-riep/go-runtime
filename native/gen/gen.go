@@ -157,7 +157,7 @@ func GoName(name string) string {
 }
 
 // FieldName returns the Go name of a field: NOTE is Note, and an
-// extension field keeps its package, /TROTTO/OTTO_ID is TrottoOttoID.
+// extension field keeps its package, /TRDEMOOTTO/OTTO_ID is TrdemoottoOttoID.
 func FieldName(name string) string {
 	return camel(strings.ReplaceAll(strings.Trim(name, "/"), "/", "_"))
 }

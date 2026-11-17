@@ -46,22 +46,22 @@ func ids(ps []*model.Package) string {
 
 func TestOrder(t *testing.T) {
 	order, err := Resolve(nil, []*model.Package{
-		pkg("TROTTO", "1.0.0", "TRFIN >=1.0.0"),
-		pkg("TRFIN", "1.0.0", "TRBASE"),
+		pkg("TRDEMOOTTO", "1.0.0", "TRDEMOFIN >=1.0.0"),
+		pkg("TRDEMOFIN", "1.0.0", "TRBASE"),
 		pkg("TRBASE", "1.0.0"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := ids(order); got != "TRBASE,TRFIN,TROTTO" {
+	if got := ids(order); got != "TRBASE,TRDEMOFIN,TRDEMOOTTO" {
 		t.Fatalf("order = %s", got)
 	}
 }
 
 func TestInstalledDependency(t *testing.T) {
 	installed := map[model.PackageID]model.Manifest{"TRBASE": pkg("TRBASE", "1.2.0").Manifest}
-	order, err := Resolve(installed, []*model.Package{pkg("TRFIN", "1.0.0", "TRBASE ^1.0.0")})
-	if err != nil || ids(order) != "TRFIN" {
+	order, err := Resolve(installed, []*model.Package{pkg("TRDEMOFIN", "1.0.0", "TRBASE ^1.0.0")})
+	if err != nil || ids(order) != "TRDEMOFIN" {
 		t.Fatalf("got %v, %v", ids(order), err)
 	}
 }
@@ -78,15 +78,15 @@ func dependencyKind(t *testing.T, err error, kind rterr.DependencyKind) *rterr.D
 }
 
 func TestMissing(t *testing.T) {
-	_, err := Resolve(nil, []*model.Package{pkg("TRFIN", "1.0.0", "TRBASE")})
+	_, err := Resolve(nil, []*model.Package{pkg("TRDEMOFIN", "1.0.0", "TRBASE")})
 	d := dependencyKind(t, err, rterr.DependencyMissing)
-	if d.Package != "TRFIN" || d.Required != "TRBASE" {
+	if d.Package != "TRDEMOFIN" || d.Required != "TRBASE" {
 		t.Fatalf("%+v", d)
 	}
 }
 
 func TestVersionMismatch(t *testing.T) {
-	_, err := Resolve(nil, []*model.Package{pkg("TRBASE", "0.9.0"), pkg("TRFIN", "1.0.0", "TRBASE >=1.0.0")})
+	_, err := Resolve(nil, []*model.Package{pkg("TRBASE", "0.9.0"), pkg("TRDEMOFIN", "1.0.0", "TRBASE >=1.0.0")})
 	d := dependencyKind(t, err, rterr.DependencyVersion)
 	if d.Found != "0.9.0" {
 		t.Fatalf("%+v", d)
@@ -95,12 +95,12 @@ func TestVersionMismatch(t *testing.T) {
 
 func TestUpgradeBreaksDependent(t *testing.T) {
 	installed := map[model.PackageID]model.Manifest{
-		"TRBASE": pkg("TRBASE", "1.0.0").Manifest,
-		"TRFIN":  pkg("TRFIN", "1.0.0", "TRBASE ^1.0.0").Manifest,
+		"TRBASE":    pkg("TRBASE", "1.0.0").Manifest,
+		"TRDEMOFIN": pkg("TRDEMOFIN", "1.0.0", "TRBASE ^1.0.0").Manifest,
 	}
 	_, err := Resolve(installed, []*model.Package{pkg("TRBASE", "2.0.0")})
 	d := dependencyKind(t, err, rterr.DependencyVersion)
-	if d.Package != "TRFIN" {
+	if d.Package != "TRDEMOFIN" {
 		t.Fatalf("%+v", d)
 	}
 }

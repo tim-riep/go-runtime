@@ -28,13 +28,13 @@ const app: HomeApp = {
   TITLE: 'Companies',
   SUBTITLE: null,
   ICON: null,
-  TARGET: { KIND: 'LIST', SERVICE: '/TRFIN/COMPANY_SERVICE', ENTITY_SET: 'Companies', URL: '/rt/odata/trfin/company_service/', MODULE: null },
+  TARGET: { KIND: 'LIST', SERVICE: '/TRDEMOFIN/COMPANY_SERVICE', ENTITY_SET: 'Companies', URL: '/rt/odata/trdemofin/company_service/', MODULE: null },
   PARAMETERS: [],
 };
 
 const companies = [
-  { COMPANY_ID: 'C1', NAME: 'Acme', CITY: 'Berlin', COUNTRY: 'DE', STATUS: 'ACTIVE', TROTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: '', CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [{ CONTACT_ID: 'k1', COMPANY_ID: 'C1', NAME: 'Bea', EMAIL: 'bea@example.org' }] },
-  { COMPANY_ID: 'C2', NAME: 'Globex', CITY: null, COUNTRY: 'AT', STATUS: 'BLOCKED', TROTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: null, CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [] },
+  { COMPANY_ID: 'C1', NAME: 'Acme', CITY: 'Berlin', COUNTRY: 'DE', STATUS: 'ACTIVE', TRDEMOOTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: '', CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [{ CONTACT_ID: 'k1', COMPANY_ID: 'C1', NAME: 'Bea', EMAIL: 'bea@example.org' }] },
+  { COMPANY_ID: 'C2', NAME: 'Globex', CITY: null, COUNTRY: 'AT', STATUS: 'BLOCKED', TRDEMOOTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: null, CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [] },
 ];
 
 interface Call {
@@ -56,7 +56,7 @@ beforeEach(() => {
     const c: Call = { method: init?.method ?? 'GET', url, headers: (init?.headers ?? {}) as Record<string, string>, body: init?.body as string | undefined };
     calls.push(c);
     const u = new URL(url, 'http://x');
-    const rest = decodeURIComponent(u.pathname.slice('/rt/odata/trfin/company_service/'.length));
+    const rest = decodeURIComponent(u.pathname.slice('/rt/odata/trdemofin/company_service/'.length));
     if (rest === '$metadata') return json(companyService);
     if (rest === 'Companies' && c.method === 'GET') {
       const filter = u.searchParams.get('$filter');

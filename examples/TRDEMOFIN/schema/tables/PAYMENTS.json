@@ -1,0 +1,56 @@
+{
+  "name": "/TRDEMOFIN/PAYMENTS",
+  "description": "Payments booked on bank accounts",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY_ID",
+      "domain": "/TRDEMOFIN/COMPANY_ID"
+    },
+    {
+      "name": "ACCOUNT_NO",
+      "domain": "/TRDEMOFIN/ACCOUNT_NO"
+    },
+    {
+      "name": "PAYMENT_NO",
+      "domain": "/TRBASE/COUNTER"
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRBASE/AMOUNT",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "BOOKED_AT",
+      "domain": "/TRBASE/TIMESTAMP",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY_ID",
+    "ACCOUNT_NO",
+    "PAYMENT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ACCOUNT",
+      "table": "/TRDEMOFIN/BANK_ACCOUNTS",
+      "fields": [
+        {
+          "field": "COMPANY_ID",
+          "references": "COMPANY_ID"
+        },
+        {
+          "field": "ACCOUNT_NO",
+          "references": "ACCOUNT_NO"
+        }
+      ]
+    }
+  ]
+}

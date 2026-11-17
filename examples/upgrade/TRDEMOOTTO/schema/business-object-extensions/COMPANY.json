@@ -1,0 +1,16 @@
+{
+  "businessObject": "/TRDEMOFIN/COMPANY",
+  "entities": {
+    "/TRDEMOFIN/COMPANIES": {
+      "fields": {
+        "/TRDEMOOTTO/OTTO_ID": { "readOnly": true }
+      }
+    },
+    "/TRDEMOOTTO/COMPANY_CHANNELS": {
+      "parent": "/TRDEMOFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "operations": ["create", "update", "delete"],
+      "numbering": "uuid"
+    }
+  }
+}

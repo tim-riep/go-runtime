@@ -38,8 +38,8 @@ func TestActorChecks(t *testing.T) {
 		}
 		if _, err := k.Roles().Import(ctx, []byte(`{"name":"/LOCAL/USER_DESK","texts":{"en":{"label":"User desk"}},"authorizations":[
 			{"object":"/TRBASE/USER_ADMIN","fields":{"USER_NAME":[{"pattern":"a*"}],"ACTIVITY":[{"value":"READ"},{"value":"UPDATE"}]}},
-			{"object":"/TRBASE/ROLE_ADMIN","fields":{"ROLE_NAME":[{"pattern":"/TRFIN/*"}],"ACTIVITY":[{"value":"READ"}]}},
-			{"object":"/TRBASE/ROLE_ASSIGNMENT","fields":{"ROLE_NAME":[{"value":"/TRFIN/COMPANY_CLERK"}],"TENANT":[{"value":"ACME"}],
+			{"object":"/TRBASE/ROLE_ADMIN","fields":{"ROLE_NAME":[{"pattern":"/TRDEMOFIN/*"}],"ACTIVITY":[{"value":"READ"}]}},
+			{"object":"/TRBASE/ROLE_ASSIGNMENT","fields":{"ROLE_NAME":[{"value":"/TRDEMOFIN/COMPANY_CLERK"}],"TENANT":[{"value":"ACME"}],
 				"ACTIVITY":[{"value":"CREATE"},{"value":"READ"}]}}]}`), "desk.json", kernel.RoleOptions{}); err != nil {
 			t.Fatal(err)
 		}
@@ -69,17 +69,17 @@ func TestActorChecks(t *testing.T) {
 			t.Errorf("users: %v %v", list, err)
 		}
 
-		a, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{})
+		a, _, err := roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_CLERK", Tenant: "ACME"}, kernel.RoleOptions{})
 		if err != nil || a.CreatedBy != "rita" {
 			t.Errorf("assign: %+v %v", a, err)
 		}
-		_, _, err = roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRFIN/COMPANY_ADMIN", Tenant: "ACME"}, kernel.RoleOptions{})
+		_, _, err = roles.Assign(ctx, kernel.Assignment{User: "anna", Role: "/TRDEMOFIN/COMPANY_ADMIN", Tenant: "ACME"}, kernel.RoleOptions{})
 		denied("assign admin", err, kernel.RoleAssignmentObject)
 		denied("unassign", roles.Unassign(ctx, a.ID, kernel.RoleOptions{}), kernel.RoleAssignmentObject)
 		if list, err := roles.Assignments(ctx, "", ""); err != nil || len(list) != 1 || list[0].ID != a.ID {
 			t.Errorf("assignments: %+v %v", list, err)
 		}
-		if list, err := roles.List(ctx); err != nil || len(list) != 4 || list[0].Name != "/TRFIN/COMPANY_ADMIN" {
+		if list, err := roles.List(ctx); err != nil || len(list) != 4 || list[0].Name != "/TRDEMOFIN/COMPANY_ADMIN" {
 			t.Errorf("roles: %+v %v", list, err)
 		}
 		_, err = roles.Get(ctx, "/LOCAL/USER_DESK")

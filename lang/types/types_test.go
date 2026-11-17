@@ -232,8 +232,8 @@ func TestNamespace(t *testing.T) {
 	for p, s := range schemaFiles {
 		fsys[p] = &fstest.MapFile{Data: []byte(s)}
 	}
-	fsys["src/C.class"] = &fstest.MapFile{Data: []byte("public class /TRT/C\n\n  public attribute A: /TRFIN/X?\n\nend\n")}
-	if _, err := pkgload.Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "reference /TRFIN/X: expected namespace /TRT/") {
+	fsys["src/C.class"] = &fstest.MapFile{Data: []byte("public class /TRT/C\n\n  public attribute A: /TRDEMOFIN/X?\n\nend\n")}
+	if _, err := pkgload.Load(fsys, "mem"); err == nil || !strings.Contains(err.Error(), "reference /TRDEMOFIN/X: expected namespace /TRT/") {
 		t.Fatalf("foreign namespace: %v", err)
 	}
 	// A definition in a foreign namespace.

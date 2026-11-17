@@ -1,8 +1,0 @@
-{
-  "name": "/TRORDER/ORDER_ID",
-  "domain": "/TRORDER/ORDER_ID",
-  "texts": {
-    "en": { "short": "Order", "medium": "Order", "long": "Order number", "heading": "Order" },
-    "de": { "short": "Auftrag", "medium": "Auftrag", "long": "Auftragsnummer", "heading": "Auftrag" }
-  }
-}

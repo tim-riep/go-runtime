@@ -345,7 +345,7 @@ type Dependency struct {
 	ID         PackageID        `json:"id"`
 	Constraint Optional[string] `json:"version"` // None means any version
 	// Source is the address without version where the package can be
-	// installed from, e.g. github.com/tim-riep/trfin.
+	// installed from, e.g. github.com/tim-riep/trdemofin.
 	Source Optional[string] `json:"source"`
 }
 

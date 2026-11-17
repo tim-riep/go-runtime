@@ -27,12 +27,12 @@ import (
 	"github.com/tim-riep/go-runtime/rterr"
 )
 
-// authPackage writes a package TRAUTH that requires TRFIN, with the object
+// authPackage writes a package TRAUTH that requires TRDEMOFIN, with the object
 // /TRAUTH/DOC whose fields and activities are given as JSON.
 func authPackage(t *testing.T, version, fields, activities string) *model.Package {
 	t.Helper()
 	dir := t.TempDir()
-	testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRAUTH", "version": "`+version+`", "requires": [{ "id": "TRBASE" }, { "id": "TRFIN" }] }`))
+	testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRAUTH", "version": "`+version+`", "requires": [{ "id": "TRBASE" }, { "id": "TRDEMOFIN" }] }`))
 	doc := `{ "name": "/TRAUTH/DOC", "texts": { "en": { "label": "Documents" } }, "fields": ` + fields
 	if activities != "" {
 		doc += `, "activities": ` + activities
@@ -54,29 +54,29 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		o := s.AuthorizationObjects["/TRFIN/COMPANY"]
-		if o == nil || o.Owner != "TRFIN" || len(o.Fields) != 3 || o.Fields[1] != (model.AuthorizationField{Name: "COUNTRY", DataElement: model.Some("/TRBASE/COUNTRY")}) ||
+		o := s.AuthorizationObjects["/TRDEMOFIN/COMPANY"]
+		if o == nil || o.Owner != "TRDEMOFIN" || len(o.Fields) != 3 || o.Fields[1] != (model.AuthorizationField{Name: "COUNTRY", DataElement: model.Some("/TRBASE/COUNTRY")}) ||
 			!o.Fields[2].IsActivity() || strings.Join(o.Activities, ",") != "READ,CREATE,UPDATE,DELETE,EXPORT" || o.Texts["de"].Label != "Stammdaten Firma" {
 			t.Fatalf("read back: %+v", o)
 		}
-		if s.AuthorizationObjects["/TROTTO/MARKETPLACE"] == nil || s.AuthorizationObjects["/TRFIN/STATUS_SCOPE"].HasActivity() {
+		if s.AuthorizationObjects["/TRDEMOOTTO/MARKETPLACE"] == nil || s.AuthorizationObjects["/TRDEMOFIN/STATUS_SCOPE"].HasActivity() {
 			t.Fatal("objects of the examples")
 		}
 		de, err := k.DataElement(ctx, "/TRBASE/COUNTRY")
-		if err != nil || !strings.Contains(strings.Join(de.UsedBy, " "), "/TRFIN/COMPANY.COUNTRY") {
+		if err != nil || !strings.Contains(strings.Join(de.UsedBy, " "), "/TRDEMOFIN/COMPANY.COUNTRY") {
 			t.Errorf("uses of /TRBASE/COUNTRY: %v %v", de, err)
 		}
 		act, err := k.DataElement(ctx, model.ActivityDomain)
-		if err != nil || strings.Join(act.UsedBy, " ") != "/TRBASE/CONFIGURATION.ACTIVITY /TRBASE/HTTP_SERVICE.ACTIVITY /TRBASE/NUMBER_RANGE.ACTIVITY /TRBASE/ODATA_SERVICE.ACTIVITY /TRBASE/ROLE_ADMIN.ACTIVITY /TRBASE/ROLE_ASSIGNMENT.ACTIVITY /TRBASE/USER_ADMIN.ACTIVITY /TRFIN/COMPANY.ACTIVITY /TROTTO/MARKETPLACE.ACTIVITY" {
+		if err != nil || strings.Join(act.UsedBy, " ") != "/TRBASE/CONFIGURATION.ACTIVITY /TRBASE/HTTP_SERVICE.ACTIVITY /TRBASE/NUMBER_RANGE.ACTIVITY /TRBASE/ODATA_SERVICE.ACTIVITY /TRBASE/ROLE_ADMIN.ACTIVITY /TRBASE/ROLE_ASSIGNMENT.ACTIVITY /TRBASE/USER_ADMIN.ACTIVITY /TRDEMOFIN/COMPANY.ACTIVITY /TRDEMOOTTO/MARKETPLACE.ACTIVITY" {
 			t.Errorf("uses of ACTIVITY: %v %v", act, err)
 		}
 
-		base := `[{ "name": "CODE", "dataElement": "/TRFIN/COMPANY" }, { "name": "ACTIVITY" }]`
+		base := `[{ "name": "CODE", "dataElement": "/TRDEMOFIN/COMPANY" }, { "name": "ACTIVITY" }]`
 		if _, err := k.Install(ctx, []*model.Package{authPackage(t, "1.0.0", base, `["READ", "UPDATE"]`)}, kernel.Options{}); err != nil {
 			t.Fatal(err)
 		}
 		// A new field and a new activity are allowed.
-		grown := `[{ "name": "CODE", "dataElement": "/TRFIN/COMPANY" }, { "name": "ACTIVITY" }, { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }]`
+		grown := `[{ "name": "CODE", "dataElement": "/TRDEMOFIN/COMPANY" }, { "name": "ACTIVITY" }, { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }]`
 		p, err := k.Upgrade(ctx, authPackage(t, "1.1.0", grown, `["READ", "UPDATE", "APPROVE"]`), kernel.Options{})
 		if err != nil || !strings.Contains(planText(p), "alter-authorization-object /TRAUTH/DOC (field COUNTRY added, activity APPROVE added)") {
 			t.Fatalf("growing upgrade: %v\n%s", err, planText(p))
@@ -84,7 +84,7 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 		for _, c := range []struct{ name, fields, activities, want string }{
 			{"field removed", base, `["READ", "UPDATE", "APPROVE"]`, "field COUNTRY removed"},
 			{"type changed", `[{ "name": "CODE", "dataElement": "/TRBASE/NAME" }, { "name": "ACTIVITY" }, { "name": "COUNTRY", "dataElement": "/TRBASE/COUNTRY" }]`,
-				`["READ", "UPDATE", "APPROVE"]`, "field CODE: type data element /TRFIN/COMPANY -> data element /TRBASE/NAME"},
+				`["READ", "UPDATE", "APPROVE"]`, "field CODE: type data element /TRDEMOFIN/COMPANY -> data element /TRBASE/NAME"},
 			{"activity removed", grown, `["READ", "APPROVE"]`, "activity UPDATE removed"},
 		} {
 			_, err := k.Upgrade(ctx, authPackage(t, "1.2.0", c.fields, c.activities), kernel.Options{})
@@ -95,7 +95,7 @@ func TestAuthorizationObjectLifecycle(t *testing.T) {
 		}
 		// The object removed: destructive too, and allowed explicitly.
 		dir := t.TempDir()
-		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRAUTH", "version": "1.3.0", "requires": [{ "id": "TRFIN" }] }`))
+		testutil.WriteFile(t, dir, "manifest.json", []byte(`{ "id": "TRAUTH", "version": "1.3.0", "requires": [{ "id": "TRDEMOFIN" }] }`))
 		_, err = k.Upgrade(ctx, testutil.LoadDir(t, dir), kernel.Options{})
 		var dc *rterr.DestructiveChange
 		if !errors.As(err, &dc) || !strings.Contains(err.Error(), "drop-authorization-object /TRAUTH/DOC") {
