@@ -89,7 +89,8 @@ public class /TRFIN/POSTING_CHECKS
   end
 
   # The ledgers a journal entry goes to: those of its ledger, its group or
-  # its company, and for a reversal those of the reversed entry.
+  # its company, for a reversal those of the reversed entry, and for a
+  # posted clearing entry those of the items it cleared.
   public static method LEDGERS_OF(entry: /TRFIN/JOURNAL_ENTRIES) returns array of STRING
     var year = entry.REVERSED_YEAR
     var no = entry.REVERSED_NO
@@ -100,13 +101,36 @@ public class /TRFIN/POSTING_CHECKS
       end
       return out
     end
+    if entry.KIND = /TRFIN/ENTRY_KIND.CLEARING
+      var cleared = select single from /TRFIN/CLEARED_ITEMS where COMPANY = entry.COMPANY and FISCAL_YEAR = entry.FISCAL_YEAR and DOCUMENT_NO = entry.DOCUMENT_NO
+      if cleared is not null
+        return ITEM_LEDGERS(entry.COMPANY, cleared.ITEM_YEAR, cleared.ITEM_DOCUMENT_NO, cleared.ITEM_NO)
+      end
+    end
     return /TRFIN/LEDGER_SETS.TARGETS(entry.COMPANY, entry.LEDGER, entry.LEDGER_GROUP)
+  end
+
+  # The ledgers an item of a posted journal entry went to, sorted; none
+  # when it is not posted.
+  public static method ITEM_LEDGERS(company: STRING, year: INT4, no: STRING, item: INT4) returns array of STRING
+    var out: array of STRING = []
+    for row in select LEDGER, count() from /TRFIN/LEDGER_ENTRIES where COMPANY = company and FISCAL_YEAR = year and DOCUMENT_NO = no and ITEM_NO = item group by LEDGER
+      out.APPEND(row.LEDGER)
+    end
+    return out.SORT()
   end
 
   # Checks a journal entry with its determined fields and items and
   # returns the problems that keep it from being posted, at the item and
   # field they concern; none when it can be posted.
   public method CHECK(entry: /TRFIN/JOURNAL_ENTRIES, items: array of /TRFIN/JOURNAL_ENTRY_ITEMS) returns array of /TRFIN/POSTING_MESSAGE
+    return CHECK_IN(entry, items, LEDGERS_OF(entry))
+  end
+
+  # Checks a journal entry as CHECK does, posted to the given ledgers: a
+  # new clearing entry goes to the ledgers of the items it clears, which
+  # are not in the database yet.
+  public method CHECK_IN(entry: /TRFIN/JOURNAL_ENTRIES, items: array of /TRFIN/JOURNAL_ENTRY_ITEMS, ledgers: array of STRING) returns array of /TRFIN/POSTING_MESSAGE
     MESSAGES = []
     var company = select single from /TRFIN/COMPANIES where COMPANY = entry.COMPANY
     if company is null
@@ -120,7 +144,7 @@ public class /TRFIN/POSTING_CHECKS
     end
     # Reversals are checked with the activity CANCEL on the reversed
     # entry when the action runs.
-    if entry.KIND = /TRFIN/ENTRY_KIND.NORMAL
+    if entry.KIND <> /TRFIN/ENTRY_KIND.REVERSAL
       var allowed = authorized /TRFIN/JOURNAL_ENTRY
         COMPANY = entry.COMPANY
         DOCUMENT_TYPE = entry.DOCUMENT_TYPE
@@ -134,7 +158,7 @@ public class /TRFIN/POSTING_CHECKS
     if not /TRFIN/FISCAL_CALENDAR.IS_OPEN(entry.COMPANY, p.FISCAL_YEAR, p.PERIOD)
       ADD(null, "POSTING_DATE", "the period {p.PERIOD} of {p.FISCAL_YEAR} is not open for postings in the company {entry.COMPANY}")
     end
-    CHECK_LEDGERS(entry, type)
+    CHECK_LEDGERS(entry, type, ledgers)
     if items.LENGTH() < 2 and entry.KIND <> /TRFIN/ENTRY_KIND.CLEARING
       ADD(null, null, "a journal entry has at least two items, not {items.LENGTH()}")
     end
@@ -171,7 +195,7 @@ public class /TRFIN/POSTING_CHECKS
 
   # The ledgers of a journal entry: a ledger or a group, as the document
   # type allows, assigned to the company, and the user may post to them.
-  private method CHECK_LEDGERS(entry: /TRFIN/JOURNAL_ENTRIES, type: /TRFIN/DOCUMENT_TYPES)
+  private method CHECK_LEDGERS(entry: /TRFIN/JOURNAL_ENTRIES, type: /TRFIN/DOCUMENT_TYPES, ledgers: array of STRING)
     var ledger = entry.LEDGER
     var group = entry.LEDGER_GROUP
     if ledger is not null and group is not null
@@ -209,7 +233,6 @@ public class /TRFIN/POSTING_CHECKS
     if group is not null
       field = "LEDGER_GROUP"
     end
-    var ledgers = LEDGERS_OF(entry)
     if ledgers is empty and group is not null
       ADD(null, field, "the group of ledgers {group} has no members")
       return

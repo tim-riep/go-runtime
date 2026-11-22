@@ -1504,7 +1504,9 @@ and `/TRFIN/SUPPLIER`. Journal entries take numbers without gaps per company and
 and post to a ledger, a group of ledgers or the ledgers of their company, with totals per
 period, running balances of customers and suppliers and the reclassification of their
 opposite balances to alternative accounts; posted entries change only in their texts and are
-reversed by entries with debit and credit swapped. [docs/trfin.md](docs/trfin.md) describes
+reversed by entries with debit and credit swapped; open items of an account, customer or
+supplier that sum up to zero are cleared, with a new posting or without, and clearings are
+reset. [docs/trfin.md](docs/trfin.md) describes
 the business objects, their rules, the posting, authorizations, roles and the services
 `/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
 `/TRFIN/JOURNAL_ENTRY_SERVICE`.

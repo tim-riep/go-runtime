@@ -276,6 +276,61 @@ public class /TRFINTEST/API
     return transform changed using /TRBASE/JSON
   end
 
+  # Clears open items with the action CLEAR and saves; returns the result
+  # of the statement when the action fails, else that of the save, as
+  # JSON.
+  public static method CLEAR(clearing: /TRFIN/CLEARING) returns STRING raises /RT/EXCEPTION
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.CLEAR parameter clearing into cleared
+      result changed
+    end
+    for m in changed.MESSAGES
+      if m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+        rollback business objects
+        return transform changed using /TRBASE/JSON
+      end
+    end
+    return SAVE(changed)
+  end
+
+  # Resets a clearing; returns the result of the save as JSON.
+  public static method RESET_CLEARING(company: STRING, year: INT4, no: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/JOURNAL_ENTRIES
+    key.COMPANY = company
+    key.FISCAL_YEAR = year
+    key.DOCUMENT_NO = no
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.RESET_CLEARING keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # The clearing of the items of a journal entry, a line each with item
+  # and clearing, then that of their ledger entries with the ledger in
+  # front.
+  public static method CLEARING_LINES(company: STRING, year: INT4, no: STRING) returns STRING
+    var out: array of STRING = []
+    for i in select from /TRFIN/JOURNAL_ENTRY_ITEMS where COMPANY = company and FISCAL_YEAR = year and DOCUMENT_NO = no
+      out.APPEND("{i.ITEM_NO} {CLEARING(i.CLEARING_YEAR, i.CLEARING_NO, i.CLEARING_DATE)}")
+    end
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = company and FISCAL_YEAR = year and DOCUMENT_NO = no and ITEM_NO is not null
+      out.APPEND("{l.LEDGER} {l.ITEM_NO default 0} {CLEARING(l.CLEARING_YEAR, l.CLEARING_NO, l.CLEARING_DATE)}")
+    end
+    return out.JOIN("\n")
+  end
+
+  # The open items of a ledger and company at a key date: the ledger
+  # entries of open items posted up to the date and not cleared up to it,
+  # a line each with entry, item and amount.
+  public static method OPEN_AT(ledger: STRING, company: STRING, date: DATE) returns STRING
+    var out: array of STRING = []
+    for l in select from /TRFIN/LEDGER_ENTRIES where LEDGER = ledger and COMPANY = company and OPEN_ITEM = true and POSTING_DATE <= date and (CLEARING_DATE is null or CLEARING_DATE > date)
+      out.APPEND("{l.DOCUMENT_NO}/{l.ITEM_NO default 0} {l.AMOUNT}")
+    end
+    return out.JOIN("\n")
+  end
+
   # Changes the header text of an entry and the text and assignment of an
   # item.
   public static method SET_TEXTS(company: STRING, year: INT4, no: STRING, text: STRING, item: INT4, assignment: STRING) returns STRING raises /RT/EXCEPTION
@@ -376,7 +431,28 @@ public class /TRFINTEST/API
     var partners: map of STRING to DEC(38,2) = [:]
     var reclassified: map of STRING to DEC(38,2) = [:]
     var entries: map of STRING to DEC(38,2) = [:]
+    var clearings: map of STRING to DEC(38,2) = [:]
+    var items: map of STRING to STRING = [:]
+    for it in select from /TRFIN/JOURNAL_ENTRY_ITEMS
+      items["{it.COMPANY} {it.FISCAL_YEAR} {it.DOCUMENT_NO} {it.ITEM_NO}"] = CLEARING(it.CLEARING_YEAR, it.CLEARING_NO, it.CLEARING_DATE)
+    end
     for l in select from /TRFIN/LEDGER_ENTRIES
+      # Ledger entries of items are cleared as their items, and the
+      # ledger entries of a clearing sum up to zero.
+      var n = l.ITEM_NO
+      if n is not null
+        var iid = "{l.COMPANY} {l.FISCAL_YEAR} {l.DOCUMENT_NO} {n}"
+        var c = CLEARING(l.CLEARING_YEAR, l.CLEARING_NO, l.CLEARING_DATE)
+        if c <> (items.GET(iid) default "no item")
+          out.APPEND("ledger entry {l.LEDGER} {iid}: cleared {c}, item {items.GET(iid) default "no item"}")
+        end
+      end
+      var cy = l.CLEARING_YEAR
+      var cno = l.CLEARING_NO
+      if cy is not null and cno is not null
+        var cid = "{l.LEDGER} {l.COMPANY} {cy} {cno}"
+        clearings[cid] = (clearings.GET(cid) default 0.00) + l.AMOUNT
+      end
       var id = "{l.LEDGER} {l.COMPANY} {l.ACCOUNT} {l.FISCAL_YEAR} {l.PERIOD}"
       debits[id] = debits.GET(id) default 0.00
       credits[id] = credits.GET(id) default 0.00
@@ -443,7 +519,21 @@ public class /TRFINTEST/API
         out.APPEND("entry {id} not balanced: {sum}")
       end
     end
+    for id, sum in clearings
+      if sum <> 0
+        out.APPEND("clearing {id} not balanced: {sum}")
+      end
+    end
     return out.JOIN("\n")
+  end
+
+  # A clearing as text: year/number and date, or - for none.
+  private static method CLEARING(year: INT4?, no: STRING?, date: DATE?) returns STRING
+    var d = date
+    if no is null or d is null
+      return "-"
+    end
+    return "{year default 0}/{no} {d}"
   end
 
   # Saves the changes of a statement unless it failed; returns the result

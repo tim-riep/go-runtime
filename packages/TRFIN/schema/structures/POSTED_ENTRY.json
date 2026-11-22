@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "Posted journal entry",
-      "description": "The link and the key of a journal entry that POST created"
+      "description": "The link and the key of a journal entry that POST or CLEAR created"
     },
     "de": {
       "label": "Gebuchter Beleg",
-      "description": "Der Link und der Schlüssel eines Belegs, den POST angelegt hat"
+      "description": "Der Link und der Schlüssel eines Belegs, den POST oder CLEAR angelegt hat"
     }
   },
   "components": [

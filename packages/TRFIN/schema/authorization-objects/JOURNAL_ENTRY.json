@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "Journal entries",
-      "description": "Reading, posting, changing the texts of and reversing journal entries"
+      "description": "Reading, posting, clearing, changing the texts of and reversing journal entries and resetting clearings"
     },
     "de": {
       "label": "Belege",
-      "description": "Belege lesen, buchen, ihre Texte ändern und stornieren"
+      "description": "Belege lesen, buchen, ausgleichen, ihre Texte ändern und stornieren und Ausgleiche zurücknehmen"
     }
   },
   "fields": [

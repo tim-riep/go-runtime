@@ -4,7 +4,9 @@
 # and its entries in the ledgers with the totals, the running balances of
 # customers and suppliers and the reclassification of their opposite
 # balances. Posted entries change only in their texts; reversals post the
-# items with debit and credit swapped.
+# items with debit and credit swapped. Clearing entries clear open items
+# of one account or partner that sum up to zero, with new items or without;
+# resetting a clearing opens the items again.
 public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
 
   public method DETERMINE_ENTRY(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
@@ -44,7 +46,7 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
         continue
       end
       var checks = new /TRFIN/POSTING_CHECKS()
-      for m in checks.CHECK(entry, ITEMS_OF(key))
+      for m in checks.CHECK_IN(entry, ITEMS_OF(key), LEDGERS(key, entry))
         var field = m.FIELD
         if m.ITEM_NO is not null
           continue
@@ -77,7 +79,7 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
           parent.FISCAL_YEAR = key.FISCAL_YEAR
           parent.DOCUMENT_NO = key.DOCUMENT_NO
           var checks = new /TRFIN/POSTING_CHECKS()
-          messages = checks.CHECK(entry, ITEMS_OF(parent))
+          messages = checks.CHECK_IN(entry, ITEMS_OF(parent), LEDGERS(parent, entry))
         end
         checked[id] = messages
       end
@@ -112,6 +114,7 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
   public method ASSIGN_NUMBERS(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE) returns array of key of /TRFIN/JOURNAL_ENTRIES
     var out: array of key of /TRFIN/JOURNAL_ENTRIES = []
     var reversed: array of /TRFIN/JOURNAL_ENTRIES = []
+    var cleared: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
     for i, key in keys
       var final = key
       out.APPEND(final)
@@ -145,10 +148,21 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
         original.REVERSAL_NO = final.DOCUMENT_NO
         reversed.APPEND(original)
       end
+      # A clearing entry gives its number to the items it clears, which
+      # the action marked with the clearing date.
+      if entry.KIND = /TRFIN/ENTRY_KIND.CLEARING
+        for item in CLEARED_OF(key, entry)
+          var row = item
+          row.CLEARING_YEAR = year
+          row.CLEARING_NO = final.DOCUMENT_NO
+          cleared.APPEND(row)
+        end
+      end
     end
-    if reversed is not empty
+    if reversed is not empty or cleared is not empty
       modify business object /TRFIN/JOURNAL_ENTRY in local mode
         update /TRFIN/JOURNAL_ENTRIES fields (REVERSAL_YEAR, REVERSAL_NO) from reversed
+        update /TRFIN/JOURNAL_ENTRY_ITEMS fields (CLEARING_YEAR, CLEARING_NO) from cleared
       end
     end
     return out
@@ -158,7 +172,8 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
   # items, the running balances of customers and suppliers with the
   # reclassification of their opposite balances, and the totals. All
   # updates of an entry run in the order of their keys, so that parallel
-  # postings do not lock each other.
+  # postings do not lock each other. Then the ledger entries of the items
+  # a clearing entry clears or no longer clears follow the items.
   public method WRITE_LEDGERS(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
     for i, key in keys
       var entry = select single from /TRFIN/JOURNAL_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
@@ -166,19 +181,56 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
         continue
       end
       var written = select count from /TRFIN/LEDGER_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
-      if written > 0
-        continue
-      end
       var items = select from /TRFIN/JOURNAL_ENTRY_ITEMS where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO order by ITEM_NO
-      if items is empty
-        continue
+      if written = 0 and items is not empty
+        var ledgers = /TRFIN/POSTING_CHECKS.LEDGERS_OF(entry).SORT()
+        if ledgers is empty
+          response.ERROR(i, "the journal entry {key.DOCUMENT_NO} goes to no ledger")
+          continue
+        end
+        POST_ENTRY(i, entry, items, ledgers, response)
       end
-      var ledgers = /TRFIN/POSTING_CHECKS.LEDGERS_OF(entry).SORT()
-      if ledgers is empty
-        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} goes to no ledger")
-        continue
+      if entry.KIND = /TRFIN/ENTRY_KIND.CLEARING
+        WRITE_CLEARING(i, entry, items, response)
       end
-      POST_ENTRY(i, entry, items, ledgers, response)
+    end
+  end
+
+  # Gives the ledger entries of the items of a clearing entry and of the
+  # items it lists as cleared the clearing of their items: the clearing
+  # fields of the entry where the item is cleared by it, none where the
+  # item is open. Ledger entries are cleared only while they are open; when
+  # fewer than all entries of an item are, a parallel clearing came first,
+  # and the save fails.
+  private method WRITE_CLEARING(i: INT8, entry: /TRFIN/JOURNAL_ENTRIES, items: array of /TRFIN/JOURNAL_ENTRY_ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    var all: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for c in select from /TRFIN/CLEARED_ITEMS where COMPANY = entry.COMPANY and FISCAL_YEAR = entry.FISCAL_YEAR and DOCUMENT_NO = entry.DOCUMENT_NO
+      var item = select single from /TRFIN/JOURNAL_ENTRY_ITEMS where COMPANY = entry.COMPANY and FISCAL_YEAR = c.ITEM_YEAR and DOCUMENT_NO = c.ITEM_DOCUMENT_NO and ITEM_NO = c.ITEM_NO
+      if item is not null
+        all.APPEND(item)
+      end
+    end
+    for item in items
+      all.APPEND(item)
+    end
+    var year = entry.FISCAL_YEAR
+    var no = entry.DOCUMENT_NO
+    var date = entry.POSTING_DATE
+    for item in all
+      var n = item.ITEM_NO
+      if CLEARS(item, entry)
+        var total = select count from /TRFIN/LEDGER_ENTRIES where COMPANY = item.COMPANY and FISCAL_YEAR = item.FISCAL_YEAR and DOCUMENT_NO = item.DOCUMENT_NO and ITEM_NO = n
+        var done = select count from /TRFIN/LEDGER_ENTRIES where COMPANY = item.COMPANY and FISCAL_YEAR = item.FISCAL_YEAR and DOCUMENT_NO = item.DOCUMENT_NO and ITEM_NO = n and CLEARING_YEAR = year and CLEARING_NO = no
+        if done < total
+          var cleared = update /TRFIN/LEDGER_ENTRIES set CLEARING_YEAR = year, CLEARING_NO = no, CLEARING_DATE = date where COMPANY = item.COMPANY and FISCAL_YEAR = item.FISCAL_YEAR and DOCUMENT_NO = item.DOCUMENT_NO and ITEM_NO = n and CLEARING_NO is null
+          if done + cleared <> total
+            response.ERROR(i, "the item {n} of the journal entry {item.DOCUMENT_NO} of {item.FISCAL_YEAR} is cleared already in a ledger")
+            return
+          end
+        end
+      elseif item.CLEARING_NO is null
+        update /TRFIN/LEDGER_ENTRIES set CLEARING_YEAR = null, CLEARING_NO = null, CLEARING_DATE = null where COMPANY = item.COMPANY and FISCAL_YEAR = item.FISCAL_YEAR and DOCUMENT_NO = item.DOCUMENT_NO and ITEM_NO = n and CLEARING_YEAR = year and CLEARING_NO = no
+      end
     end
   end
 
@@ -200,9 +252,17 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
         continue
       end
       var rows = ITEMS_OF(key)
-      var cleared = rows.FILTER(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => r.CLEARING_NO is not null).MAP(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => "{r.ITEM_NO}")
+      var cleared = rows.FILTER(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => r.CLEARING_NO is not null or r.CLEARING_DATE is not null).MAP(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => "{r.ITEM_NO}")
       if cleared is not empty
         response.ERROR(i, "the items {cleared.JOIN(", ")} of the journal entry {key.DOCUMENT_NO} are cleared; reset the clearing first")
+        continue
+      end
+      if entry.KIND = /TRFIN/ENTRY_KIND.CLEARING and CLEARED_BY(key, entry) is not empty
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} clears items; reset the clearing first")
+        continue
+      end
+      if rows is empty
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} has no items; reset the clearing instead")
         continue
       end
       var date = parameter.POSTING_DATE default entry.POSTING_DATE
@@ -273,7 +333,7 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
     entry.LEDGER = parameter.LEDGER
     entry.LEDGER_GROUP = parameter.LEDGER_GROUP
     var items: array of new of /TRFIN/JOURNAL_ENTRY_ITEMS = []
-    for p in ITEMS(parameter)
+    for p in ITEMS(parameter.ITEMS)
       var item: new of /TRFIN/JOURNAL_ENTRY_ITEMS
       item.PARENT_LINK = link
       item.ITEM_NO = p.ITEM_NO
@@ -310,7 +370,7 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
     entry.LEDGER_GROUP = parameter.LEDGER_GROUP
     entry = /TRFIN/POSTING_CHECKS.DETERMINE_ENTRY(entry)
     var items: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
-    for p in ITEMS(parameter)
+    for p in ITEMS(parameter.ITEMS)
       var item: /TRFIN/JOURNAL_ENTRY_ITEMS
       item.COMPANY = entry.COMPANY
       item.ITEM_NO = p.ITEM_NO
@@ -333,11 +393,195 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
     return out
   end
 
+  # Clears open items of one account or of one customer or supplier in a
+  # company: they are open, posted to the same ledgers, and with the new
+  # items on the same account or partner they sum up to zero. The clearing
+  # entry posts the new items to the ledgers of the cleared items, or has
+  # no items without new items, and lists the cleared items. The action
+  # marks the items with the clearing date; the save gives them the
+  # number of the clearing entry, and the items are written with their
+  # ETag, so of two parallel clearings of an item only one succeeds.
+  public method CLEAR(parameter: /TRFIN/CLEARING, response: /TRBASE/ENTITY_RESPONSE) returns /TRFIN/POSTED_ENTRY
+    var link = parameter.LINK default "entry"
+    var out: /TRFIN/POSTED_ENTRY
+    out.LINK = link
+    out.COMPANY = parameter.COMPANY
+    var date = parameter.POSTING_DATE
+    var problems: array of STRING = []
+    var selected: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    var seen: array of STRING = []
+    var ledgers: STRING? = null
+    var ledger: STRING? = null
+    var group: STRING? = null
+    if parameter.OPEN_ITEMS is empty
+      problems.APPEND("a clearing clears at least one open item")
+    end
+    for k in parameter.OPEN_ITEMS
+      var id = "{k.ITEM_NO} of the journal entry {k.DOCUMENT_NO} of {k.FISCAL_YEAR}"
+      if seen.CONTAINS(id)
+        problems.APPEND("the item {id} is selected twice")
+        continue
+      end
+      seen.APPEND(id)
+      var item = ITEM_OF(parameter.COMPANY, k.FISCAL_YEAR, k.DOCUMENT_NO, k.ITEM_NO)
+      var source = select single from /TRFIN/JOURNAL_ENTRIES where COMPANY = parameter.COMPANY and FISCAL_YEAR = k.FISCAL_YEAR and DOCUMENT_NO = k.DOCUMENT_NO
+      if item is null or source is null
+        problems.APPEND("the item {id} does not exist in the company {parameter.COMPANY}")
+        continue
+      end
+      if not item.OPEN_ITEM
+        problems.APPEND("the item {id} is no open item")
+        continue
+      end
+      if item.CLEARING_NO is not null or item.CLEARING_DATE is not null
+        problems.APPEND("the item {id} is cleared already")
+        continue
+      end
+      if date < source.POSTING_DATE
+        problems.APPEND("the item {id} is posted on {source.POSTING_DATE}, after the clearing on {date}")
+      end
+      var set = /TRFIN/POSTING_CHECKS.ITEM_LEDGERS(parameter.COMPANY, k.FISCAL_YEAR, k.DOCUMENT_NO, k.ITEM_NO).JOIN(", ")
+      var expected = ledgers
+      if set = ""
+        problems.APPEND("the item {id} is not posted to a ledger")
+      elseif expected is null
+        ledgers = set
+        ledger = source.LEDGER
+        group = source.LEDGER_GROUP
+      elseif expected <> set
+        problems.APPEND("the item {id} is posted to the ledgers {set}, the items before to {expected}; only items of the same ledgers are cleared together")
+      end
+      selected.APPEND(item)
+    end
+    var news = ITEMS(parameter.ITEMS)
+    var sum: DEC(38,2) = 0.00
+    var subject = ""
+    if selected is not empty
+      var first = selected[1]
+      subject = SUBJECT(first.ACCOUNT_KIND, first.ACCOUNT, first.PARTNER)
+      for item in selected
+        var other = SUBJECT(item.ACCOUNT_KIND, item.ACCOUNT, item.PARTNER)
+        if other <> subject
+          problems.APPEND("the items to clear are on {subject} and on {other}; only items of one account or partner are cleared together")
+        end
+        sum = sum + SIGNED(item)
+      end
+      for item in news
+        if SUBJECT(item.ACCOUNT_KIND, item.ACCOUNT, item.PARTNER) = subject
+          sum = sum + SIGNED(item)
+        end
+      end
+    end
+    if problems is empty and sum <> 0
+      problems.APPEND("the items to clear on {subject} sum up to {sum}, not to zero")
+    end
+    if problems is not empty
+      for p in problems
+        response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, p)
+      end
+      return out
+    end
+    var entry: new of /TRFIN/JOURNAL_ENTRIES
+    entry.LINK = link
+    entry.COMPANY = parameter.COMPANY
+    entry.DOCUMENT_TYPE = parameter.DOCUMENT_TYPE
+    entry.DOCUMENT_DATE = parameter.DOCUMENT_DATE default date
+    entry.POSTING_DATE = date
+    entry.REFERENCE = parameter.REFERENCE
+    entry.HEADER_TEXT = parameter.HEADER_TEXT
+    entry.LEDGER = ledger
+    entry.LEDGER_GROUP = group
+    entry.KIND = /TRFIN/ENTRY_KIND.CLEARING
+    var items: array of new of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for p in news
+      var item: new of /TRFIN/JOURNAL_ENTRY_ITEMS
+      item.PARENT_LINK = link
+      item.ITEM_NO = p.ITEM_NO
+      item.ACCOUNT_KIND = p.ACCOUNT_KIND
+      item.ACCOUNT = p.ACCOUNT
+      item.PARTNER = p.PARTNER
+      item.DEBIT_CREDIT = p.DEBIT_CREDIT
+      item.AMOUNT = p.AMOUNT
+      item.ITEM_TEXT = p.ITEM_TEXT
+      item.ASSIGNMENT = p.ASSIGNMENT
+      item.DUE_DATE = p.DUE_DATE
+      if SUBJECT(p.ACCOUNT_KIND, p.ACCOUNT, p.PARTNER) = subject
+        item.CLEARING_DATE = date
+      end
+      items.APPEND(item)
+    end
+    var lines: array of new of /TRFIN/CLEARED_ITEMS = []
+    var marked: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for n, item in selected
+      var line: new of /TRFIN/CLEARED_ITEMS
+      line.PARENT_LINK = link
+      line.LINE_NO = n as INT4
+      line.ITEM_YEAR = item.FISCAL_YEAR
+      line.ITEM_DOCUMENT_NO = item.DOCUMENT_NO
+      line.ITEM_NO = item.ITEM_NO
+      lines.APPEND(line)
+      var row = item
+      row.CLEARING_DATE = date
+      marked.APPEND(row)
+    end
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      create /TRFIN/JOURNAL_ENTRIES fields (COMPANY, DOCUMENT_TYPE, DOCUMENT_DATE, POSTING_DATE, REFERENCE, HEADER_TEXT, LEDGER, LEDGER_GROUP, KIND) from [entry]
+      create /TRFIN/JOURNAL_ENTRY_ITEMS by parent fields (ITEM_NO, ACCOUNT_KIND, ACCOUNT, PARTNER, DEBIT_CREDIT, AMOUNT, ITEM_TEXT, ASSIGNMENT, DUE_DATE, CLEARING_DATE) from items
+      create /TRFIN/CLEARED_ITEMS by parent fields (LINE_NO, ITEM_YEAR, ITEM_DOCUMENT_NO, ITEM_NO) from lines
+      update /TRFIN/JOURNAL_ENTRY_ITEMS fields (CLEARING_DATE) from marked
+    end
+    return out
+  end
+
+  # Opens the items a clearing entry cleared and its own items again. A
+  # clearing entry with items can be reversed afterwards; one without
+  # items is done and gets the status REVERSED.
+  public method RESET_CLEARING(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
+    var opened: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    var entries: array of /TRFIN/JOURNAL_ENTRIES = []
+    for i, key in keys
+      var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+      if entry is null
+        continue
+      end
+      if entry.KIND <> /TRFIN/ENTRY_KIND.CLEARING
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} is no clearing entry")
+        continue
+      end
+      var rows = CLEARED_BY(key, entry)
+      if entry.STATUS = /TRFIN/ENTRY_STATUS.REVERSED or rows is empty
+        response.ERROR(i, "the clearing entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} clears no items")
+        continue
+      end
+      for row in rows
+        var reopened = row
+        reopened.CLEARING_YEAR = null
+        reopened.CLEARING_NO = null
+        reopened.CLEARING_DATE = null
+        opened.APPEND(reopened)
+      end
+      var done = entry
+      if ITEMS_OF(key) is empty
+        done.STATUS = /TRFIN/ENTRY_STATUS.REVERSED
+      end
+      entries.APPEND(done)
+    end
+    if entries is empty
+      return
+    end
+    # The update of the entry runs its save method also when none of its
+    # own items changes.
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      update /TRFIN/JOURNAL_ENTRY_ITEMS fields (CLEARING_YEAR, CLEARING_NO, CLEARING_DATE) from opened
+      update /TRFIN/JOURNAL_ENTRIES fields (STATUS) from entries
+    end
+  end
+
   # The items of a posting with their numbers, by default their position,
   # and their kind, by default ACCOUNT.
-  private method ITEMS(parameter: /TRFIN/POSTING) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
+  private method ITEMS(rows: array of /TRFIN/POSTING_ITEM) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
     var out: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
-    for i, p in parameter.ITEMS
+    for i, p in rows
       var item: /TRFIN/JOURNAL_ENTRY_ITEMS
       item.ITEM_NO = p.ITEM_NO default i as INT4
       item.ACCOUNT_KIND = p.ACCOUNT_KIND default /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT
@@ -562,6 +806,98 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
     catch e: /RT/DUPLICATE_ROW
       update /TRFIN/PARTNER_TOTALS set DEBIT = DEBIT + debit, CREDIT = CREDIT + credit where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner and FISCAL_YEAR = year and PERIOD = period
     end
+  end
+
+  # Names the account or partner of an item in messages; items on the
+  # same one have the same name.
+  private static method SUBJECT(kind: /TRFIN/ITEM_ACCOUNT_KIND, account: STRING?, partner: STRING?) returns STRING
+    if kind = /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT
+      return "the account {account default "-"}"
+    end
+    var name = "{kind}"
+    return "the {name.LOWER()} {partner default "-"}"
+  end
+
+  # Whether an item is cleared by a clearing entry.
+  private static method CLEARS(item: /TRFIN/JOURNAL_ENTRY_ITEMS, entry: /TRFIN/JOURNAL_ENTRIES) returns BOOL
+    var year = item.CLEARING_YEAR
+    var no = item.CLEARING_NO
+    return year is not null and no is not null and year = entry.FISCAL_YEAR and no = entry.DOCUMENT_NO
+  end
+
+  # The items a new clearing entry clears as the buffer has them: those it
+  # lists as cleared and its own items that the action marked with the
+  # clearing date.
+  private method CLEARED_OF(key: key of /TRFIN/JOURNAL_ENTRIES, entry: /TRFIN/JOURNAL_ENTRIES) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
+    var out: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for line in CLEARED_ITEMS_OF(key)
+      var item = ITEM_OF(entry.COMPANY, line.ITEM_YEAR, line.ITEM_DOCUMENT_NO, line.ITEM_NO)
+      if item is not null
+        out.APPEND(item)
+      end
+    end
+    for item in ITEMS_OF(key)
+      if item.CLEARING_DATE is not null
+        out.APPEND(item)
+      end
+    end
+    return out
+  end
+
+  # The items a posted clearing entry clears as the buffer has them: those
+  # it lists as cleared and its own items, as far as they still carry its
+  # number.
+  private method CLEARED_BY(key: key of /TRFIN/JOURNAL_ENTRIES, entry: /TRFIN/JOURNAL_ENTRIES) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
+    var out: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for line in CLEARED_ITEMS_OF(key)
+      var item = ITEM_OF(entry.COMPANY, line.ITEM_YEAR, line.ITEM_DOCUMENT_NO, line.ITEM_NO)
+      if item is not null and CLEARS(item, entry)
+        out.APPEND(item)
+      end
+    end
+    for item in ITEMS_OF(key)
+      if CLEARS(item, entry)
+        out.APPEND(item)
+      end
+    end
+    return out
+  end
+
+  # The ledgers a new entry goes to: for a clearing entry those of the
+  # items it clears, as the buffer lists them.
+  private method LEDGERS(key: key of /TRFIN/JOURNAL_ENTRIES, entry: /TRFIN/JOURNAL_ENTRIES) returns array of STRING
+    if entry.KIND = /TRFIN/ENTRY_KIND.CLEARING
+      var lines = CLEARED_ITEMS_OF(key)
+      if lines is not empty
+        return /TRFIN/POSTING_CHECKS.ITEM_LEDGERS(entry.COMPANY, lines[1].ITEM_YEAR, lines[1].ITEM_DOCUMENT_NO, lines[1].ITEM_NO)
+      end
+    end
+    return /TRFIN/POSTING_CHECKS.LEDGERS_OF(entry)
+  end
+
+  # An item as the buffer has it, null when there is none.
+  private method ITEM_OF(company: STRING, year: INT4, no: STRING, n: INT4) returns /TRFIN/JOURNAL_ENTRY_ITEMS?
+    var key: key of /TRFIN/JOURNAL_ENTRY_ITEMS
+    key.COMPANY = company
+    key.FISCAL_YEAR = year
+    key.DOCUMENT_NO = no
+    key.ITEM_NO = n
+    var rows = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/JOURNAL_ENTRY_ITEMS fields all keys [key]
+    end
+    if rows is empty
+      return null
+    end
+    return rows[1]
+  end
+
+  # The cleared items a clearing entry lists, as the buffer has them, by
+  # line.
+  private method CLEARED_ITEMS_OF(key: key of /TRFIN/JOURNAL_ENTRIES) returns array of /TRFIN/CLEARED_ITEMS
+    var rows = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/CLEARED_ITEMS by parent fields all keys [key]
+    end
+    return rows.SORT_BY(function (r: /TRFIN/CLEARED_ITEMS) => r.LINE_NO)
   end
 
   # An entry as the buffer has it, null when there is none.

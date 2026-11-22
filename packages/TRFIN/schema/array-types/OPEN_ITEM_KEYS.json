@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/OPEN_ITEM_KEYS",
+  "texts": {
+    "en": {
+      "label": "Open items to clear"
+    },
+    "de": {
+      "label": "Auszugleichende offene Posten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/OPEN_ITEM_KEY"
+  }
+}

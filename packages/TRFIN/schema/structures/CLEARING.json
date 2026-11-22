@@ -1,0 +1,56 @@
+{
+  "name": "/TRFIN/CLEARING",
+  "texts": {
+    "en": {
+      "label": "Clearing",
+      "description": "Open items of a company to clear and the new items to post with them; LINK names the clearing entry in the result"
+    },
+    "de": {
+      "label": "Ausgleich",
+      "description": "Auszugleichende offene Posten eines Buchungskreises und die mit ihnen zu buchenden neuen Positionen; LINK benennt den Ausgleichsbeleg im Ergebnis"
+    }
+  },
+  "components": [
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_DATE",
+      "dataElement": "/TRFIN/DOCUMENT_DATE"
+    },
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE",
+      "notNull": true
+    },
+    {
+      "name": "REFERENCE",
+      "dataElement": "/TRFIN/REFERENCE"
+    },
+    {
+      "name": "HEADER_TEXT",
+      "dataElement": "/TRFIN/HEADER_TEXT"
+    },
+    {
+      "name": "OPEN_ITEMS",
+      "arrayType": "/TRFIN/OPEN_ITEM_KEYS",
+      "notNull": true
+    },
+    {
+      "name": "ITEMS",
+      "arrayType": "/TRFIN/POSTING_ITEMS",
+      "notNull": true
+    }
+  ]
+}

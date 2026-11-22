@@ -1,0 +1,30 @@
+{
+  "name": "/TRFIN/OPEN_ITEM_KEY",
+  "texts": {
+    "en": {
+      "label": "Open item",
+      "description": "The fiscal year, journal entry and item number of an open item to clear"
+    },
+    "de": {
+      "label": "Offener Posten",
+      "description": "Geschäftsjahr, Beleg und Positionsnummer eines auszugleichenden offenen Postens"
+    }
+  },
+  "components": [
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO",
+      "notNull": true
+    }
+  ]
+}

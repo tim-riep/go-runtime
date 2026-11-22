@@ -113,8 +113,18 @@
           "modifies": false
         },
         {
+          "name": "CLEAR",
+          "instance": false,
+          "parameter": "/TRFIN/CLEARING",
+          "result": "/TRFIN/POSTED_ENTRY"
+        },
+        {
           "name": "REVERSE",
           "parameter": "/TRFIN/REVERSAL",
+          "result": "self"
+        },
+        {
+          "name": "RESET_CLEARING",
           "result": "self"
         }
       ],
@@ -130,7 +140,9 @@
           "update": "UPDATE",
           "POST": "CREATE",
           "CHECK": "CREATE",
-          "REVERSE": "CANCEL"
+          "REVERSE": "CANCEL",
+          "CLEAR": "CREATE",
+          "RESET_CLEARING": "CANCEL"
         }
       }
     },

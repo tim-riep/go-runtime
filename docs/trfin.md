@@ -5,7 +5,7 @@ data: currencies, charts of accounts, companies, ledgers, document types, balanc
 structures, posting periods, the accounts of charts and companies and the company data of
 customers and suppliers; and journal entries, posted to the ledgers with totals, running
 balances of customers and suppliers and the reclassification of their opposite balances,
-and reversed. Clearing and reports follow. TRFIN requires TRBASE 1.11.0 or later and TRBP
+reversed, and their open items cleared. Reports follow. TRFIN requires TRBASE 1.11.0 or later and TRBP
 1.0.0 or later; all its tables hold data of a tenant, and amounts are `DEC(18,2)`.
 
 ## Configuration
@@ -91,7 +91,7 @@ The business object `/TRFIN/JOURNAL_ENTRY` holds the journal entries of a compan
 | Entity | Key | Fields |
 |---|---|---|
 | `/TRFIN/JOURNAL_ENTRIES` | `COMPANY`, `FISCAL_YEAR`, `DOCUMENT_NO` | `DOCUMENT_TYPE`, `DOCUMENT_DATE`, `POSTING_DATE`, `PERIOD`, `REFERENCE`, `HEADER_TEXT`, `LEDGER` or `LEDGER_GROUP` (`null` for the ledgers of the company), `CURRENCY` of the company, `KIND` `NORMAL`, `CLEARING` or `REVERSAL`, `STATUS` `POSTED` or `REVERSED`, `REVERSAL_YEAR` and `REVERSAL_NO` (the entry that reverses it), `REVERSED_YEAR` and `REVERSED_NO` (the entry it reverses), administrative fields and the ETag `VERSION` |
-| `/TRFIN/JOURNAL_ENTRY_ITEMS` | + `ITEM_NO` | `ACCOUNT_KIND` `ACCOUNT`, `CUSTOMER` or `SUPPLIER`, `ACCOUNT` (for partners their reconciliation account), `PARTNER`, `DEBIT_CREDIT` `D` or `C`, `AMOUNT` greater than zero, `ITEM_TEXT`, `ASSIGNMENT`, `DUE_DATE`, `OPEN_ITEM`, the clearing fields `CLEARING_YEAR`, `CLEARING_NO`, `CLEARING_DATE` and the ETag `VERSION` |
+| `/TRFIN/JOURNAL_ENTRY_ITEMS` | + `ITEM_NO` | `ACCOUNT_KIND` `ACCOUNT`, `CUSTOMER` or `SUPPLIER`, `ACCOUNT` (for partners their reconciliation account), `PARTNER`, `DEBIT_CREDIT` `D` or `C`, `AMOUNT` greater than zero, `ITEM_TEXT`, `ASSIGNMENT`, `DUE_DATE`, `OPEN_ITEM`, the clearing fields `CLEARING_YEAR`, `CLEARING_NO`, `CLEARING_DATE` (the clearing entry and its posting date, `null` while the item is open) and the ETag `VERSION` |
 | `/TRFIN/CLEARED_ITEMS` | + `LINE_NO` | `ITEM_YEAR`, `ITEM_DOCUMENT_NO`, `ITEM_NO`: the items a clearing entry cleared; only clearing entries have them |
 | `/TRFIN/LEDGER_ENTRIES` | + `LEDGER`, `LINE_NO` | maintained by the save method: `DOCUMENT_TYPE`, `PERIOD`, `POSTING_DATE`, `ITEM_NO` (`null` for reclassifications), `ACCOUNT`, `PARTNER`, `PARTNER_ROLE`, `AMOUNT` (debit positive, credit negative), `LINE_KIND` `ITEM` or `RECLASSIFICATION`, `OPEN_ITEM`, `DUE_DATE` and the clearing fields |
 
@@ -171,8 +171,59 @@ debit and credit swapped, the same ledgers, `KIND` `REVERSAL` and `REVERSED_YEAR
 `REVERSED_NO`; the reversed entry gets `STATUS` `REVERSED` and the number of the reversal in
 `REVERSAL_YEAR` and `REVERSAL_NO` when the reversal is numbered. The reversal goes through
 the same checks and follows the same reclassification, which cancels that of the reversed
-entry when nothing was posted to the partner in between. Clearing comes with a later
-version; the fields and `/TRFIN/CLEARED_ITEMS` are there already.
+entry when nothing was posted to the partner in between. A clearing entry is reversed only
+after its clearing is reset, and one without items is not reversed but reset.
+
+**Clearing.** Items with `OPEN_ITEM` (all items of customers and suppliers, items of
+accounts with `OPEN_ITEMS`) stay open until a clearing entry clears them. The static action
+`CLEAR` takes `/TRFIN/CLEARING`: company, document type, posting date, optionally document
+date (by default the posting date), reference, header text and `LINK`, the open items in
+`OPEN_ITEMS` by `FISCAL_YEAR`, `DOCUMENT_NO` and `ITEM_NO`, and new items in `ITEMS` as for
+`POST`, empty for none. It answers with `/TRFIN/POSTED_ENTRY` like `POST`. The action rejects
+the clearing with error messages and creates nothing unless:
+
+- at least one item is selected, each once; every item exists in the company, is an open
+  item, is not cleared and is posted no later than the posting date of the clearing;
+- all items are on one account, or on one customer or supplier (kind and partner);
+- all items are posted to the same ledgers: the clearing entry posts to exactly those, so
+  no item is cleared in one ledger and open in another;
+- the selected items and the new items on the same account or partner sum up to zero, debit
+  positive and credit negative.
+
+Without new items the clearing entry has `KIND` `CLEARING`, no items and no ledger entries.
+With new items it is a posting of them like any other, with the same checks, numbers,
+running balances, reclassification and totals, to the ledgers of the cleared items; its new
+items on the account or partner of the cleared items are cleared with them. A customer who
+pays an invoice of 119 is cleared with the items 119 debit on the bank account and 119
+credit on the customer: the credit item and the invoice are cleared. A partial payment is
+posted as a normal entry and cleared together with the invoice later. The clearing entry
+lists the cleared items of other entries in `/TRFIN/CLEARED_ITEMS`; `LEDGER` and
+`LEDGER_GROUP` are copied from the entry of the first item, and the user needs `CREATE` for
+the company and document type and for every ledger, as for postings.
+
+The cleared items and their ledger entries get the fiscal year and number of the clearing
+entry in `CLEARING_YEAR` and `CLEARING_NO` and its posting date in `CLEARING_DATE`. An item
+is open at a key date when it is an open item posted up to the key date and its
+`CLEARING_DATE` is `null` or after the key date; the ledger entries carry the same fields, so
+reports read open items at any key date from them.
+
+**Parallel clearings.** Of two clearings of the same item only one succeeds. The action
+marks the items with the clearing date in the buffer, and the save gives them the number of
+the clearing entry when it numbers it; the kernel writes the items with their ETag
+`VERSION`, so the second save finds the item changed and fails (PostgreSQL makes it wait for
+the first commit; SQLite has one writer). The save method then sets the clearing fields of
+the ledger entries only where they are still open
+(`update ... where <item> and CLEARING_NO is null`) and compares the number of rows with
+the number of ledger entries of the item; fewer fail the save, which rolls back to its
+savepoint and gives the number of the clearing entry back.
+
+**Resetting a clearing.** The instance action `RESET_CLEARING` on a clearing entry opens the
+items it lists and its own items again, as far as they still carry its number, with their
+ledger entries; it needs `CANCEL` for the company and document type of the clearing entry.
+A clearing entry with items stays `POSTED` and can be reversed afterwards; one without items
+gets `STATUS` `REVERSED`. `/TRFIN/CLEARED_ITEMS` keeps the items the entry once cleared.
+Entries whose items are cleared, and clearing entries that clear items, are not reversed:
+the clearing is reset first.
 
 ## Authorizations and roles
 
@@ -182,7 +233,7 @@ version; the fields and `/TRFIN/CLEARED_ITEMS` are there already.
 | `/TRFIN/CHART_ACCOUNT` | `CHART` | `READ`, `CREATE`, `UPDATE`, `DELETE` | accounts of charts |
 | `/TRFIN/PARTNER_COMPANY` | `COMPANY`, `ROLE` | `READ`, `CREATE`, `UPDATE`, `DELETE` | company data of customers and suppliers |
 | `/TRFIN/LEDGER` | `LEDGER` | `READ`, `CREATE` | reading the ledger entries of a ledger and posting to it |
-| `/TRFIN/JOURNAL_ENTRY` | `COMPANY`, `DOCUMENT_TYPE` | `READ`, `CREATE`, `UPDATE`, `CANCEL` | reading, posting (`POST`, `CHECK` and deep inserts, which need `UPDATE` for the items as well), changing the texts and reversing journal entries |
+| `/TRFIN/JOURNAL_ENTRY` | `COMPANY`, `DOCUMENT_TYPE` | `READ`, `CREATE`, `UPDATE`, `CANCEL` | reading, posting (`POST`, `CHECK`, `CLEAR` and deep inserts, which need `UPDATE` for the items as well), changing the texts, reversing journal entries and resetting clearings (`CANCEL`) |
 
 Reading over OData and with `read business object` filters by the same fields. Ledger
 entries are read where the user may read the journal entry and the ledger.
@@ -190,7 +241,7 @@ entries are read where the user may read the journal entry and the ledger.
 | Role | Grants |
 |---|---|
 | `/TRFIN/MASTER_DATA` | all activities on accounts of charts and companies and on company data of customers and suppliers; reading partners and the configuration |
-| `/TRFIN/ACCOUNTANT` | posting, changing the texts of, reversing and reading journal entries in all companies and ledgers; reading configuration, master data and partners |
+| `/TRFIN/ACCOUNTANT` | posting, clearing, changing the texts of, reversing and reading journal entries and resetting clearings in all companies and ledgers; reading configuration, master data and partners |
 | `/TRFIN/DISPLAY` | reading configuration, master data, partners, ledgers and journal entries |
 | `/TRFIN/CONFIGURATION` | maintaining the configuration of TRFIN and TRBP and the intervals of `/TRFIN/JOURNAL_ENTRY` and `/TRBP/PARTNER` |
 | `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` |
@@ -204,9 +255,9 @@ the texts. `/TRFIN/MASTER_DATA_SERVICE` offers `Accounts`, `AccountTexts`,
 `CompanyAccounts`, the partners read only as `Partners`, and their company data as
 `Customers` and `Suppliers`. `/TRFIN/JOURNAL_ENTRY_SERVICE` offers `JournalEntries` (deep
 insert with `JournalEntryItems`, changes of the texts), `JournalEntryItems`, and read only
-`LedgerEntries` and `ClearedItems`, with the actions `POST` and `CHECK` at the root of the
-service and `REVERSE` bound to `JournalEntries`. `POST` answers with the final key of the
-new entry. Activate them with `rt service activate`.
+`LedgerEntries` and `ClearedItems`, with the actions `POST`, `CHECK` and `CLEAR` at the
+root of the service and `REVERSE` and `RESET_CLEARING` bound to `JournalEntries`. `POST`
+and `CLEAR` answer with the final key of the new entry. Activate them with `rt service activate`.
 
 ```bash
 curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
@@ -216,6 +267,15 @@ curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
              { "ACCOUNT": "400000", "DEBIT_CREDIT": "C", "AMOUNT": "100.00" } ] }'
 ```
 
+```bash
+curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
+  https://host/rt/odata/trfin/journal_entry_service/CLEAR -d '{
+  "COMPANY": "1000", "DOCUMENT_TYPE": "DZ", "POSTING_DATE": "2026-03-10",
+  "OPEN_ITEMS": [ { "FISCAL_YEAR": 2026, "DOCUMENT_NO": "0001000000", "ITEM_NO": 1 } ],
+  "ITEMS": [ { "ACCOUNT": "100000", "DEBIT_CREDIT": "D", "AMOUNT": "119.00" },
+             { "ACCOUNT_KIND": "CUSTOMER", "PARTNER": "0000000001", "DEBIT_CREDIT": "C", "AMOUNT": "119.00" } ] }'
+```
+
 ## Tests
 
 `go test ./kernel -run Ledger` installs TRBP and TRFIN from `packages/` with the test package
@@ -223,4 +283,9 @@ curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
 tests of postings cover every check, numbers without gaps, ledgers, groups, totals,
 reversals and reclassification; under PostgreSQL eight parallel postings to one customer,
 after which `/TRFINTEST/API.CONSISTENCY` compares totals, running balances and
-reclassifications with the ledger entries.
+reclassifications with the ledger entries, the clearing of ledger entries with that of their
+items, and checks that every clearing sums up to zero per ledger. The tests of clearing
+cover every check of `CLEAR`, clearing with and without new items, open items at key dates,
+resetting, reversing after a reset and the rejected reversal of cleared entries, the
+service, and under PostgreSQL parallel clearings of the same item, of which exactly one
+succeeds.

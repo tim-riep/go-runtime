@@ -285,7 +285,7 @@ structure with a complex value, one without result with 204. Actions of instance
 `If-Match` when it is sent. An action of the root entity that creates an instance with late
 numbering names it by the component `LINK` of its result structure; the answer has the final
 key of that instance in the components named like the key fields, such as `DOCUMENT_NO` of
-`POST` of `/TRFIN/JOURNAL_ENTRY_SERVICE`.
+`POST` and `CLEAR` of `/TRFIN/JOURNAL_ENTRY_SERVICE`.
 
 ## Errors and messages
 
