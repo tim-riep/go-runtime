@@ -1,0 +1,95 @@
+# Creates business partners and roles for the tests of TRBP.
+public class /TRBPTEST/API
+
+  # Creates a partner with roles and saves it; returns the result of the
+  # save, or of the statement when it failed, as JSON.
+  public static method CREATE(grouping: STRING, category: STRING, name: STRING, number: STRING?, roles: array of STRING) returns STRING raises /RT/EXCEPTION
+    var partner: new of /TRBP/PARTNERS
+    partner.LINK = "p"
+    partner.GROUPING = grouping
+    partner.CATEGORY = /TRBP/CATEGORY.PARSE(category) default /TRBP/CATEGORY.PERSON
+    if partner.CATEGORY = /TRBP/CATEGORY.PERSON
+      partner.LAST_NAME = name
+    else
+      partner.NAME1 = name
+    end
+    var rows: array of new of /TRBP/PARTNER_ROLES = []
+    for role in roles
+      var row: new of /TRBP/PARTNER_ROLES
+      row.PARENT_LINK = "p"
+      row.ROLE = role
+      rows.APPEND(row)
+    end
+    var created: /TRBASE/ENTITY_RESULT
+    if number is not null
+      partner.PARTNER = number
+      modify business object /TRBP/PARTNER
+        create /TRBP/PARTNERS fields (PARTNER, GROUPING, CATEGORY, NAME1, LAST_NAME) from [partner]
+        create /TRBP/PARTNER_ROLES by parent fields (ROLE) from rows
+        result given
+      end
+      created = given
+    else
+      modify business object /TRBP/PARTNER
+        create /TRBP/PARTNERS fields (GROUPING, CATEGORY, NAME1, LAST_NAME) from [partner]
+        create /TRBP/PARTNER_ROLES by parent fields (ROLE) from rows
+        result internal
+      end
+      created = internal
+    end
+    if created.FAILURES is not empty
+      return transform created using /TRBASE/JSON
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+    end
+    return transform saved using /TRBASE/JSON
+  end
+
+  # Gives an existing partner a role.
+  public static method ADD_ROLE(partner: STRING, role: STRING) returns STRING raises /RT/EXCEPTION
+    var row: new of /TRBP/PARTNER_ROLES
+    row.PARTNER = partner
+    row.ROLE = role
+    modify business object /TRBP/PARTNER
+      create /TRBP/PARTNER_ROLES by parent fields (ROLE) from [row]
+      result created
+    end
+    if created.FAILURES is not empty
+      return transform created using /TRBASE/JSON
+    end
+    commit business objects result saved
+    return transform saved using /TRBASE/JSON
+  end
+
+  # Changes the names of a partner; returns the result as JSON.
+  public static method RENAME(partner: STRING, name1: STRING?, last: STRING?) returns STRING raises /RT/EXCEPTION
+    var row: /TRBP/PARTNERS
+    row.PARTNER = partner
+    row.NAME1 = name1
+    row.LAST_NAME = last
+    modify business object /TRBP/PARTNER
+      update /TRBP/PARTNERS fields (NAME1, LAST_NAME) from [row]
+      result changed
+    end
+    if changed.FAILURES is not empty
+      return transform changed using /TRBASE/JSON
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+    end
+    return transform saved using /TRBASE/JSON
+  end
+
+  # The roles of partners as PARTNER:ROLE:GROUPING, sorted.
+  public static method ROLES() returns STRING
+    var out: array of STRING = []
+    for r in select from /TRBP/PARTNER_ROLES
+      out.APPEND("{r.PARTNER}:{r.ROLE}:{r.GROUPING default "-"}")
+    end
+    return out.SORT().JOIN(",")
+  end
+
+end

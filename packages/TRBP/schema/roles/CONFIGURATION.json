@@ -1,0 +1,50 @@
+{
+  "name": "/TRBP/CONFIGURATION",
+  "texts": {
+    "en": {
+      "label": "Business partner configuration",
+      "description": "Maintains the groupings of business partners and the intervals of their numbers"
+    },
+    "de": {
+      "label": "Konfiguration Geschäftspartner",
+      "description": "Pflegt die Gruppierungen von Geschäftspartnern und die Intervalle ihrer Nummern"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRBP/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/NUMBER_RANGE",
+      "fields": {
+        "NUMBER_RANGE_OBJECT": [
+          {
+            "value": "/TRBP/PARTNER"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    }
+  ]
+}

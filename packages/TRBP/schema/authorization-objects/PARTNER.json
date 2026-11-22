@@ -1,0 +1,32 @@
+{
+  "name": "/TRBP/PARTNER",
+  "texts": {
+    "en": {
+      "label": "Business partners",
+      "description": "Reading and changing business partners by grouping and role"
+    },
+    "de": {
+      "label": "Geschäftspartner",
+      "description": "Geschäftspartner nach Gruppierung und Rolle lesen und ändern"
+    }
+  },
+  "fields": [
+    {
+      "name": "GROUPING",
+      "dataElement": "/TRBP/GROUPING"
+    },
+    {
+      "name": "ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

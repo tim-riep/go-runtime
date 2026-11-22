@@ -1,0 +1,14 @@
+{
+  "name": "/TRBP/CATEGORY",
+  "description": "Category of a business partner",
+  "type": "CHAR",
+  "length": 12,
+  "values": [
+    {
+      "value": "PERSON"
+    },
+    {
+      "value": "ORGANIZATION"
+    }
+  ]
+}

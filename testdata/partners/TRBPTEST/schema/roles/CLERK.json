@@ -1,0 +1,7 @@
+{
+  "name": "/TRBPTEST/CLERK",
+  "texts": { "en": { "label": "Customers of the grouping 0001" } },
+  "authorizations": [
+    { "object": "/TRBP/PARTNER", "fields": { "GROUPING": [{ "value": "0001" }], "ROLE": [{ "value": "/TRBPTEST/CUSTOMER" }], "ACTIVITY": [{ "pattern": "*" }] } }
+  ]
+}

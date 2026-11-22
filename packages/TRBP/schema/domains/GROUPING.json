@@ -1,0 +1,6 @@
+{
+  "name": "/TRBP/GROUPING",
+  "description": "Grouping of business partners",
+  "type": "CHAR",
+  "length": 4
+}

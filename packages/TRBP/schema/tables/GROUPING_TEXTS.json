@@ -1,0 +1,37 @@
+{
+  "name": "/TRBP/GROUPING_TEXTS",
+  "description": "Texts of groupings of business partners",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "GROUPING",
+      "dataElement": "/TRBP/GROUPING"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRBP/LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "GROUPING",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "GROUPING",
+      "table": "/TRBP/GROUPINGS",
+      "fields": [
+        {
+          "field": "GROUPING",
+          "references": "GROUPING"
+        }
+      ]
+    }
+  ]
+}

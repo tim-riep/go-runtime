@@ -1,0 +1,7 @@
+{
+  "name": "/TRBPTEST/EMPLOYEE",
+  "content": {
+    "TEXTS": [{ "LANGUAGE": "en", "LABEL": "Employee" }],
+    "CATEGORIES": [{ "CATEGORY": "PERSON" }]
+  }
+}

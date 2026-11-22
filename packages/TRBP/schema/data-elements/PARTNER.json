@@ -1,0 +1,18 @@
+{
+  "name": "/TRBP/PARTNER",
+  "domain": "/TRBP/PARTNER",
+  "texts": {
+    "en": {
+      "short": "Partner",
+      "medium": "Business partner",
+      "long": "Business partner",
+      "heading": "Partner"
+    },
+    "de": {
+      "short": "Partner",
+      "medium": "Geschäftspartner",
+      "long": "Geschäftspartner",
+      "heading": "Partner"
+    }
+  }
+}

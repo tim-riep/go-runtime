@@ -1,0 +1,31 @@
+# The behavior of the object type /TRBP/PARTNER_ROLE: every partner role
+# names the categories of the partners that may take it.
+public class /TRBP/ROLE_BEHAVIOR implements /TRBASE/OBJECT_TYPE_BEHAVIOR
+
+  public method CHECK(changes: /TRBASE/OBJECT_CHANGE_ARRAY) returns /TRBASE/OBJECT_MESSAGE_ARRAY raises /RT/EXCEPTION
+    var messages = new array of /TRBASE/OBJECT_MESSAGE
+    for change in changes
+      if change.KIND = /TRBASE/OBJECT_CHANGE_KIND.DELETED
+        continue
+      end
+      var info = /TRBASE/OBJECTS.GET(change.NAME)
+      if info is null
+        continue
+      end
+      var role = transform info.CONTENT using /TRBASE/JSON into /TRBP/PARTNER_ROLE
+      if role.CATEGORIES is empty
+        var m: /TRBASE/OBJECT_MESSAGE
+        m.NAME = info.NAME
+        m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR
+        m.POINTER = "/CATEGORIES"
+        m.TEXT = "the partner role {info.NAME} names no category of partners that may take it"
+        messages.APPEND(m)
+      end
+    end
+    return messages
+  end
+
+  public method CHANGED(changes: /TRBASE/OBJECT_CHANGE_ARRAY) raises /RT/EXCEPTION
+  end
+
+end

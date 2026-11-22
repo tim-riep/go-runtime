@@ -1,0 +1,122 @@
+{
+  "name": "/TRBP/PARTNER",
+  "description": {
+    "en": "Business partner",
+    "de": "Geschäftspartner"
+  },
+  "root": "/TRBP/PARTNERS",
+  "behaviorClass": "/TRBP/PARTNER_BEHAVIOR",
+  "entities": {
+    "/TRBP/PARTNERS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "late",
+      "lateNumbering": {
+        "fields": [
+          "PARTNER"
+        ],
+        "method": "ASSIGN_NUMBERS"
+      },
+      "fields": {
+        "GROUPING": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "CATEGORY": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        }
+      },
+      "administrative": {
+        "createdBy": "CREATED_BY",
+        "createdAt": "CREATED_AT",
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_NUMBER",
+          "on": [
+            "create"
+          ]
+        },
+        {
+          "name": "CHECK_NAMES",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "NAME1",
+            "NAME2",
+            "FIRST_NAME",
+            "LAST_NAME"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRBP/PARTNER",
+        "fields": {
+          "GROUPING": "GROUPING",
+          "ROLE": "*"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    },
+    "/TRBP/PARTNER_ROLES": {
+      "parent": "/TRBP/PARTNERS",
+      "foreignKey": "PARTNER",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "GROUPING": {
+          "readOnly": true
+        }
+      },
+      "determinations": [
+        {
+          "name": "COPY_GROUPING",
+          "when": "modify",
+          "on": [
+            "create"
+          ]
+        }
+      ],
+      "validations": [
+        {
+          "name": "CHECK_ROLE",
+          "on": [
+            "create",
+            "update"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRBP/PARTNER",
+        "fields": {
+          "GROUPING": "GROUPING",
+          "ROLE": "ROLE"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,172 @@
+# The behavior of the business partner /TRBP/PARTNER: numbers by grouping,
+# names that fit the category and roles that exist and fit it as well.
+public class /TRBP/PARTNER_BEHAVIOR
+
+  # A partner of an internal grouping gets its number from the number range
+  # /TRBP/PARTNER, from the interval of the grouping. Partners of external
+  # groupings keep the number the caller gave, which CHECK_NUMBER checked.
+  public method ASSIGN_NUMBERS(keys: array of key of /TRBP/PARTNERS, response: /TRBASE/ENTITY_RESPONSE) returns array of key of /TRBP/PARTNERS
+    var partners = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNERS fields (GROUPING) keys keys
+    end
+    var groupings: map of STRING to STRING = [:]
+    for partner in partners
+      groupings[partner.PARTNER] = partner.GROUPING
+    end
+    var out: array of key of /TRBP/PARTNERS = []
+    for i, key in keys
+      var name = groupings.GET(key.PARTNER) default ""
+      var grouping = select single from /TRBP/GROUPINGS where GROUPING = name
+      if grouping is null or grouping.EXTERNAL
+        response.FIELD_ERROR(i, "GROUPING", "the grouping {name} gives no numbers")
+      else
+        try
+          key.PARTNER = /TRBASE/NUMBER_RANGE.NEXT("/TRBP/PARTNER", grouping.INTERVAL, null, null)
+        catch e: /TRBASE/NUMBER_RANGE_ERROR
+          response.FIELD_ERROR(i, "PARTNER", e.TEXT)
+        end
+      end
+      out.APPEND(key)
+    end
+    return out
+  end
+
+  # The grouping exists; an internal grouping gives the number, an external
+  # one needs a number of the caller from its external interval.
+  public method CHECK_NUMBER(keys: array of key of /TRBP/PARTNERS, response: /TRBASE/ENTITY_RESPONSE)
+    var partners = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNERS fields (GROUPING) keys keys
+    end
+    for i, partner in partners
+      if partner.GROUPING = ""
+        continue
+      end
+      var grouping = select single from /TRBP/GROUPINGS where GROUPING = partner.GROUPING
+      if grouping is null
+        response.FIELD_ERROR(i, "GROUPING", "the grouping {partner.GROUPING} does not exist")
+        continue
+      end
+      # Late numbering gives a partner without number a preliminary one
+      # that starts with $.
+      var given = not partner.PARTNER.STARTS_WITH("$")
+      if not grouping.EXTERNAL
+        if given
+          response.FIELD_ERROR(i, "PARTNER", "the grouping {grouping.GROUPING} gives the numbers of its partners; leave the number out")
+        end
+        continue
+      end
+      if not given
+        response.FIELD_ERROR(i, "PARTNER", "the grouping {grouping.GROUPING} takes the numbers of its partners from outside; give the number")
+        continue
+      end
+      try
+        if not /TRBASE/NUMBER_RANGE.CHECK_EXTERNAL("/TRBP/PARTNER", grouping.INTERVAL, null, null, partner.PARTNER)
+          response.FIELD_ERROR(i, "PARTNER", "the number {partner.PARTNER} is not in the interval {grouping.INTERVAL} of the grouping {grouping.GROUPING}")
+        end
+      catch e: /TRBASE/NUMBER_RANGE_ERROR
+        response.FIELD_ERROR(i, "PARTNER", e.TEXT)
+      end
+    end
+  end
+
+  # A person has a last name and no name of an organization; an
+  # organization has a name and no names of a person.
+  public method CHECK_NAMES(keys: array of key of /TRBP/PARTNERS, response: /TRBASE/ENTITY_RESPONSE)
+    var partners = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNERS fields all keys keys
+    end
+    for i, partner in partners
+      if partner.CATEGORY = /TRBP/CATEGORY.PERSON
+        if (partner.LAST_NAME default "") = ""
+          response.FIELD_ERROR(i, "LAST_NAME", "a person needs a last name")
+        end
+        if partner.NAME1 is not null
+          response.FIELD_ERROR(i, "NAME1", "a person has no name of an organization")
+        end
+        if partner.NAME2 is not null
+          response.FIELD_ERROR(i, "NAME2", "a person has no name of an organization")
+        end
+      elseif partner.CATEGORY = /TRBP/CATEGORY.ORGANIZATION
+        if (partner.NAME1 default "") = ""
+          response.FIELD_ERROR(i, "NAME1", "an organization needs a name")
+        end
+        if partner.FIRST_NAME is not null
+          response.FIELD_ERROR(i, "FIRST_NAME", "an organization has no first name")
+        end
+        if partner.LAST_NAME is not null
+          response.FIELD_ERROR(i, "LAST_NAME", "an organization has no last name")
+        end
+      end
+    end
+  end
+
+  # New roles take the grouping of their partner, so that authorizations
+  # check and filter them by grouping and role.
+  public method COPY_GROUPING(keys: array of key of /TRBP/PARTNER_ROLES, response: /TRBASE/ENTITY_RESPONSE)
+    var parents: array of key of /TRBP/PARTNERS = []
+    for key in keys
+      var parent: key of /TRBP/PARTNERS
+      parent.PARTNER = key.PARTNER
+      parents.APPEND(parent)
+    end
+    var partners = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNERS fields (GROUPING) keys parents
+    end
+    var groupings: map of STRING to STRING = [:]
+    for partner in partners
+      groupings[partner.PARTNER] = partner.GROUPING
+    end
+    var rows: array of /TRBP/PARTNER_ROLES = []
+    for key in keys
+      var row: /TRBP/PARTNER_ROLES
+      row.PARTNER = key.PARTNER
+      row.ROLE = key.ROLE
+      row.GROUPING = groupings.GET(key.PARTNER)
+      rows.APPEND(row)
+    end
+    modify business object /TRBP/PARTNER in local mode
+      update /TRBP/PARTNER_ROLES fields (GROUPING) from rows
+    end
+  end
+
+  # The role is a partner role that partners of the category of the partner
+  # may take, and its validity does not end before it starts.
+  public method CHECK_ROLE(keys: array of key of /TRBP/PARTNER_ROLES, response: /TRBASE/ENTITY_RESPONSE)
+    var roles = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNER_ROLES fields all keys keys
+    end
+    for i, role in roles
+      var first = role.VALID_FROM
+      var last = role.VALID_TO
+      if first is not null and last is not null and last < first
+        response.FIELD_ERROR(i, "VALID_TO", "the role ends before it starts")
+      end
+      var info: /TRBASE/OBJECT_INFO? = null
+      try
+        info = /TRBASE/OBJECTS.GET(role.ROLE)
+      catch e: /TRBASE/OBJECT_TYPE_NOT_VISIBLE
+        info = null
+      end
+      if info is null or info.TYPE <> "/TRBP/PARTNER_ROLE"
+        response.FIELD_ERROR(i, "ROLE", "the partner role {role.ROLE} does not exist")
+        continue
+      end
+      var parent: key of /TRBP/PARTNERS
+      parent.PARTNER = role.PARTNER
+      var partners = read business object /TRBP/PARTNER in local mode
+        /TRBP/PARTNERS fields (CATEGORY) keys [parent]
+      end
+      for partner in partners
+        try
+          var content = transform info.CONTENT using /TRBASE/JSON into /TRBP/PARTNER_ROLE
+          if not content.CATEGORIES.ANY(function (c: /TRBP/ROLE_CATEGORY) => c.CATEGORY = partner.CATEGORY)
+            response.FIELD_ERROR(i, "ROLE", "a partner of the category {partner.CATEGORY.NAME()} cannot take the role {role.ROLE}")
+          end
+        catch e: /RT/EXCEPTION
+          response.FIELD_ERROR(i, "ROLE", e.TEXT)
+        end
+      end
+    end
+  end
+
+end

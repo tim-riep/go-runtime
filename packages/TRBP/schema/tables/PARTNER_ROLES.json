@@ -1,0 +1,45 @@
+{
+  "name": "/TRBP/PARTNER_ROLES",
+  "description": "Roles of business partners",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "GROUPING",
+      "dataElement": "/TRBP/GROUPING",
+      "description": "The grouping of the partner, copied for the checks of authorizations"
+    },
+    {
+      "name": "VALID_FROM",
+      "dataElement": "/TRBASE/VALID_FROM"
+    },
+    {
+      "name": "VALID_TO",
+      "dataElement": "/TRBASE/VALID_TO"
+    }
+  ],
+  "primaryKey": [
+    "PARTNER",
+    "ROLE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARTNER",
+      "table": "/TRBP/PARTNERS",
+      "fields": [
+        {
+          "field": "PARTNER",
+          "references": "PARTNER"
+        }
+      ]
+    }
+  ]
+}

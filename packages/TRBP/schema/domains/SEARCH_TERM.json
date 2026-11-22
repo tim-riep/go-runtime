@@ -1,0 +1,6 @@
+{
+  "name": "/TRBP/SEARCH_TERM",
+  "description": "Search term of a business partner",
+  "type": "CHAR",
+  "length": 20
+}

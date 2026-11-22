@@ -1,0 +1,18 @@
+{
+  "name": "/TRBP/NAME2",
+  "domain": "/TRBASE/NAME",
+  "texts": {
+    "en": {
+      "short": "Name 2",
+      "medium": "Name 2",
+      "long": "Name of the organization, continued",
+      "heading": "Name 2"
+    },
+    "de": {
+      "short": "Name 2",
+      "medium": "Name 2",
+      "long": "Name der Organisation, Fortsetzung",
+      "heading": "Name 2"
+    }
+  }
+}

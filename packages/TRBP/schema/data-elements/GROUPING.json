@@ -1,0 +1,18 @@
+{
+  "name": "/TRBP/GROUPING",
+  "domain": "/TRBP/GROUPING",
+  "texts": {
+    "en": {
+      "short": "Grouping",
+      "medium": "Grouping",
+      "long": "Grouping of business partners",
+      "heading": "Grouping"
+    },
+    "de": {
+      "short": "Gruppier.",
+      "medium": "Gruppierung",
+      "long": "Gruppierung von Geschäftspartnern",
+      "heading": "Gruppierung"
+    }
+  }
+}

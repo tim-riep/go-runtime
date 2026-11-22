@@ -1,0 +1,55 @@
+{
+  "name": "/TRBP/DISPLAY",
+  "texts": {
+    "en": {
+      "label": "Display business partners",
+      "description": "Reads business partners of all groupings with all roles and the groupings"
+    },
+    "de": {
+      "label": "Geschäftspartner anzeigen",
+      "description": "Liest Geschäftspartner aller Gruppierungen mit allen Rollen und die Gruppierungen"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRBP/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

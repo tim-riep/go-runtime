@@ -1,0 +1,16 @@
+{
+  "name": "/TRBP/PARTNER",
+  "texts": {
+    "en": {
+      "label": "Business partners"
+    },
+    "de": {
+      "label": "Geschäftspartner"
+    }
+  },
+  "length": 10,
+  "buffering": {
+    "mode": "buffered",
+    "blockSize": 10
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "/TRBP/ODATA_USER",
+  "texts": {
+    "en": {
+      "label": "OData of business partners",
+      "description": "Starts the service of business partners below /rt/odata; what a request may read or change comes from the other roles"
+    },
+    "de": {
+      "label": "OData der Geschäftspartner",
+      "description": "Startet den Dienst der Geschäftspartner unter /rt/odata; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "RT"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/rt/odata"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRBP"
+          }
+        ],
+        "SERVICE_NAME": [
+          {
+            "value": "/TRBP/PARTNER_SERVICE"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    }
+  ]
+}

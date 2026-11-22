@@ -591,7 +591,7 @@ func (b *entityBuffer) create(ctx context.Context, bo *model.BusinessObject, e *
 				continue
 			}
 		}
-		if ok, err := b.authorize(ctx, req.Local, bo, e, model.OperationCreate, values, parent, req.Caller); err != nil {
+		if ok, err := b.authorize(ctx, req.Local, bo, e, model.OperationCreate, parentAuthorizationValues(e, values, parent), parent, req.Caller); err != nil {
 			return nil, err
 		} else if !ok {
 			r.fail(e.Table, "create", reasonNotAuthorized, strPtr(key), link)
@@ -845,4 +845,34 @@ func (x *execution) endBuffer(ctx context.Context, m *vm.Machine) error {
 		return &rterr.BusinessObjectsNotSaved{Summary: r.Summary()}
 	}
 	return nil
+}
+
+// parentAuthorizationValues returns the values with which a new dependent
+// instance with an authorization of its own is checked for create: a field
+// of the authorization that the instance leaves null takes the value of
+// the field of the same name of its parent instance. A determination on
+// modify usually copies that value into the instance right after, such as
+// the grouping of a business partner into its roles; without this the
+// check would see null before the determination ran.
+func parentAuthorizationValues(e *model.Entity, values map[string]any, parent *instance) map[string]any {
+	au := e.Authorization
+	if au == nil || parent == nil {
+		return values
+	}
+	var out map[string]any
+	for _, f := range au.Fields {
+		if f == model.AnyField || values[f] != nil {
+			continue
+		}
+		if v, ok := parent.values[f]; ok && v != nil {
+			if out == nil {
+				out = mapsClone(values)
+			}
+			out[f] = v
+		}
+	}
+	if out == nil {
+		return values
+	}
+	return out
 }

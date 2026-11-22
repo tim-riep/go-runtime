@@ -1,0 +1,39 @@
+{
+  "name": "/TRBP/GROUPING",
+  "description": {
+    "en": "Grouping of business partners",
+    "de": "Gruppierung von Geschäftspartnern"
+  },
+  "dataClass": "configuration",
+  "root": "/TRBP/GROUPINGS",
+  "entities": {
+    "/TRBP/GROUPINGS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "INTERVAL": {
+          "mandatory": true
+        }
+      }
+    },
+    "/TRBP/GROUPING_TEXTS": {
+      "parent": "/TRBP/GROUPINGS",
+      "foreignKey": "GROUPING",
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

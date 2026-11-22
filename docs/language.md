@@ -802,7 +802,8 @@ end
   class; the caller decides.
 
 Without `in local mode` every instance is checked with the authorization of its entity:
-`create` with the new values, `update` with the values before and, when a field of the
+`create` with the new values (a dependent instance with an authorization of its own takes
+for fields it leaves `null` the value of the field of the same name of its parent), `update` with the values before and, when a field of the
 authorization changes, also after, `delete`, `read` and actions with the current values.
 `read` leaves out what the user may not read. Dependent entities without an authorization of
 their own are checked with the instance of the nearest parent entity that has one, `read`

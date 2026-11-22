@@ -1,0 +1,18 @@
+{
+  "name": "/TRBP/CATEGORY",
+  "domain": "/TRBP/CATEGORY",
+  "texts": {
+    "en": {
+      "short": "Category",
+      "medium": "Category",
+      "long": "Category of the business partner",
+      "heading": "Category"
+    },
+    "de": {
+      "short": "Kategorie",
+      "medium": "Kategorie",
+      "long": "Kategorie des Geschäftspartners",
+      "heading": "Kategorie"
+    }
+  }
+}

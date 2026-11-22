@@ -650,13 +650,15 @@ func (x *execution) nextNumber(ctx context.Context, s *session, reader model.Pac
 	if err != nil {
 		return "", err
 	}
-	if n.Buffering == model.BufferingBuffered && x.bound == nil && !x.test && !x.written() {
+	if n.Buffering == model.BufferingBuffered && x.bound == nil && !x.test && !x.written() && !(s.sqlite() && x.reading()) {
 		return x.k.bufferedNumber(ctx, x.tenant, x.schema, n, id, sub, year)
 	}
 	// Without buffering, and with buffering when a session of the
-	// execution holds the write lock of SQLite or the execution runs in a
-	// test or in the transaction of the kernel: in the transaction of the
-	// session, where a rollback returns the number.
+	// execution holds the write lock of SQLite or has a transaction open
+	// under SQLite, which could not write after the block was committed, or
+	// when the execution runs in a test or in the transaction of the
+	// kernel: in the transaction of the session, where a rollback returns
+	// the number.
 	if s.sqlite() {
 		for _, o := range x.sessions {
 			if o != s && o.written {
@@ -682,6 +684,14 @@ func (x *execution) nextNumber(ctx context.Context, s *session, reader model.Pac
 	}
 	s.written = true
 	return shorten(number, n.Length), nil
+}
+
+// reading reports whether a session of the execution has a transaction
+// open. Under SQLite such a transaction keeps the state of its first
+// statement and cannot write once another connection committed, as the
+// reservation of a block does.
+func (x *execution) reading() bool {
+	return slices.ContainsFunc(x.sessions, func(s *session) bool { return s.open })
 }
 
 // written reports whether a session of the execution changed rows.

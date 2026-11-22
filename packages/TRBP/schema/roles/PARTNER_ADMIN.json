@@ -1,0 +1,55 @@
+{
+  "name": "/TRBP/PARTNER_ADMIN",
+  "texts": {
+    "en": {
+      "label": "Business partner administration",
+      "description": "Creates, changes and deletes business partners of all groupings with all roles"
+    },
+    "de": {
+      "label": "Verwaltung Geschäftspartner",
+      "description": "Legt Geschäftspartner aller Gruppierungen mit allen Rollen an, ändert und löscht sie"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRBP/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "/TRBP/PARTNER_ROLE",
+  "description": {
+    "en": "Partner role",
+    "de": "Partnerrolle"
+  },
+  "content": "/TRBP/PARTNER_ROLE",
+  "behavior": "/TRBP/ROLE_BEHAVIOR"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "/TRBP/PARTNER_ROLE",
+  "texts": {
+    "en": {
+      "label": "Partner role",
+      "description": "A role that business partners take, with the categories of partners that may take it"
+    },
+    "de": {
+      "label": "Partnerrolle",
+      "description": "Eine Rolle, die Geschäftspartner übernehmen, mit den Kategorien von Partnern, die sie übernehmen dürfen"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXTS",
+      "arrayType": "/TRBP/ROLE_TEXTS",
+      "notNull": true
+    },
+    {
+      "name": "CATEGORIES",
+      "arrayType": "/TRBP/ROLE_CATEGORIES",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "/TRBP/ROLE_CATEGORIES",
+  "texts": {
+    "en": {
+      "label": "Categories of a partner role"
+    },
+    "de": {
+      "label": "Kategorien einer Partnerrolle"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBP/ROLE_CATEGORY"
+  },
+  "key": {
+    "fields": [
+      "CATEGORY"
+    ],
+    "unique": true
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "/TRBP/PARTNER_SERVICE",
+  "description": {
+    "en": "Business partners",
+    "de": "Geschäftspartner"
+  },
+  "entitySets": {
+    "Partners": {
+      "businessObject": "/TRBP/PARTNER",
+      "entity": "/TRBP/PARTNERS",
+      "navigations": {
+        "GROUPING": "Grouping"
+      }
+    },
+    "PartnerRoles": {
+      "businessObject": "/TRBP/PARTNER",
+      "entity": "/TRBP/PARTNER_ROLES"
+    },
+    "Groupings": {
+      "businessObject": "/TRBP/GROUPING",
+      "entity": "/TRBP/GROUPINGS"
+    },
+    "GroupingTexts": {
+      "businessObject": "/TRBP/GROUPING",
+      "entity": "/TRBP/GROUPING_TEXTS"
+    },
+    "Roles": {
+      "objectType": "/TRBP/PARTNER_ROLE"
+    }
+  }
+}

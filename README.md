@@ -811,6 +811,12 @@ and go through a fixed save sequence. `TRDEMOFIN` defines `/TRDEMOFIN/COMPANY`
   business object of application data needs one. A dependent entity without one takes that
   of the nearest parent entity with one: `read` with its activity for read, everything else
   with its activity for update.
+- A new dependent instance with an authorization of its own is checked for `create` with
+  the value of the field of the same name of its parent for every field of the
+  authorization it leaves `null`. So a dependent entity can keep a copy of a field of its
+  parent for its checks and the filters of `read`: TRBP copies the grouping of a business
+  partner into its roles with a determination on modify, which runs after that check; the
+  copy is `readOnly`, so callers cannot give another value.
 - A business object of configuration without an authorization is checked with
   `/TRBASE/CONFIGURATION` of TRBASE: its field `BUSINESS_OBJECT` gets the name of the
   business object, `DATA_CLASS` its data class, `ACTIVITY` is `READ`, `CREATE`, `UPDATE` or
@@ -967,8 +973,8 @@ kernel gives from intervals:
   interval wait for each other (PostgreSQL holds the lock of the row of the interval until
   the commit, SQLite has one writer). `buffered` with a `blockSize` reserves blocks per
   process in a transaction of their own; numbers of a block that a restart loses leave gaps.
-  Under SQLite, and in tests, an execution that has already written gives buffered numbers in
-  its transaction instead.
+  Under SQLite an execution that has already written or has a transaction open, and every
+  execution in tests, gives buffered numbers in its transaction instead.
 - When an interval reaches `warningPercent` (default 90), the kernel logs a warning once; an
   interval that gave its last number raises `/TRBASE/NUMBER_RANGE_EXHAUSTED`.
 - Upgrades may make numbers longer and change texts, buffering and the warning. A shorter
@@ -1465,6 +1471,22 @@ source. Instead of `make trfrontend`, a release of TRFRONTEND installs directly:
 `http://localhost:8080/trfrontend/` and sign in as `clara` or `admin`.
 `--insecure-session-cookie` lets the session cookie travel without TLS and is meant for
 development only.
+
+## Business partners
+
+The package `TRBP` in [packages/TRBP](packages/TRBP) keeps business partners: persons and
+organizations with roles, numbered from the number range `/TRBP/PARTNER` by the interval of
+their grouping or given from outside for external groupings. Other packages ship partner roles
+as objects of the type `/TRBP/PARTNER_ROLE`. [docs/trbp.md](docs/trbp.md) describes
+the business objects, authorizations, roles and the service `/TRBP/PARTNER_SERVICE`. TRBP
+has German texts, hence `rt language add de`.
+
+```bash
+rt language add de
+rt install packages/TRBP --yes
+rt number-range interval add /TRBP/PARTNER 01 --tenant ACME --from 1 --to 4999999999
+rt service activate /TRBP/PARTNER_SERVICE
+```
 
 ## Library
 

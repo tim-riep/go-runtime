@@ -1,0 +1,20 @@
+{
+  "name": "/TRBP/ROLE_TEXTS",
+  "texts": {
+    "en": {
+      "label": "Texts of a partner role"
+    },
+    "de": {
+      "label": "Texte einer Partnerrolle"
+    }
+  },
+  "rowType": {
+    "structure": "/TRBP/ROLE_TEXT"
+  },
+  "key": {
+    "fields": [
+      "LANGUAGE"
+    ],
+    "unique": true
+  }
+}

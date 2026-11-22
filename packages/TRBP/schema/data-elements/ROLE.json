@@ -1,0 +1,19 @@
+{
+  "name": "/TRBP/ROLE",
+  "domain": "/TRBASE/REF_OBJECT",
+  "objectType": "/TRBP/PARTNER_ROLE",
+  "texts": {
+    "en": {
+      "short": "Role",
+      "medium": "Partner role",
+      "long": "Role of a business partner",
+      "heading": "Role"
+    },
+    "de": {
+      "short": "Rolle",
+      "medium": "Partnerrolle",
+      "long": "Rolle eines Geschäftspartners",
+      "heading": "Rolle"
+    }
+  }
+}

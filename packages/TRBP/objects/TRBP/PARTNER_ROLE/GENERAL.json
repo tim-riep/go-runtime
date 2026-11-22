@@ -1,0 +1,23 @@
+{
+  "name": "/TRBP/GENERAL",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "LABEL": "General business partner"
+      },
+      {
+        "LANGUAGE": "de",
+        "LABEL": "Allgemeiner Geschäftspartner"
+      }
+    ],
+    "CATEGORIES": [
+      {
+        "CATEGORY": "PERSON"
+      },
+      {
+        "CATEGORY": "ORGANIZATION"
+      }
+    ]
+  }
+}

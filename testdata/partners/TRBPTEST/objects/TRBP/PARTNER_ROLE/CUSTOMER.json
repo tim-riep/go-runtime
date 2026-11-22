@@ -1,0 +1,7 @@
+{
+  "name": "/TRBPTEST/CUSTOMER",
+  "content": {
+    "TEXTS": [{ "LANGUAGE": "en", "LABEL": "Customer" }],
+    "CATEGORIES": [{ "CATEGORY": "PERSON" }, { "CATEGORY": "ORGANIZATION" }]
+  }
+}

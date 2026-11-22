@@ -1,0 +1,26 @@
+{
+  "name": "/TRBP/GROUPINGS",
+  "description": "Groupings of business partners with the interval of their numbers",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "GROUPING",
+      "dataElement": "/TRBP/GROUPING"
+    },
+    {
+      "name": "INTERVAL",
+      "dataElement": "/TRBASE/INTERVAL_ID",
+      "notNull": true
+    },
+    {
+      "name": "EXTERNAL",
+      "dataElement": "/TRBASE/EXTERNAL_NUMBERING",
+      "notNull": true,
+      "default": false
+    }
+  ],
+  "primaryKey": [
+    "GROUPING"
+  ]
+}

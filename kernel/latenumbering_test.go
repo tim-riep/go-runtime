@@ -160,7 +160,7 @@ func TestMaintainedBySaveRules(t *testing.T) {
 	forEachDB(t, func(t *testing.T, k *kernel.Kernel) {
 		lateKernel(t, k)
 		fsys := fstest.MapFS{
-			"manifest.json": {Data: []byte(`{"id":"TRLATEUSE","version":"1.0.0","languageVersion":1,"requires":[{"id":"TRBASE"},{"id":"TRLATE"}]}`)},
+			"manifest.json":   {Data: []byte(`{"id":"TRLATEUSE","version":"1.0.0","languageVersion":1,"requires":[{"id":"TRBASE"},{"id":"TRLATE"}]}`)},
 			"src/WRITE.class": {Data: []byte("public class /TRLATEUSE/WRITE\n\n  public static method RUN()\n    delete from /TRLATE/LINES\n  end\n\nend\n")},
 		}
 		p, err := pkgload.Load(fsys, "TRLATEUSE")

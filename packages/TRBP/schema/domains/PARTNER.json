@@ -1,0 +1,6 @@
+{
+  "name": "/TRBP/PARTNER",
+  "description": "Number of a business partner",
+  "type": "CHAR",
+  "length": 10
+}

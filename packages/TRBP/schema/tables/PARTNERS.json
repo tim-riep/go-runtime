@@ -1,0 +1,79 @@
+{
+  "name": "/TRBP/PARTNERS",
+  "description": "Business partners",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "GROUPING",
+      "dataElement": "/TRBP/GROUPING",
+      "notNull": true
+    },
+    {
+      "name": "CATEGORY",
+      "dataElement": "/TRBP/CATEGORY",
+      "notNull": true
+    },
+    {
+      "name": "NAME1",
+      "dataElement": "/TRBP/NAME1"
+    },
+    {
+      "name": "NAME2",
+      "dataElement": "/TRBP/NAME2"
+    },
+    {
+      "name": "FIRST_NAME",
+      "dataElement": "/TRBP/FIRST_NAME"
+    },
+    {
+      "name": "LAST_NAME",
+      "dataElement": "/TRBP/LAST_NAME"
+    },
+    {
+      "name": "SEARCH_TERM",
+      "dataElement": "/TRBP/SEARCH_TERM"
+    },
+    {
+      "name": "BLOCKED",
+      "dataElement": "/TRBP/BLOCKED",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "PARTNER"
+  ],
+  "foreignKeys": [
+    {
+      "name": "GROUPING",
+      "table": "/TRBP/GROUPINGS",
+      "fields": [
+        {
+          "field": "GROUPING",
+          "references": "GROUPING"
+        }
+      ]
+    }
+  ]
+}
