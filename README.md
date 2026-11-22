@@ -1591,7 +1591,15 @@ go install github.com/tim-riep/go-runtime/cmd/rt@latest
 ```
 
 Each release `v<version>` of the repository also carries `rt` built for Linux, macOS and
-Windows; a tag `v<version>` releases it with `.github/workflows/rt-release.yml`.
+Windows; a tag `v<version>` releases it with `.github/workflows/rt-release.yml`. The packages
+in `packages/` have releases of their own: `trbp-v<version>`, `trfin-v<version>` and
+`trbpui-v<version>` with `.github/workflows/package-release.yml`, `trfrontend-v<version>` and
+`trfinui-v<version>`, which build a user interface, with workflows of their own. Their
+requirements name their sources, so one address installs a package with what it needs:
+
+```bash
+rt install github.com/tim-riep/go-runtime/packages/TRFINUI@1.0.0
+```
 
 ```bash
 export RT_DATABASE=sqlite:app.db

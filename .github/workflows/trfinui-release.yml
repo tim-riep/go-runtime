@@ -1,0 +1,83 @@
+# Releases the package TRFINUI for a tag trfinui-v<version>: checks that the
+# tag matches the manifest, builds TRFRONTEND and the remote apps of
+# TRFINUI, runs the Go tests of the user interfaces and the tests in the
+# browser against rt serve, and attaches TRFINUI-<version>.zip with the
+# folder TRFINUI/ to the release, which rt install takes from there.
+name: TRFINUI release
+
+on:
+  push:
+    tags:
+      - 'trfinui-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TRUI_VERSION: 0.2.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/TRFRONTEND/web/package-lock.json
+            packages/TRFINUI/web/package-lock.json
+
+      - name: Check the version of the tag
+        run: |
+          version="${GITHUB_REF_NAME#trfinui-v}"
+          manifest=$(jq -r .version packages/TRFINUI/manifest.json)
+          web=$(jq -r .version packages/TRFINUI/web/package.json)
+          if [ "$version" != "$manifest" ] || [ "$version" != "$web" ]; then
+            echo "tag $GITHUB_REF_NAME, manifest $manifest, web/package.json $web differ" >&2
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build TRFRONTEND
+        working-directory: packages/TRFRONTEND/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build
+        working-directory: packages/TRFINUI/web
+        run: |
+          npm ci
+          npm run check:headers
+          npm run typecheck
+          npm run build
+
+      - name: Go tests of the user interfaces
+        run: go test -timeout 30m ./kernel -run 'Frontend|LedgerNumberRange'
+
+      - name: Tests in the browser
+        working-directory: packages/TRFINUI/web
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          npx playwright install --with-deps chromium firefox webkit
+          gh release download "v$TRUI_VERSION" -R tim-riep/trui -p "TRUI-$TRUI_VERSION.zip" -D "$RUNNER_TEMP"
+          npm test
+          TRUI_PACKAGE="$RUNNER_TEMP/TRUI-$TRUI_VERSION.zip" npm run test:e2e
+
+      - name: Package
+        working-directory: packages/TRFINUI/dist
+        run: zip -r "$RUNNER_TEMP/TRFINUI-$VERSION.zip" TRFINUI
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP/TRFINUI-$VERSION.zip" \
+            --title "TRFINUI $VERSION" --notes "The package TRFINUI $VERSION for go-runtime."

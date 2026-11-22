@@ -1,0 +1,66 @@
+# Releases a package without build step for a tag <id>-v<version>, such as
+# trbp-v1.0.0: checks that the tag matches the manifest, runs the Go tests
+# of the package and attaches <ID>-<version>.zip with the folder <ID>/ to
+# the release, which rt install takes from there. TRFRONTEND and TRFINUI
+# build a user interface and have workflows of their own.
+name: Package release
+
+on:
+  push:
+    tags:
+      - 'trbp-v*'
+      - 'trfin-v*'
+      - 'trbpui-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check the version of the tag
+        run: |
+          prefix="${GITHUB_REF_NAME%%-v*}"
+          version="${GITHUB_REF_NAME#*-v}"
+          id=$(echo "$prefix" | tr a-z A-Z)
+          manifest=$(jq -r .version "packages/$id/manifest.json")
+          if [ "$version" != "$manifest" ]; then
+            echo "tag $GITHUB_REF_NAME and manifest $manifest of $id differ" >&2
+            exit 1
+          fi
+          case "$id" in
+            TRBP) tests='Partner' ;;
+            TRFIN) tests='Ledger' ;;
+            TRBPUI) tests='FrontendLedger' ;;
+          esac
+          echo "ID=$id" >> "$GITHUB_ENV"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TESTS=$tests" >> "$GITHUB_ENV"
+
+      - name: Go tests of the package
+        run: go test -timeout 30m ./kernel -run "$TESTS"
+
+      - name: Package
+        run: |
+          mkdir -p "$RUNNER_TEMP/package/$ID"
+          for entry in manifest.json schema src assets transformations objects; do
+            if [ -e "packages/$ID/$entry" ]; then
+              cp -R "packages/$ID/$entry" "$RUNNER_TEMP/package/$ID/"
+            fi
+          done
+          cd "$RUNNER_TEMP/package"
+          zip -r "$RUNNER_TEMP/$ID-$VERSION.zip" "$ID"
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP/$ID-$VERSION.zip" \
+            --title "$ID $VERSION" --notes "The package $ID $VERSION for go-runtime."
