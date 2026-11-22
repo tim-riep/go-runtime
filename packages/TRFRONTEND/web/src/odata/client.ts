@@ -183,26 +183,42 @@ export class ODataClient {
 
   /** Changes properties of an entity read with etag; 412 if another changed it since. */
   async update(set: string, key: Entity, patch: Entity, etag: string | null): Promise<Changed> {
+    return this.updatePath(await this.entityPath(set, key), patch, etag);
+  }
+
+  /**
+   * Changes properties of the entity at a path, e.g. one below its parent
+   * along a contained navigation; 412 if another changed it since.
+   */
+  async updatePath(path: string, patch: Entity, etag: string | null): Promise<Changed> {
     const extra: Record<string, string> = { Prefer: 'return=representation' };
     if (etag) extra['If-Match'] = etag;
-    const resp = await this.send('PATCH', await this.entityPath(set, key), patch, extra);
-    return changed(resp);
+    return changed(await this.send('PATCH', path, patch, extra));
   }
 
   /** Deletes an entity read with etag. */
   async remove(set: string, key: Entity, etag: string | null): Promise<void> {
-    await this.send('DELETE', await this.entityPath(set, key), undefined, etag ? { 'If-Match': etag } : {});
+    await this.removePath(await this.entityPath(set, key), etag);
+  }
+
+  /** Deletes the entity at a path read with etag. */
+  async removePath(path: string, etag: string | null): Promise<void> {
+    await this.send('DELETE', path, undefined, etag ? { 'If-Match': etag } : {});
   }
 
   /**
-   * Runs an action: bound to an entity with set and key, else an action
-   * import. It returns the result and the messages.
+   * Runs an action: bound to an entity with set and key or with its path,
+   * else an action import. It returns the result and the messages.
    */
-  async action(name: string, params: Record<string, Value>, bound?: { set: string; key: Entity; etag: string | null }): Promise<Changed> {
+  async action(
+    name: string,
+    params: Record<string, Value>,
+    bound?: { set: string; key: Entity; etag: string | null } | { path: string; etag: string | null },
+  ): Promise<Changed> {
     let path = name;
     const extra: Record<string, string> = {};
     if (bound) {
-      path = `${await this.entityPath(bound.set, bound.key)}/${name}`;
+      path = `${'path' in bound ? bound.path : await this.entityPath(bound.set, bound.key)}/${name}`;
       if (bound.etag) extra['If-Match'] = bound.etag;
     }
     return changed(await this.send('POST', path, params, extra));

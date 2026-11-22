@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "OData of the general ledger",
-      "description": "Starts the services of the general ledger below /rt/odata and its nodes /trfin/reports and /trfin/number-ranges; what a request may read or change comes from the other roles"
+      "description": "Starts the services of the general ledger and the service of business partners below /rt/odata and the nodes /trfin/reports and /trfin/number-ranges; what a request may read or change comes from the other roles"
     },
     "de": {
       "label": "OData des Hauptbuchs",
-      "description": "Startet die Dienste des Hauptbuchs unter /rt/odata und seine Knoten /trfin/reports und /trfin/number-ranges; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
+      "description": "Startet die Dienste des Hauptbuchs und den Dienst der Geschäftspartner unter /rt/odata und die Knoten /trfin/reports und /trfin/number-ranges; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
     }
   },
   "authorizations": [
@@ -65,6 +65,26 @@
           },
           {
             "value": "/trfin/number-ranges"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRBP"
+          }
+        ],
+        "SERVICE_NAME": [
+          {
+            "value": "/TRBP/PARTNER_SERVICE"
           }
         ],
         "ACTIVITY": [

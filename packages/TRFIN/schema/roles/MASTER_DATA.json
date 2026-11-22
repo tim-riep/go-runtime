@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "General ledger master data",
-      "description": "Maintains the accounts of charts of accounts and companies and the company data of customers and suppliers"
+      "description": "Maintains the accounts of charts of accounts and companies, and in the business partner the roles customer and supplier with their company data"
     },
     "de": {
       "label": "Stammdaten Hauptbuch",
-      "description": "Pflegt die Sachkonten in Kontenplänen und Buchungskreisen und die Buchungskreisdaten von Debitoren und Kreditoren"
+      "description": "Pflegt die Sachkonten in Kontenplänen und Buchungskreisen und am Geschäftspartner die Rollen Debitor und Kreditor mit ihren Buchungskreisdaten"
     }
   },
   "authorizations": [
@@ -103,6 +103,35 @@
         "ACTIVITY": [
           {
             "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "value": "/TRFIN/CUSTOMER"
+          },
+          {
+            "value": "/TRFIN/SUPPLIER"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "CREATE"
+          },
+          {
+            "value": "UPDATE"
+          },
+          {
+            "value": "DELETE"
           }
         ]
       }

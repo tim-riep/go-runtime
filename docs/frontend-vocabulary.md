@@ -47,7 +47,10 @@ A package that requires `TRFRONTEND` and the package of the business object ship
   filter fields, the default order and actions in the toolbar. `MERGE_SET` names an entity
   set of the service with the same properties whose entities the list shows as well.
 - `DETAIL`: sections with groups of fields, or with `TABLE` the dependent entities of an
-  entity as table along the navigation of the service; actions of the page.
+  entity as table along the navigation of the service; actions of the page. Dependent
+  entities of an extension without an entity set of their own in the service come through
+  a contained navigation; the detail page then creates, opens, changes and deletes them by
+  their path below the parent, with the `HEADER`, `LIST` and `DETAIL` of their entity.
 
 ## Extensions by other packages
 

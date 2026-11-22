@@ -1,8 +1,0 @@
-{
-  "name": "/TRFINUI/CUSTOMERS_TILE",
-  "content": {
-    "APP": "/TRFINUI/CUSTOMERS",
-    "KIND": "SIMPLE",
-    "SIZE": "SMALL"
-  }
-}

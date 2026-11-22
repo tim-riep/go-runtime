@@ -16,12 +16,14 @@
 // The generic detail page: header, sections with field groups and tables
 // of dependent entities, display and edit, PATCH with the ETag (412 → the
 // conflict with Reload), creating with POST, deleting, bound actions and
-// messages of the server at their fields.
+// messages of the server at their fields. Dependent entities come from the
+// entity set their navigation is bound to or, for a contained navigation,
+// live below their parent and are addressed by the path through it.
 
 import { Banner, Button, Form, FormField, FormGroup, PageHeader, Spinner, Table, Toolbar, type ToolbarItem } from '@tim-riep/trui';
 import { useMessageDialog, useToast } from '@tim-riep/trui/core';
 import { useCallback, useEffect, useState } from 'react';
-import { changes, type Entity, keyPredicate, type ODataClient, ODataError, type ServiceModel, type Value } from '../odata/index.ts';
+import { changes, type Entity, keyPredicate, navigationTarget, type ODataClient, ODataError, type ServiceModel, type Value } from '../odata/index.ts';
 import { defined } from '../shell/defined.ts';
 import type { TextKey } from '../shell/texts.ts';
 import { ActionDialog } from './ActionDialog.tsx';
@@ -33,7 +35,10 @@ export interface DetailPageProps {
   model: ServiceModel;
   view: DetailView;
   texts: Record<TextKey, string>;
-  /** The path of the entity, e.g. Companies('C1'); null to create one. */
+  /**
+   * The path of the entity, e.g. Companies('C1') or, below its parent,
+   * Partners('1')/TRFIN_CUSTOMER_COMPANIES(…); null to create one.
+   */
   path: string | null;
   /** Where a new entity is posted: the entity set or a navigation of its parent. */
   createPath: string;
@@ -55,7 +60,8 @@ function writable(view: DetailView, f: Field, creating: boolean): boolean {
 export function DetailPage(props: DetailPageProps) {
   const { client, model, view, texts, path, createPath, readOnly, onOpen, onCreate, onCreated, onDeleted, onError } = props;
   const creating = path === null;
-  const tables = view.sections.map((s) => s.table).filter((t): t is string => t !== null);
+  // Only tables whose entities can be addressed are read and shown.
+  const tables = view.sections.map((s) => s.table).filter((t): t is string => t !== null && navigationTarget(model, view.set, t) !== null);
   const [entity, setEntity] = useState<Entity | null>(creating ? {} : null);
   const [etag, setEtag] = useState<string | null>(null);
   const [edited, setEdited] = useState<Entity | null>(creating ? {} : null);
@@ -106,11 +112,11 @@ export function DetailPage(props: DetailPageProps) {
         for (const [k, v] of Object.entries(edited)) if (allowed.has(k)) body[k] = v;
         const r = await client.create(createPath, body);
         toast.show({ message: texts.created, tone: 'success' });
-        if (r.entity) onCreated(`${view.set.name}${keyPredicate(view.set.type, r.entity)}`);
-      } else {
+        if (r.entity) onCreated(`${view.set.containedIn ? createPath : view.set.name}${keyPredicate(view.set.type, r.entity)}`);
+      } else if (path !== null) {
         const patch: Entity = {};
         for (const [k, v] of Object.entries(changes(entity, edited))) if (allowed.has(k)) patch[k] = v;
-        const r = await client.update(view.set.name, entity, patch, etag);
+        const r = await client.updatePath(path, patch, etag);
         for (const m of r.messages) toast.show({ message: m.message, tone: m.severity === 'error' ? 'error' : m.severity === 'warning' ? 'warning' : 'information' });
         toast.show({ message: texts.saved, tone: 'success' });
         load();
@@ -124,11 +130,11 @@ export function DetailPage(props: DetailPageProps) {
   }
 
   async function remove() {
-    if (!entity) return;
+    if (!entity || path === null) return;
     const ok = await dialog.confirm({ title: texts.delete, message: texts.confirmDeleteOne, danger: true, confirmLabel: texts.delete, cancelLabel: texts.cancel });
     if (!ok) return;
     try {
-      await client.remove(view.set.name, entity, etag);
+      await client.removePath(path, etag);
       toast.show({ message: texts.deleted, tone: 'success' });
       onDeleted();
     } catch (e) {
@@ -139,9 +145,9 @@ export function DetailPage(props: DetailPageProps) {
 
   async function run(name: string, args: Record<string, Value>) {
     setAction(null);
-    if (!entity) return;
+    if (!entity || path === null) return;
     try {
-      const r = await client.action(name, args, { set: view.set.name, key: entity, etag });
+      const r = await client.action(name, args, { path, etag });
       for (const m of r.messages) toast.show({ message: m.message, tone: m.severity === 'error' ? 'error' : m.severity === 'warning' ? 'warning' : 'information' });
       toast.show({ message: texts.actionDone, tone: 'success' });
       load();
@@ -211,7 +217,7 @@ export function DetailPage(props: DetailPageProps) {
       ) : null}
       {view.sections.map((s) => {
         if (s.table) {
-          if (creating) return null;
+          if (creating || !tables.includes(s.table)) return null;
           return <DependentTable key={s.id} {...props} title={s.title} navigation={s.table} rows={(entity[s.table] as Entity[] | undefined) ?? []} onOpen={onOpen} onCreate={onCreate} />;
         }
         const groups = s.groups.filter((g) => g.fields.some((f) => !creating || writable(view, f, true) || f.key));
@@ -265,18 +271,21 @@ export function DetailPage(props: DetailPageProps) {
   );
 }
 
-/** A table of the dependent entities of a navigation, opened by their own entity set. */
+/**
+ * A table of the dependent entities of a navigation, with the columns of
+ * the list view of their type, opened by their own entity set or, for a
+ * contained navigation, by their path below the parent.
+ */
 function DependentTable(props: DetailPageProps & { title: string; navigation: string; rows: Entity[] }) {
   const { model, view, texts, path, readOnly, title, navigation, rows, onOpen, onCreate } = props;
-  const target = view.set.bindings[navigation];
-  const nav = view.set.type.navigations.find((n) => n.name === navigation);
-  const lv = target && model.entitySets[target] ? listView(model, target) : null;
-  if (!lv || !nav) return null;
-  const set = lv.set;
+  const set = navigationTarget(model, view.set, navigation);
+  if (!set || path === null) return null;
+  const lv = listView(model, set);
+  const base = set.containedIn ? `${path}/${navigation}` : set.name;
   return (
     <section aria-label={title} className="trfrontend-section">
       <h2>{title}</h2>
-      {!readOnly && lv.insertable && path !== null ? (
+      {!readOnly && lv.insertable ? (
         <Toolbar aria-label={title} items={[{ key: 'create', label: texts.create }]} onAction={() => onCreate(`${path}/${navigation}`)} />
       ) : null}
       <Table<Entity>
@@ -290,7 +299,7 @@ function DependentTable(props: DetailPageProps & { title: string; navigation: st
         }))}
         rows={rows}
         getRowKey={(row) => keyPredicate(set.type, row)}
-        onRowPress={(row) => onOpen(`${set.name}${keyPredicate(set.type, row)}`)}
+        onRowPress={(row) => onOpen(`${base}${keyPredicate(set.type, row)}`)}
         renderEmpty={() => texts.noEntries}
       />
     </section>

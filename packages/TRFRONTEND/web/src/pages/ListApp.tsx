@@ -20,11 +20,15 @@
 //   Companies('C1')              an entity of any set of the service
 //   new/Companies                a new entity of a set
 //   new/Companies('C1')/Contacts a new dependent entity along a navigation
+//   Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(…)
+//                                an entity of a contained navigation, which
+//                                has no entity set of its own and lives below
+//                                its parent; new/… along it creates one
 
 import { Banner, Spinner } from '@tim-riep/trui';
 import { useToast } from '@tim-riep/trui/core';
 import { useEffect, useMemo, useState } from 'react';
-import { ODataClient, ODataError, type ServiceModel } from '../odata/index.ts';
+import { type EntitySet, ODataClient, ODataError, resolvePath, type ServiceModel } from '../odata/index.ts';
 import { currentCsrfToken, currentLanguage, type HomeApp } from '../shell/api.ts';
 import type { TextKey } from '../shell/texts.ts';
 import { DetailPage } from './DetailPage.tsx';
@@ -42,18 +46,8 @@ export interface ListAppProps {
 }
 
 /** The entity set of a path such as Companies('C1') or a collection path for new entities. */
-export function setOfPath(model: ServiceModel, path: string): string | null {
-  const paren = path.indexOf('(');
-  if (paren < 0) {
-    return model.entitySets[path] ? path : null;
-  }
-  const parent = path.slice(0, paren);
-  const rest = path.slice(path.lastIndexOf(')') + 1);
-  if (!rest) {
-    return model.entitySets[parent] ? parent : null;
-  }
-  const nav = rest.replace(/^\//, '');
-  return model.entitySets[parent]?.bindings[nav] ?? null;
+export function setOfPath(model: ServiceModel, path: string): EntitySet | null {
+  return resolvePath(model, path)?.set ?? null;
 }
 
 export function ListApp({ app, entity, params, texts, onNavigate, onSignedOut }: ListAppProps) {
@@ -104,9 +98,14 @@ export function ListApp({ app, entity, params, texts, onNavigate, onSignedOut }:
 
   const creating = entity.startsWith('new/');
   const path = creating ? entity.slice('new/'.length) : entity;
-  const set = setOfPath(model, path);
-  if (!set) return <Banner tone="warning">{texts.notFound}</Banner>;
-  const shipped = list.mergeSet?.name === set;
+  const resolved = resolvePath(model, path);
+  if (!resolved) return <Banner tone="warning">{texts.notFound}</Banner>;
+  const { set } = resolved;
+  const contained = set.containedIn !== undefined;
+  const shipped = !contained && list.mergeSet?.name === set.name;
+  // A contained entity only exists below its parent: back there when it is
+  // deleted or not created.
+  const back = contained ? resolved.parent : null;
   return (
     <DetailPage
       key={entity}
@@ -120,7 +119,7 @@ export function ListApp({ app, entity, params, texts, onNavigate, onSignedOut }:
       onOpen={onNavigate}
       onCreate={(collection) => onNavigate(`new/${collection}`)}
       onCreated={(p) => onNavigate(p)}
-      onDeleted={() => onNavigate(null)}
+      onDeleted={() => onNavigate(back)}
       onError={onError}
     />
   );

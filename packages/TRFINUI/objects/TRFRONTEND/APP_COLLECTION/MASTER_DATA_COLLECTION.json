@@ -17,15 +17,6 @@
       },
       {
         "TILE": "/TRFINUI/COMPANY_ACCOUNTS_TILE"
-      },
-      {
-        "TILE": "/TRFINUI/PARTNERS_TILE"
-      },
-      {
-        "TILE": "/TRFINUI/CUSTOMERS_TILE"
-      },
-      {
-        "TILE": "/TRFINUI/SUPPLIERS_TILE"
       }
     ]
   }

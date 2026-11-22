@@ -5,6 +5,9 @@
     "APP_COLLECTIONS": [
       {
         "APP_COLLECTION": "/TRFINUI/MASTER_DATA_COLLECTION"
+      },
+      {
+        "APP_COLLECTION": "/TRBPUI/PARTNERS_COLLECTION"
       }
     ],
     "SPACES": [

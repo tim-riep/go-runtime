@@ -252,6 +252,11 @@ func TestODataRead(t *testing.T) {
 		if a := c.do("GET", itemsRoot+"Items('I1')", func(r *http.Request) { eva(r); r.Header.Set("If-None-Match", etag) }, ""); a.status != 304 {
 			t.Errorf("If-None-Match: %d", a.status)
 		}
+		// The ETag does not cover expanded entities: they are always read.
+		if a := c.do("GET", itemsRoot+"Items('I1')?$expand=Parts", func(r *http.Request) { eva(r); r.Header.Set("If-None-Match", etag) }, ""); a.status != 200 ||
+			a.header.Get("ETag") != etag || !strings.Contains(a.body, `"Parts":[`) {
+			t.Errorf("If-None-Match with $expand: %d %v %s", a.status, a.header, a.body)
+		}
 		if a := c.do("GET", itemsRoot+"Items('NOPE')", eva, ""); a.status != 404 {
 			t.Errorf("unknown entity: %d", a.status)
 		}

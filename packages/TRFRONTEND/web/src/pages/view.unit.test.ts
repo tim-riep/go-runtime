@@ -15,7 +15,7 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseMetadata } from '../odata/index.ts';
+import { navigationTarget, parseMetadata, resolvePath } from '../odata/index.ts';
 import { filterOf, matches } from './filter.ts';
 import { actionLabel, detailView, listView, mergedDetailView, valueHelpFilter } from './view.ts';
 
@@ -62,7 +62,7 @@ describe('detail view', () => {
   it('takes header, sections, groups and tables from the annotations', () => {
     const d = detailView(m, 'Companies');
     expect(d).toMatchObject({ typeName: 'Company', titleField: 'NAME', subtitleField: 'COMPANY_ID', descriptionField: 'CITY' });
-    expect(d.sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS']);
+    expect(d.sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS', '/TRDEMOOTTOUI/CHANNELS']);
     expect(d.sections[0]?.groups[1]?.fields.map((f) => f.name)).toEqual(['STREET', 'POSTAL_CODE', 'CITY', 'COUNTRY']);
     expect(d.sections[2]?.table).toBe('Contacts');
     expect(d.concurrency).toEqual(['CHANGED_AT']);
@@ -76,12 +76,73 @@ describe('detail view', () => {
     expect(mergedDetailView(d, countries).sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE']);
     const companies = m.entitySets.Companies;
     if (!companies) throw new Error('no Companies');
-    expect(mergedDetailView(d, companies).sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS']);
+    expect(mergedDetailView(d, companies).sections.map((s) => s.id)).toEqual(['GENERAL', '/TRDEMOOTTOUI/MARKETPLACE', 'CONTACTS', '/TRDEMOOTTOUI/CHANNELS']);
   });
 
   it('labels actions', () => {
     expect(actionLabel(m, 'TRDEMOFIN.TRDEMOOTTO_SYNC')).toBe('Gives the company a partner ID at OTTO');
     expect(actionLabel(m, 'TRDEMOFIN.BLOCK')).toBe('BLOCK');
+  });
+});
+
+describe('contained navigations', () => {
+  const companies = m.entitySets.Companies;
+  if (!companies) throw new Error('no Companies');
+
+  it('give an entity set of the target type with the restrictions of the parent', () => {
+    const set = navigationTarget(m, companies, 'TRDEMOOTTO_COMPANY_CHANNELS');
+    expect(set?.name).toBe('TRDEMOOTTO_COMPANY_CHANNELS');
+    expect(set?.type.name).toBe('TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS');
+    expect(set?.containedIn).toEqual({ set: companies, navigation: 'TRDEMOOTTO_COMPANY_CHANNELS' });
+    if (!set) throw new Error('no contained set');
+    const lv = listView(m, set);
+    expect(lv.columns.map((c) => c.field.heading)).toEqual(['Sales channel']);
+    expect(lv).toMatchObject({ typeNamePlural: 'Sales channels', insertable: true, deletable: true });
+    const dv = detailView(m, set);
+    expect(dv).toMatchObject({ typeName: 'Sales channel', titleField: 'CHANNEL', updatable: true, deletable: true, concurrency: [] });
+    expect(dv.sections[0]?.groups[0]?.fields.find((f) => f.name === 'COMPANY_ID')?.computed).toBe(true);
+    // Bound navigations keep their entity set.
+    expect(navigationTarget(m, companies, 'Contacts')).toBe(m.entitySets.Contacts);
+    expect(navigationTarget(m, companies, 'NOPE')).toBeNull();
+    // Contained entities of contained entities cannot be addressed.
+    expect(navigationTarget(m, set, 'TRDEMOOTTO_COMPANY_CHANNELS')).toBeNull();
+  });
+
+  it('follow the restrictions that the parent set states for them', () => {
+    const readOnly = {
+      ...companies,
+      annotations: {
+        ...companies.annotations,
+        'Capabilities.NavigationRestrictions': {
+          RestrictedProperties: [
+            {
+              NavigationProperty: { $NavigationPropertyPath: 'TRDEMOOTTO_COMPANY_CHANNELS' },
+              InsertRestrictions: { Insertable: false },
+              UpdateRestrictions: { Updatable: false },
+              DeleteRestrictions: { Deletable: false },
+            },
+          ],
+        },
+      },
+    };
+    const set = navigationTarget(m, readOnly, 'TRDEMOOTTO_COMPANY_CHANNELS');
+    if (!set) throw new Error('no contained set');
+    expect(listView(m, set)).toMatchObject({ insertable: false, deletable: false });
+    expect(detailView(m, set)).toMatchObject({ updatable: false, deletable: false });
+  });
+
+  it('are resolved from paths below their parent', () => {
+    expect(resolvePath(m, "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(CHANNEL_ID=1)")).toMatchObject({
+      set: { name: 'TRDEMOOTTO_COMPANY_CHANNELS' },
+      parent: "Companies('C1')",
+    });
+    expect(resolvePath(m, "Companies('C/1')/TRDEMOOTTO_COMPANY_CHANNELS")?.parent).toBe("Companies('C/1')");
+    expect(resolvePath(m, "Companies('C1')/Contacts")?.set).toBe(m.entitySets.Contacts);
+    expect(resolvePath(m, "Companies('C1')")).toEqual({ set: companies, parent: null });
+    expect(resolvePath(m, 'Companies')?.set).toBe(companies);
+    expect(resolvePath(m, 'Companies/TRDEMOOTTO_COMPANY_CHANNELS')).toBeNull();
+    expect(resolvePath(m, "Nope('1')")).toBeNull();
+    expect(resolvePath(m, "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(1)/X")).toBeNull();
   });
 });
 

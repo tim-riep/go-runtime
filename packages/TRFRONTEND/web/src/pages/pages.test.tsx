@@ -33,9 +33,25 @@ const app: HomeApp = {
 };
 
 const companies = [
-  { COMPANY_ID: 'C1', NAME: 'Acme', CITY: 'Berlin', COUNTRY: 'DE', STATUS: 'ACTIVE', TRDEMOOTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: '', CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [{ CONTACT_ID: 'k1', COMPANY_ID: 'C1', NAME: 'Bea', EMAIL: 'bea@example.org' }] },
+  {
+    COMPANY_ID: 'C1',
+    NAME: 'Acme',
+    CITY: 'Berlin',
+    COUNTRY: 'DE',
+    STATUS: 'ACTIVE',
+    TRDEMOOTTO_OTTO_ID: null,
+    STREET: null,
+    POSTAL_CODE: '',
+    CHANGED_AT: '2026-11-01T10:00:00Z',
+    '@odata.etag': 'W/"1"',
+    Contacts: [{ CONTACT_ID: 'k1', COMPANY_ID: 'C1', NAME: 'Bea', EMAIL: 'bea@example.org' }],
+    TRDEMOOTTO_COMPANY_CHANNELS: [{ CHANNEL_ID: 'c0ffee00-0000-4000-8000-000000000001', COMPANY_ID: 'C1', CHANNEL: 'web shop' }],
+  },
   { COMPANY_ID: 'C2', NAME: 'Globex', CITY: null, COUNTRY: 'AT', STATUS: 'BLOCKED', TRDEMOOTTO_OTTO_ID: null, STREET: null, POSTAL_CODE: null, CHANGED_AT: '2026-11-01T10:00:00Z', '@odata.etag': 'W/"1"', Contacts: [] },
 ];
+
+const channel = { CHANNEL_ID: 'c0ffee00-0000-4000-8000-000000000001', COMPANY_ID: 'C1', CHANNEL: 'web shop' };
+const channelPath = "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(c0ffee00-0000-4000-8000-000000000001)";
 
 interface Call {
   method: string;
@@ -66,6 +82,10 @@ beforeEach(() => {
     if (rest === "Companies('C1')" && c.method === 'GET') return json(companies[0], 200, { ETag: 'W/"1"' });
     if (rest === "Companies('C1')" && c.method === 'PATCH') return patchAnswer();
     if (rest === "Companies('C2')" && c.method === 'DELETE') return new Response(null, { status: 204 });
+    if (rest === channelPath && c.method === 'GET') return json({ '@odata.context': '$metadata#Companies(\'C1\')/TRDEMOOTTO_COMPANY_CHANNELS/$entity', ...channel });
+    if (rest === channelPath && c.method === 'PATCH') return json({ ...channel, ...JSON.parse(c.body ?? '{}') });
+    if (rest === channelPath && c.method === 'DELETE') return new Response(null, { status: 204 });
+    if (rest === "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS" && c.method === 'POST') return json({ ...channel, ...JSON.parse(c.body ?? '{}'), CHANNEL_ID: 'c0ffee00-0000-4000-8000-000000000002' }, 201);
     return json({ error: { code: 'NOT_FOUND', message: rest } }, 404);
   });
 });
@@ -163,5 +183,58 @@ describe('detail page', () => {
     await userEvent.fill(screen.getByLabelText(/^Name/), 'Taken');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect((await screen.findAllByText('the name is taken')).length).toBeGreaterThan(0);
+  });
+});
+
+describe('contained navigations', () => {
+  it('shows the table with the columns of the contained type, creates and opens rows below the parent', async () => {
+    const nav = show("Companies('C1')");
+    const region = await screen.findByRole('region', { name: 'Sales channels' });
+    const table = within(region).getByRole('grid', { name: 'Sales channels' });
+    expect(within(table).getByRole('columnheader', { name: /Sales channel/ })).toBeTruthy();
+    expect(within(table).getByText('web shop')).toBeTruthy();
+    const read = calls.find((c) => c.method === 'GET' && c.url.includes("Companies('C1')?"));
+    expect(decodeURIComponent(read?.url ?? '')).toContain('$expand=Contacts,TRDEMOOTTO_COMPANY_CHANNELS');
+    await userEvent.click(within(region).getByRole('button', { name: 'Create' }));
+    expect(nav).toHaveBeenLastCalledWith("new/Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS");
+    await userEvent.click(within(table).getByText('web shop'));
+    expect(nav).toHaveBeenLastCalledWith(channelPath);
+  });
+
+  it('creates an entity along the navigation and opens it by its path', async () => {
+    const nav = show("new/Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS");
+    await screen.findByRole('heading', { name: 'New entry', level: 1 });
+    expect(screen.queryByLabelText(/^Company/)).toBeNull();
+    await userEvent.fill(screen.getByLabelText(/^Channel/), 'marketplace');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(nav).toHaveBeenCalledWith("Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(c0ffee00-0000-4000-8000-000000000002)"));
+    const post = calls.find((c) => c.method === 'POST');
+    expect(decodeURIComponent(post?.url ?? '')).toContain("company_service/Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS");
+    expect(JSON.parse(post?.body ?? '{}')).toEqual({ CHANNEL: 'marketplace' });
+  });
+
+  it('goes back to the parent when a new entity is not created', async () => {
+    const nav = show("new/Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS");
+    await screen.findByRole('heading', { name: 'New entry', level: 1 });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(nav).toHaveBeenCalledWith("Companies('C1')");
+  });
+
+  it('shows, changes and deletes an entity by its path below the parent', async () => {
+    const nav = show(channelPath);
+    expect(await screen.findByRole('heading', { name: 'web shop', level: 1 })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.fill(screen.getByLabelText(/^Channel/), 'shop');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true));
+    const patch = calls.find((c) => c.method === 'PATCH');
+    expect(decodeURIComponent(patch?.url ?? '')).toContain(`company_service/${channelPath}`);
+    expect(JSON.parse(patch?.body ?? '{}')).toEqual({ CHANNEL: 'shop' });
+    await screen.findByText('Saved.');
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(nav).toHaveBeenCalledWith("Companies('C1')"));
+    expect(decodeURIComponent(calls.find((c) => c.method === 'DELETE')?.url ?? '')).toContain(`company_service/${channelPath}`);
   });
 });

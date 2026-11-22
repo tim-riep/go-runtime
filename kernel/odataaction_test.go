@@ -95,9 +95,35 @@ func TestODataExtensionOfTRDEMOFIN(t *testing.T) {
 		if a.status != 201 || !strings.Contains(a.body, `"TRDEMOOTTO_OTTO_ID":null`) {
 			t.Fatalf("POST company: %d %s", a.status, a.body)
 		}
-		if a := c.do("POST", root+"Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"web"}`); a.status != 201 ||
-			!strings.Contains(a.header.Get("Location"), "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(") {
-			t.Errorf("POST along the contained navigation: %d %v %s", a.status, a.header, a.body)
+		a = c.do("POST", root+"Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"web"}`)
+		location := a.header.Get("Location")
+		if a.status != 201 || !strings.Contains(location, "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(") {
+			t.Fatalf("POST along the contained navigation: %d %v %s", a.status, a.header, a.body)
+		}
+		// The generic pages of TRFRONTEND read, change and delete a contained
+		// entity by its path below the parent.
+		channel := location[strings.Index(location, root)+len(root):]
+		if a := c.do("GET", root+channel, anna, ""); a.status != 200 || !strings.Contains(a.body, `"CHANNEL":"web"`) ||
+			!strings.Contains(a.body, `$metadata#Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS/$entity"`) {
+			t.Errorf("GET of the contained entity: %d %s", a.status, a.body)
+		}
+		if a := c.do("PATCH", root+channel, with(anna, "Prefer", "return=representation"), `{"CHANNEL":"shop"}`); a.status != 200 || !strings.Contains(a.body, `"CHANNEL":"shop"`) {
+			t.Errorf("PATCH of the contained entity: %d %s", a.status, a.body)
+		}
+		if a := c.do("PATCH", root+channel, anna, `{"COMPANY_ID":"C2"}`); a.status != 400 {
+			t.Errorf("PATCH of the parent field of the contained entity: %d %s", a.status, a.body)
+		}
+		if a := c.do("POST", root+"Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"spare"}`); a.status != 201 {
+			t.Errorf("second POST along the contained navigation: %d %s", a.status, a.body)
+		}
+		if a := c.do("DELETE", root+channel, with(anna), ""); a.status != 204 {
+			t.Errorf("DELETE of the contained entity: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", root+channel, anna, ""); a.status != 404 {
+			t.Errorf("GET of the deleted contained entity: %d %s", a.status, a.body)
+		}
+		if a := c.do("POST", root+"Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS", with(anna), `{"CHANNEL":"web"}`); a.status != 201 {
+			t.Errorf("POST along the contained navigation: %d %s", a.status, a.body)
 		}
 		if a := c.do("GET", root+"Companies('C1')?$expand=TRDEMOOTTO_COMPANY_CHANNELS,Contacts", anna, ""); !strings.Contains(a.body, `"CHANNEL":"web"`) ||
 			!strings.Contains(a.body, `"EMAIL":"ann@example.com"`) {

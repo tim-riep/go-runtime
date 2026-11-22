@@ -1429,7 +1429,12 @@ interface to the browser, built with the components of
 - a **start page** of the spaces of the roles of the user: pages and their sections as groups
   of tiles, metric tiles that count entities of a service with the authorizations of the user;
 - **generic list and detail pages** for apps of the kind `LIST`, driven by the metadata of
-  the service and the UI annotations of packages;
+  the service and the UI annotations of packages; tables of dependent entities on a detail
+  page follow their navigation to an entity set or, for a contained navigation (dependent
+  entities that an extension adds to a business object and the service offers without an
+  entity set), the path below the parent, e.g. `Partners('1')/TRFIN_CUSTOMER_COMPANIES`:
+  their rows are created, opened, changed and deleted there with the annotations of their
+  type and the capabilities that the `NavigationRestrictions` of the parent set state;
 - **apps** of the kinds `PAGE` (a page of a service node in the content area), `REMOTE` (a
   module loaded with Module Federation that shares React and TRUI with the shell) and `URL`;
 - **administration**: apps for local apps, tiles, app collections, pages, spaces and role

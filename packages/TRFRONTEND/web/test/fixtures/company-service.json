@@ -547,6 +547,14 @@
               "Table": {
                 "$NavigationPropertyPath": "Contacts"
               }
+            },
+            {
+              "Id": "/TRDEMOOTTOUI/CHANNELS",
+              "Title": "Sales channels",
+              "Groups": [],
+              "Table": {
+                "$NavigationPropertyPath": "TRDEMOOTTO_COMPANY_CHANNELS"
+              }
             }
           ],
           "Actions": [
@@ -684,9 +692,34 @@
         "@RT.Heading": "Company",
         "@Core.Computed": true
       },
+      "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS/CHANNEL": {
+        "@Core.Description": "Channel",
+        "@RT.MediumLabel": "Channel",
+        "@RT.Heading": "Sales channel"
+      },
       "TRDEMOFIN.TRDEMOOTTO_COMPANY_CHANNELS": {
         "@Core.Description": "Company",
-        "@RT.DataClass": "application"
+        "@RT.DataClass": "application",
+        "@Frontend.Header": {
+          "TypeName": "Sales channel",
+          "TypeNamePlural": "Sales channels",
+          "Title": {
+            "$PropertyPath": "CHANNEL"
+          }
+        },
+        "@Frontend.ListPage": {
+          "Columns": [
+            {
+              "Property": {
+                "$PropertyPath": "CHANNEL"
+              },
+              "Importance": "HIGH"
+            }
+          ],
+          "FilterFields": [],
+          "SortOrder": [],
+          "Actions": []
+        }
       },
       "TRDEMOFIN.Container/Companies": {
         "@Core.OptimisticConcurrency": [

@@ -15,7 +15,8 @@
 // the shell of TRFRONTEND with Module Federation: entering and posting a
 // journal entry, an error at an item, clearing an invoice of a customer
 // with a payment, the balance sheet with expand, collapse, export and the
-// drill-down to a journal entry, and axe on the pages.
+// drill-down to a journal entry, the company data of a customer in the
+// business partner app of TRBPUI, and axe on the pages.
 
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -39,9 +40,9 @@ async function violations(page: Page): Promise<string[]> {
   return result.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.join(' | ')}`);
 }
 
-async function signIn(page: Page) {
+async function signIn(page: Page, user = 'anna') {
   await page.goto(`${inject('baseURL')}/trfrontend/`);
-  await page.getByLabel('User').fill('anna');
+  await page.getByLabel('User').fill(user);
   await page.getByLabel('Password').fill('secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
@@ -209,6 +210,56 @@ for (const name of names) {
       expect(await violations(page)).toEqual([]);
       await items.getByRole('row').nth(1).click();
       await page.getByRole('heading', { level: 1 }).filter({ hasText: /\d/ }).waitFor();
+      await context.close();
+    });
+
+    it('maintains the company data of a customer on the page of the business partner', async () => {
+      const context = await browser.newContext({ locale: 'en-US' });
+      const page = await context.newPage();
+      await signIn(page, 'mara');
+      await openTile(page, 'General ledger master data', '/TRBPUI/PARTNERS_TILE');
+      await page.getByRole('grid', { name: 'Business partners' }).getByText('Birch Trading').click();
+      await page.getByRole('heading', { name: '0000000002', level: 1 }).waitFor();
+      // Not getByRole('region'): after it, axe crashes Firefox on this page.
+      const customer = page.locator('section[aria-label="Customer data"]');
+      const rows = customer.getByRole('grid', { name: 'Customer data' }).getByRole('row');
+      await rows.filter({ hasText: '1000' }).waitFor();
+      expect(await rows.filter({ hasText: '2000' }).count()).toBe(0);
+      expect(await violations(page)).toEqual([]);
+
+      // Company data for company 2000, created below the partner.
+      await customer.getByRole('button', { name: 'Create' }).click();
+      await page.getByRole('heading', { name: 'New entry', level: 1 }).waitFor();
+      expect(await page.getByRole('textbox', { name: /^Business partner/ }).count()).toBe(0);
+      await page.getByRole('textbox', { name: /^Company/ }).fill('2000');
+      await page.getByRole('textbox', { name: /^Reconciliation acct\./ }).fill('140000');
+      await page.getByRole('textbox', { name: /^Alternative account/ }).fill('161000');
+      expect(await violations(page)).toEqual([]);
+      await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByText('Created.').waitFor();
+      await page.getByRole('heading', { name: '0000000002', level: 1 }).waitFor();
+      await page.locator('output', { hasText: '/TRFIN/CUSTOMER' }).waitFor();
+
+      // Blocked, changed on the page of the company data.
+      await page.getByRole('button', { name: 'Edit' }).click();
+      await page.getByRole('checkbox', { name: 'Blocked' }).check();
+      await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByText('Saved.').waitFor();
+
+      // Back on the partner: the new row in the table, opened by its path below the partner.
+      await page.goBack();
+      await page.goBack();
+      const row = rows.filter({ hasText: '2000' });
+      await row.waitFor();
+      expect(await row.textContent()).toContain('Yes');
+      await row.getByText('2000').click();
+      await page.getByRole('heading', { name: '0000000002', level: 1 }).waitFor();
+      await page.locator('output', { hasText: '2000' }).waitFor();
+      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
+      await page.getByText('Deleted.').waitFor();
+      await rows.filter({ hasText: '1000' }).waitFor();
+      expect(await rows.filter({ hasText: '2000' }).count()).toBe(0);
       await context.close();
     });
   });

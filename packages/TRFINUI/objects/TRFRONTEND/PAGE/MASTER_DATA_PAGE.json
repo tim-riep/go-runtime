@@ -47,13 +47,7 @@
         ],
         "TILES": [
           {
-            "TILE": "/TRFINUI/PARTNERS_TILE"
-          },
-          {
-            "TILE": "/TRFINUI/CUSTOMERS_TILE"
-          },
-          {
-            "TILE": "/TRFINUI/SUPPLIERS_TILE"
+            "TILE": "/TRBPUI/PARTNERS_TILE"
           }
         ]
       }

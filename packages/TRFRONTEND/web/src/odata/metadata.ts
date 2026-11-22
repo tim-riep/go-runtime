@@ -84,6 +84,12 @@ export interface EntitySet {
   /** Navigation property → entity set of the target. */
   bindings: Record<string, string>;
   annotations: Annotations;
+  /**
+   * Set for the entities of a contained navigation, which have no entity
+   * set of their own and only exist below their parent: the entity set of
+   * the parent and the navigation. The name is then that of the navigation.
+   */
+  containedIn?: { set: EntitySet; navigation: string };
 }
 
 export interface ComplexType {
@@ -286,4 +292,88 @@ export function annotation(model: ServiceModel, annotations: Annotations, term: 
 /** The entity set whose entities have a type. */
 export function setOfType(model: ServiceModel, type: string): EntitySet | undefined {
   return Object.values(model.entitySets).find((s) => s.type.name === type);
+}
+
+function navigationPath(v: AnnotationValue | undefined): string | null {
+  const r = asObject(v);
+  return typeof r.$NavigationPropertyPath === 'string' ? r.$NavigationPropertyPath : null;
+}
+
+/**
+ * The entities a navigation of an entity set leads to: the entity set the
+ * navigation is bound to or, for a contained navigation, an entity set of
+ * the target type named after the navigation, with the insert, update and
+ * delete restrictions that the NavigationRestrictions of the parent set
+ * state for it. Contained navigations of contained entities are not
+ * addressable and give null.
+ */
+export function navigationTarget(model: ServiceModel, parent: EntitySet, navigation: string): EntitySet | null {
+  const bound = parent.bindings[navigation];
+  if (bound !== undefined) {
+    return model.entitySets[bound] ?? null;
+  }
+  const nav = parent.type.navigations.find((n) => n.name === navigation);
+  const type = nav ? model.entityTypes[nav.type] : undefined;
+  if (!nav?.containsTarget || !type || parent.containedIn) {
+    return null;
+  }
+  const annotations: Annotations = {};
+  const nr = asObject(annotation(model, parent.annotations, 'Org.OData.Capabilities.V1.NavigationRestrictions'));
+  const restricted = Array.isArray(nr.RestrictedProperties) ? nr.RestrictedProperties : [];
+  const own = restricted.map(asObject).find((r) => navigationPath(r.NavigationProperty as AnnotationValue) === navigation);
+  for (const term of ['InsertRestrictions', 'UpdateRestrictions', 'DeleteRestrictions']) {
+    if (own?.[term] !== undefined) {
+      annotations[`Org.OData.Capabilities.V1.${term}`] = own[term] as AnnotationValue;
+    }
+  }
+  return { name: navigation, type, bindings: {}, annotations, containedIn: { set: parent, navigation } };
+}
+
+/** The segments of a resource path, split at slashes outside quotes. */
+export function pathSegments(path: string): string[] {
+  const out: string[] = [];
+  let start = 0;
+  let quoted = false;
+  for (let i = 0; i < path.length; i++) {
+    if (path[i] === "'") quoted = !quoted;
+    else if (path[i] === '/' && !quoted) {
+      out.push(path.slice(start, i));
+      start = i + 1;
+    }
+  }
+  out.push(path.slice(start));
+  return out;
+}
+
+/** What a path of the pages addresses. */
+export interface ResolvedPath {
+  /** The entity set of the entity or collection. */
+  set: EntitySet;
+  /** The path of the parent entity for paths along a navigation, else null. */
+  parent: string | null;
+}
+
+/**
+ * Resolves a path such as Companies, Companies('C1'),
+ * Companies('C1')/Contacts or Companies('C1')/TRDEMOOTTO_CHANNELS(…), the
+ * last one along a contained navigation.
+ */
+export function resolvePath(model: ServiceModel, path: string): ResolvedPath | null {
+  const segs = pathSegments(path);
+  const name = (seg: string) => {
+    const paren = seg.indexOf('(');
+    return paren < 0 ? seg : seg.slice(0, paren);
+  };
+  const first = segs[0] === undefined ? undefined : model.entitySets[name(segs[0])];
+  if (!first) {
+    return null;
+  }
+  if (segs.length === 1) {
+    return { set: first, parent: null };
+  }
+  if (segs.length !== 2 || !segs[0]?.includes('(') || segs[1] === undefined) {
+    return null;
+  }
+  const set = navigationTarget(model, first, name(segs[1]));
+  return set ? { set, parent: segs[0] } : null;
 }

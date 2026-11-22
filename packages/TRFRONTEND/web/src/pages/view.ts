@@ -210,11 +210,11 @@ function header(m: ServiceModel, set: EntitySet) {
   };
 }
 
-/** The list page of an entity set. */
-export function listView(m: ServiceModel, setName: string): ListView {
-  const set = m.entitySets[setName];
+/** The list page of an entity set, by name or, e.g. for a contained navigation, as such. */
+export function listView(m: ServiceModel, entitySet: EntitySet | string): ListView {
+  const set = typeof entitySet === 'string' ? m.entitySets[entitySet] : entitySet;
   if (!set) {
-    throw new Error(`the service has no entity set ${setName}`);
+    throw new Error(`the service has no entity set ${String(entitySet)}`);
   }
   const fields = fieldsOf(m, set);
   const lp = annotation(m, set.type.annotations, 'TRFRONTEND.UI.ListPage');
@@ -253,11 +253,11 @@ export function listView(m: ServiceModel, setName: string): ListView {
   };
 }
 
-/** The detail page of an entity set. */
-export function detailView(m: ServiceModel, setName: string): DetailView {
-  const set = m.entitySets[setName];
+/** The detail page of an entity set, by name or, e.g. for a contained navigation, as such. */
+export function detailView(m: ServiceModel, entitySet: EntitySet | string): DetailView {
+  const set = typeof entitySet === 'string' ? m.entitySets[entitySet] : entitySet;
   if (!set) {
-    throw new Error(`the service has no entity set ${setName}`);
+    throw new Error(`the service has no entity set ${String(entitySet)}`);
   }
   const fields = fieldsOf(m, set);
   const h = header(m, set);

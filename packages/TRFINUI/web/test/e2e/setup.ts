@@ -14,9 +14,10 @@
 // Sets up go-runtime for the browser tests as docs/trfinui.md describes: a
 // new SQLite database, TRUI, the built TRFRONTEND and TRFINUI, TRBP, TRFIN
 // and TRBPUI, active nodes and services, the sample data of TRFIN, the
-// accountant anna, and rt serve on a free port. Every browser gets an
-// invoice of its own to clear. TRUI comes from TRUI_PACKAGE, a directory
-// or ZIP of the package (the release asset of tim-riep/trui).
+// accountant anna, the clerk of master data mara, and rt serve on a free
+// port. Every browser gets an invoice of its own to clear. TRUI comes from
+// TRUI_PACKAGE, a directory or ZIP of the package (the release asset of
+// tim-riep/trui).
 
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
@@ -67,6 +68,9 @@ export async function setup(project: TestProject) {
   run(['run', 'TRFIN', '/TRFIN/SAMPLE_DATA', 'SETUP', '[]', '--tenant', 'ACME', '--user', 'admin']);
   run(['user', 'create', 'anna', '--tenant', 'ACME'], 'secret\n');
   for (const role of ['/TRFRONTEND/USER', '/TRFIN/ACCOUNTANT', '/TRFIN/ODATA_USER', '/TRFINUI/USER']) run(['role', 'assign', 'anna', role, '--tenant', 'ACME']);
+  // The clerk of master data mara maintains customers and suppliers in the business partner app.
+  run(['user', 'create', 'mara', '--tenant', 'ACME'], 'secret\n');
+  for (const role of ['/TRFRONTEND/USER', '/TRFIN/MASTER_DATA', '/TRFIN/ODATA_USER']) run(['role', 'assign', 'mara', role, '--tenant', 'ACME']);
 
   const port = await freePort();
   // The log is not read: a pipe nobody reads fills up and blocks the server.

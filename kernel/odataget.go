@@ -245,7 +245,9 @@ func odataSegments(resource string) []string {
 }
 
 // readEntity answers with one entity, 404 when it does not exist or may
-// not be read, and 304 when If-None-Match names its ETag.
+// not be read, and 304 when If-None-Match names its ETag and nothing is
+// expanded: the ETag covers the entity, not its expanded neighbors, which
+// may have changed since.
 func (k *Kernel) readEntity(w http.ResponseWriter, r *http.Request, sr *serviceRequest, path *odata.Path, q *odataQuery, query *odata.Query, f odata.Format) {
 	ctx := r.Context()
 	rows, err := sr.rows(ctx, q, q.selectText(nil, 1, 0))
@@ -262,7 +264,7 @@ func (k *Kernel) readEntity(w http.ResponseWriter, r *http.Request, sr *serviceR
 	if t.ETag != nil {
 		etag = odata.ETag(t.ETag.Domain, rows[0][t.ETag.Field.Name])
 		w.Header().Set("ETag", etag)
-		if etag != "" && matchesETag(r.Header.Get("If-None-Match"), etag) {
+		if etag != "" && len(query.Expand) == 0 && matchesETag(r.Header.Get("If-None-Match"), etag) {
 			w.Header().Set("OData-Version", "4.0")
 			w.WriteHeader(http.StatusNotModified)
 			sr.entry.status = http.StatusNotModified

@@ -133,6 +133,20 @@ describe('client', () => {
     expect(r.entity?.NOTE).toBeNull();
   });
 
+  it('changes, deletes and runs actions on entities by their path below a parent', async () => {
+    const path = "Companies('C1')/TRDEMOOTTO_COMPANY_CHANNELS(c0ffee00-0000-4000-8000-000000000001)";
+    const f = fake([json({ CHANNEL: 'shop' }, 200, { ETag: 'W/"2"' }), () => new Response(null, { status: 204 }), json({ CHANNEL: 'shop' })]);
+    const c = new ODataClient('/s/', { fetch: f.fetch, csrfToken: () => 't' });
+    expect((await c.updatePath(path, { CHANNEL: 'shop' }, 'W/"1"')).etag).toBe('W/"2"');
+    await c.removePath(path, null);
+    await c.action('TRDEMOFIN.SYNC', {}, { path, etag: 'W/"2"' });
+    expect(f.calls.map((x) => `${x.method} ${x.url} ${x.headers['If-Match'] ?? '-'}`)).toEqual([
+      `PATCH /s/${path} W/"1"`,
+      `DELETE /s/${path} -`,
+      `POST /s/${path}/TRDEMOFIN.SYNC W/"2"`,
+    ]);
+  });
+
   it('reports a conflict on 412 and messages at properties', async () => {
     const f = fake([
       metadata,

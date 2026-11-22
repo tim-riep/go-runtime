@@ -277,7 +277,7 @@ func TestFrontendLedgerUIStartPage(t *testing.T) {
 			return true
 		}
 		if spaces != "/TRFINUI/POSTING_SPACE=Posting[/TRFINUI/POSTING_PAGE] /TRFINUI/ACCOUNTING_SPACE=Accounting[/TRFINUI/ACCOUNTING_PAGE] /TRFINUI/MASTER_DATA_SPACE=General ledger master data[/TRFINUI/MASTER_DATA_PAGE]" ||
-			!strings.Contains(apps, "/TRFINUI/JOURNAL_ENTRIES") || !strings.Contains(apps, "/TRFINUI/CUSTOMERS") || strings.Contains(apps, "/TRFINUI/COMPANIES") ||
+			!strings.Contains(apps, "/TRFINUI/JOURNAL_ENTRIES") || !strings.Contains(apps, "/TRBPUI/PARTNERS") || strings.Contains(apps, "/TRFINUI/CUSTOMERS") || strings.Contains(apps, "/TRFINUI/COMPANIES") ||
 			!reports(apps) || !strings.Contains(apps, "/TRFINUI/CLEAR_OPEN_ITEMS") || !strings.Contains(apps, "/TRFINUI/POST_JOURNAL_ENTRY") || strings.Contains(apps, "/TRFINUI/NUMBER_RANGES") ||
 			!tiles["/TRFINUI/OPEN_ITEMS_TILE"] || !tiles["/TRFINUI/POST_JOURNAL_ENTRY_TILE"] {
 			t.Errorf("start page of the accountant: %s; %s; %v", spaces, apps, tiles)
