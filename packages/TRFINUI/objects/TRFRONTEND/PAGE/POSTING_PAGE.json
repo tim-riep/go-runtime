@@ -1,0 +1,38 @@
+{
+  "name": "/TRFINUI/POSTING_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Posting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchen"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "POSTING",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Journal entries and clearing"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Belege und Ausgleich"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/POST_JOURNAL_ENTRY_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/CLEAR_OPEN_ITEMS_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

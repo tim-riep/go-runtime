@@ -78,6 +78,9 @@
           },
           {
             "TILE": "/TRFINUI/POSTING_PERIODS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/NUMBER_RANGES_TILE"
           }
         ]
       }

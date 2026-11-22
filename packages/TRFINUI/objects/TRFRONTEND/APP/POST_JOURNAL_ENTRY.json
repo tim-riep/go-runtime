@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/POST_JOURNAL_ENTRY",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Post journal entry",
+        "SUBTITLE": "Enter, check and post"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Beleg buchen",
+        "SUBTITLE": "Erfassen, prüfen und buchen"
+      }
+    ],
+    "ICON": "edit",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./JournalEntryPage"
+    }
+  }
+}

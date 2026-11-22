@@ -1,0 +1,35 @@
+{
+  "name": "/TRFINUI/USER",
+  "texts": {
+    "en": {
+      "label": "User of the general ledger in the browser",
+      "description": "Starts the remote apps of TRFINUI below /trfinui; what they read or change comes from the roles of TRFIN"
+    },
+    "de": {
+      "label": "Benutzer des Hauptbuchs im Browser",
+      "description": "Startet die Remote-Apps von TRFINUI unter /trfinui; was sie lesen oder ändern, geben die Rollen von TRFIN"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRFINUI"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/trfinui"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    }
+  ]
+}

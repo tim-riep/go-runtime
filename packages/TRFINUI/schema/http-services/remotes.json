@@ -1,0 +1,31 @@
+{
+  "path": "",
+  "texts": {
+    "en": {
+      "label": "Remote apps of the general ledger",
+      "description": "The modules of the remote apps of TRFINUI, which the shell of TRFRONTEND loads with Module Federation"
+    },
+    "de": {
+      "label": "Remote-Apps des Hauptbuchs",
+      "description": "Die Module der Remote-Apps von TRFINUI, die die Shell von TRFRONTEND mit Module Federation lädt"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRBASE/ASSET_HANDLER",
+      "parameters": [
+        {
+          "name": "package",
+          "value": "TRFINUI"
+        },
+        {
+          "name": "repository",
+          "value": "web"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "anonymous": true
+  }
+}

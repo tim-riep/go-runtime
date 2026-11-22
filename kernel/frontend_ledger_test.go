@@ -41,7 +41,7 @@ func ledgerUIPackages(t *testing.T) []*model.Package {
 		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRBP")),
 		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFIN")),
 		testutil.LoadDir(t, filepath.Join(root, "packages", "TRBPUI")),
-		testutil.LoadDir(t, filepath.Join(root, "packages", "TRFINUI")),
+		testutil.LoadPackageDir(t, filepath.Join(root, "packages", "TRFINUI")),
 	}
 }
 
@@ -218,9 +218,11 @@ func TestFrontendLedgerUIStartPage(t *testing.T) {
 		users := map[string][]string{
 			"setup": {"/TRFIN/CONFIGURATION", "/TRFIN/MASTER_DATA", "/TRFIN/ACCOUNTANT", "/TRBP/PARTNER_ADMIN"},
 			"paula": {"/TRFRONTEND/USER", "/TRBP/PARTNER_ADMIN", "/TRBP/ODATA_USER"},
-			"anna":  {"/TRFRONTEND/USER", "/TRFIN/ACCOUNTANT", "/TRFIN/ODATA_USER"},
+			"anna":  {"/TRFRONTEND/USER", "/TRFIN/ACCOUNTANT", "/TRFIN/ODATA_USER", "/TRFINUI/USER"},
+			"dora":  {"/TRFRONTEND/USER", "/TRFIN/DISPLAY", "/TRFIN/ODATA_USER", "/TRFINUI/USER"},
+			"otto":  {"/TRFRONTEND/USER", "/TRFIN/ACCOUNTANT", "/TRFIN/ODATA_USER"},
 			"mark":  {"/TRFRONTEND/USER", "/TRFIN/MASTER_DATA", "/TRFIN/ODATA_USER"},
-			"conny": {"/TRFRONTEND/USER", "/TRFIN/CONFIGURATION", "/TRFIN/ODATA_USER", "/TRBP/ODATA_USER"},
+			"conny": {"/TRFRONTEND/USER", "/TRFIN/CONFIGURATION", "/TRFIN/ODATA_USER", "/TRBP/ODATA_USER", "/TRFINUI/USER"},
 		}
 		for user, roles := range users {
 			if _, err := k.Users().Create(ctx, user, "secret", kernel.UserOptions{Tenant: model.Some("ACME")}); err != nil {
@@ -266,10 +268,35 @@ func TestFrontendLedgerUIStartPage(t *testing.T) {
 			t.Errorf("start page of the partner administrator: %s; %s", spaces, apps)
 		}
 		spaces, apps, tiles := start("anna", "en")
-		if spaces != "/TRFINUI/ACCOUNTING_SPACE=Accounting[/TRFINUI/ACCOUNTING_PAGE] /TRFINUI/MASTER_DATA_SPACE=General ledger master data[/TRFINUI/MASTER_DATA_PAGE]" ||
+		reports := func(apps string) bool {
+			for _, a := range []string{"ACCOUNT_BALANCES", "PARTNER_BALANCES", "OPEN_ITEMS_REPORT", "BALANCE_SHEET", "LINE_ITEMS"} {
+				if !strings.Contains(apps, "/TRFINUI/"+a) {
+					return false
+				}
+			}
+			return true
+		}
+		if spaces != "/TRFINUI/POSTING_SPACE=Posting[/TRFINUI/POSTING_PAGE] /TRFINUI/ACCOUNTING_SPACE=Accounting[/TRFINUI/ACCOUNTING_PAGE] /TRFINUI/MASTER_DATA_SPACE=General ledger master data[/TRFINUI/MASTER_DATA_PAGE]" ||
 			!strings.Contains(apps, "/TRFINUI/JOURNAL_ENTRIES") || !strings.Contains(apps, "/TRFINUI/CUSTOMERS") || strings.Contains(apps, "/TRFINUI/COMPANIES") ||
-			!tiles["/TRFINUI/OPEN_ITEMS_TILE"] {
+			!reports(apps) || !strings.Contains(apps, "/TRFINUI/CLEAR_OPEN_ITEMS") || !strings.Contains(apps, "/TRFINUI/POST_JOURNAL_ENTRY") || strings.Contains(apps, "/TRFINUI/NUMBER_RANGES") ||
+			!tiles["/TRFINUI/OPEN_ITEMS_TILE"] || !tiles["/TRFINUI/POST_JOURNAL_ENTRY_TILE"] {
 			t.Errorf("start page of the accountant: %s; %s; %v", spaces, apps, tiles)
+		}
+		// Remote apps load their module from the node of TRFINUI.
+		for _, a := range readHome(t, c, basicAuth("anna", "secret"), "en").Apps {
+			if a.Name == "/TRFINUI/POST_JOURNAL_ENTRY" && (a.Target.Kind != "REMOTE" || a.Target.URL != "/trfinui/mf-manifest.json" || a.Target.Module != "./JournalEntryPage") {
+				t.Errorf("remote app: %+v", a)
+			}
+		}
+		// Display users get the reports but not posting; without
+		// /TRFINUI/USER there are no remote apps.
+		_, apps, tiles = start("dora", "en")
+		if !reports(apps) || strings.Contains(apps, "/TRFINUI/POST_JOURNAL_ENTRY") || strings.Contains(apps, "/TRFINUI/CLEAR_OPEN_ITEMS") || !tiles["/TRFINUI/BALANCE_SHEET_TILE"] {
+			t.Errorf("start page of display: %s; %v", apps, tiles)
+		}
+		_, apps, _ = start("otto", "en")
+		if strings.Contains(apps, "/TRFINUI/POST_JOURNAL_ENTRY") || strings.Contains(apps, "/TRFINUI/BALANCE_SHEET") || !strings.Contains(apps, "/TRFINUI/JOURNAL_ENTRIES") {
+			t.Errorf("start page without the remote apps: %s", apps)
 		}
 		spaces, apps, _ = start("mark", "en")
 		if spaces != "/TRFINUI/MASTER_DATA_SPACE=General ledger master data[/TRFINUI/MASTER_DATA_PAGE]" || strings.Contains(apps, "/TRFINUI/JOURNAL_ENTRIES") {
@@ -277,7 +304,8 @@ func TestFrontendLedgerUIStartPage(t *testing.T) {
 		}
 		spaces, apps, _ = start("conny", "de")
 		if spaces != "/TRFINUI/CONFIGURATION_SPACE=Konfiguration Hauptbuch[/TRFINUI/CONFIGURATION_PAGE,/TRBPUI/CONFIGURATION_PAGE]" ||
-			!strings.Contains(apps, "/TRBPUI/GROUPINGS") || !strings.Contains(apps, "/TRFINUI/DOCUMENT_TYPES") || strings.Contains(apps, "/TRBPUI/PARTNERS") {
+			!strings.Contains(apps, "/TRBPUI/GROUPINGS") || !strings.Contains(apps, "/TRFINUI/DOCUMENT_TYPES") || strings.Contains(apps, "/TRBPUI/PARTNERS") ||
+			!strings.Contains(apps, "/TRFINUI/NUMBER_RANGES") {
 			t.Errorf("start page of the configuration: %s; %s", spaces, apps)
 		}
 

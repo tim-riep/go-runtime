@@ -37,6 +37,36 @@
         ]
       },
       {
+        "ID": "REPORTS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Reports"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Berichte"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/BALANCE_SHEET_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/ACCOUNT_BALANCES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/PARTNER_BALANCES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/OPEN_ITEMS_REPORT_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/LINE_ITEMS_TILE"
+          }
+        ]
+      },
+      {
         "ID": "LEDGERS",
         "TEXTS": [
           {

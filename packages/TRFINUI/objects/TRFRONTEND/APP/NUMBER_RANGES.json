@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/NUMBER_RANGES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Number ranges",
+        "SUBTITLE": "Intervals of journal entries and partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Nummernkreise",
+        "SUBTITLE": "Intervalle von Belegen und Partnern"
+      }
+    ],
+    "ICON": "key",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./NumberRangePage"
+    }
+  }
+}

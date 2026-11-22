@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/POSTING_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Posting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchen"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFINUI/POST_JOURNAL_ENTRY_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/CLEAR_OPEN_ITEMS_TILE"
+      }
+    ]
+  }
+}

@@ -1531,9 +1531,12 @@ code and `rt run` and over the node `/trfin/reports` as JSON or as workbook;
 and `/TRFIN/SAMPLE_DATA` sets up a tenant with sample data. [docs/trfin.md](docs/trfin.md)
 describes the business objects, their rules, the posting, the reports, authorizations, roles,
 the services `/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
-`/TRFIN/JOURNAL_ENTRY_SERVICE` and the sample data. The package `TRFINUI` in
+`/TRFIN/JOURNAL_ENTRY_SERVICE`, the node `/trfin/number-ranges` for the intervals of journal
+entries and partners, and the sample data. The package `TRFINUI` in
 [packages/TRFINUI](packages/TRFINUI) brings configuration, master data and journal entries to
-the start page of TRFRONTEND ([docs/trfinui.md](docs/trfinui.md)).
+the start page of TRFRONTEND, with remote apps for posting, clearing, the reports with
+drill-down and export, and the number ranges ([docs/trfinui.md](docs/trfinui.md)); `make
+trfinui` builds it into `packages/TRFINUI/dist/TRFINUI`.
 
 ```bash
 rt install packages/TRFIN --yes
@@ -1699,11 +1702,13 @@ go test ./...
 ```
 
 ```bash
-RT_TEST_POSTGRES_DSN=postgres://localhost/go_runtime_test go test ./...
+RT_TEST_POSTGRES_DSN=postgres://localhost/go_runtime_test go test -p 1 -timeout 30m ./...
 ```
 
 SQLite tests always run. PostgreSQL tests run when `RT_TEST_POSTGRES_DSN` is set; each test
-works in its own schema that is dropped afterwards. The generated DDL per dialect is compared
+works in its own schema that is dropped afterwards. The package `./kernel` takes close to ten
+minutes against PostgreSQL, the default timeout of `go test`, hence `-timeout 30m`, which
+`make test` passes as well. The generated DDL per dialect is compared
 with golden files in `testdata/golden`; after an intended change, update them with:
 
 ```bash
@@ -1715,7 +1720,11 @@ Node 22: `npm test` runs the unit tests and the components in Chromium, Firefox 
 `TRUI_PACKAGE=<TRUI directory or ZIP> npm run test:e2e` builds `rt`, sets up a database as in
 [User interface](#user-interface) and drives the shell in the three browsers with checks of
 axe. A tag `trfrontend-v<version>` releases the package with
-`.github/workflows/trfrontend-release.yml`.
+`.github/workflows/trfrontend-release.yml`. The remote apps of TRFINUI in
+`packages/TRFINUI/web` have the same kinds of tests; their browser tests install TRFRONTEND,
+TRBP, TRFIN, TRBPUI and TRFINUI with the sample data, post a journal entry, show the message
+of a wrong account at its cell, clear an invoice with a payment and show, export and drill
+down the balance sheet ([docs/trfinui.md](docs/trfinui.md#tests)).
 
 ## Not included yet
 

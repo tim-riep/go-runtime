@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/PARTNER_BALANCES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Partner balances",
+        "SUBTITLE": "Customers and suppliers"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Partnersalden",
+        "SUBTITLE": "Debitoren und Kreditoren"
+      }
+    ],
+    "ICON": "people",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./PartnerBalancesPage"
+    }
+  }
+}

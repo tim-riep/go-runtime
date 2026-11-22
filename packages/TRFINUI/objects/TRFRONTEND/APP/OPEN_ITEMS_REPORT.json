@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/OPEN_ITEMS_REPORT",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Open items",
+        "SUBTITLE": "At a key date, by due date"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Offene Posten",
+        "SUBTITLE": "Zum Stichtag, nach Fälligkeit"
+      }
+    ],
+    "ICON": "hourglass",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./OpenItemsPage"
+    }
+  }
+}

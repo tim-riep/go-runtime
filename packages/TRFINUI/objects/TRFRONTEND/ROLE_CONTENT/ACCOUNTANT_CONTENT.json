@@ -4,6 +4,9 @@
     "ROLE": "/TRFIN/ACCOUNTANT",
     "APP_COLLECTIONS": [
       {
+        "APP_COLLECTION": "/TRFINUI/POSTING_COLLECTION"
+      },
+      {
         "APP_COLLECTION": "/TRFINUI/ACCOUNTING_COLLECTION"
       },
       {
@@ -11,6 +14,9 @@
       }
     ],
     "SPACES": [
+      {
+        "SPACE": "/TRFINUI/POSTING_SPACE"
+      },
       {
         "SPACE": "/TRFINUI/ACCOUNTING_SPACE"
       },

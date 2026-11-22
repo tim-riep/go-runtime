@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/OPEN_ITEMS_REPORT_TILE",
+  "content": {
+    "APP": "/TRFINUI/OPEN_ITEMS_REPORT",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

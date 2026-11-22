@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/LINE_ITEMS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Line items",
+        "SUBTITLE": "Of an account or a partner"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Einzelposten",
+        "SUBTITLE": "Eines Kontos oder Partners"
+      }
+    ],
+    "ICON": "list",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./LineItemsPage"
+    }
+  }
+}

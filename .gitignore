@@ -6,3 +6,6 @@
 
 # Built package of TRFRONTEND
 packages/TRFRONTEND/dist/
+
+# Built package of TRFINUI
+packages/TRFINUI/dist/

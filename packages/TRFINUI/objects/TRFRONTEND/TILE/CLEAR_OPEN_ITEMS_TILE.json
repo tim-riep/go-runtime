@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/CLEAR_OPEN_ITEMS_TILE",
+  "content": {
+    "APP": "/TRFINUI/CLEAR_OPEN_ITEMS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

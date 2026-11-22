@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/ACCOUNT_BALANCES_TILE",
+  "content": {
+    "APP": "/TRFINUI/ACCOUNT_BALANCES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

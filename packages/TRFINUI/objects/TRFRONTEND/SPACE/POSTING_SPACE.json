@@ -1,0 +1,20 @@
+{
+  "name": "/TRFINUI/POSTING_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Posting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchen"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFINUI/POSTING_PAGE"
+      }
+    ]
+  }
+}

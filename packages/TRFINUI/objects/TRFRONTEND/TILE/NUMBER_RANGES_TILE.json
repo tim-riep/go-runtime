@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/NUMBER_RANGES_TILE",
+  "content": {
+    "APP": "/TRFINUI/NUMBER_RANGES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

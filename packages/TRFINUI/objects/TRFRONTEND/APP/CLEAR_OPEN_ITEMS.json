@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/CLEAR_OPEN_ITEMS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Clear open items",
+        "SUBTITLE": "Of an account or a partner"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Offene Posten ausgleichen",
+        "SUBTITLE": "Eines Kontos oder Partners"
+      }
+    ],
+    "ICON": "handshake",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./ClearingPage"
+    }
+  }
+}

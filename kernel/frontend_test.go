@@ -376,7 +376,7 @@ type home struct {
 	Tiles []struct{ Name, App, Kind, Title string }
 	Apps  []struct {
 		Name, Title string
-		Target      struct{ Kind, URL, Entity_Set string }
+		Target      struct{ Kind, URL, Entity_Set, Module string }
 	}
 }
 

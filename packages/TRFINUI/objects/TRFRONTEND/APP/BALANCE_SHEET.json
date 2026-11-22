@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/BALANCE_SHEET",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Balance sheet",
+        "SUBTITLE": "At a key date"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Bilanz",
+        "SUBTITLE": "Zum Stichtag"
+      }
+    ],
+    "ICON": "report",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./BalanceSheetPage"
+    }
+  }
+}

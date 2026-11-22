@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/BALANCE_SHEET_TILE",
+  "content": {
+    "APP": "/TRFINUI/BALANCE_SHEET",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": {
+    "en": "The built remote apps of the general ledger: mf-manifest.json, remoteEntry.js and their chunks; make trfinui builds them",
+    "de": "Die gebauten Remote-Apps des Hauptbuchs: mf-manifest.json, remoteEntry.js und ihre Teile; make trfinui baut sie"
+  }
+}

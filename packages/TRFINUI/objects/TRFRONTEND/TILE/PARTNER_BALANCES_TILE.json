@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/PARTNER_BALANCES_TILE",
+  "content": {
+    "APP": "/TRFINUI/PARTNER_BALANCES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

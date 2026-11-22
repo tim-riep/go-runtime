@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/LINE_ITEMS_TILE",
+  "content": {
+    "APP": "/TRFINUI/LINE_ITEMS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

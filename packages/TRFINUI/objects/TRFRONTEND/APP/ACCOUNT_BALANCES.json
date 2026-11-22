@@ -1,0 +1,24 @@
+{
+  "name": "/TRFINUI/ACCOUNT_BALANCES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Account balances",
+        "SUBTITLE": "Per period with carry-forward"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Kontensalden",
+        "SUBTITLE": "Je Periode mit Saldovortrag"
+      }
+    ],
+    "ICON": "chart-bar",
+    "TARGET": {
+      "KIND": "REMOTE",
+      "NODE": "/trfinui",
+      "PATH": "mf-manifest.json",
+      "MODULE": "./BalancesPage"
+    }
+  }
+}
