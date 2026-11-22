@@ -1,0 +1,42 @@
+{
+  "name": "/TRFINUI/PARTNERS_UI",
+  "content": {
+    "ENTITY": "/TRBP/PARTNERS",
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "/TRFINUI/CUSTOMER_DATA",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Customer data"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Debitordaten"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/CUSTOMER_COMPANIES"
+          }
+        },
+        {
+          "ID": "/TRFINUI/SUPPLIER_DATA",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Supplier data"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kreditordaten"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/SUPPLIER_COMPANIES"
+          }
+        }
+      ]
+    }
+  }
+}

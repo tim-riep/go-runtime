@@ -1,0 +1,20 @@
+{
+  "name": "/TRBPUI/PARTNERS_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Geschäftspartner"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRBPUI/PARTNERS_PAGE"
+      }
+    ]
+  }
+}

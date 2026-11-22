@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/POSTING_PERIODS_TILE",
+  "content": {
+    "APP": "/TRFINUI/POSTING_PERIODS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

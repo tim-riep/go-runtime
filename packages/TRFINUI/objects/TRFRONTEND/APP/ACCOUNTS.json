@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/ACCOUNTS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Accounts",
+        "SUBTITLE": "Of charts of accounts"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Sachkonten",
+        "SUBTITLE": "Im Kontenplan"
+      }
+    ],
+    "ICON": "list",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/MASTER_DATA_SERVICE",
+      "ENTITY_SET": "Accounts"
+    }
+  }
+}

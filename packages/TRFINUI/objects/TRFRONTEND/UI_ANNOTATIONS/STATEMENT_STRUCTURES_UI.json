@@ -1,0 +1,109 @@
+{
+  "name": "/TRFINUI/STATEMENT_STRUCTURES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/STATEMENT_STRUCTURES",
+    "HEADER": {
+      "TITLE_FIELD": "STRUCTURE",
+      "SUBTITLE_FIELD": "CHART",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Balance sheet structure",
+          "TYPE_NAME_PLURAL": "Balance sheet structures"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Bilanzstruktur",
+          "TYPE_NAME_PLURAL": "Bilanzstrukturen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "STRUCTURE",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "CHART",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "STRUCTURE"
+        },
+        {
+          "FIELD": "CHART"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "STRUCTURE"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "STRUCTURE"
+                },
+                {
+                  "FIELD": "CHART"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "NODES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Nodes"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Knoten"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/STATEMENT_NODES"
+          }
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/STATEMENT_STRUCTURE_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/JOURNAL_ENTRY_ITEMS_TILE",
+  "content": {
+    "APP": "/TRFINUI/JOURNAL_ENTRY_ITEMS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

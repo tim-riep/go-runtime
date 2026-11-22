@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/LEDGERS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Ledgers"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Ledger"
+      }
+    ],
+    "ICON": "ledger",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "Ledgers"
+    }
+  }
+}

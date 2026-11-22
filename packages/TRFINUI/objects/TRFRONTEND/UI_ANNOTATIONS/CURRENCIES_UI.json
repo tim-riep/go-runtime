@@ -1,0 +1,89 @@
+{
+  "name": "/TRFINUI/CURRENCIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/CURRENCIES",
+    "HEADER": {
+      "TITLE_FIELD": "CURRENCY",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Currency",
+          "TYPE_NAME_PLURAL": "Currencies"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Währung",
+          "TYPE_NAME_PLURAL": "Währungen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "CURRENCY",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "DECIMALS",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "CURRENCY"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "CURRENCY"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "CURRENCY"
+                },
+                {
+                  "FIELD": "DECIMALS"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/CURRENCY_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

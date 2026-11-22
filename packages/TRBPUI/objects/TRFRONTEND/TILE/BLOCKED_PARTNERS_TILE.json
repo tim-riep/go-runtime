@@ -1,0 +1,26 @@
+{
+  "name": "/TRBPUI/BLOCKED_PARTNERS_TILE",
+  "content": {
+    "APP": "/TRBPUI/PARTNERS",
+    "KIND": "METRIC",
+    "SIZE": "SMALL",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Blocked partners",
+        "UNIT": "partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Gesperrte Partner",
+        "UNIT": "Partner"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRBP/PARTNER_SERVICE",
+      "ENTITY_SET": "Partners",
+      "FILTER": "BLOCKED eq true",
+      "TONE": "CRITICAL"
+    }
+  }
+}

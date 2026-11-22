@@ -1,0 +1,181 @@
+{
+  "name": "/TRFINUI/COMPANY_ACCOUNTS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANY_ACCOUNTS",
+    "HEADER": {
+      "TITLE_FIELD": "ACCOUNT",
+      "SUBTITLE_FIELD": "COMPANY",
+      "DESCRIPTION_FIELD": "RECONCILIATION",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Account of a company",
+          "TYPE_NAME_PLURAL": "Accounts of companies"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Sachkonto im Buchungskreis",
+          "TYPE_NAME_PLURAL": "Sachkonten im Buchungskreis"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "COUNTRY_ACCOUNT",
+          "WIDTH": 10,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "RECONCILIATION",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "OPEN_ITEMS",
+          "WIDTH": 6,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "AUTOMATIC_ONLY",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "BLOCKED",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        },
+        {
+          "FIELD": "RECONCILIATION"
+        },
+        {
+          "FIELD": "OPEN_ITEMS"
+        },
+        {
+          "FIELD": "BLOCKED"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Account"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Sachkonto"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "ACCOUNT"
+                },
+                {
+                  "FIELD": "COUNTRY_ACCOUNT"
+                }
+              ]
+            },
+            {
+              "ID": "CONTROL",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Control"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Steuerung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "RECONCILIATION"
+                },
+                {
+                  "FIELD": "OPEN_ITEMS"
+                },
+                {
+                  "FIELD": "AUTOMATIC_ONLY"
+                },
+                {
+                  "FIELD": "BLOCKED"
+                }
+              ]
+            },
+            {
+              "ID": "ADMINISTRATION",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Administration"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Verwaltung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CREATED_BY"
+                },
+                {
+                  "FIELD": "CREATED_AT"
+                },
+                {
+                  "FIELD": "CHANGED_BY"
+                },
+                {
+                  "FIELD": "CHANGED_AT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

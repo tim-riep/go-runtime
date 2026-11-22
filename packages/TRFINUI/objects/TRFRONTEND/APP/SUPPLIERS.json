@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/SUPPLIERS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Suppliers",
+        "SUBTITLE": "Company data"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Kreditoren",
+        "SUBTITLE": "Buchungskreisdaten"
+      }
+    ],
+    "ICON": "supplier",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/MASTER_DATA_SERVICE",
+      "ENTITY_SET": "Suppliers"
+    }
+  }
+}

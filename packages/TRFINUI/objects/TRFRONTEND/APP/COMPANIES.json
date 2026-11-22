@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/COMPANIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchungskreise"
+      }
+    ],
+    "ICON": "building",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "Companies"
+    }
+  }
+}

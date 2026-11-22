@@ -1,0 +1,89 @@
+{
+  "name": "/TRFINUI/STATEMENT_NODE_RANGES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/STATEMENT_NODE_RANGES",
+    "HEADER": {
+      "TITLE_FIELD": "RANGE_NO",
+      "SUBTITLE_FIELD": "NODE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Account range",
+          "TYPE_NAME_PLURAL": "Account ranges"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kontenbereich",
+          "TYPE_NAME_PLURAL": "Kontenbereiche"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "RANGE_NO",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "FROM_ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "TO_ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "BALANCE",
+          "WIDTH": 8
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "RANGE_NO"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "RANGE",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Account range"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kontenbereich"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "STRUCTURE"
+                },
+                {
+                  "FIELD": "NODE"
+                },
+                {
+                  "FIELD": "RANGE_NO"
+                },
+                {
+                  "FIELD": "FROM_ACCOUNT"
+                },
+                {
+                  "FIELD": "TO_ACCOUNT"
+                },
+                {
+                  "FIELD": "BALANCE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "name": "/TRFINUI/DOCUMENT_TYPES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/DOCUMENT_TYPES",
+    "HEADER": {
+      "TITLE_FIELD": "DOCUMENT_TYPE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Document type",
+          "TYPE_NAME_PLURAL": "Document types"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Belegart",
+          "TYPE_NAME_PLURAL": "Belegarten"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "DOCUMENT_TYPE",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "INTERVAL",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "ALLOW_ACCOUNTS",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "ALLOW_CUSTOMERS",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "ALLOW_SUPPLIERS",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "REVERSAL_TYPE",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "LEDGER",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "LEDGER_GROUP",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "DOCUMENT_TYPE"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "DOCUMENT_TYPE"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Document type"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Belegart"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "DOCUMENT_TYPE"
+                },
+                {
+                  "FIELD": "INTERVAL"
+                },
+                {
+                  "FIELD": "REVERSAL_TYPE"
+                }
+              ]
+            },
+            {
+              "ID": "ACCOUNTS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Allowed accounts"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Erlaubte Konten"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "ALLOW_ACCOUNTS"
+                },
+                {
+                  "FIELD": "ALLOW_CUSTOMERS"
+                },
+                {
+                  "FIELD": "ALLOW_SUPPLIERS"
+                }
+              ]
+            },
+            {
+              "ID": "LEDGERS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Ledgers"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Ledger"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "LEDGER"
+                },
+                {
+                  "FIELD": "LEDGER_GROUP"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/DOCUMENT_TYPE_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

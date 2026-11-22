@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/JOURNAL_ENTRIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Journal entries",
+        "SUBTITLE": "Display, reverse, reset clearings"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Belege",
+        "SUBTITLE": "Anzeigen, stornieren, Ausgleich zurücknehmen"
+      }
+    ],
+    "ICON": "receipt",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/JOURNAL_ENTRY_SERVICE",
+      "ENTITY_SET": "JournalEntries"
+    }
+  }
+}

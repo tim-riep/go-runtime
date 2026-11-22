@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/CURRENCIES_TILE",
+  "content": {
+    "APP": "/TRFINUI/CURRENCIES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

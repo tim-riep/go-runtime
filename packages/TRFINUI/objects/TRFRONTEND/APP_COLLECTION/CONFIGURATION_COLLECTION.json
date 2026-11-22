@@ -1,0 +1,41 @@
+{
+  "name": "/TRFINUI/CONFIGURATION_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger configuration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Konfiguration Hauptbuch"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFINUI/CURRENCIES_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/CHARTS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/STATEMENT_STRUCTURES_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/COMPANIES_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/LEDGERS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/LEDGER_GROUPS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/DOCUMENT_TYPES_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/POSTING_PERIODS_TILE"
+      }
+    ]
+  }
+}

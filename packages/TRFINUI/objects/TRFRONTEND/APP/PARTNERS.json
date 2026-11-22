@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/PARTNERS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Customers and suppliers",
+        "SUBTITLE": "Partners with their company data"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Debitoren und Kreditoren",
+        "SUBTITLE": "Partner mit ihren Buchungskreisdaten"
+      }
+    ],
+    "ICON": "people",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/MASTER_DATA_SERVICE",
+      "ENTITY_SET": "Partners"
+    }
+  }
+}

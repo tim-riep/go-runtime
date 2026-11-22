@@ -1,0 +1,207 @@
+{
+  "name": "/TRBPUI/PARTNERS_UI",
+  "content": {
+    "ENTITY": "/TRBP/PARTNERS",
+    "HEADER": {
+      "TITLE_FIELD": "PARTNER",
+      "SUBTITLE_FIELD": "NAME1",
+      "DESCRIPTION_FIELD": "LAST_NAME",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Business partner",
+          "TYPE_NAME_PLURAL": "Business partners"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Geschäftspartner",
+          "TYPE_NAME_PLURAL": "Geschäftspartner"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "PARTNER",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "CATEGORY",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "NAME1",
+          "WIDTH": 16
+        },
+        {
+          "FIELD": "FIRST_NAME",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "LAST_NAME"
+        },
+        {
+          "FIELD": "SEARCH_TERM",
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "GROUPING",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "BLOCKED",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "PARTNER"
+        },
+        {
+          "FIELD": "NAME1"
+        },
+        {
+          "FIELD": "LAST_NAME"
+        },
+        {
+          "FIELD": "SEARCH_TERM"
+        },
+        {
+          "FIELD": "CATEGORY"
+        },
+        {
+          "FIELD": "GROUPING"
+        },
+        {
+          "FIELD": "BLOCKED"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "PARTNER"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Partner"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Partner"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "PARTNER"
+                },
+                {
+                  "FIELD": "GROUPING"
+                },
+                {
+                  "FIELD": "CATEGORY"
+                },
+                {
+                  "FIELD": "BLOCKED"
+                }
+              ]
+            },
+            {
+              "ID": "NAME",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Name"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Name"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "NAME1"
+                },
+                {
+                  "FIELD": "NAME2"
+                },
+                {
+                  "FIELD": "FIRST_NAME"
+                },
+                {
+                  "FIELD": "LAST_NAME"
+                },
+                {
+                  "FIELD": "SEARCH_TERM"
+                }
+              ]
+            },
+            {
+              "ID": "ADMINISTRATION",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Administration"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Verwaltung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CREATED_BY"
+                },
+                {
+                  "FIELD": "CREATED_AT"
+                },
+                {
+                  "FIELD": "CHANGED_BY"
+                },
+                {
+                  "FIELD": "CHANGED_AT"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "ROLES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Roles"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Rollen"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRBP/PARTNER_ROLES"
+          }
+        }
+      ]
+    }
+  }
+}

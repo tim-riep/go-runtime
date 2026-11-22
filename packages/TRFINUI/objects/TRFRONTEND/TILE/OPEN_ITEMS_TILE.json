@@ -1,0 +1,26 @@
+{
+  "name": "/TRFINUI/OPEN_ITEMS_TILE",
+  "content": {
+    "APP": "/TRFINUI/JOURNAL_ENTRY_ITEMS",
+    "KIND": "METRIC",
+    "SIZE": "SMALL",
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Open items",
+        "UNIT": "items"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Offene Posten",
+        "UNIT": "Posten"
+      }
+    ],
+    "METRIC": {
+      "SERVICE": "/TRFIN/JOURNAL_ENTRY_SERVICE",
+      "ENTITY_SET": "JournalEntryItems",
+      "FILTER": "OPEN_ITEM eq true and CLEARING_NO eq null",
+      "TONE": "CRITICAL"
+    }
+  }
+}

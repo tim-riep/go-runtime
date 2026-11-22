@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/CURRENCIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Currencies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Währungen"
+      }
+    ],
+    "ICON": "currency",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "Currencies"
+    }
+  }
+}

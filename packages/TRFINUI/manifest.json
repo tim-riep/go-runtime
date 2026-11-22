@@ -1,0 +1,27 @@
+{
+  "id": "TRFINUI",
+  "version": "1.0.0",
+  "description": "The user interface of the general ledger of TRFIN: pages, apps, tiles and spaces",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.11.0"
+    },
+    {
+      "id": "TRFRONTEND",
+      "version": ">=1.1.0"
+    },
+    {
+      "id": "TRBP",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "TRFIN",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "TRBPUI",
+      "version": ">=1.0.0"
+    }
+  ]
+}

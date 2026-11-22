@@ -1,0 +1,20 @@
+{
+  "name": "/TRFINUI/ACCOUNTING_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Accounting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchhaltung"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFINUI/ACCOUNTING_PAGE"
+      }
+    ]
+  }
+}

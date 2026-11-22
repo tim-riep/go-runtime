@@ -1,0 +1,60 @@
+{
+  "name": "/TRFINUI/COMPANY_LEDGERS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANY_LEDGERS",
+    "HEADER": {
+      "TITLE_FIELD": "LEDGER",
+      "SUBTITLE_FIELD": "COMPANY",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Ledger of the company",
+          "TYPE_NAME_PLURAL": "Ledgers of the company"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Ledger des Buchungskreises",
+          "TYPE_NAME_PLURAL": "Ledger des Buchungskreises"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LEDGER",
+          "WIDTH": 8
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "LEDGER",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Ledger"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Ledger"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "LEDGER"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

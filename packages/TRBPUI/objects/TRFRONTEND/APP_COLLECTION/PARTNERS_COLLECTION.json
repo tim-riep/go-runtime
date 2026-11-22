@@ -1,0 +1,23 @@
+{
+  "name": "/TRBPUI/PARTNERS_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Geschäftspartner"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRBPUI/PARTNERS_TILE"
+      },
+      {
+        "TILE": "/TRBPUI/BLOCKED_PARTNERS_TILE"
+      }
+    ]
+  }
+}

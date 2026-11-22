@@ -1,0 +1,22 @@
+{
+  "name": "/TRFINUI/DISPLAY_CONTENT",
+  "content": {
+    "ROLE": "/TRFIN/DISPLAY",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRFINUI/ACCOUNTING_COLLECTION"
+      },
+      {
+        "APP_COLLECTION": "/TRFINUI/MASTER_DATA_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRFINUI/ACCOUNTING_SPACE"
+      },
+      {
+        "SPACE": "/TRFINUI/MASTER_DATA_SPACE"
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "/TRBPUI/PARTNERS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partners",
+        "SUBTITLE": "Persons and organizations"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Geschäftspartner",
+        "SUBTITLE": "Personen und Organisationen"
+      }
+    ],
+    "ICON": "people",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRBP/PARTNER_SERVICE",
+      "ENTITY_SET": "Partners"
+    }
+  }
+}

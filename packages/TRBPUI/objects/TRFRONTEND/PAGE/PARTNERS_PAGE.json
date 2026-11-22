@@ -1,0 +1,56 @@
+{
+  "name": "/TRBPUI/PARTNERS_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Geschäftspartner"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "PARTNERS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Partners"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Partner"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRBPUI/PARTNERS_TILE"
+          },
+          {
+            "TILE": "/TRBPUI/BLOCKED_PARTNERS_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "CONFIGURATION",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Configuration"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Konfiguration"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRBPUI/GROUPINGS_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

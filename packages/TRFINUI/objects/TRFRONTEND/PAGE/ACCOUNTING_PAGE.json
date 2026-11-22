@@ -1,0 +1,59 @@
+{
+  "name": "/TRFINUI/ACCOUNTING_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Accounting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchhaltung"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "JOURNAL_ENTRIES",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Journal entries"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Belege"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/JOURNAL_ENTRIES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/OPEN_ITEMS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/JOURNAL_ENTRY_ITEMS_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "LEDGERS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Ledgers"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Ledger"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/LEDGER_ENTRIES_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

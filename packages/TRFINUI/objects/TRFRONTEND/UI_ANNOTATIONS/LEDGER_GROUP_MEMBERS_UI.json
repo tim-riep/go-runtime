@@ -1,0 +1,60 @@
+{
+  "name": "/TRFINUI/LEDGER_GROUP_MEMBERS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/LEDGER_GROUP_MEMBERS",
+    "HEADER": {
+      "TITLE_FIELD": "LEDGER",
+      "SUBTITLE_FIELD": "LEDGER_GROUP",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Member",
+          "TYPE_NAME_PLURAL": "Members"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Mitglied",
+          "TYPE_NAME_PLURAL": "Mitglieder"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LEDGER",
+          "WIDTH": 8
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "MEMBER",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Member"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Mitglied"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LEDGER_GROUP"
+                },
+                {
+                  "FIELD": "LEDGER"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

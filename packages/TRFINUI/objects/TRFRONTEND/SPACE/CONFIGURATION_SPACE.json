@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/CONFIGURATION_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger configuration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Konfiguration Hauptbuch"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFINUI/CONFIGURATION_PAGE"
+      },
+      {
+        "PAGE": "/TRBPUI/CONFIGURATION_PAGE"
+      }
+    ]
+  }
+}

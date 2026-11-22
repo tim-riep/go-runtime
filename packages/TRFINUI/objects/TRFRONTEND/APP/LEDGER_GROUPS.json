@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/LEDGER_GROUPS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Ledger groups"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Ledgergruppen"
+      }
+    ],
+    "ICON": "grid",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "LedgerGroups"
+    }
+  }
+}

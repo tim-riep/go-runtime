@@ -1,0 +1,110 @@
+{
+  "name": "/TRFINUI/CHARTS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/CHARTS",
+    "HEADER": {
+      "TITLE_FIELD": "CHART",
+      "SUBTITLE_FIELD": "KIND",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Chart of accounts",
+          "TYPE_NAME_PLURAL": "Charts of accounts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kontenplan",
+          "TYPE_NAME_PLURAL": "Kontenpläne"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "CHART",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "KIND",
+          "WIDTH": 12
+        },
+        {
+          "FIELD": "ACCOUNT_LENGTH",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "COUNTRY",
+          "WIDTH": 6
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "CHART"
+        },
+        {
+          "FIELD": "KIND"
+        },
+        {
+          "FIELD": "COUNTRY"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "CHART"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "CHART"
+                },
+                {
+                  "FIELD": "KIND"
+                },
+                {
+                  "FIELD": "ACCOUNT_LENGTH"
+                },
+                {
+                  "FIELD": "COUNTRY"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/CHART_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

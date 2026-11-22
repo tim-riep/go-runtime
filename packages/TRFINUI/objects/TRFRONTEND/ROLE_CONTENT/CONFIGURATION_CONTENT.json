@@ -1,0 +1,19 @@
+{
+  "name": "/TRFINUI/CONFIGURATION_CONTENT",
+  "content": {
+    "ROLE": "/TRFIN/CONFIGURATION",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRFINUI/CONFIGURATION_COLLECTION"
+      },
+      {
+        "APP_COLLECTION": "/TRBPUI/CONFIGURATION_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRFINUI/CONFIGURATION_SPACE"
+      }
+    ]
+  }
+}

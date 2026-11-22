@@ -1,0 +1,16 @@
+{
+  "name": "/TRBPUI/CONFIGURATION_CONTENT",
+  "content": {
+    "ROLE": "/TRBP/CONFIGURATION",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRBPUI/CONFIGURATION_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRBPUI/CONFIGURATION_SPACE"
+      }
+    ]
+  }
+}

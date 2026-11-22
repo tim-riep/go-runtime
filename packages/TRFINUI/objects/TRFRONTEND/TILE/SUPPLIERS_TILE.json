@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/SUPPLIERS_TILE",
+  "content": {
+    "APP": "/TRFINUI/SUPPLIERS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

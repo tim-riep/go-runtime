@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/CHARTS_TILE",
+  "content": {
+    "APP": "/TRFINUI/CHARTS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

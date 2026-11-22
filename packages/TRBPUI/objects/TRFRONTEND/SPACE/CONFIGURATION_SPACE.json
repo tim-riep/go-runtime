@@ -1,0 +1,20 @@
+{
+  "name": "/TRBPUI/CONFIGURATION_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partner configuration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Konfiguration der Geschäftspartner"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRBPUI/CONFIGURATION_PAGE"
+      }
+    ]
+  }
+}

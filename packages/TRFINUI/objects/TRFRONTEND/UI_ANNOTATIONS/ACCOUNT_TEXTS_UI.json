@@ -1,0 +1,69 @@
+{
+  "name": "/TRFINUI/ACCOUNT_TEXTS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/ACCOUNT_TEXTS",
+    "HEADER": {
+      "TITLE_FIELD": "SHORT_TEXT",
+      "SUBTITLE_FIELD": "LANGUAGE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LANGUAGE",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "SHORT_TEXT"
+        },
+        {
+          "FIELD": "LONG_TEXT"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "TEXT",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Text"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Text"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LANGUAGE"
+                },
+                {
+                  "FIELD": "SHORT_TEXT"
+                },
+                {
+                  "FIELD": "LONG_TEXT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

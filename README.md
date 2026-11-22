@@ -1497,7 +1497,9 @@ organizations with roles, numbered from the number range `/TRBP/PARTNER` by the 
 their grouping or given from outside for external groupings. Other packages ship partner roles
 as objects of the type `/TRBP/PARTNER_ROLE`. [docs/trbp.md](docs/trbp.md) describes
 the business objects, authorizations, roles and the service `/TRBP/PARTNER_SERVICE`. TRBP
-has German texts, hence `rt language add de`.
+has German texts, hence `rt language add de`. The package `TRBPUI` in
+[packages/TRBPUI](packages/TRBPUI) brings the partners to the start page of TRFRONTEND
+([docs/trbpui.md](docs/trbpui.md)).
 
 ```bash
 rt language add de
@@ -1528,7 +1530,9 @@ code and `rt run` and over the node `/trfin/reports` as JSON or as workbook;
 and `/TRFIN/SAMPLE_DATA` sets up a tenant with sample data. [docs/trfin.md](docs/trfin.md)
 describes the business objects, their rules, the posting, the reports, authorizations, roles,
 the services `/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
-`/TRFIN/JOURNAL_ENTRY_SERVICE` and the sample data.
+`/TRFIN/JOURNAL_ENTRY_SERVICE` and the sample data. The package `TRFINUI` in
+[packages/TRFINUI](packages/TRFINUI) brings configuration, master data and journal entries to
+the start page of TRFRONTEND ([docs/trfinui.md](docs/trfinui.md)).
 
 ```bash
 rt install packages/TRFIN --yes

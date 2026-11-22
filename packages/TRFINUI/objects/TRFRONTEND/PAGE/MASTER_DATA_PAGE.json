@@ -1,0 +1,62 @@
+{
+  "name": "/TRFINUI/MASTER_DATA_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger master data"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Stammdaten Hauptbuch"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "ACCOUNTS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Accounts"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Sachkonten"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/ACCOUNTS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/COMPANY_ACCOUNTS_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "PARTNERS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Customers and suppliers"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Debitoren und Kreditoren"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/PARTNERS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/CUSTOMERS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/SUPPLIERS_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

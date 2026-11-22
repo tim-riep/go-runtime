@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/COMPANY_ACCOUNTS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Accounts of companies"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Sachkonten im Buchungskreis"
+      }
+    ],
+    "ICON": "bank",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/MASTER_DATA_SERVICE",
+      "ENTITY_SET": "CompanyAccounts"
+    }
+  }
+}

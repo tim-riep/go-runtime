@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/STATEMENT_STRUCTURES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Balance sheet structures"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Bilanzstrukturen"
+      }
+    ],
+    "ICON": "org-chart",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "StatementStructures"
+    }
+  }
+}

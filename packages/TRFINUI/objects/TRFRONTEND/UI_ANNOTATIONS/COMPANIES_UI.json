@@ -1,0 +1,155 @@
+{
+  "name": "/TRFINUI/COMPANIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/COMPANIES",
+    "HEADER": {
+      "TITLE_FIELD": "NAME",
+      "SUBTITLE_FIELD": "COMPANY",
+      "DESCRIPTION_FIELD": "COUNTRY",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Company",
+          "TYPE_NAME_PLURAL": "Companies"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Buchungskreis",
+          "TYPE_NAME_PLURAL": "Buchungskreise"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "NAME",
+          "WIDTH": 16
+        },
+        {
+          "FIELD": "COUNTRY",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "CURRENCY",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "CHART",
+          "WIDTH": 8,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "COUNTRY_CHART",
+          "WIDTH": 8,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "NAME"
+        },
+        {
+          "FIELD": "COUNTRY"
+        },
+        {
+          "FIELD": "CHART"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "COMPANY"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Company"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Buchungskreis"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "NAME"
+                },
+                {
+                  "FIELD": "COUNTRY"
+                },
+                {
+                  "FIELD": "CURRENCY"
+                }
+              ]
+            },
+            {
+              "ID": "CHARTS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Charts of accounts"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Kontenpläne"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CHART"
+                },
+                {
+                  "FIELD": "COUNTRY_CHART"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "LEDGERS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Further ledgers"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Weitere Ledger"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/COMPANY_LEDGERS"
+          }
+        }
+      ]
+    }
+  }
+}

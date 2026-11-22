@@ -1,0 +1,35 @@
+{
+  "name": "/TRBPUI/CONFIGURATION_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Business partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Geschäftspartner"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "CONFIGURATION",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Configuration"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Konfiguration"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRBPUI/GROUPINGS_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

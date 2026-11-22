@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/LEDGER_GROUPS_TILE",
+  "content": {
+    "APP": "/TRFINUI/LEDGER_GROUPS",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

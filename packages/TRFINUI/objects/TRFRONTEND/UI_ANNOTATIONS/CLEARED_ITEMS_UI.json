@@ -1,0 +1,92 @@
+{
+  "name": "/TRFINUI/CLEARED_ITEMS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/CLEARED_ITEMS",
+    "HEADER": {
+      "TITLE_FIELD": "LINE_NO",
+      "SUBTITLE_FIELD": "ITEM_DOCUMENT_NO",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Cleared item",
+          "TYPE_NAME_PLURAL": "Cleared items"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Ausgeglichener Posten",
+          "TYPE_NAME_PLURAL": "Ausgeglichene Posten"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LINE_NO",
+          "WIDTH": 5
+        },
+        {
+          "FIELD": "ITEM_YEAR",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "ITEM_DOCUMENT_NO",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "ITEM_NO",
+          "WIDTH": 5
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "LINE_NO"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Cleared item"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Ausgeglichener Posten"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "FISCAL_YEAR"
+                },
+                {
+                  "FIELD": "DOCUMENT_NO"
+                },
+                {
+                  "FIELD": "LINE_NO"
+                },
+                {
+                  "FIELD": "ITEM_YEAR"
+                },
+                {
+                  "FIELD": "ITEM_DOCUMENT_NO"
+                },
+                {
+                  "FIELD": "ITEM_NO"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

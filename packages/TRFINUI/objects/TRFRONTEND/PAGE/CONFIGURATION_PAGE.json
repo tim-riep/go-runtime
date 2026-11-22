@@ -1,0 +1,86 @@
+{
+  "name": "/TRFINUI/CONFIGURATION_PAGE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger configuration"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Konfiguration Hauptbuch"
+      }
+    ],
+    "SECTIONS": [
+      {
+        "ID": "CHARTS",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Currencies and charts of accounts"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Währungen und Kontenpläne"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/CURRENCIES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/CHARTS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/STATEMENT_STRUCTURES_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "COMPANIES",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Companies and ledgers"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Buchungskreise und Ledger"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/COMPANIES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/LEDGERS_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/LEDGER_GROUPS_TILE"
+          }
+        ]
+      },
+      {
+        "ID": "POSTING",
+        "TEXTS": [
+          {
+            "LANGUAGE": "en",
+            "TITLE": "Posting"
+          },
+          {
+            "LANGUAGE": "de",
+            "TITLE": "Buchen"
+          }
+        ],
+        "TILES": [
+          {
+            "TILE": "/TRFINUI/DOCUMENT_TYPES_TILE"
+          },
+          {
+            "TILE": "/TRFINUI/POSTING_PERIODS_TILE"
+          }
+        ]
+      }
+    ]
+  }
+}

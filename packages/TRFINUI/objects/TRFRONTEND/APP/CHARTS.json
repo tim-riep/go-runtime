@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/CHARTS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Charts of accounts"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Kontenpläne"
+      }
+    ],
+    "ICON": "list",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "Charts"
+    }
+  }
+}

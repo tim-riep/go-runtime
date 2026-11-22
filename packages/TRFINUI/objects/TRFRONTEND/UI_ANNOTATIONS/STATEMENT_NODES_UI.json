@@ -1,0 +1,126 @@
+{
+  "name": "/TRFINUI/STATEMENT_NODES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/STATEMENT_NODES",
+    "HEADER": {
+      "TITLE_FIELD": "NODE",
+      "SUBTITLE_FIELD": "STRUCTURE",
+      "DESCRIPTION_FIELD": "SIDE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Node",
+          "TYPE_NAME_PLURAL": "Nodes"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Knoten",
+          "TYPE_NAME_PLURAL": "Knoten"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "NODE",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "PARENT_NODE",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "SORT_ORDER",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "SIDE",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "KIND",
+          "WIDTH": 10
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "SORT_ORDER"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "STRUCTURE"
+                },
+                {
+                  "FIELD": "NODE"
+                },
+                {
+                  "FIELD": "PARENT_NODE"
+                },
+                {
+                  "FIELD": "SORT_ORDER"
+                },
+                {
+                  "FIELD": "SIDE"
+                },
+                {
+                  "FIELD": "KIND"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "RANGES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Account ranges"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Kontenbereiche"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/STATEMENT_NODE_RANGES"
+          }
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/STATEMENT_NODE_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

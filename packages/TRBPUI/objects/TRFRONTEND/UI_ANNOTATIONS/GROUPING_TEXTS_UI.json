@@ -1,0 +1,63 @@
+{
+  "name": "/TRBPUI/GROUPING_TEXTS_UI",
+  "content": {
+    "ENTITY": "/TRBP/GROUPING_TEXTS",
+    "HEADER": {
+      "TITLE_FIELD": "LABEL",
+      "SUBTITLE_FIELD": "LANGUAGE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Text",
+          "TYPE_NAME_PLURAL": "Texte"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LANGUAGE",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "LABEL"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "TEXT",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Text"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Text"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LANGUAGE"
+                },
+                {
+                  "FIELD": "LABEL"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

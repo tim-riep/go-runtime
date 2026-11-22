@@ -1,0 +1,155 @@
+{
+  "name": "/TRFINUI/ACCOUNTS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/ACCOUNTS",
+    "HEADER": {
+      "TITLE_FIELD": "ACCOUNT",
+      "SUBTITLE_FIELD": "CHART",
+      "DESCRIPTION_FIELD": "KIND",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Account",
+          "TYPE_NAME_PLURAL": "Accounts"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Sachkonto",
+          "TYPE_NAME_PLURAL": "Sachkonten"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "CHART",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "KIND",
+          "WIDTH": 12
+        },
+        {
+          "FIELD": "BLOCKED",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "CHART"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        },
+        {
+          "FIELD": "KIND"
+        },
+        {
+          "FIELD": "BLOCKED"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "CHART"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Account"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Sachkonto"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CHART"
+                },
+                {
+                  "FIELD": "ACCOUNT"
+                },
+                {
+                  "FIELD": "KIND"
+                },
+                {
+                  "FIELD": "BLOCKED"
+                }
+              ]
+            },
+            {
+              "ID": "ADMINISTRATION",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Administration"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Verwaltung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CREATED_BY"
+                },
+                {
+                  "FIELD": "CREATED_AT"
+                },
+                {
+                  "FIELD": "CHANGED_BY"
+                },
+                {
+                  "FIELD": "CHANGED_AT"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/ACCOUNT_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

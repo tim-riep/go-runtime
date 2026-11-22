@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/LEDGER_ENTRIES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Ledger entries",
+        "SUBTITLE": "Per ledger"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Ledgerpositionen",
+        "SUBTITLE": "Je Ledger"
+      }
+    ],
+    "ICON": "ledger",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/JOURNAL_ENTRY_SERVICE",
+      "ENTITY_SET": "LedgerEntries"
+    }
+  }
+}

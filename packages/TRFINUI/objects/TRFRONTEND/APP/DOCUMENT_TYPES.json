@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/DOCUMENT_TYPES",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Document types"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Belegarten"
+      }
+    ],
+    "ICON": "document-text",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "DocumentTypes"
+    }
+  }
+}

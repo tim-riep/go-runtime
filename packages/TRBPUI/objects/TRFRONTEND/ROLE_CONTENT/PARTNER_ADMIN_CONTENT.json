@@ -1,0 +1,19 @@
+{
+  "name": "/TRBPUI/PARTNER_ADMIN_CONTENT",
+  "content": {
+    "ROLE": "/TRBP/PARTNER_ADMIN",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRBPUI/PARTNERS_COLLECTION"
+      },
+      {
+        "APP_COLLECTION": "/TRBPUI/CONFIGURATION_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRBPUI/PARTNERS_SPACE"
+      }
+    ]
+  }
+}

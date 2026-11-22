@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/LEDGER_ENTRIES_TILE",
+  "content": {
+    "APP": "/TRFINUI/LEDGER_ENTRIES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "/TRFINUI/MASTER_DATA_CONTENT",
+  "content": {
+    "ROLE": "/TRFIN/MASTER_DATA",
+    "APP_COLLECTIONS": [
+      {
+        "APP_COLLECTION": "/TRFINUI/MASTER_DATA_COLLECTION"
+      }
+    ],
+    "SPACES": [
+      {
+        "SPACE": "/TRFINUI/MASTER_DATA_SPACE"
+      }
+    ]
+  }
+}

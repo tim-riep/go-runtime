@@ -1,0 +1,23 @@
+{
+  "name": "/TRBPUI/GROUPINGS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Partner groupings",
+        "SUBTITLE": "Number ranges of partners"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Partnergruppierungen",
+        "SUBTITLE": "Nummernkreise der Partner"
+      }
+    ],
+    "ICON": "settings",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRBP/PARTNER_SERVICE",
+      "ENTITY_SET": "Groupings"
+    }
+  }
+}

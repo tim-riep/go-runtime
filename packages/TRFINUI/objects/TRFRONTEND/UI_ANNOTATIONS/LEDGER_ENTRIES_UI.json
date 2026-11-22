@@ -1,0 +1,267 @@
+{
+  "name": "/TRFINUI/LEDGER_ENTRIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/LEDGER_ENTRIES",
+    "HEADER": {
+      "TITLE_FIELD": "LINE_NO",
+      "SUBTITLE_FIELD": "ACCOUNT",
+      "DESCRIPTION_FIELD": "LEDGER",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Ledger entry",
+          "TYPE_NAME_PLURAL": "Ledger entries"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Ledgerposition",
+          "TYPE_NAME_PLURAL": "Ledgerpositionen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LEDGER",
+          "WIDTH": 5
+        },
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "FISCAL_YEAR",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "DOCUMENT_NO",
+          "WIDTH": 10,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "LINE_NO",
+          "WIDTH": 5
+        },
+        {
+          "FIELD": "POSTING_DATE",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "PARTNER",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "AMOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "LINE_KIND",
+          "WIDTH": 10,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "OPEN_ITEM",
+          "WIDTH": 5,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "DUE_DATE",
+          "WIDTH": 8,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "CLEARING_NO",
+          "WIDTH": 10,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "LEDGER"
+        },
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "FISCAL_YEAR"
+        },
+        {
+          "FIELD": "PERIOD"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        },
+        {
+          "FIELD": "PARTNER"
+        },
+        {
+          "FIELD": "PARTNER_ROLE"
+        },
+        {
+          "FIELD": "LINE_KIND"
+        },
+        {
+          "FIELD": "OPEN_ITEM"
+        },
+        {
+          "FIELD": "DOCUMENT_NO"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "POSTING_DATE",
+          "DESCENDING": true
+        },
+        {
+          "FIELD": "DOCUMENT_NO",
+          "DESCENDING": true
+        },
+        {
+          "FIELD": "LINE_NO"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Ledger entry"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Ledgerposition"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "FISCAL_YEAR"
+                },
+                {
+                  "FIELD": "DOCUMENT_NO"
+                },
+                {
+                  "FIELD": "LEDGER"
+                },
+                {
+                  "FIELD": "LINE_NO"
+                },
+                {
+                  "FIELD": "ITEM_NO"
+                }
+              ]
+            },
+            {
+              "ID": "POSTING",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Posting"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Buchung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "DOCUMENT_TYPE"
+                },
+                {
+                  "FIELD": "POSTING_DATE"
+                },
+                {
+                  "FIELD": "PERIOD"
+                },
+                {
+                  "FIELD": "LINE_KIND"
+                }
+              ]
+            },
+            {
+              "ID": "ACCOUNT",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Account and amount"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Konto und Betrag"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "ACCOUNT"
+                },
+                {
+                  "FIELD": "PARTNER"
+                },
+                {
+                  "FIELD": "PARTNER_ROLE"
+                },
+                {
+                  "FIELD": "AMOUNT"
+                }
+              ]
+            },
+            {
+              "ID": "CLEARING",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Open item"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Offener Posten"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "OPEN_ITEM"
+                },
+                {
+                  "FIELD": "DUE_DATE"
+                },
+                {
+                  "FIELD": "CLEARING_YEAR"
+                },
+                {
+                  "FIELD": "CLEARING_NO"
+                },
+                {
+                  "FIELD": "CLEARING_DATE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

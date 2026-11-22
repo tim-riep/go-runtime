@@ -1,0 +1,92 @@
+{
+  "name": "/TRFINUI/LEDGERS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/LEDGERS",
+    "HEADER": {
+      "TITLE_FIELD": "LEDGER",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Ledger",
+          "TYPE_NAME_PLURAL": "Ledgers"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Ledger",
+          "TYPE_NAME_PLURAL": "Ledger"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LEDGER",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "PRIMARY",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "LEDGER"
+        },
+        {
+          "FIELD": "PRIMARY"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "LEDGER"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LEDGER"
+                },
+                {
+                  "FIELD": "PRIMARY"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/LEDGER_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

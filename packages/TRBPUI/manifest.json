@@ -1,0 +1,19 @@
+{
+  "id": "TRBPUI",
+  "version": "1.0.0",
+  "description": "The user interface of the business partners of TRBP: pages, apps, tiles and spaces",
+  "requires": [
+    {
+      "id": "TRBASE",
+      "version": ">=1.11.0"
+    },
+    {
+      "id": "TRFRONTEND",
+      "version": ">=1.1.0"
+    },
+    {
+      "id": "TRBP",
+      "version": ">=1.0.0"
+    }
+  ]
+}

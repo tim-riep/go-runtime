@@ -1,0 +1,106 @@
+{
+  "name": "/TRFINUI/LEDGER_GROUPS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/LEDGER_GROUPS",
+    "HEADER": {
+      "TITLE_FIELD": "LEDGER_GROUP",
+      "SUBTITLE_FIELD": "REPRESENTATIVE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Ledger group",
+          "TYPE_NAME_PLURAL": "Ledger groups"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Ledgergruppe",
+          "TYPE_NAME_PLURAL": "Ledgergruppen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "LEDGER_GROUP",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "REPRESENTATIVE",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "LEDGER_GROUP"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "LEDGER_GROUP"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "LEDGER_GROUP"
+                },
+                {
+                  "FIELD": "REPRESENTATIVE"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "MEMBERS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Members"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Mitglieder"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/LEDGER_GROUP_MEMBERS"
+          }
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/LEDGER_GROUP_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

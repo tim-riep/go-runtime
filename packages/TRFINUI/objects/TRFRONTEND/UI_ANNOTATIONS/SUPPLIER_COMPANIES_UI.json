@@ -1,0 +1,138 @@
+{
+  "name": "/TRFINUI/SUPPLIER_COMPANIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/SUPPLIER_COMPANIES",
+    "HEADER": {
+      "TITLE_FIELD": "PARTNER",
+      "SUBTITLE_FIELD": "COMPANY",
+      "DESCRIPTION_FIELD": "RECONCILIATION_ACCOUNT",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Supplier",
+          "TYPE_NAME_PLURAL": "Suppliers"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Kreditor",
+          "TYPE_NAME_PLURAL": "Kreditoren"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "PARTNER",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "RECONCILIATION_ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "ALTERNATIVE_ACCOUNT",
+          "WIDTH": 10,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "BLOCKED",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "PARTNER"
+        },
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "RECONCILIATION_ACCOUNT"
+        },
+        {
+          "FIELD": "BLOCKED"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "PARTNER"
+        },
+        {
+          "FIELD": "COMPANY"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Company data"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Buchungskreisdaten"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Supplier"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Kreditor"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "PARTNER"
+                },
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "ROLE"
+                },
+                {
+                  "FIELD": "BLOCKED"
+                }
+              ]
+            },
+            {
+              "ID": "ACCOUNTS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Accounts"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Konten"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "RECONCILIATION_ACCOUNT"
+                },
+                {
+                  "FIELD": "ALTERNATIVE_ACCOUNT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "/TRFINUI/MASTER_DATA_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger master data"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Stammdaten Hauptbuch"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFINUI/ACCOUNTS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/COMPANY_ACCOUNTS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/PARTNERS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/CUSTOMERS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/SUPPLIERS_TILE"
+      }
+    ]
+  }
+}

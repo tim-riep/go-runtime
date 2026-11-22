@@ -1,0 +1,75 @@
+{
+  "name": "/TRBPUI/PARTNER_ROLES_UI",
+  "content": {
+    "ENTITY": "/TRBP/PARTNER_ROLES",
+    "HEADER": {
+      "TITLE_FIELD": "ROLE",
+      "SUBTITLE_FIELD": "PARTNER",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Partner role",
+          "TYPE_NAME_PLURAL": "Partner roles"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Partnerrolle",
+          "TYPE_NAME_PLURAL": "Partnerrollen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "ROLE",
+          "WIDTH": 16
+        },
+        {
+          "FIELD": "VALID_FROM"
+        },
+        {
+          "FIELD": "VALID_TO"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "ROLE",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Role"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Rolle"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "PARTNER"
+                },
+                {
+                  "FIELD": "ROLE"
+                },
+                {
+                  "FIELD": "VALID_FROM"
+                },
+                {
+                  "FIELD": "VALID_TO"
+                },
+                {
+                  "FIELD": "GROUPING"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

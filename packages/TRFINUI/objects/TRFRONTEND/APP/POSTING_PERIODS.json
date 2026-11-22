@@ -1,0 +1,23 @@
+{
+  "name": "/TRFINUI/POSTING_PERIODS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Posting periods",
+        "SUBTITLE": "Open and close periods"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchungsperioden",
+        "SUBTITLE": "Perioden öffnen und schließen"
+      }
+    ],
+    "ICON": "calendar-range",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/CONFIGURATION_SERVICE",
+      "ENTITY_SET": "PostingPeriods"
+    }
+  }
+}

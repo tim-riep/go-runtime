@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINUI/DOCUMENT_TYPES_TILE",
+  "content": {
+    "APP": "/TRFINUI/DOCUMENT_TYPES",
+    "KIND": "SIMPLE",
+    "SIZE": "SMALL"
+  }
+}

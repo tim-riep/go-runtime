@@ -1,0 +1,20 @@
+{
+  "name": "/TRFINUI/MASTER_DATA_SPACE",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "General ledger master data"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Stammdaten Hauptbuch"
+      }
+    ],
+    "PAGES": [
+      {
+        "PAGE": "/TRFINUI/MASTER_DATA_PAGE"
+      }
+    ]
+  }
+}

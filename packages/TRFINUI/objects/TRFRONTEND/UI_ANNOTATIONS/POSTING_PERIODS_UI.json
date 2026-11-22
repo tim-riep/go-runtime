@@ -1,0 +1,95 @@
+{
+  "name": "/TRFINUI/POSTING_PERIODS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/POSTING_PERIODS",
+    "HEADER": {
+      "TITLE_FIELD": "FISCAL_YEAR",
+      "SUBTITLE_FIELD": "COMPANY",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Posting period",
+          "TYPE_NAME_PLURAL": "Posting periods"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Buchungsperiode",
+          "TYPE_NAME_PLURAL": "Buchungsperioden"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "FISCAL_YEAR",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "FROM_PERIOD",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "TO_PERIOD",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "FISCAL_YEAR"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "FISCAL_YEAR",
+          "DESCENDING": true
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Open periods"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Offene Perioden"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "FISCAL_YEAR"
+                },
+                {
+                  "FIELD": "FROM_PERIOD"
+                },
+                {
+                  "FIELD": "TO_PERIOD"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

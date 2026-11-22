@@ -1,0 +1,29 @@
+{
+  "name": "/TRFINUI/ACCOUNTING_COLLECTION",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Accounting"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Buchhaltung"
+      }
+    ],
+    "TILES": [
+      {
+        "TILE": "/TRFINUI/JOURNAL_ENTRIES_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/OPEN_ITEMS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/JOURNAL_ENTRY_ITEMS_TILE"
+      },
+      {
+        "TILE": "/TRFINUI/LEDGER_ENTRIES_TILE"
+      }
+    ]
+  }
+}

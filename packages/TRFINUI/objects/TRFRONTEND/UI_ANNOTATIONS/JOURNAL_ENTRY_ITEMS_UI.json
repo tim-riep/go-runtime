@@ -1,0 +1,248 @@
+{
+  "name": "/TRFINUI/JOURNAL_ENTRY_ITEMS_UI",
+  "content": {
+    "ENTITY": "/TRFIN/JOURNAL_ENTRY_ITEMS",
+    "HEADER": {
+      "TITLE_FIELD": "ITEM_NO",
+      "SUBTITLE_FIELD": "ACCOUNT",
+      "DESCRIPTION_FIELD": "ITEM_TEXT",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Item",
+          "TYPE_NAME_PLURAL": "Items"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Position",
+          "TYPE_NAME_PLURAL": "Positionen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "FISCAL_YEAR",
+          "WIDTH": 6,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "DOCUMENT_NO",
+          "WIDTH": 10,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "ITEM_NO",
+          "WIDTH": 5
+        },
+        {
+          "FIELD": "ACCOUNT_KIND",
+          "WIDTH": 8,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "ACCOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "PARTNER",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "DEBIT_CREDIT",
+          "WIDTH": 4
+        },
+        {
+          "FIELD": "AMOUNT",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "ITEM_TEXT",
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "DUE_DATE",
+          "WIDTH": 8,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "OPEN_ITEM",
+          "WIDTH": 5,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "CLEARING_NO",
+          "WIDTH": 10,
+          "IMPORTANCE": "LOW"
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "FISCAL_YEAR"
+        },
+        {
+          "FIELD": "DOCUMENT_NO"
+        },
+        {
+          "FIELD": "ACCOUNT_KIND"
+        },
+        {
+          "FIELD": "ACCOUNT"
+        },
+        {
+          "FIELD": "PARTNER"
+        },
+        {
+          "FIELD": "ASSIGNMENT"
+        },
+        {
+          "FIELD": "OPEN_ITEM"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "DOCUMENT_NO",
+          "DESCENDING": true
+        },
+        {
+          "FIELD": "ITEM_NO"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Item"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Position"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "FISCAL_YEAR"
+                },
+                {
+                  "FIELD": "DOCUMENT_NO"
+                },
+                {
+                  "FIELD": "ITEM_NO"
+                }
+              ]
+            },
+            {
+              "ID": "ACCOUNT",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Account and amount"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Konto und Betrag"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "ACCOUNT_KIND"
+                },
+                {
+                  "FIELD": "ACCOUNT"
+                },
+                {
+                  "FIELD": "PARTNER"
+                },
+                {
+                  "FIELD": "DEBIT_CREDIT"
+                },
+                {
+                  "FIELD": "AMOUNT"
+                }
+              ]
+            },
+            {
+              "ID": "TEXTS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Texts"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Texte"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "ITEM_TEXT"
+                },
+                {
+                  "FIELD": "ASSIGNMENT"
+                }
+              ]
+            },
+            {
+              "ID": "CLEARING",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Open item"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Offener Posten"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "OPEN_ITEM"
+                },
+                {
+                  "FIELD": "DUE_DATE"
+                },
+                {
+                  "FIELD": "CLEARING_YEAR"
+                },
+                {
+                  "FIELD": "CLEARING_NO"
+                },
+                {
+                  "FIELD": "CLEARING_DATE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "name": "/TRBPUI/GROUPINGS_UI",
+  "content": {
+    "ENTITY": "/TRBP/GROUPINGS",
+    "HEADER": {
+      "TITLE_FIELD": "GROUPING",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Grouping",
+          "TYPE_NAME_PLURAL": "Groupings"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Gruppierung",
+          "TYPE_NAME_PLURAL": "Gruppierungen"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "GROUPING",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "INTERVAL",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "EXTERNAL",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "GROUPING"
+        },
+        {
+          "FIELD": "EXTERNAL"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "GROUPING"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Numbers"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Nummern"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "GROUPING"
+                },
+                {
+                  "FIELD": "INTERVAL"
+                },
+                {
+                  "FIELD": "EXTERNAL"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "TEXTS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Texts"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Texte"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRBP/GROUPING_TEXTS"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,342 @@
+{
+  "name": "/TRFINUI/JOURNAL_ENTRIES_UI",
+  "content": {
+    "ENTITY": "/TRFIN/JOURNAL_ENTRIES",
+    "HEADER": {
+      "TITLE_FIELD": "DOCUMENT_NO",
+      "SUBTITLE_FIELD": "HEADER_TEXT",
+      "DESCRIPTION_FIELD": "POSTING_DATE",
+      "TEXTS": [
+        {
+          "LANGUAGE": "en",
+          "TYPE_NAME": "Journal entry",
+          "TYPE_NAME_PLURAL": "Journal entries"
+        },
+        {
+          "LANGUAGE": "de",
+          "TYPE_NAME": "Beleg",
+          "TYPE_NAME_PLURAL": "Belege"
+        }
+      ]
+    },
+    "LIST": {
+      "COLUMNS": [
+        {
+          "FIELD": "COMPANY",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "FISCAL_YEAR",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "DOCUMENT_NO",
+          "WIDTH": 10
+        },
+        {
+          "FIELD": "DOCUMENT_TYPE",
+          "WIDTH": 6
+        },
+        {
+          "FIELD": "POSTING_DATE",
+          "WIDTH": 8
+        },
+        {
+          "FIELD": "DOCUMENT_DATE",
+          "WIDTH": 8,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "REFERENCE",
+          "WIDTH": 10,
+          "IMPORTANCE": "MEDIUM"
+        },
+        {
+          "FIELD": "HEADER_TEXT",
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "KIND",
+          "WIDTH": 8,
+          "IMPORTANCE": "LOW"
+        },
+        {
+          "FIELD": "STATUS",
+          "WIDTH": 8
+        }
+      ],
+      "FILTER_FIELDS": [
+        {
+          "FIELD": "COMPANY"
+        },
+        {
+          "FIELD": "FISCAL_YEAR"
+        },
+        {
+          "FIELD": "DOCUMENT_NO"
+        },
+        {
+          "FIELD": "DOCUMENT_TYPE"
+        },
+        {
+          "FIELD": "POSTING_DATE"
+        },
+        {
+          "FIELD": "REFERENCE"
+        },
+        {
+          "FIELD": "KIND"
+        },
+        {
+          "FIELD": "STATUS"
+        }
+      ],
+      "SORT": [
+        {
+          "FIELD": "POSTING_DATE",
+          "DESCENDING": true
+        },
+        {
+          "FIELD": "DOCUMENT_NO",
+          "DESCENDING": true
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "REVERSE"
+        }
+      ]
+    },
+    "DETAIL": {
+      "SECTIONS": [
+        {
+          "ID": "GENERAL",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "General"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Allgemein"
+            }
+          ],
+          "GROUPS": [
+            {
+              "ID": "MAIN",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Journal entry"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Beleg"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "COMPANY"
+                },
+                {
+                  "FIELD": "FISCAL_YEAR"
+                },
+                {
+                  "FIELD": "DOCUMENT_NO"
+                },
+                {
+                  "FIELD": "DOCUMENT_TYPE"
+                },
+                {
+                  "FIELD": "KIND"
+                },
+                {
+                  "FIELD": "STATUS"
+                }
+              ]
+            },
+            {
+              "ID": "DATES",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Dates"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Daten"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "DOCUMENT_DATE"
+                },
+                {
+                  "FIELD": "POSTING_DATE"
+                },
+                {
+                  "FIELD": "PERIOD"
+                }
+              ]
+            },
+            {
+              "ID": "TEXTS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Reference and text"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Referenz und Text"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "REFERENCE"
+                },
+                {
+                  "FIELD": "HEADER_TEXT"
+                }
+              ]
+            },
+            {
+              "ID": "LEDGERS",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Ledgers"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Ledger"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "LEDGER"
+                },
+                {
+                  "FIELD": "LEDGER_GROUP"
+                },
+                {
+                  "FIELD": "CURRENCY"
+                }
+              ]
+            },
+            {
+              "ID": "REVERSAL",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Reversal"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Storno"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "REVERSAL_YEAR"
+                },
+                {
+                  "FIELD": "REVERSAL_NO"
+                },
+                {
+                  "FIELD": "REVERSED_YEAR"
+                },
+                {
+                  "FIELD": "REVERSED_NO"
+                }
+              ]
+            },
+            {
+              "ID": "ADMINISTRATION",
+              "TEXTS": [
+                {
+                  "LANGUAGE": "en",
+                  "TITLE": "Administration"
+                },
+                {
+                  "LANGUAGE": "de",
+                  "TITLE": "Verwaltung"
+                }
+              ],
+              "FIELDS": [
+                {
+                  "FIELD": "CREATED_BY"
+                },
+                {
+                  "FIELD": "CREATED_AT"
+                },
+                {
+                  "FIELD": "CHANGED_BY"
+                },
+                {
+                  "FIELD": "CHANGED_AT"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": "ITEMS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Items"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Positionen"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/JOURNAL_ENTRY_ITEMS"
+          }
+        },
+        {
+          "ID": "LEDGER_ENTRIES",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Ledger entries"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Ledgerpositionen"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/LEDGER_ENTRIES"
+          }
+        },
+        {
+          "ID": "CLEARED_ITEMS",
+          "TEXTS": [
+            {
+              "LANGUAGE": "en",
+              "TITLE": "Cleared items"
+            },
+            {
+              "LANGUAGE": "de",
+              "TITLE": "Ausgeglichene Posten"
+            }
+          ],
+          "TABLE": {
+            "ENTITY": "/TRFIN/CLEARED_ITEMS"
+          }
+        }
+      ],
+      "ACTIONS": [
+        {
+          "ACTION": "REVERSE"
+        },
+        {
+          "ACTION": "RESET_CLEARING"
+        }
+      ]
+    }
+  }
+}

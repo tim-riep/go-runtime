@@ -1,0 +1,21 @@
+{
+  "name": "/TRFINUI/JOURNAL_ENTRY_ITEMS",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "TITLE": "Journal entry items"
+      },
+      {
+        "LANGUAGE": "de",
+        "TITLE": "Belegpositionen"
+      }
+    ],
+    "ICON": "list",
+    "TARGET": {
+      "KIND": "LIST",
+      "SERVICE": "/TRFIN/JOURNAL_ENTRY_SERVICE",
+      "ENTITY_SET": "JournalEntryItems"
+    }
+  }
+}
