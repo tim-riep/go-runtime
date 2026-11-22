@@ -1,0 +1,29 @@
+{
+  "path": "number-ranges",
+  "texts": {
+    "en": {
+      "label": "Number ranges of the general ledger",
+      "description": "The intervals of /TRFIN/JOURNAL_ENTRY and /TRBP/PARTNER: GET, POST, PUT and DELETE /trfin/number-ranges/intervals"
+    },
+    "de": {
+      "label": "Nummernkreise des Hauptbuchs",
+      "description": "Die Intervalle von /TRFIN/JOURNAL_ENTRY und /TRBP/PARTNER: GET, POST, PUT und DELETE /trfin/number-ranges/intervals"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRFIN/NUMBER_RANGE_API"
+    }
+  ],
+  "settings": {
+    "authorization": {
+      "object": "/TRBASE/NUMBER_RANGE",
+      "fields": {
+        "NUMBER_RANGE_OBJECT": {
+          "any": true
+        },
+        "ACTIVITY": "READ"
+      }
+    }
+  }
+}

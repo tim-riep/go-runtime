@@ -1,0 +1,107 @@
+# The node /trfin/number-ranges: the intervals of the number range objects
+# of the general ledger, /TRFIN/JOURNAL_ENTRY and /TRBP/PARTNER, through
+# /TRBASE/NUMBER_RANGE_ADMINISTRATION, which checks /TRBASE/NUMBER_RANGE
+# for the object and the user of the request:
+#
+#   GET    /trfin/number-ranges                     the objects the user may read
+#   GET    /trfin/number-ranges/intervals?object=O  the intervals of O
+#   POST   /trfin/number-ranges/intervals           adds the interval of the body
+#   PUT    /trfin/number-ranges/intervals           changes the interval of the body
+#   DELETE /trfin/number-ranges/intervals           deletes the interval of the body
+#   GET    /trfin/number-ranges/history?object=O    the changes of the intervals of O
+#
+# Changes answer with the intervals of the object. A change that moves the
+# current number back, or deletes an interval that gave numbers, needs
+# ?confirm=true and is answered with 409 without it. Other objects are
+# answered with 403, unknown objects and intervals with 404, bodies that
+# are no interval and invalid intervals with 400, all with {"error": "..."}.
+public class /TRFIN/NUMBER_RANGE_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    var verb = request.METHOD()
+    var rest = request.REST_PATH()
+    var confirm = (request.QUERY("confirm") default "") = "true"
+    try
+      if rest = ""
+        if verb <> "GET"
+          return NOT_ALLOWED(response, "GET")
+        end
+        var objects = /TRBASE/NUMBER_RANGE_ADMINISTRATION.OBJECTS("TRFIN")
+        for o in /TRBASE/NUMBER_RANGE_ADMINISTRATION.OBJECTS("TRBP")
+          objects.APPEND(o)
+        end
+        JSON(response, transform objects using /TRBASE/JSON)
+      elseif rest = "intervals"
+        if verb = "GET"
+          var object = request.QUERY("object") default ""
+          if not OURS(response, object)
+            return true
+          end
+          JSON(response, transform /TRBASE/NUMBER_RANGE_ADMINISTRATION.INTERVALS(object) using /TRBASE/JSON)
+        elseif verb = "POST" or verb = "PUT" or verb = "DELETE"
+          var interval = transform request.BODY_TEXT() using /TRBASE/JSON into /TRBASE/NUMBER_INTERVAL
+          if not OURS(response, interval.RANGE_NAME)
+            return true
+          end
+          if verb = "POST"
+            /TRBASE/NUMBER_RANGE_ADMINISTRATION.ADD_INTERVAL(interval)
+          elseif verb = "PUT"
+            /TRBASE/NUMBER_RANGE_ADMINISTRATION.CHANGE_INTERVAL(interval, confirm)
+          else
+            /TRBASE/NUMBER_RANGE_ADMINISTRATION.DELETE_INTERVAL(interval.RANGE_NAME, interval.INTERVAL_ID, interval.SUBOBJECT, interval.FISCAL_YEAR, confirm)
+          end
+          JSON(response, transform /TRBASE/NUMBER_RANGE_ADMINISTRATION.INTERVALS(interval.RANGE_NAME) using /TRBASE/JSON)
+        else
+          return NOT_ALLOWED(response, "GET, POST, PUT, DELETE")
+        end
+      elseif rest = "history"
+        if verb <> "GET"
+          return NOT_ALLOWED(response, "GET")
+        end
+        var object = request.QUERY("object") default ""
+        if not OURS(response, object)
+          return true
+        end
+        JSON(response, transform /TRBASE/NUMBER_RANGE_ADMINISTRATION.HISTORY(object) using /TRBASE/JSON)
+      else
+        FAIL(response, 404, "there is nothing at /trfin/number-ranges/{rest}")
+      end
+    catch e: /TRBASE/NUMBER_RANGE_CONFIRMATION_REQUIRED
+      FAIL(response, 409, e.TEXT)
+    catch e: /TRBASE/NUMBER_RANGE_NOT_FOUND
+      FAIL(response, 404, e.TEXT)
+    catch e: /TRBASE/NUMBER_RANGE_ERROR
+      FAIL(response, 400, e.TEXT)
+    catch e: /TRBASE/XSLT_FAILED
+      FAIL(response, 400, "the body is no interval: {e.TEXT}")
+    end
+    return true
+  end
+
+  # Whether the object is one of the general ledger; answers 403 if not.
+  private method OURS(response: /TRBASE/HTTP_RESPONSE, object: STRING) returns BOOL raises /TRBASE/XSLT_FAILED
+    if object = "/TRFIN/JOURNAL_ENTRY" or object = "/TRBP/PARTNER"
+      return true
+    end
+    FAIL(response, 403, "the number range object {object} is not one of the general ledger")
+    return false
+  end
+
+  private method NOT_ALLOWED(response: /TRBASE/HTTP_RESPONSE, allow: STRING) returns BOOL raises /TRBASE/XSLT_FAILED
+    response.SET_HEADER("Allow", allow)
+    FAIL(response, 405, "the method is not allowed here")
+    return true
+  end
+
+  private method JSON(response: /TRBASE/HTTP_RESPONSE, json: STRING)
+    response.SET_HEADER("Content-Type", "application/json")
+    response.WRITE_TEXT(json)
+  end
+
+  private method FAIL(response: /TRBASE/HTTP_RESPONSE, status: INT4, text: STRING) raises /TRBASE/XSLT_FAILED
+    var error: map of STRING to STRING = ["error": text]
+    response.SET_STATUS(status)
+    JSON(response, transform error using /TRBASE/JSON)
+  end
+
+end

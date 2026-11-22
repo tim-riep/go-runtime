@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "OData of the general ledger",
-      "description": "Starts the services of the general ledger below /rt/odata and its reports below /trfin/reports; what a request may read or change comes from the other roles"
+      "description": "Starts the services of the general ledger below /rt/odata and its nodes /trfin/reports and /trfin/number-ranges; what a request may read or change comes from the other roles"
     },
     "de": {
       "label": "OData des Hauptbuchs",
-      "description": "Startet die Dienste des Hauptbuchs unter /rt/odata und seine Berichte unter /trfin/reports; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
+      "description": "Startet die Dienste des Hauptbuchs unter /rt/odata und seine Knoten /trfin/reports und /trfin/number-ranges; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
     }
   },
   "authorizations": [
@@ -62,6 +62,9 @@
         "SERVICE_PATH": [
           {
             "value": "/trfin/reports"
+          },
+          {
+            "value": "/trfin/number-ranges"
           }
         ],
         "ACTIVITY": [

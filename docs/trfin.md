@@ -246,7 +246,7 @@ entries are read where the user may read the journal entry and the ledger.
 | `/TRFIN/ACCOUNTANT` | posting, clearing, changing the texts of, reversing and reading journal entries and resetting clearings in all companies and ledgers; running and exporting the reports and the reconciliation; reading configuration, master data and partners |
 | `/TRFIN/DISPLAY` | reading configuration, master data, partners, ledgers and journal entries; running and exporting the reports |
 | `/TRFIN/CONFIGURATION` | maintaining the configuration of TRFIN and TRBP and the intervals of `/TRFIN/JOURNAL_ENTRY` and `/TRBP/PARTNER` |
-| `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` and the node `/trfin/reports` |
+| `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` and the nodes `/trfin/reports` and `/trfin/number-ranges` |
 
 ## Services
 
@@ -343,6 +343,35 @@ curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' -o balances
   'https://host/trfin/reports/balances?format=xlsx' -d '{"COMPANY": "1000", "FISCAL_YEAR": 2026}'
 ```
 
+### The node /trfin/number-ranges
+
+The node `/trfin/number-ranges` maintains the intervals of the number range objects of the
+general ledger, `/TRFIN/JOURNAL_ENTRY` (per company and fiscal year) and `/TRBP/PARTNER`, with
+`/TRBASE/NUMBER_RANGE_ADMINISTRATION`, for the remote app of number ranges of TRFINUI and
+other clients. Intervals are `/TRBASE/NUMBER_INTERVAL` as JSON.
+
+| Request | Answer |
+|---|---|
+| `GET /trfin/number-ranges` | the objects of TRFIN and TRBP the user may read, with length, subobject and whether they are per fiscal year |
+| `GET /trfin/number-ranges/intervals?object=<object>` | the intervals of the object |
+| `POST`, `PUT`, `DELETE /trfin/number-ranges/intervals` with an interval | adds, changes or deletes the interval and answers with the intervals of its object |
+| `GET /trfin/number-ranges/history?object=<object>` | the changes of the intervals of the object |
+
+A change that moves the current number back, or deletes an interval that gave numbers, is
+answered with 409 until it is sent again with `?confirm=true`. Every request needs
+`/TRBASE/NUMBER_RANGE` for the object (the node itself `READ` for any object, which
+`/TRFIN/CONFIGURATION` grants) and `/TRBASE/HTTP_SERVICE` for `/trfin/number-ranges`, which
+`/TRFIN/ODATA_USER` grants. Other objects are answered with 403, unknown objects and intervals
+with 404, bodies that are no interval and invalid intervals with 400, other methods with 405,
+always with `{"error": "..."}`.
+
+```bash
+curl -u conny -H 'X-Tenant: ACME' 'https://host/trfin/number-ranges/intervals?object=/TRFIN/JOURNAL_ENTRY'
+curl -u conny -H 'X-Tenant: ACME' -H 'Content-Type: application/json' https://host/trfin/number-ranges/intervals -d '{
+  "RANGE_NAME": "/TRFIN/JOURNAL_ENTRY", "INTERVAL_ID": "01", "SUBOBJECT": "1000", "FISCAL_YEAR": 2027,
+  "FROM_NO": "1", "TO_NO": "999999", "CURRENT_NO": null, "EXTERNAL": false }'
+```
+
 ## Reconciliation
 
 `/TRFIN/LEDGER_RECONCILIATION.RUN(company, year)` returns `/TRFIN/RECONCILIATION_RESULT` with
@@ -424,4 +453,7 @@ overdue, the balance sheet at a key date within a period with its result and una
 accounts and without the nodes for them, the reclassification check after a back-dated
 posting, the reconciliation of clean and of manipulated totals, the node with JSON and
 workbooks, authorizations by company, ledger and export, and the sample data, whose balance
-sheets balance.
+sheets balance. The test of the node `/trfin/number-ranges` adds, changes and deletes
+intervals, moves a current number back with and without confirmation, reads the history and
+checks the answers to other objects, wrong bodies and methods and users without
+authorization.
