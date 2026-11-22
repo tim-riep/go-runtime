@@ -1,0 +1,65 @@
+{
+  "name": "/TRFIN/BALANCE_REPORT",
+  "texts": {
+    "en": {
+      "label": "Balances of accounts",
+      "description": "The balances of the accounts of a company in a ledger, the accounts without country account and the totals"
+    },
+    "de": {
+      "label": "Salden von Konten",
+      "description": "Die Salden der Konten eines Buchungskreises in einem Ledger, die Konten ohne Landeskonto und die Summen"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "FROM_PERIOD",
+      "dataElement": "/TRFIN/FROM_PERIOD",
+      "notNull": true
+    },
+    {
+      "name": "TO_PERIOD",
+      "dataElement": "/TRFIN/TO_PERIOD",
+      "notNull": true
+    },
+    {
+      "name": "ROWS",
+      "arrayType": "/TRFIN/BALANCE_ROWS",
+      "notNull": true
+    },
+    {
+      "name": "UNASSIGNED",
+      "arrayType": "/TRFIN/BALANCE_ROWS",
+      "notNull": true
+    },
+    {
+      "name": "TOTALS",
+      "structure": "/TRFIN/BALANCE_TOTALS",
+      "notNull": true
+    }
+  ]
+}

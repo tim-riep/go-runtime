@@ -1,0 +1,45 @@
+{
+  "name": "/TRFIN/BALANCE_TOTALS",
+  "texts": {
+    "en": {
+      "label": "Totals of balances",
+      "description": "The sums of carry-forward, prior periods, debit, credit, balance of the range and cumulative balance of the rows of a report"
+    },
+    "de": {
+      "label": "Summen von Salden",
+      "description": "Die Summen von Saldovortrag, Vorperioden, Soll, Haben, Saldo des Zeitraums und kumuliertem Saldo der Zeilen eines Berichts"
+    }
+  },
+  "components": [
+    {
+      "name": "CARRY_FORWARD",
+      "dataElement": "/TRFIN/CARRY_FORWARD",
+      "notNull": true
+    },
+    {
+      "name": "PRIOR_BALANCE",
+      "dataElement": "/TRFIN/PRIOR_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "DEBIT",
+      "dataElement": "/TRFIN/DEBIT",
+      "notNull": true
+    },
+    {
+      "name": "CREDIT",
+      "dataElement": "/TRFIN/CREDIT",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD_BALANCE",
+      "dataElement": "/TRFIN/PERIOD_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "CUMULATIVE_BALANCE",
+      "dataElement": "/TRFIN/CUMULATIVE_BALANCE",
+      "notNull": true
+    }
+  ]
+}

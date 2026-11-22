@@ -533,6 +533,25 @@ public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
     return out
   end
 
+  # Reconciles the totals, running balances and reclassifications of a
+  # company and fiscal year with the ledger entries; see
+  # /TRFIN/LEDGER_RECONCILIATION.RUN. Needs /TRFIN/REPORT with EXECUTE for
+  # the company; without it, and for a company that does not exist, the
+  # action answers with an error and an inconsistent result.
+  public method RECONCILE(parameter: /TRFIN/RECONCILIATION_SELECTION, response: /TRBASE/ENTITY_RESPONSE) returns /TRFIN/RECONCILIATION_RESULT
+    var out: /TRFIN/RECONCILIATION_RESULT
+    out.COMPANY = parameter.COMPANY
+    out.FISCAL_YEAR = parameter.FISCAL_YEAR
+    try
+      return /TRFIN/LEDGER_RECONCILIATION.RUN(parameter.COMPANY, parameter.FISCAL_YEAR)
+    catch e: /TRFIN/REPORT_ERROR
+      response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, e.TEXT)
+    catch e: /RT/NOT_AUTHORIZED
+      response.GLOBAL_MESSAGE(/TRBASE/MESSAGE_SEVERITY.ERROR, "you may not reconcile the company {parameter.COMPANY}")
+    end
+    return out
+  end
+
   # Opens the items a clearing entry cleared and its own items again. A
   # clearing entry with items can be reversed afterwards; one without
   # items is done and gets the status REVERSED.

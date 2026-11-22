@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CARRY_FORWARD",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Carry fwd.",
+      "medium": "Carry-forward",
+      "long": "Balance carried forward from prior years",
+      "heading": "Carry-forward"
+    },
+    "de": {
+      "short": "Vortrag",
+      "medium": "Saldovortrag",
+      "long": "Saldovortrag aus Vorjahren",
+      "heading": "Saldovortrag"
+    }
+  }
+}

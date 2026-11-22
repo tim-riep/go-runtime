@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/LEVEL",
+  "domain": "/TRFIN/SMALL_NUMBER",
+  "texts": {
+    "en": {
+      "short": "Level",
+      "medium": "Level",
+      "long": "Level in the hierarchy, 1 at the top",
+      "heading": "Level"
+    },
+    "de": {
+      "short": "Stufe",
+      "medium": "Stufe",
+      "long": "Stufe in der Hierarchie, 1 oben",
+      "heading": "Stufe"
+    }
+  }
+}

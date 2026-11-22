@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/REPORT_MESSAGES",
+  "texts": {
+    "en": {
+      "label": "Messages of a report"
+    },
+    "de": {
+      "label": "Meldungen eines Berichts"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/REPORT_MESSAGE"
+  }
+}

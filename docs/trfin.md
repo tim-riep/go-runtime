@@ -5,7 +5,8 @@ data: currencies, charts of accounts, companies, ledgers, document types, balanc
 structures, posting periods, the accounts of charts and companies and the company data of
 customers and suppliers; and journal entries, posted to the ledgers with totals, running
 balances of customers and suppliers and the reclassification of their opposite balances,
-reversed, and their open items cleared. Reports follow. TRFIN requires TRBASE 1.11.0 or later and TRBP
+reversed, and their open items cleared; reports of balances, open items and the balance sheet,
+a reconciliation of totals and balances with the ledger entries, and sample data. TRFIN requires TRBASE 1.11.0 or later and TRBP
 1.0.0 or later; all its tables hold data of a tenant, and amounts are `DEC(18,2)`.
 
 ## Configuration
@@ -161,8 +162,8 @@ The reclassification follows the running balance at the time of posting, in the 
 postings, not in the order of posting dates: an entry posted with an earlier posting date
 than others reclassifies by the balance after all of them. The amounts on the alternative
 accounts are right for the balances of today; a balance sheet for an earlier key date can
-differ by entries posted later with earlier dates. A check that compares the reclassified
-amounts with the balances by posting date up to a key date comes with the reports.
+differ by entries posted later with earlier dates. The report `RECLASSIFICATION_CHECK`
+(below) compares the reclassified amounts with the balances by posting date up to a key date.
 
 **Reversal.** The instance action `REVERSE` takes `/TRFIN/REVERSAL` with the posting date,
 `null` for that of the reversed entry. It is rejected when an item is cleared or the entry is
@@ -233,7 +234,8 @@ the clearing is reset first.
 | `/TRFIN/CHART_ACCOUNT` | `CHART` | `READ`, `CREATE`, `UPDATE`, `DELETE` | accounts of charts |
 | `/TRFIN/PARTNER_COMPANY` | `COMPANY`, `ROLE` | `READ`, `CREATE`, `UPDATE`, `DELETE` | company data of customers and suppliers |
 | `/TRFIN/LEDGER` | `LEDGER` | `READ`, `CREATE` | reading the ledger entries of a ledger and posting to it |
-| `/TRFIN/JOURNAL_ENTRY` | `COMPANY`, `DOCUMENT_TYPE` | `READ`, `CREATE`, `UPDATE`, `CANCEL` | reading, posting (`POST`, `CHECK`, `CLEAR` and deep inserts, which need `UPDATE` for the items as well), changing the texts, reversing journal entries and resetting clearings (`CANCEL`) |
+| `/TRFIN/JOURNAL_ENTRY` | `COMPANY`, `DOCUMENT_TYPE` | `READ`, `CREATE`, `UPDATE`, `CANCEL` | reading, posting (`POST`, `CHECK`, `CLEAR` and deep inserts, which need `UPDATE` for the items as well), changing the texts, reversing journal entries and resetting clearings (`CANCEL`); `READ` starts the action `RECONCILE` |
+| `/TRFIN/REPORT` | `COMPANY` | `EXECUTE`, `EXPORT` | running the reports and the reconciliation of a company, exporting reports as workbook |
 
 Reading over OData and with `read business object` filters by the same fields. Ledger
 entries are read where the user may read the journal entry and the ledger.
@@ -241,10 +243,10 @@ entries are read where the user may read the journal entry and the ledger.
 | Role | Grants |
 |---|---|
 | `/TRFIN/MASTER_DATA` | all activities on accounts of charts and companies and on company data of customers and suppliers; reading partners and the configuration |
-| `/TRFIN/ACCOUNTANT` | posting, clearing, changing the texts of, reversing and reading journal entries and resetting clearings in all companies and ledgers; reading configuration, master data and partners |
-| `/TRFIN/DISPLAY` | reading configuration, master data, partners, ledgers and journal entries |
+| `/TRFIN/ACCOUNTANT` | posting, clearing, changing the texts of, reversing and reading journal entries and resetting clearings in all companies and ledgers; running and exporting the reports and the reconciliation; reading configuration, master data and partners |
+| `/TRFIN/DISPLAY` | reading configuration, master data, partners, ledgers and journal entries; running and exporting the reports |
 | `/TRFIN/CONFIGURATION` | maintaining the configuration of TRFIN and TRBP and the intervals of `/TRFIN/JOURNAL_ENTRY` and `/TRBP/PARTNER` |
-| `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` |
+| `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` and the node `/trfin/reports` |
 
 ## Services
 
@@ -255,7 +257,7 @@ the texts. `/TRFIN/MASTER_DATA_SERVICE` offers `Accounts`, `AccountTexts`,
 `CompanyAccounts`, the partners read only as `Partners`, and their company data as
 `Customers` and `Suppliers`. `/TRFIN/JOURNAL_ENTRY_SERVICE` offers `JournalEntries` (deep
 insert with `JournalEntryItems`, changes of the texts), `JournalEntryItems`, and read only
-`LedgerEntries` and `ClearedItems`, with the actions `POST`, `CHECK` and `CLEAR` at the
+`LedgerEntries` and `ClearedItems`, with the actions `POST`, `CHECK`, `CLEAR` and `RECONCILE` at the
 root of the service and `REVERSE` and `RESET_CLEARING` bound to `JournalEntries`. `POST`
 and `CLEAR` answer with the final key of the new entry. Activate them with `rt service activate`.
 
@@ -276,6 +278,134 @@ curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
              { "ACCOUNT_KIND": "CUSTOMER", "PARTNER": "0000000001", "DEBIT_CREDIT": "C", "AMOUNT": "119.00" } ] }'
 ```
 
+## Reports
+
+The class `/TRFIN/REPORTS` holds the reports as static methods that take a selection structure
+and return a report structure, for code, `rt run` and the node `/trfin/reports`. Every report
+runs for one company and one ledger (`LEDGER` `null` is the primary ledger), needs
+`/TRFIN/REPORT` with `EXECUTE` for the company and reads with `authorized` in SQL: totals and
+sums with `/TRFIN/REPORT` and `/TRFIN/LEDGER`, single ledger entries (open items, line items)
+with `/TRFIN/JOURNAL_ENTRY` and `/TRFIN/LEDGER`, so a user sees nothing of a ledger without
+`READ` on it. Amounts are debit positive and credit negative unless said otherwise; periods
+`null` are 1 and 12, and `CHART_KIND` `null` is the operational chart.
+
+| Method | Selection | Result |
+|---|---|---|
+| `BALANCES` | `/TRFIN/BALANCE_SELECTION`: `LEDGER`, `COMPANY`, `FISCAL_YEAR`, `FROM_PERIOD`, `TO_PERIOD`, `FROM_ACCOUNT`, `TO_ACCOUNT`, `CHART_KIND` | per account `CARRY_FORWARD` (balance sheet accounts: the prior years; profit and loss accounts: none), `PRIOR_BALANCE` (the periods of the year before the range), `DEBIT`, `CREDIT` and `PERIOD_BALANCE` of the range and `CUMULATIVE_BALANCE`; `TOTALS`; with the country chart the rows of the country accounts and in `UNASSIGNED` the accounts of the company without country account |
+| `PARTNER_BALANCES` | `/TRFIN/PARTNER_SELECTION`: `LEDGER`, `COMPANY`, `FISCAL_YEAR`, periods, `PARTNER_ROLE`, `PARTNER` | the same per role and partner from `/TRFIN/PARTNER_TOTALS`, with the name; partners always carry their balance forward; also filtered by `/TRFIN/PARTNER_COMPANY` with `READ` |
+| `OPEN_ITEMS` | `/TRFIN/OPEN_ITEM_SELECTION`: `LEDGER`, `COMPANY`, `KEY_DATE`, `ACCOUNT`, `PARTNER_ROLE`, `PARTNER` | the ledger entries of open items posted up to the key date and not cleared up to it, with `DUE_DATE` (by default the posting date) and `DAYS_OVERDUE` (key date minus due date); `TOTAL`, `NOT_DUE` (due on the key date or later), `OVERDUE` and its buckets `OVERDUE_1_30`, `OVERDUE_31_60`, `OVERDUE_61_90` and `OVERDUE_OVER_90` days |
+| `BALANCE_SHEET` | `/TRFIN/STATEMENT_SELECTION`: `LEDGER`, `COMPANY`, `KEY_DATE`, `CHART_KIND`, `STRUCTURE` (`null` for the first structure of the chart) | rows of the nodes and their accounts with `LEVEL`, `NODE`, `PARENT_NODE`, `NODE_KIND`, `SIDE`, `ACCOUNT` (`null` for nodes), `LABEL` and `AMOUNT`; `TOTAL_ASSETS`, `TOTAL_LIABILITIES`, `RESULT`, `DIFFERENCE`, `BALANCED`, `UNASSIGNED` and `PROBLEMS` |
+| `LINE_ITEMS` | `/TRFIN/LINE_ITEM_SELECTION`: `LEDGER`, `COMPANY`, `FISCAL_YEAR`, periods, `CHART_KIND`, `ACCOUNT`, `PARTNER_ROLE`, `PARTNER` | the ledger entries with the key of their journal entry (`COMPANY`, `FISCAL_YEAR`, `DOCUMENT_NO`), `LINE_NO`, `ITEM_NO`, document type, dates, amount, kind, open item and clearing; `TOTAL`; with the country chart `ACCOUNT` is a country account and the entries of its accounts are listed |
+| `RECLASSIFICATION_CHECK` | `/TRFIN/RECLASSIFICATION_SELECTION`: `LEDGER`, `COMPANY`, `KEY_DATE` | the partners whose reclassification lines on alternative accounts up to the key date (`POSTED`) differ from the part of their balance by posting date up to the key date that belongs there (`EXPECTED`), with `BALANCE` and `DIFFERENCE` |
+
+**Balance sheet.** The balance of an account at the key date is the sum of its totals of the
+prior years and of the periods of the year before the period of the key date, plus its ledger
+entries of that period posted up to the key date. Balance sheet accounts go to the node whose
+range takes them for their balance side (`/TRFIN/BALANCE_SHEET.NODE_OF`); with the country
+chart the accounts of the company go to their country accounts first. The profit and loss
+accounts of all years up to the key date go to the node of the kind `RESULT`, since no program
+carries their balance forward to equity yet; `RESULT` is the profit, positive. Nodes add up
+their accounts and the nodes below them; a node on the assets side shows debit balances as
+positive amounts, one on the liabilities side credit balances. Accounts without node, and with
+the country chart accounts without country account, are listed in `UNASSIGNED` and shown
+under the node of the kind `UNASSIGNED`. Assets equal liabilities with the result when every
+ledger is balanced and everything has a node; a structure without a node for the result or
+for unassigned accounts gives `PROBLEMS` and `BALANCED` `false` with the `DIFFERENCE`.
+
+**Reclassification check.** The reclassification follows the running balance in the order of
+postings. `RECLASSIFICATION_CHECK` recomputes the balance of every partner by posting date up
+to the key date and the part of it on the alternative account (the credit balance of a
+customer, the debit balance of a supplier) and compares it with the sum of the
+reclassification lines on accounts of the opposite kind of reconciliation posted up to the key
+date. An invoice posted back before a payment that made the balance of its customer a credit
+balance moves the reclassification back on its own earlier date: on key dates between the two
+the report lists the customer.
+
+### The node /trfin/reports
+
+`POST /trfin/reports/<report>` with the selection as JSON answers with the report as JSON; the
+reports are `balances`, `partner-balances`, `open-items`, `balance-sheet`, `line-items`,
+`reclassification-check` and `reconciliation` (selection `/TRFIN/RECONCILIATION_SELECTION`
+with `COMPANY` and `FISCAL_YEAR`). `?format=xlsx` answers with the rows of the report
+(`ROWS`, for the reconciliation `PROBLEMS`) as a workbook from `/TRBASE/XLSX`, with the
+headings of the data elements in the language of the request, as a download; it needs
+`/TRFIN/REPORT` with `EXPORT` for the company. The node needs `/TRFIN/REPORT` with `EXECUTE`
+for any company and `/TRBASE/HTTP_SERVICE` for `/trfin/reports`, which `/TRFIN/ODATA_USER`
+grants; other methods than `POST` are answered with 405, unknown reports with 404, a
+selection that does not fit or cannot be run with 400 and `{"error": "..."}`, missing
+authorizations with 403.
+
+```bash
+rt http activate /trfin
+curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
+  https://host/trfin/reports/balance-sheet -d '{"COMPANY": "1000", "KEY_DATE": "2026-12-31"}'
+curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' -o balances.xlsx \
+  'https://host/trfin/reports/balances?format=xlsx' -d '{"COMPANY": "1000", "FISCAL_YEAR": 2026}'
+```
+
+## Reconciliation
+
+`/TRFIN/LEDGER_RECONCILIATION.RUN(company, year)` returns `/TRFIN/RECONCILIATION_RESULT` with
+`CONSISTENT` and the `PROBLEMS` it finds in the ledgers the user may read: totals of accounts
+of the year that differ from the sums of the ledger entries per ledger, account and period, or
+are missing; totals of partners of the year that differ from the sums of the items per ledger,
+role, partner and period; running balances that differ from the sums of the items of all
+years; parts of balances on alternative accounts that differ from the reclassification lines
+there; entries of the year that are not balanced in a ledger; ledger entries that are not
+cleared as their items; and clearings of the year that do not sum up to zero per ledger. It
+needs `/TRFIN/REPORT` with `EXECUTE` for the company. The static action `RECONCILE` of
+`/TRFIN/JOURNAL_ENTRY` (in `/TRFIN/JOURNAL_ENTRY_SERVICE`) runs it with
+`/TRFIN/RECONCILIATION_SELECTION` and answers with an error message when the company does not
+exist or the user may not reconcile it. The class is not called `/TRFIN/RECONCILIATION`
+because the domain of the kind of reconciliation account has that name.
+
+```bash
+rt run TRFIN /TRFIN/LEDGER_RECONCILIATION RUN '["1000", 2026]' --tenant ACME --user anna
+```
+
+## Sample data
+
+`/TRFIN/SAMPLE_DATA.SETUP()` sets up a tenant without currencies, charts, ledgers and
+companies of TRFIN, and is rejected with `/TRFIN/SAMPLE_DATA_ERROR` in any other; a step that
+fails raises the same exception with its result, and the steps before it stay saved. It
+creates:
+
+- the currency `EUR`; the operational chart `TRAC` with 40 accounts of six digits (fixed assets
+  `0…`, current assets `10…`–`15…` with `140000` receivables, `141000` supplier debit
+  balances, payables `160000` and `161000` customer credit balances, other liabilities
+  `17…`–`19…`, equity and provisions `3…`, revenue `4…`, expenses `6…`–`7…`) and the country
+  chart `TRDE` for Germany with 19 accounts of four digits; each chart has a balance sheet
+  structure (`BSOP`, `BSDE`) with assets, equity and liabilities, a node for the result and one
+  for unassigned accounts;
+- the ledgers `0L` (primary) and `2L` and the group `ALL`; the companies `1000` (DE, with the
+  country chart and the ledger `2L`; 19 of its accounts have a country account) and `2000`
+  (AT, only the primary ledger);
+- the document types `SA` (accounts), `DR` and `DZ` (customer invoices and payments), `KR`
+  and `KZ` (supplier invoices and payments) and `AB` (clearing), the open periods and the
+  intervals `01` to `04` of `/TRFIN/JOURNAL_ENTRY` for 2025 to 2027 in both companies;
+- the grouping `0001` with the interval `01` of `/TRBP/PARTNER` when they do not exist, two
+  customers and two suppliers with company data in `1000`;
+- 17 journal entries in 2025 and 2026, among them a clearing of an invoice with its payment
+  without posting and a payment that clears an invoice.
+
+The user needs `/TRFIN/CONFIGURATION`, `/TRFIN/MASTER_DATA`, `/TRFIN/ACCOUNTANT` and
+`/TRBP/PARTNER_ADMIN`, or all authorizations. From an empty database:
+
+```bash
+export RT_DATABASE=sqlite:ledger.db
+rt init --admin admin --tenant ACME
+rt language add de
+rt install packages/TRBP packages/TRFIN --yes
+rt run TRFIN /TRFIN/SAMPLE_DATA SETUP '[]' --tenant ACME --user admin
+rt run TRFIN /TRFIN/REPORTS BALANCES '[{"COMPANY": "1000", "FISCAL_YEAR": 2026}]' --tenant ACME --user admin
+rt run TRFIN /TRFIN/REPORTS BALANCE_SHEET '[{"COMPANY": "1000", "KEY_DATE": "2026-12-31", "CHART_KIND": "COUNTRY"}]' --tenant ACME --user admin
+rt run TRFIN /TRFIN/REPORTS OPEN_ITEMS '[{"COMPANY": "1000", "KEY_DATE": "2026-12-31"}]' --tenant ACME --user admin
+rt run TRFIN /TRFIN/LEDGER_RECONCILIATION RUN '["1000", 2026]' --tenant ACME --user admin
+```
+
+The balance sheet of `1000` at 2026-12-31 has assets and liabilities of 76,300.00 with a
+result of 23,300.00 from both years.
+
 ## Tests
 
 `go test ./kernel -run Ledger` installs TRBP and TRFIN from `packages/` with the test package
@@ -288,4 +418,10 @@ items, and checks that every clearing sums up to zero per ledger. The tests of c
 cover every check of `CLEAR`, clearing with and without new items, open items at key dates,
 resetting, reversing after a reset and the rejected reversal of cleared entries, the
 service, and under PostgreSQL parallel clearings of the same item, of which exactly one
-succeeds.
+succeeds. The tests of reports cover balances with carry-forward over two years and by the
+country chart, balances of partners, open items before and after a clearing with their days
+overdue, the balance sheet at a key date within a period with its result and unassigned
+accounts and without the nodes for them, the reclassification check after a back-dated
+posting, the reconciliation of clean and of manipulated totals, the node with JSON and
+workbooks, authorizations by company, ledger and export, and the sample data, whose balance
+sheets balance.

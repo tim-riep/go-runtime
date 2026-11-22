@@ -1,0 +1,654 @@
+# Sample data of the general ledger for a tenant without data of TRFIN:
+#
+#   rt run TRFIN /TRFIN/SAMPLE_DATA SETUP '[]' --tenant ACME --user admin
+#
+# The currency EUR; the operational chart TRAC with 40 accounts of six
+# digits and the country chart TRDE with 19 accounts of four digits, each
+# with a balance sheet structure; the ledgers 0L (primary) and 2L and the
+# group ALL of both; the companies 1000 (country DE with the country chart
+# TRDE and the ledger 2L) and 2000 (country AT, only the primary ledger);
+# the document types SA, DR, KR, DZ, KZ and AB; open periods and the
+# intervals of /TRFIN/JOURNAL_ENTRY for 2025 to 2027; the grouping 0001
+# with an interval of /TRBP/PARTNER, two customers and two suppliers; and
+# journal entries of 2025 and 2026 with two clearings of invoices by
+# payments.
+# The user needs the roles /TRFIN/CONFIGURATION, /TRFIN/MASTER_DATA,
+# /TRFIN/ACCOUNTANT and /TRBP/PARTNER_ADMIN, or all authorizations.
+public class /TRFIN/SAMPLE_DATA
+
+  private attribute ACCOUNTS: array of new of /TRFIN/ACCOUNTS
+  private attribute ACCOUNT_TEXTS: array of new of /TRFIN/ACCOUNT_TEXTS
+  private attribute COMPANY_ACCOUNTS: array of new of /TRFIN/COMPANY_ACCOUNTS
+  private attribute ENTRIES: INT4
+
+  # Sets the sample data up and describes them. Raises
+  # /TRFIN/SAMPLE_DATA_ERROR without changing anything when the tenant has
+  # currencies, charts, ledgers or companies of TRFIN, and when a step
+  # fails, with the result of the step.
+  public static method SETUP() returns STRING raises /RT/EXCEPTION
+    var currencies = select count from /TRFIN/CURRENCIES
+    var charts = select count from /TRFIN/CHARTS
+    var ledgers = select count from /TRFIN/LEDGERS
+    var companies = select count from /TRFIN/COMPANIES
+    if currencies + charts + ledgers + companies > 0
+      raise /TRFIN/SAMPLE_DATA_ERROR with "the tenant has {currencies} currencies, {charts} charts, {ledgers} ledgers and {companies} companies of TRFIN; the sample data are set up only in a tenant without them"
+    end
+    var setup = new /TRFIN/SAMPLE_DATA()
+    setup.CONFIGURATION()
+    setup.MASTER_DATA()
+    var partners = setup.PARTNERS()
+    setup.POSTINGS(partners)
+    return "set up the sample data of TRFIN: the companies 1000 and 2000 with the charts TRAC and TRDE, the ledgers 0L and 2L, the partners {partners.JOIN(", ")} and {setup.ENTRIES} journal entries"
+  end
+
+  # Currency, charts, ledgers, companies, document types, periods,
+  # intervals and the balance sheet structures.
+  private method CONFIGURATION() raises /RT/EXCEPTION
+    var currency: new of /TRFIN/CURRENCIES
+    currency.LINK = "EUR"
+    currency.CURRENCY = "EUR"
+    currency.DECIMALS = 2
+    var currency_text: new of /TRFIN/CURRENCY_TEXTS
+    currency_text.PARENT_LINK = "EUR"
+    currency_text.LANGUAGE = "en"
+    currency_text.LABEL = "Euro"
+    var charts: array of new of /TRFIN/CHARTS = []
+    var chart_texts: array of new of /TRFIN/CHART_TEXTS = []
+    for c in [["TRAC", "OPERATIONAL", "6", "Operational chart of accounts"], ["TRDE", "COUNTRY", "4", "Chart of accounts for Germany"]]
+      var chart: new of /TRFIN/CHARTS
+      chart.LINK = c[1]
+      chart.CHART = c[1]
+      chart.KIND = /TRFIN/CHART_KIND.PARSE(c[2]) default /TRFIN/CHART_KIND.OPERATIONAL
+      chart.ACCOUNT_LENGTH = c[3] as INT4
+      if c[1] = "TRDE"
+        chart.COUNTRY = "DE"
+      end
+      charts.APPEND(chart)
+      var text: new of /TRFIN/CHART_TEXTS
+      text.PARENT_LINK = c[1]
+      text.LANGUAGE = "en"
+      text.LABEL = c[4]
+      chart_texts.APPEND(text)
+    end
+    var ledgers: array of new of /TRFIN/LEDGERS = []
+    var ledger_texts: array of new of /TRFIN/LEDGER_TEXTS = []
+    for l in [["0L", "Primary ledger"], ["2L", "Ledger for a second valuation"]]
+      var ledger: new of /TRFIN/LEDGERS
+      ledger.LINK = l[1]
+      ledger.LEDGER = l[1]
+      ledger.PRIMARY = l[1] = "0L"
+      ledgers.APPEND(ledger)
+      var text: new of /TRFIN/LEDGER_TEXTS
+      text.PARENT_LINK = l[1]
+      text.LANGUAGE = "en"
+      text.LABEL = l[2]
+      ledger_texts.APPEND(text)
+    end
+    modify business object /TRFIN/CURRENCY
+      create /TRFIN/CURRENCIES fields (CURRENCY, DECIMALS) from [currency]
+      create /TRFIN/CURRENCY_TEXTS by parent fields (LANGUAGE, LABEL) from [currency_text]
+      result currency_result
+    end
+    CHECK("the currency", currency_result)
+    modify business object /TRFIN/CHART
+      create /TRFIN/CHARTS fields (CHART, KIND, ACCOUNT_LENGTH, COUNTRY) from charts
+      create /TRFIN/CHART_TEXTS by parent fields (LANGUAGE, LABEL) from chart_texts
+      result chart_result
+    end
+    CHECK("the charts", chart_result)
+    modify business object /TRFIN/LEDGER
+      create /TRFIN/LEDGERS fields (LEDGER, PRIMARY) from ledgers
+      create /TRFIN/LEDGER_TEXTS by parent fields (LANGUAGE, LABEL) from ledger_texts
+      result ledger_result
+    end
+    CHECK("the ledgers", ledger_result)
+    SAVE("the currency, charts and ledgers")
+
+    var companies: array of new of /TRFIN/COMPANIES = []
+    var c1: new of /TRFIN/COMPANIES
+    c1.LINK = "1000"
+    c1.COMPANY = "1000"
+    c1.NAME = "Sample company Germany"
+    c1.COUNTRY = "DE"
+    c1.CURRENCY = "EUR"
+    c1.CHART = "TRAC"
+    c1.COUNTRY_CHART = "TRDE"
+    companies.APPEND(c1)
+    var c2: new of /TRFIN/COMPANIES
+    c2.LINK = "2000"
+    c2.COMPANY = "2000"
+    c2.NAME = "Sample company Austria"
+    c2.COUNTRY = "AT"
+    c2.CURRENCY = "EUR"
+    c2.CHART = "TRAC"
+    companies.APPEND(c2)
+    var assigned: new of /TRFIN/COMPANY_LEDGERS
+    assigned.PARENT_LINK = "1000"
+    assigned.LEDGER = "2L"
+    var group: new of /TRFIN/LEDGER_GROUPS
+    group.LINK = "ALL"
+    group.LEDGER_GROUP = "ALL"
+    group.REPRESENTATIVE = "0L"
+    var members: array of new of /TRFIN/LEDGER_GROUP_MEMBERS = []
+    for l in ["0L", "2L"]
+      var m: new of /TRFIN/LEDGER_GROUP_MEMBERS
+      m.PARENT_LINK = "ALL"
+      m.LEDGER = l
+      members.APPEND(m)
+    end
+    var group_text: new of /TRFIN/LEDGER_GROUP_TEXTS
+    group_text.PARENT_LINK = "ALL"
+    group_text.LANGUAGE = "en"
+    group_text.LABEL = "All ledgers"
+    modify business object /TRFIN/COMPANY
+      create /TRFIN/COMPANIES fields (COMPANY, NAME, COUNTRY, CURRENCY, CHART, COUNTRY_CHART) from companies
+      create /TRFIN/COMPANY_LEDGERS by parent fields (LEDGER) from [assigned]
+      result company_result
+    end
+    CHECK("the companies", company_result)
+    modify business object /TRFIN/LEDGER_GROUP
+      create /TRFIN/LEDGER_GROUPS fields (LEDGER_GROUP, REPRESENTATIVE) from [group]
+      create /TRFIN/LEDGER_GROUP_MEMBERS by parent fields (LEDGER) from members
+      create /TRFIN/LEDGER_GROUP_TEXTS by parent fields (LANGUAGE, LABEL) from [group_text]
+      result group_result
+    end
+    CHECK("the group of ledgers", group_result)
+
+    # Document types: interval, allowed kinds of accounts and text.
+    var types: array of new of /TRFIN/DOCUMENT_TYPES = []
+    var type_texts: array of new of /TRFIN/DOCUMENT_TYPE_TEXTS = []
+    for t in [["SA", "01", "A", "General journal entry"], ["DR", "02", "AC", "Customer invoice"], ["KR", "02", "AS", "Supplier invoice"], ["DZ", "03", "AC", "Customer payment"], ["KZ", "03", "AS", "Supplier payment"], ["AB", "04", "ACS", "Clearing"]]
+      var type: new of /TRFIN/DOCUMENT_TYPES
+      type.LINK = t[1]
+      type.DOCUMENT_TYPE = t[1]
+      type.INTERVAL = t[2]
+      type.ALLOW_ACCOUNTS = t[3].CONTAINS("A")
+      type.ALLOW_CUSTOMERS = t[3].CONTAINS("C")
+      type.ALLOW_SUPPLIERS = t[3].CONTAINS("S")
+      types.APPEND(type)
+      var text: new of /TRFIN/DOCUMENT_TYPE_TEXTS
+      text.PARENT_LINK = t[1]
+      text.LANGUAGE = "en"
+      text.LABEL = t[4]
+      type_texts.APPEND(text)
+    end
+    modify business object /TRFIN/DOCUMENT_TYPE
+      create /TRFIN/DOCUMENT_TYPES fields (DOCUMENT_TYPE, INTERVAL, ALLOW_ACCOUNTS, ALLOW_CUSTOMERS, ALLOW_SUPPLIERS) from types
+      create /TRFIN/DOCUMENT_TYPE_TEXTS by parent fields (LANGUAGE, LABEL) from type_texts
+      result type_result
+    end
+    CHECK("the document types", type_result)
+
+    # Open periods and the intervals of journal entries per company and
+    # fiscal year.
+    var periods: array of new of /TRFIN/POSTING_PERIODS = []
+    for company in ["1000", "2000"]
+      for year from 2025 to 2027
+        var p: new of /TRFIN/POSTING_PERIODS
+        p.COMPANY = company
+        p.FISCAL_YEAR = year
+        p.FROM_PERIOD = 1
+        p.TO_PERIOD = 12
+        periods.APPEND(p)
+        for i in [["01", "1", "999999"], ["02", "1000000", "1999999"], ["03", "2000000", "2999999"], ["04", "3000000", "3999999"]]
+          var interval: /TRBASE/NUMBER_INTERVAL
+          interval.RANGE_NAME = "/TRFIN/JOURNAL_ENTRY"
+          interval.INTERVAL_ID = i[1]
+          interval.SUBOBJECT = company
+          interval.FISCAL_YEAR = year
+          interval.FROM_NO = i[2]
+          interval.TO_NO = i[3]
+          /TRBASE/NUMBER_RANGE_ADMINISTRATION.ADD_INTERVAL(interval)
+        end
+      end
+    end
+    modify business object /TRFIN/POSTING_PERIOD
+      create /TRFIN/POSTING_PERIODS fields (COMPANY, FISCAL_YEAR, FROM_PERIOD, TO_PERIOD) from periods
+      result period_result
+    end
+    CHECK("the posting periods", period_result)
+    SAVE("the companies, document types, periods and intervals")
+  end
+
+  # The accounts of the charts and companies and the balance sheet
+  # structures.
+  private method MASTER_DATA() raises /RT/EXCEPTION
+    # The operational chart: account, kind (B balance sheet, P profit and
+    # loss), country account, reconciliation (C customers, S suppliers) or
+    # O for open items, and text.
+    var operational = [
+        ["010000", "B", "", "", "Land"],
+        ["020000", "B", "0200", "", "Buildings"],
+        ["030000", "B", "0400", "", "Machinery"],
+        ["040000", "B", "0420", "", "Office equipment"],
+        ["050000", "B", "", "", "Vehicles"],
+        ["100000", "B", "1000", "", "Cash"],
+        ["110000", "B", "1200", "", "Bank"],
+        ["111000", "B", "", "", "Savings account"],
+        ["120000", "B", "", "O", "Money in transit"],
+        ["130000", "B", "1300", "", "Raw materials"],
+        ["131000", "B", "", "", "Finished goods"],
+        ["140000", "B", "1400", "C", "Receivables"],
+        ["141000", "B", "1450", "C", "Supplier debit bal."],
+        ["145000", "B", "", "", "Other receivables"],
+        ["150000", "B", "", "", "Input tax"],
+        ["155000", "B", "", "", "Prepaid expenses"],
+        ["160000", "B", "1600", "S", "Payables"],
+        ["161000", "B", "1650", "S", "Customer credit bal."],
+        ["170000", "B", "", "", "Output tax"],
+        ["180000", "B", "", "", "Bank loans"],
+        ["190000", "B", "", "", "Other liabilities"],
+        ["300000", "B", "2000", "", "Share capital"],
+        ["310000", "B", "", "", "Retained earnings"],
+        ["350000", "B", "2300", "", "Provisions"],
+        ["360000", "B", "", "", "Tax provisions"],
+        ["400000", "P", "4000", "", "Revenue domestic"],
+        ["410000", "P", "4100", "", "Revenue abroad"],
+        ["420000", "P", "", "", "Other income"],
+        ["600000", "P", "5000", "", "Material"],
+        ["610000", "P", "5100", "", "Purchased services"],
+        ["620000", "P", "", "", "Wages"],
+        ["630000", "P", "6000", "", "Salaries"],
+        ["640000", "P", "", "", "Social security"],
+        ["650000", "P", "6500", "", "Rent"],
+        ["660000", "P", "", "", "Energy"],
+        ["670000", "P", "", "", "Office supplies"],
+        ["680000", "P", "6800", "", "Depreciation"],
+        ["690000", "P", "", "", "Interest expense"],
+        ["700000", "P", "", "", "Interest income"],
+        ["710000", "P", "", "", "Taxes on income"]
+    ]
+    var country = [
+        ["0200", "B", "Buildings"],
+        ["0400", "B", "Machinery"],
+        ["0420", "B", "Office equipment"],
+        ["1000", "B", "Cash"],
+        ["1200", "B", "Bank"],
+        ["1300", "B", "Raw materials"],
+        ["1400", "B", "Trade receivables"],
+        ["1450", "B", "Supplier debits"],
+        ["1600", "B", "Trade payables"],
+        ["1650", "B", "Customer credits"],
+        ["2000", "B", "Subscribed capital"],
+        ["2300", "B", "Provisions"],
+        ["4000", "P", "Revenue"],
+        ["4100", "P", "Revenue abroad"],
+        ["5000", "P", "Cost of materials"],
+        ["5100", "P", "Purchased services"],
+        ["6000", "P", "Salaries"],
+        ["6500", "P", "Rent"],
+        ["6800", "P", "Depreciation"]
+    ]
+    for a in operational
+      ACCOUNT("TRAC", a[1], a[2], a[5])
+    end
+    for a in country
+      ACCOUNT("TRDE", a[1], a[2], a[3])
+    end
+    modify business object /TRFIN/ACCOUNT
+      create /TRFIN/ACCOUNTS fields (CHART, ACCOUNT, KIND) from ACCOUNTS
+      create /TRFIN/ACCOUNT_TEXTS by parent fields (LANGUAGE, SHORT_TEXT) from ACCOUNT_TEXTS
+      result account_result
+    end
+    CHECK("the accounts", account_result)
+    SAVE("the accounts")
+
+    # The balance sheet structures: node, parent, sort order, side, kind
+    # and label, and the ranges of nodes with the balance side they take.
+    var nodes = [
+        ["ASSETS", "", "1", "ASSETS", "NORMAL", "Assets"],
+        ["FIXED_ASSETS", "ASSETS", "1", "ASSETS", "NORMAL", "Fixed assets"],
+        ["CURRENT_ASSETS", "ASSETS", "2", "ASSETS", "NORMAL", "Current assets"],
+        ["CASH", "CURRENT_ASSETS", "1", "ASSETS", "NORMAL", "Cash and banks"],
+        ["INVENTORIES", "CURRENT_ASSETS", "2", "ASSETS", "NORMAL", "Inventories"],
+        ["RECEIVABLES", "CURRENT_ASSETS", "3", "ASSETS", "NORMAL", "Trade receivables"],
+        ["OTHER_ASSETS", "CURRENT_ASSETS", "4", "ASSETS", "NORMAL", "Other assets"],
+        ["LIABILITIES", "", "2", "LIABILITIES", "NORMAL", "Equity and liabilities"],
+        ["EQUITY", "LIABILITIES", "1", "LIABILITIES", "NORMAL", "Equity"],
+        ["RESULT", "EQUITY", "9", "LIABILITIES", "RESULT", "Result"],
+        ["PROVISIONS", "LIABILITIES", "2", "LIABILITIES", "NORMAL", "Provisions"],
+        ["PAYABLES", "LIABILITIES", "3", "LIABILITIES", "NORMAL", "Trade payables"],
+        ["OTHER_LIABILITIES", "LIABILITIES", "4", "LIABILITIES", "NORMAL", "Other liabilities"],
+        ["UNASSIGNED", "", "3", "ASSETS", "UNASSIGNED", "Accounts without node"]
+    ]
+    STRUCTURE("BSOP", "TRAC", "Balance sheet of the operational chart", nodes, [
+        ["FIXED_ASSETS", "000000", "099999", "ANY"],
+        ["CASH", "100000", "129999", "ANY"],
+        ["INVENTORIES", "130000", "139999", "ANY"],
+        ["RECEIVABLES", "140000", "141999", "DEBIT"],
+        ["OTHER_ASSETS", "142000", "159999", "ANY"],
+        ["OTHER_ASSETS", "160000", "161999", "DEBIT"],
+        ["EQUITY", "300000", "319999", "ANY"],
+        ["PROVISIONS", "320000", "399999", "ANY"],
+        ["PAYABLES", "160000", "161999", "CREDIT"],
+        ["OTHER_LIABILITIES", "140000", "141999", "CREDIT"],
+        ["OTHER_LIABILITIES", "162000", "199999", "ANY"]
+    ])
+    STRUCTURE("BSDE", "TRDE", "Balance sheet of the country chart", nodes, [
+        ["FIXED_ASSETS", "0000", "0999", "ANY"],
+        ["CASH", "1000", "1299", "ANY"],
+        ["INVENTORIES", "1300", "1399", "ANY"],
+        ["RECEIVABLES", "1400", "1449", "DEBIT"],
+        ["OTHER_ASSETS", "1450", "1599", "ANY"],
+        ["OTHER_ASSETS", "1600", "1649", "DEBIT"],
+        ["EQUITY", "2000", "2299", "ANY"],
+        ["PROVISIONS", "2300", "2999", "ANY"],
+        ["PAYABLES", "1600", "1649", "CREDIT"],
+        ["OTHER_LIABILITIES", "1400", "1449", "CREDIT"],
+        ["OTHER_LIABILITIES", "1650", "1999", "ANY"]
+    ])
+    SAVE("the balance sheet structures")
+
+    # The accounts of the companies; in 1000 the accounts used most have
+    # a country account each, the others none.
+    for company in ["1000", "2000"]
+      for a in operational
+        var row: new of /TRFIN/COMPANY_ACCOUNTS
+        row.COMPANY = company
+        row.ACCOUNT = a[1]
+        if company = "1000" and a[3] is not empty
+          row.COUNTRY_ACCOUNT = a[3]
+        end
+        row.RECONCILIATION = /TRFIN/RECONCILIATION.NONE
+        if a[4] = "C"
+          row.RECONCILIATION = /TRFIN/RECONCILIATION.CUSTOMERS
+        elseif a[4] = "S"
+          row.RECONCILIATION = /TRFIN/RECONCILIATION.SUPPLIERS
+        end
+        row.OPEN_ITEMS = a[4] = "O"
+        COMPANY_ACCOUNTS.APPEND(row)
+      end
+    end
+    modify business object /TRFIN/COMPANY_ACCOUNT
+      create /TRFIN/COMPANY_ACCOUNTS fields (COMPANY, ACCOUNT, COUNTRY_ACCOUNT, RECONCILIATION, OPEN_ITEMS) from COMPANY_ACCOUNTS
+      result company_account_result
+    end
+    CHECK("the accounts of the companies", company_account_result)
+    SAVE("the accounts of the companies")
+  end
+
+  # The grouping 0001 with the interval 01 of /TRBP/PARTNER unless they
+  # exist, two customers and two suppliers with their company data;
+  # returns the numbers of the partners.
+  private method PARTNERS() returns array of STRING raises /RT/EXCEPTION
+    var intervals = /TRBASE/NUMBER_RANGE_ADMINISTRATION.INTERVALS("/TRBP/PARTNER")
+    if not intervals.ANY(function (i: /TRBASE/NUMBER_INTERVAL) => i.INTERVAL_ID = "01")
+      var interval: /TRBASE/NUMBER_INTERVAL
+      interval.RANGE_NAME = "/TRBP/PARTNER"
+      interval.INTERVAL_ID = "01"
+      interval.FROM_NO = "1"
+      interval.TO_NO = "4999999999"
+      /TRBASE/NUMBER_RANGE_ADMINISTRATION.ADD_INTERVAL(interval)
+    end
+    var grouping = select single from /TRBP/GROUPINGS where GROUPING = "0001"
+    if grouping is null
+      var g: new of /TRBP/GROUPINGS
+      g.GROUPING = "0001"
+      g.INTERVAL = "01"
+      g.EXTERNAL = false
+      modify business object /TRBP/GROUPING
+        create /TRBP/GROUPINGS fields (GROUPING, INTERVAL, EXTERNAL) from [g]
+        result grouping_result
+      end
+      CHECK("the grouping of partners", grouping_result)
+    end
+    SAVE("the grouping and interval of partners")
+    var partners: array of new of /TRBP/PARTNERS = []
+    var roles: array of new of /TRBP/PARTNER_ROLES = []
+    var names = [["C1", "/TRFIN/CUSTOMER", "Alder Retail"], ["C2", "/TRFIN/CUSTOMER", "Birch Trading"], ["S1", "/TRFIN/SUPPLIER", "Cedar Components"], ["S2", "/TRFIN/SUPPLIER", "Dune Office Supply"]]
+    for n in names
+      var p: new of /TRBP/PARTNERS
+      p.LINK = n[1]
+      p.GROUPING = "0001"
+      p.CATEGORY = /TRBP/CATEGORY.ORGANIZATION
+      p.NAME1 = n[3]
+      partners.APPEND(p)
+      var r: new of /TRBP/PARTNER_ROLES
+      r.PARENT_LINK = n[1]
+      r.ROLE = n[2]
+      roles.APPEND(r)
+    end
+    modify business object /TRBP/PARTNER
+      create /TRBP/PARTNERS fields (GROUPING, CATEGORY, NAME1) from partners
+      create /TRBP/PARTNER_ROLES by parent fields (ROLE) from roles
+      result partner_result
+    end
+    CHECK("the partners", partner_result)
+    commit business objects result saved
+    CHECK("the partners", saved)
+    var numbers: map of STRING to STRING = [:]
+    for c in saved.CREATED
+      if c.ENTITY = "/TRBP/PARTNERS"
+        var key = transform c.KEY using /TRBASE/JSON into key of /TRBP/PARTNERS
+        numbers[c.LINK default ""] = key.PARTNER
+      end
+    end
+    var customers: array of new of /TRFIN/CUSTOMER_COMPANIES = []
+    var suppliers: array of new of /TRFIN/SUPPLIER_COMPANIES = []
+    var out: array of STRING = []
+    for n in names
+      var partner = numbers.GET(n[1])
+      if partner is null
+        raise /TRFIN/SAMPLE_DATA_ERROR with "the partner {n[3]} got no number"
+      end
+      out.APPEND(partner)
+      if n[2] = "/TRFIN/CUSTOMER"
+        var c: new of /TRFIN/CUSTOMER_COMPANIES
+        c.PARTNER = partner
+        c.COMPANY = "1000"
+        c.RECONCILIATION_ACCOUNT = "140000"
+        c.ALTERNATIVE_ACCOUNT = "161000"
+        customers.APPEND(c)
+      else
+        var s: new of /TRFIN/SUPPLIER_COMPANIES
+        s.PARTNER = partner
+        s.COMPANY = "1000"
+        s.RECONCILIATION_ACCOUNT = "160000"
+        s.ALTERNATIVE_ACCOUNT = "141000"
+        suppliers.APPEND(s)
+      end
+    end
+    modify business object /TRBP/PARTNER
+      create /TRFIN/CUSTOMER_COMPANIES by parent fields (COMPANY, RECONCILIATION_ACCOUNT, ALTERNATIVE_ACCOUNT) from customers
+      create /TRFIN/SUPPLIER_COMPANIES by parent fields (COMPANY, RECONCILIATION_ACCOUNT, ALTERNATIVE_ACCOUNT) from suppliers
+      result partner_data_result
+    end
+    CHECK("the company data of the partners", partner_data_result)
+    SAVE("the company data of the partners")
+    return out
+  end
+
+  # Journal entries of 2025 and 2026: capital, an investment, invoices of
+  # customers and suppliers, payments, salaries, depreciation, an entry
+  # only in the ledger 2L, and in 2026 a payment that clears an invoice.
+  private method POSTINGS(partners: array of STRING) raises /RT/EXCEPTION
+    var c1 = partners[1]
+    var c2 = partners[2]
+    var s1 = partners[3]
+    var s2 = partners[4]
+    POST(ENTRY("1000", "SA", "2025-01-02", null, "Share capital paid in", [ACC("110000", "D", 50000.00), ACC("300000", "C", 50000.00)]))
+    POST(ENTRY("1000", "SA", "2025-03-15", null, "Machine bought", [ACC("030000", "D", 12000.00), ACC("110000", "C", 12000.00)]))
+    var invoice_2025 = POST(ENTRY("1000", "DR", "2025-06-10", null, "Invoice", [PARTNER("CUSTOMER", c1, "D", 23800.00), ACC("400000", "C", 23800.00)]))
+    var payment_2025 = POST(ENTRY("1000", "DZ", "2025-07-01", null, "Payment", [ACC("110000", "D", 23800.00), PARTNER("CUSTOMER", c1, "C", 23800.00)]))
+    POST(ENTRY("1000", "KR", "2025-09-01", null, "Material", [ACC("600000", "D", 8000.00), PARTNER("SUPPLIER", s1, "C", 8000.00)]))
+    POST(ENTRY("1000", "SA", "2025-12-31", null, "Depreciation", [ACC("680000", "D", 2400.00), ACC("030000", "C", 2400.00)]))
+    POST(ENTRY("2000", "SA", "2025-02-01", null, "Share capital paid in", [ACC("110000", "D", 20000.00), ACC("300000", "C", 20000.00)]))
+    POST(ENTRY("2000", "SA", "2025-11-30", null, "Rent", [ACC("650000", "D", 6000.00), ACC("110000", "C", 6000.00)]))
+    var saved = SAVE("the journal entries of 2025")
+    # The payment of 2025 clears the invoice without a new posting.
+    CLEAR("AB", "2025-07-01", [OPEN_ITEM(saved, invoice_2025, 2025, 1), OPEN_ITEM(saved, payment_2025, 2025, 2)], [])
+    var invoice = POST(ENTRY("1000", "DR", "2026-02-03", null, "Invoice", [PARTNER("CUSTOMER", c1, "D", 11900.00), ACC("400000", "C", 11900.00)]))
+    POST(ENTRY("1000", "DR", "2026-03-05", null, "Invoice abroad", [PARTNER("CUSTOMER", c2, "D", 5000.00), ACC("410000", "C", 5000.00)]))
+    POST(ENTRY("1000", "KR", "2026-03-10", null, "Services", [ACC("610000", "D", 3000.00), PARTNER("SUPPLIER", s2, "C", 3000.00)]))
+    POST(ENTRY("1000", "SA", "2026-04-30", null, "Salaries", [ACC("630000", "D", 4000.00), ACC("110000", "C", 4000.00)]))
+    POST(ENTRY("1000", "KZ", "2026-05-05", null, "Payment", [PARTNER("SUPPLIER", s1, "D", 8000.00), ACC("110000", "C", 8000.00)]))
+    POST(ENTRY("1000", "SA", "2026-06-30", "2L", "Depreciation of the second valuation", [ACC("680000", "D", 500.00), ACC("030000", "C", 500.00)]))
+    POST(ENTRY("2000", "SA", "2026-01-15", null, "Office equipment", [ACC("040000", "D", 3000.00), ACC("110000", "C", 3000.00)]))
+    saved = SAVE("the journal entries of 2026")
+    # The customer pays the invoice of 2026: the payment clears it.
+    CLEAR("DZ", "2026-03-20", [OPEN_ITEM(saved, invoice, 2026, 1)], [ACC("110000", "D", 11900.00), PARTNER("CUSTOMER", c1, "C", 11900.00)])
+  end
+
+  # The item of an entry posted by a save, by the link of the entry.
+  private static method OPEN_ITEM(saved: /TRBASE/ENTITY_RESULT, link: STRING, year: INT4, item: INT4) returns /TRFIN/OPEN_ITEM_KEY raises /RT/EXCEPTION
+    var key: /TRFIN/OPEN_ITEM_KEY
+    key.FISCAL_YEAR = year
+    key.ITEM_NO = item
+    for c in saved.CREATED
+      if c.ENTITY = "/TRFIN/JOURNAL_ENTRIES" and (c.LINK default "") = link
+        key.DOCUMENT_NO = (transform c.KEY using /TRBASE/JSON into key of /TRFIN/JOURNAL_ENTRIES).DOCUMENT_NO
+        return key
+      end
+    end
+    raise /TRFIN/SAMPLE_DATA_ERROR with "the journal entry {link} was not posted"
+  end
+
+  # Clears open items in the company 1000 with new items or without and
+  # saves the clearing.
+  private method CLEAR(type: STRING, date: STRING, items: array of /TRFIN/OPEN_ITEM_KEY, new_items: array of /TRFIN/POSTING_ITEM) raises /RT/EXCEPTION
+    ENTRIES = ENTRIES + 1
+    var clearing: /TRFIN/CLEARING
+    clearing.LINK = "entry {ENTRIES}"
+    clearing.COMPANY = "1000"
+    clearing.DOCUMENT_TYPE = type
+    clearing.POSTING_DATE = date as DATE
+    clearing.HEADER_TEXT = "Clearing of {items.MAP(function (i: /TRFIN/OPEN_ITEM_KEY) => i.DOCUMENT_NO).JOIN(", ")}"
+    clearing.OPEN_ITEMS = items
+    clearing.ITEMS = new_items
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.CLEAR parameter clearing into cleared
+      result clearing_result
+    end
+    CHECK("the clearing of {date}", clearing_result)
+    SAVE("the clearing of {date}")
+  end
+
+  private method ACCOUNT(chart: STRING, account: STRING, kind: STRING, text: STRING)
+    var a: new of /TRFIN/ACCOUNTS
+    a.LINK = "{chart} {account}"
+    a.CHART = chart
+    a.ACCOUNT = account
+    a.KIND = /TRFIN/ACCOUNT_KIND.BALANCE_SHEET
+    if kind = "P"
+      a.KIND = /TRFIN/ACCOUNT_KIND.PROFIT_LOSS
+    end
+    ACCOUNTS.APPEND(a)
+    var t: new of /TRFIN/ACCOUNT_TEXTS
+    t.PARENT_LINK = a.LINK
+    t.LANGUAGE = "en"
+    t.SHORT_TEXT = text
+    ACCOUNT_TEXTS.APPEND(t)
+  end
+
+  # A balance sheet structure of a chart with the nodes and ranges.
+  private method STRUCTURE(structure: STRING, chart: STRING, label: STRING, nodes: array of array of STRING, ranges: array of array of STRING) raises /RT/EXCEPTION
+    var s: new of /TRFIN/STATEMENT_STRUCTURES
+    s.LINK = structure
+    s.STRUCTURE = structure
+    s.CHART = chart
+    var text: new of /TRFIN/STATEMENT_STRUCTURE_TEXTS
+    text.PARENT_LINK = structure
+    text.LANGUAGE = "en"
+    text.LABEL = label
+    var node_rows: array of new of /TRFIN/STATEMENT_NODES = []
+    var node_texts: array of new of /TRFIN/STATEMENT_NODE_TEXTS = []
+    var range_rows: array of new of /TRFIN/STATEMENT_NODE_RANGES = []
+    for n in nodes
+      var node: new of /TRFIN/STATEMENT_NODES
+      node.LINK = "{structure} {n[1]}"
+      node.PARENT_LINK = structure
+      node.NODE = n[1]
+      if n[2] is not empty
+        node.PARENT_NODE = n[2]
+      end
+      node.SORT_ORDER = n[3] as INT4
+      node.SIDE = /TRFIN/SIDE.PARSE(n[4]) default /TRFIN/SIDE.ASSETS
+      node.KIND = /TRFIN/NODE_KIND.PARSE(n[5]) default /TRFIN/NODE_KIND.NORMAL
+      node_rows.APPEND(node)
+      var t: new of /TRFIN/STATEMENT_NODE_TEXTS
+      t.PARENT_LINK = node.LINK
+      t.LANGUAGE = "en"
+      t.LABEL = n[6]
+      node_texts.APPEND(t)
+    end
+    var counts: map of STRING to INT4 = [:]
+    for r in ranges
+      counts[r[1]] = (counts.GET(r[1]) default 0) + 1
+      var range: new of /TRFIN/STATEMENT_NODE_RANGES
+      range.PARENT_LINK = "{structure} {r[1]}"
+      range.RANGE_NO = counts[r[1]]
+      range.FROM_ACCOUNT = r[2]
+      range.TO_ACCOUNT = r[3]
+      range.BALANCE = /TRFIN/BALANCE_SIDE.PARSE(r[4]) default /TRFIN/BALANCE_SIDE.ANY
+      range_rows.APPEND(range)
+    end
+    modify business object /TRFIN/STATEMENT_STRUCTURE
+      create /TRFIN/STATEMENT_STRUCTURES fields (STRUCTURE, CHART) from [s]
+      create /TRFIN/STATEMENT_STRUCTURE_TEXTS by parent fields (LANGUAGE, LABEL) from [text]
+      create /TRFIN/STATEMENT_NODES by parent fields (NODE, PARENT_NODE, SORT_ORDER, SIDE, KIND) from node_rows
+      create /TRFIN/STATEMENT_NODE_TEXTS by parent fields (LANGUAGE, LABEL) from node_texts
+      create /TRFIN/STATEMENT_NODE_RANGES by parent fields (RANGE_NO, FROM_ACCOUNT, TO_ACCOUNT, BALANCE) from range_rows
+      result structure_result
+    end
+    CHECK("the balance sheet structure {structure}", structure_result)
+  end
+
+  # Posts an entry in the buffer; returns its link.
+  private method POST(posting: /TRFIN/POSTING) returns STRING raises /RT/EXCEPTION
+    ENTRIES = ENTRIES + 1
+    var p = posting
+    p.LINK = "entry {ENTRIES}"
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.POST parameter p into posted
+      result posting_result
+    end
+    CHECK("the journal entry {p.HEADER_TEXT default ""} of {p.POSTING_DATE}", posting_result)
+    return p.LINK
+  end
+
+  private static method ENTRY(company: STRING, type: STRING, date: STRING, ledger: STRING?, text: STRING, items: array of /TRFIN/POSTING_ITEM) returns /TRFIN/POSTING
+    var p: /TRFIN/POSTING
+    p.COMPANY = company
+    p.DOCUMENT_TYPE = type
+    p.DOCUMENT_DATE = date as DATE
+    p.POSTING_DATE = date as DATE
+    p.LEDGER = ledger
+    p.HEADER_TEXT = text
+    p.ITEMS = items
+    return p
+  end
+
+  private static method ACC(account: STRING, dc: STRING, amount: DEC(18,2)) returns /TRFIN/POSTING_ITEM
+    var i: /TRFIN/POSTING_ITEM
+    i.ACCOUNT = account
+    i.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.PARSE(dc) default /TRFIN/DEBIT_CREDIT.D
+    i.AMOUNT = amount
+    return i
+  end
+
+  private static method PARTNER(kind: STRING, partner: STRING, dc: STRING, amount: DEC(18,2)) returns /TRFIN/POSTING_ITEM
+    var i: /TRFIN/POSTING_ITEM
+    i.ACCOUNT_KIND = /TRFIN/ITEM_ACCOUNT_KIND.PARSE(kind)
+    i.PARTNER = partner
+    i.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.PARSE(dc) default /TRFIN/DEBIT_CREDIT.D
+    i.AMOUNT = amount
+    return i
+  end
+
+  # Fails the setup when a statement failed or gave an error.
+  private static method CHECK(step: STRING, changed: /TRBASE/ENTITY_RESULT) raises /RT/EXCEPTION
+    var errors = changed.MESSAGES.FILTER(function (m: /TRBASE/ENTITY_MESSAGE) => m.SEVERITY = /TRBASE/MESSAGE_SEVERITY.ERROR)
+    if changed.FAILURES is not empty or errors is not empty
+      rollback business objects
+      raise /TRFIN/SAMPLE_DATA_ERROR with "{step} failed: {transform changed using /TRBASE/JSON}"
+    end
+  end
+
+  # Saves the buffer; returns the result of the save.
+  private static method SAVE(step: STRING) returns /TRBASE/ENTITY_RESULT raises /RT/EXCEPTION
+    commit business objects result saved
+    CHECK(step, saved)
+    return saved
+  end
+
+end

@@ -1,0 +1,26 @@
+{
+  "name": "/TRFIN/REPORT",
+  "texts": {
+    "en": {
+      "label": "Reports of the general ledger",
+      "description": "Running the reports and the reconciliation of a company and exporting reports"
+    },
+    "de": {
+      "label": "Berichte des Hauptbuchs",
+      "description": "Berichte und Abgleich eines Buchungskreises ausführen und Berichte exportieren"
+    }
+  },
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "EXECUTE",
+    "EXPORT"
+  ]
+}

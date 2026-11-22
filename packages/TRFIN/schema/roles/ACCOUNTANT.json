@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "Accountant",
-      "description": "Posts, clears, changes the texts of, reverses and reads journal entries and resets clearings in all companies and ledgers, and reads the configuration, the master data and the partners"
+      "description": "Posts, clears, changes the texts of, reverses and reads journal entries, resets clearings, runs and exports the reports and the reconciliation in all companies and ledgers, and reads the configuration, the master data and the partners"
     },
     "de": {
       "label": "Buchhalter",
-      "description": "Bucht und gleicht aus, ändert Texte von Belegen, storniert und liest sie und nimmt Ausgleiche zurück in allen Buchungskreisen und Ledgern und liest Konfiguration, Stammdaten und Partner"
+      "description": "Bucht und gleicht aus, ändert Texte von Belegen, storniert und liest sie, nimmt Ausgleiche zurück, führt Berichte und Abgleich aus und exportiert Berichte in allen Buchungskreisen und Ledgern und liest Konfiguration, Stammdaten und Partner"
     }
   },
   "authorizations": [
@@ -35,6 +35,21 @@
       "object": "/TRFIN/LEDGER",
       "fields": {
         "LEDGER": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/REPORT",
+      "fields": {
+        "COMPANY": [
           {
             "pattern": "*"
           }

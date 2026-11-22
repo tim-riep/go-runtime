@@ -1,0 +1,37 @@
+{
+  "name": "/TRFIN/STATEMENT_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of a balance sheet",
+      "description": "Ledger (null for the primary ledger), company, key date, kind of chart (null for the operational chart) and structure (null for the first of the chart)"
+    },
+    "de": {
+      "label": "Selektion Bilanz",
+      "description": "Ledger (null für das Hauptledger), Buchungskreis, Stichtag, Art des Kontenplans (null für den operativen) und Struktur (null für die erste des Kontenplans)"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    },
+    {
+      "name": "CHART_KIND",
+      "dataElement": "/TRFIN/CHART_KIND"
+    },
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE"
+    }
+  ]
+}

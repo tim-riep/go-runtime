@@ -1,0 +1,25 @@
+{
+  "name": "/TRFIN/RECONCILIATION_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of a reconciliation",
+      "description": "Company and fiscal year"
+    },
+    "de": {
+      "label": "Selektion Abgleich",
+      "description": "Buchungskreis und Geschäftsjahr"
+    }
+  },
+  "components": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    }
+  ]
+}

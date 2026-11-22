@@ -1,0 +1,98 @@
+{
+  "name": "/TRFIN/LINE_ITEM_ROW",
+  "texts": {
+    "en": {
+      "label": "Line item",
+      "description": "A ledger entry with the key of its journal entry"
+    },
+    "de": {
+      "label": "Einzelposten",
+      "description": "Eine Ledgerposition mit dem Schlüssel ihres Belegs"
+    }
+  },
+  "components": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO",
+      "notNull": true
+    },
+    {
+      "name": "LINE_NO",
+      "dataElement": "/TRFIN/LINE_NO",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO"
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD",
+      "notNull": true
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRFIN/LEDGER_AMOUNT",
+      "notNull": true
+    },
+    {
+      "name": "LINE_KIND",
+      "dataElement": "/TRFIN/LINE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "OPEN_ITEM",
+      "dataElement": "/TRFIN/OPEN_ITEM",
+      "notNull": true
+    },
+    {
+      "name": "DUE_DATE",
+      "dataElement": "/TRFIN/DUE_DATE"
+    },
+    {
+      "name": "CLEARING_YEAR",
+      "dataElement": "/TRFIN/CLEARING_YEAR"
+    },
+    {
+      "name": "CLEARING_NO",
+      "dataElement": "/TRFIN/CLEARING_NO"
+    },
+    {
+      "name": "CLEARING_DATE",
+      "dataElement": "/TRFIN/CLEARING_DATE"
+    }
+  ]
+}

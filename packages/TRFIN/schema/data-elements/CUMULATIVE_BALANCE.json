@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CUMULATIVE_BALANCE",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Cumulative",
+      "medium": "Cumulative balance",
+      "long": "Balance up to the end of the range",
+      "heading": "Cumulative balance"
+    },
+    "de": {
+      "short": "Kumuliert",
+      "medium": "Kumulierter Saldo",
+      "long": "Saldo bis zum Ende des Zeitraums",
+      "heading": "Kumulierter Saldo"
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "/TRFIN/PARTNER_BALANCE_ROW",
+  "texts": {
+    "en": {
+      "label": "Balance of a partner",
+      "description": "Carry-forward, prior periods, debit, credit and balance of the range and the cumulative balance of a customer or supplier"
+    },
+    "de": {
+      "label": "Saldo eines Partners",
+      "description": "Saldovortrag, Vorperioden, Soll, Haben und Saldo des Zeitraums und kumulierter Saldo eines Debitors oder Kreditors"
+    }
+  },
+  "components": [
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE",
+      "notNull": true
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER",
+      "notNull": true
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRBP/NAME1"
+    },
+    {
+      "name": "CARRY_FORWARD",
+      "dataElement": "/TRFIN/CARRY_FORWARD",
+      "notNull": true
+    },
+    {
+      "name": "PRIOR_BALANCE",
+      "dataElement": "/TRFIN/PRIOR_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "DEBIT",
+      "dataElement": "/TRFIN/DEBIT",
+      "notNull": true
+    },
+    {
+      "name": "CREDIT",
+      "dataElement": "/TRFIN/CREDIT",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD_BALANCE",
+      "dataElement": "/TRFIN/PERIOD_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "CUMULATIVE_BALANCE",
+      "dataElement": "/TRFIN/CUMULATIVE_BALANCE",
+      "notNull": true
+    }
+  ]
+}

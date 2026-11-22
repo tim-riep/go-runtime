@@ -1,0 +1,53 @@
+{
+  "name": "/TRFIN/LINE_ITEM_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of line items",
+      "description": "Ledger (null for the primary ledger), company, fiscal year, periods (null for 1 and 12), kind of chart of the account (null for the operational chart), and account, role and partner (null for all)"
+    },
+    "de": {
+      "label": "Selektion Einzelposten",
+      "description": "Ledger (null für das Hauptledger), Buchungskreis, Geschäftsjahr, Perioden (null für 1 und 12), Art des Kontenplans des Kontos (null für den operativen) und Konto, Rolle und Partner (null für alle)"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "FROM_PERIOD",
+      "dataElement": "/TRFIN/FROM_PERIOD"
+    },
+    {
+      "name": "TO_PERIOD",
+      "dataElement": "/TRFIN/TO_PERIOD"
+    },
+    {
+      "name": "CHART_KIND",
+      "dataElement": "/TRFIN/CHART_KIND"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    }
+  ]
+}

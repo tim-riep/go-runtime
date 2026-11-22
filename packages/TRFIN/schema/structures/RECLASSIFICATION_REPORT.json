@@ -1,0 +1,35 @@
+{
+  "name": "/TRFIN/RECLASSIFICATION_REPORT",
+  "texts": {
+    "en": {
+      "label": "Check of reclassifications",
+      "description": "The partners whose reclassification posted up to a key date differs from the one their balance at the key date needs"
+    },
+    "de": {
+      "label": "Prüfung der Umgliederung",
+      "description": "Die Partner, deren bis zum Stichtag gebuchte Umgliederung von der abweicht, die ihr Saldo zum Stichtag verlangt"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    },
+    {
+      "name": "ROWS",
+      "arrayType": "/TRFIN/RECLASSIFICATION_ROWS",
+      "notNull": true
+    }
+  ]
+}

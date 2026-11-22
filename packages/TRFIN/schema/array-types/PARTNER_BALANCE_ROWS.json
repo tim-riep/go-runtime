@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/PARTNER_BALANCE_ROWS",
+  "texts": {
+    "en": {
+      "label": "Balances of partners"
+    },
+    "de": {
+      "label": "Salden von Partnern"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/PARTNER_BALANCE_ROW"
+  }
+}

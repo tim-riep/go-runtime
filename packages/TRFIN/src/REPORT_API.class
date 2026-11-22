@@ -1,0 +1,115 @@
+# The node /trfin/reports: POST /trfin/reports/<report> with the selection
+# as JSON answers with the report as JSON; ?format=xlsx answers with its
+# rows as workbook, which needs /TRFIN/REPORT with EXPORT for the company.
+# The reports are balances, partner-balances, open-items, balance-sheet,
+# line-items, reclassification-check and reconciliation, the methods of
+# /TRFIN/REPORTS and /TRFIN/LEDGER_RECONCILIATION.RUN. A selection that does not
+# fit or cannot be run is answered with 400, an unknown report with 404.
+public class /TRFIN/REPORT_API implements /TRBASE/HTTP_HANDLER
+
+  public method HANDLE(request: /TRBASE/HTTP_REQUEST, response: /TRBASE/HTTP_RESPONSE) returns BOOL raises /RT/EXCEPTION
+    if request.METHOD() <> "POST"
+      response.SET_HEADER("Allow", "POST")
+      FAIL(response, 405, "reports are run with POST")
+      return true
+    end
+    var format = request.QUERY("format") default "json"
+    if format <> "json" and format <> "xlsx"
+      FAIL(response, 400, "the format {format} is neither json nor xlsx")
+      return true
+    end
+    var xlsx = format = "xlsx"
+    var report = request.REST_PATH()
+    var body = request.BODY_TEXT()
+    try
+      if report = "balances"
+        var s = transform body using /TRBASE/JSON into /TRFIN/BALANCE_SELECTION
+        var r = /TRFIN/REPORTS.BALANCES(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Balances" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "partner-balances"
+        var s = transform body using /TRBASE/JSON into /TRFIN/PARTNER_SELECTION
+        var r = /TRFIN/REPORTS.PARTNER_BALANCES(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Partner balances" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "open-items"
+        var s = transform body using /TRBASE/JSON into /TRFIN/OPEN_ITEM_SELECTION
+        var r = /TRFIN/REPORTS.OPEN_ITEMS(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Open items" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "balance-sheet"
+        var s = transform body using /TRBASE/JSON into /TRFIN/STATEMENT_SELECTION
+        var r = /TRFIN/REPORTS.BALANCE_SHEET(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Balance sheet" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "line-items"
+        var s = transform body using /TRBASE/JSON into /TRFIN/LINE_ITEM_SELECTION
+        var r = /TRFIN/REPORTS.LINE_ITEMS(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Line items" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "reclassification-check"
+        var s = transform body using /TRBASE/JSON into /TRFIN/RECLASSIFICATION_SELECTION
+        var r = /TRFIN/REPORTS.RECLASSIFICATION_CHECK(s)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.ROWS using /TRBASE/XLSX parameters SHEET = "Reclassification" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      elseif report = "reconciliation"
+        var s = transform body using /TRBASE/JSON into /TRFIN/RECONCILIATION_SELECTION
+        var r = /TRFIN/LEDGER_RECONCILIATION.RUN(s.COMPANY, s.FISCAL_YEAR)
+        if xlsx
+          EXPORT(response, s.COMPANY, report, transform r.PROBLEMS using /TRBASE/XLSX parameters SHEET = "Reconciliation" into BYTES)
+        else
+          JSON(response, transform r using /TRBASE/JSON)
+        end
+      else
+        FAIL(response, 404, "there is no report {report}")
+      end
+    catch e: /TRFIN/REPORT_ERROR
+      FAIL(response, 400, e.TEXT)
+    catch e: /TRBASE/XSLT_FAILED
+      FAIL(response, 400, "the selection does not fit the report {report}: {e.TEXT}")
+    end
+    return true
+  end
+
+  private method JSON(response: /TRBASE/HTTP_RESPONSE, json: STRING)
+    response.SET_HEADER("Content-Type", "application/json")
+    response.WRITE_TEXT(json)
+  end
+
+  # The rows of a report as workbook for download, for users with EXPORT
+  # for the company.
+  private method EXPORT(response: /TRBASE/HTTP_RESPONSE, company: STRING, report: STRING, data: BYTES)
+    check authorization /TRFIN/REPORT
+      COMPANY = company
+      ACTIVITY = EXPORT
+    end
+    response.SET_HEADER("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response.SET_HEADER("Content-Disposition", "attachment; filename=\"{report}-{company}.xlsx\"")
+    response.WRITE(data)
+  end
+
+  private method FAIL(response: /TRBASE/HTTP_RESPONSE, status: INT4, text: STRING) raises /TRBASE/XSLT_FAILED
+    var error: map of STRING to STRING = ["error": text]
+    response.SET_STATUS(status)
+    JSON(response, transform error using /TRBASE/JSON)
+  end
+
+end

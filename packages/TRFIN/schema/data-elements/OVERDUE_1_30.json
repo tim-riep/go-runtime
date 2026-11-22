@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/OVERDUE_1_30",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "1-30 days",
+      "medium": "1-30 days overdue",
+      "long": "Overdue by 1 to 30 days",
+      "heading": "1-30 days"
+    },
+    "de": {
+      "short": "1-30 Tage",
+      "medium": "1-30 Tage überfällig",
+      "long": "1 bis 30 Tage überfällig",
+      "heading": "1-30 Tage"
+    }
+  }
+}

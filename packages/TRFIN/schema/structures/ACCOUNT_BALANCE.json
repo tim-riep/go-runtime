@@ -1,0 +1,34 @@
+{
+  "name": "/TRFIN/ACCOUNT_BALANCE",
+  "texts": {
+    "en": {
+      "label": "Balance of an account",
+      "description": "The balance of an account of a chart, debit positive"
+    },
+    "de": {
+      "label": "Saldo eines Kontos",
+      "description": "Der Saldo eines Kontos eines Kontenplans, Soll positiv"
+    }
+  },
+  "components": [
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART",
+      "notNull": true
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "SHORT_TEXT",
+      "dataElement": "/TRFIN/SHORT_TEXT"
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRFIN/BALANCE",
+      "notNull": true
+    }
+  ]
+}

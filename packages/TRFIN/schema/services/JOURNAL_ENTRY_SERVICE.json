@@ -13,7 +13,8 @@
         "CHECK",
         "CLEAR",
         "REVERSE",
-        "RESET_CLEARING"
+        "RESET_CLEARING",
+        "RECONCILE"
       ]
     },
     "JournalEntryItems": {

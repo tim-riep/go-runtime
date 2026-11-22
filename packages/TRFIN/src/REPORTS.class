@@ -1,0 +1,781 @@
+# The reports of the general ledger: balances of accounts and partners,
+# open items, the balance sheet, line items and the check of
+# reclassifications. Every report runs for one company and ledger, needs
+# /TRFIN/REPORT with EXECUTE for the company and reads with authorized in
+# SQL: totals and sums with /TRFIN/REPORT and /TRFIN/LEDGER, single ledger
+# entries with /TRFIN/JOURNAL_ENTRY and /TRFIN/LEDGER. Amounts are debit
+# positive and credit negative unless a row says otherwise.
+public class /TRFIN/REPORTS
+
+  # The balances of the accounts of a company in a ledger and fiscal year:
+  # the carry-forward of balance sheet accounts from the prior years, the
+  # balance of the periods of the year before the range, debit, credit
+  # and balance of the range and the cumulative balance. With the country
+  # chart the accounts of the company add up to their country accounts;
+  # accounts without country account are listed in UNASSIGNED.
+  public static method BALANCES(selection: /TRFIN/BALANCE_SELECTION) returns /TRFIN/BALANCE_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var first = selection.FROM_PERIOD default 1
+    var last = selection.TO_PERIOD default 12
+    CHECK_PERIODS(first, last)
+    var chart = CHART_OF(company, selection.CHART_KIND)
+    var country = chart <> company.CHART
+    var kinds = KINDS(company.CHART)
+    var chart_kinds = KINDS(chart)
+    var texts = TEXTS(chart)
+    var mapping = COUNTRY_MAP(company.COMPANY)
+    var rows: map of STRING to /TRFIN/BALANCE_ROW = [:]
+    var unassigned: map of STRING to /TRFIN/BALANCE_ROW = [:]
+    for account, row in ACCOUNT_SUMS(ledger, company.COMPANY, selection.FISCAL_YEAR, first, last)
+      var r = row
+      if (kinds.GET(account) default /TRFIN/ACCOUNT_KIND.BALANCE_SHEET) = /TRFIN/ACCOUNT_KIND.PROFIT_LOSS
+        r.CARRY_FORWARD = 0.00
+      end
+      r.KIND = kinds.GET(account)
+      if not country
+        rows[account] = r
+        continue
+      end
+      var target = mapping.GET(account)
+      if target is null
+        unassigned[account] = r
+        continue
+      end
+      r.ACCOUNT = target
+      r.KIND = chart_kinds.GET(target)
+      var before = rows.GET(target)
+      if before is not null
+        r = ADD(before, r)
+      end
+      rows[target] = r
+    end
+    var out: /TRFIN/BALANCE_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = company.COMPANY
+    out.CHART = chart
+    out.CURRENCY = company.CURRENCY
+    out.FISCAL_YEAR = selection.FISCAL_YEAR
+    out.FROM_PERIOD = first
+    out.TO_PERIOD = last
+    for account in rows.KEYS().SORT()
+      if not IN_RANGE(account, selection.FROM_ACCOUNT, selection.TO_ACCOUNT)
+        continue
+      end
+      var r = FINISH(rows[account])
+      r.SHORT_TEXT = texts.GET(account)
+      out.ROWS.APPEND(r)
+      out.TOTALS = ADD_TOTALS(out.TOTALS, r)
+    end
+    var operational_texts = TEXTS(company.CHART)
+    for account in unassigned.KEYS().SORT()
+      var r = FINISH(unassigned[account])
+      r.SHORT_TEXT = operational_texts.GET(account)
+      out.UNASSIGNED.APPEND(r)
+    end
+    return out
+  end
+
+  # The balances of the customers and suppliers of a company in a ledger
+  # and fiscal year, as BALANCES has them for accounts; partners always
+  # carry their balance forward.
+  public static method PARTNER_BALANCES(selection: /TRFIN/PARTNER_SELECTION) returns /TRFIN/PARTNER_BALANCE_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var first = selection.FROM_PERIOD default 1
+    var last = selection.TO_PERIOD default 12
+    CHECK_PERIODS(first, last)
+    var year = selection.FISCAL_YEAR
+    var c = company.COMPANY
+    var rows: map of STRING to /TRFIN/PARTNER_BALANCE_ROW = [:]
+    for t in select PARTNER_ROLE, PARTNER, FISCAL_YEAR, PERIOD, sum(DEBIT), sum(CREDIT) from /TRFIN/PARTNER_TOTALS where LEDGER = ledger and COMPANY = c and FISCAL_YEAR <= year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end and authorized /TRFIN/PARTNER_COMPANY
+      COMPANY = COMPANY
+      ROLE = PARTNER_ROLE
+      ACTIVITY = READ
+    end group by PARTNER_ROLE, PARTNER, FISCAL_YEAR, PERIOD
+      var role = selection.PARTNER_ROLE
+      var partner = selection.PARTNER
+      if role is not null and t.PARTNER_ROLE <> role or partner is not null and t.PARTNER <> partner
+        continue
+      end
+      var debit = t.SUM_DEBIT default 0.00
+      var credit = t.SUM_CREDIT default 0.00
+      var id = "{t.PARTNER_ROLE} {t.PARTNER}"
+      var r: /TRFIN/PARTNER_BALANCE_ROW
+      r.PARTNER_ROLE = t.PARTNER_ROLE
+      r.PARTNER = t.PARTNER
+      var before = rows.GET(id)
+      if before is not null
+        r = before
+      end
+      if t.FISCAL_YEAR < year
+        r.CARRY_FORWARD = r.CARRY_FORWARD + debit - credit
+      elseif t.PERIOD < first
+        r.PRIOR_BALANCE = r.PRIOR_BALANCE + debit - credit
+      elseif t.PERIOD <= last
+        r.DEBIT = r.DEBIT + debit
+        r.CREDIT = r.CREDIT + credit
+      end
+      rows[id] = r
+    end
+    var out: /TRFIN/PARTNER_BALANCE_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = c
+    out.CURRENCY = company.CURRENCY
+    out.FISCAL_YEAR = year
+    out.FROM_PERIOD = first
+    out.TO_PERIOD = last
+    for id in rows.KEYS().SORT()
+      var r = rows[id]
+      r.PERIOD_BALANCE = r.DEBIT - r.CREDIT
+      r.CUMULATIVE_BALANCE = r.CARRY_FORWARD + r.PRIOR_BALANCE + r.PERIOD_BALANCE
+      var p = select single from /TRBP/PARTNERS where PARTNER = r.PARTNER
+      if p is not null
+        r.NAME = p.NAME1 default p.LAST_NAME
+      end
+      out.ROWS.APPEND(r)
+      out.TOTALS.CARRY_FORWARD = out.TOTALS.CARRY_FORWARD + r.CARRY_FORWARD
+      out.TOTALS.PRIOR_BALANCE = out.TOTALS.PRIOR_BALANCE + r.PRIOR_BALANCE
+      out.TOTALS.DEBIT = out.TOTALS.DEBIT + r.DEBIT
+      out.TOTALS.CREDIT = out.TOTALS.CREDIT + r.CREDIT
+      out.TOTALS.PERIOD_BALANCE = out.TOTALS.PERIOD_BALANCE + r.PERIOD_BALANCE
+      out.TOTALS.CUMULATIVE_BALANCE = out.TOTALS.CUMULATIVE_BALANCE + r.CUMULATIVE_BALANCE
+    end
+    return out
+  end
+
+  # The items of a company and ledger open at a key date: open items
+  # posted up to the key date and not cleared up to it, of an account, a
+  # role or a partner, or all. DAYS_OVERDUE counts the days from the due
+  # date, by default the posting date, to the key date; the totals split
+  # into items not due, due on the key date or later, and items overdue
+  # by 1 to 30, 31 to 60, 61 to 90 and more than 90 days.
+  public static method OPEN_ITEMS(selection: /TRFIN/OPEN_ITEM_SELECTION) returns /TRFIN/OPEN_ITEM_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var c = company.COMPANY
+    var key = selection.KEY_DATE
+    var out: /TRFIN/OPEN_ITEM_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = c
+    out.CURRENCY = company.CURRENCY
+    out.KEY_DATE = key
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = c and LEDGER = ledger and LINE_KIND = /TRFIN/LINE_KIND.ITEM and OPEN_ITEM = true and POSTING_DATE <= key and (CLEARING_DATE is null or CLEARING_DATE > key) and authorized /TRFIN/JOURNAL_ENTRY
+      COMPANY = COMPANY
+      DOCUMENT_TYPE = DOCUMENT_TYPE
+      ACTIVITY = READ
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end order by POSTING_DATE, FISCAL_YEAR, DOCUMENT_NO, LINE_NO
+      var account = selection.ACCOUNT
+      var role = selection.PARTNER_ROLE
+      var partner = selection.PARTNER
+      if account is not null and l.ACCOUNT <> account
+        continue
+      end
+      if role is not null and (l.PARTNER_ROLE default "") <> role or partner is not null and (l.PARTNER default "") <> partner
+        continue
+      end
+      var r: /TRFIN/OPEN_ITEM_ROW
+      r.FISCAL_YEAR = l.FISCAL_YEAR
+      r.DOCUMENT_NO = l.DOCUMENT_NO
+      r.ITEM_NO = l.ITEM_NO
+      r.DOCUMENT_TYPE = l.DOCUMENT_TYPE
+      r.POSTING_DATE = l.POSTING_DATE
+      r.DUE_DATE = l.DUE_DATE default l.POSTING_DATE
+      r.DAYS_OVERDUE = r.DUE_DATE.DAYS_UNTIL(key) as INT4
+      r.ACCOUNT = l.ACCOUNT
+      r.PARTNER_ROLE = l.PARTNER_ROLE
+      r.PARTNER = l.PARTNER
+      r.AMOUNT = l.AMOUNT
+      r.CLEARING_DATE = l.CLEARING_DATE
+      out.ROWS.APPEND(r)
+      out.TOTAL = out.TOTAL + r.AMOUNT
+      var days = r.DAYS_OVERDUE
+      if days <= 0
+        out.NOT_DUE = out.NOT_DUE + r.AMOUNT
+        continue
+      end
+      out.OVERDUE = out.OVERDUE + r.AMOUNT
+      if days <= 30
+        out.OVERDUE_1_30 = out.OVERDUE_1_30 + r.AMOUNT
+      elseif days <= 60
+        out.OVERDUE_31_60 = out.OVERDUE_31_60 + r.AMOUNT
+      elseif days <= 90
+        out.OVERDUE_61_90 = out.OVERDUE_61_90 + r.AMOUNT
+      else
+        out.OVERDUE_OVER_90 = out.OVERDUE_OVER_90 + r.AMOUNT
+      end
+    end
+    return out
+  end
+
+  # The balance sheet of a company in a ledger at a key date by a balance
+  # sheet structure of its operational or country chart. The balance of an
+  # account is the sum of its totals of the prior years and periods and of
+  # its ledger entries of the period of the key date up to the key date.
+  # Balance sheet accounts go to the node of their range and balance side;
+  # profit and loss accounts of all years up to the key date go to the
+  # node of the result, since no program carries them forward. Nodes add up
+  # their accounts and the nodes below; assets show debit balances,
+  # liabilities credit balances as positive amounts. Accounts without a
+  # node, also accounts without country account with the country chart,
+  # are listed in UNASSIGNED and go to the node of the kind UNASSIGNED.
+  # Without a node for the result or for unassigned accounts PROBLEMS says
+  # what is missing and the totals differ.
+  public static method BALANCE_SHEET(selection: /TRFIN/STATEMENT_SELECTION) returns /TRFIN/STATEMENT_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var chart = CHART_OF(company, selection.CHART_KIND)
+    var structure = STRUCTURE_OF(chart, selection.STRUCTURE)
+    var c = company.COMPANY
+    var key = selection.KEY_DATE
+    var p = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(c, key)
+    var year = p.FISCAL_YEAR
+    var period = p.PERIOD
+    var balances: map of STRING to DEC(38,2) = [:]
+    for t in select ACCOUNT, sum(DEBIT), sum(CREDIT) from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger and COMPANY = c and (FISCAL_YEAR < year or FISCAL_YEAR = year and PERIOD < period) and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end group by ACCOUNT
+      balances[t.ACCOUNT] = (balances.GET(t.ACCOUNT) default 0.00) + (t.SUM_DEBIT default 0.00) - (t.SUM_CREDIT default 0.00)
+    end
+    for t in select ACCOUNT, sum(AMOUNT) from /TRFIN/LEDGER_ENTRIES where COMPANY = c and LEDGER = ledger and FISCAL_YEAR = year and PERIOD = period and POSTING_DATE <= key and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end group by ACCOUNT
+      balances[t.ACCOUNT] = (balances.GET(t.ACCOUNT) default 0.00) + (t.SUM_AMOUNT default 0.00)
+    end
+    # The balances of the accounts of the chart of the report and the
+    # result.
+    var kinds = KINDS(company.CHART)
+    var country = chart <> company.CHART
+    var mapping = COUNTRY_MAP(c)
+    var result: DEC(38,2) = 0.00
+    var accounts: map of STRING to DEC(38,2) = [:]
+    var unassigned: array of /TRFIN/ACCOUNT_BALANCE = []
+    var operational_texts = TEXTS(company.CHART)
+    for account in balances.KEYS().SORT()
+      var balance = balances[account]
+      if (kinds.GET(account) default /TRFIN/ACCOUNT_KIND.BALANCE_SHEET) = /TRFIN/ACCOUNT_KIND.PROFIT_LOSS
+        result = result + balance
+        continue
+      end
+      var target = account
+      if country
+        var mapped = mapping.GET(account)
+        if mapped is null
+          if balance <> 0
+            unassigned.APPEND(ACCOUNT_BALANCE(company.CHART, account, operational_texts.GET(account), balance))
+          end
+          continue
+        end
+        target = mapped
+      end
+      accounts[target] = (accounts.GET(target) default 0.00) + balance
+    end
+    # The accounts of the nodes by their ranges and balance sides.
+    var texts = TEXTS(chart)
+    var node_accounts: map of STRING to array of /TRFIN/ACCOUNT_BALANCE = [:]
+    for account in accounts.KEYS().SORT()
+      var balance = accounts[account]
+      if balance = 0
+        continue
+      end
+      var side = /TRFIN/BALANCE_SIDE.DEBIT
+      if balance < 0
+        side = /TRFIN/BALANCE_SIDE.CREDIT
+      end
+      var a = ACCOUNT_BALANCE(chart, account, texts.GET(account), balance)
+      var node = /TRFIN/BALANCE_SHEET.NODE_OF(structure, account, side)
+      if node is null
+        unassigned.APPEND(a)
+        continue
+      end
+      var list: array of /TRFIN/ACCOUNT_BALANCE = node_accounts.GET(node) default []
+      list.APPEND(a)
+      node_accounts[node] = list
+    end
+    var out: /TRFIN/STATEMENT_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = c
+    out.CURRENCY = company.CURRENCY
+    out.KEY_DATE = key
+    out.CHART = chart
+    out.STRUCTURE = structure
+    out.RESULT = 0.00 - result
+    out.UNASSIGNED = unassigned
+    # The nodes of the result and of unassigned accounts.
+    var nodes = select from /TRFIN/STATEMENT_NODES where STRUCTURE = structure order by SORT_ORDER, NODE
+    var result_node: STRING? = null
+    var unassigned_node: STRING? = null
+    for n in nodes
+      if n.KIND = /TRFIN/NODE_KIND.RESULT
+        result_node = n.NODE
+      elseif n.KIND = /TRFIN/NODE_KIND.UNASSIGNED
+        unassigned_node = n.NODE
+      end
+    end
+    var extra: map of STRING to DEC(38,2) = [:]
+    if result_node is not null
+      extra[result_node] = result
+    elseif result <> 0
+      out.PROBLEMS.APPEND(new /TRFIN/REPORT_MESSAGE(TEXT: "the structure {structure} has no node for the result; the result {out.RESULT} is missing"))
+    end
+    if unassigned_node is not null
+      var list: array of /TRFIN/ACCOUNT_BALANCE = node_accounts.GET(unassigned_node) default []
+      for a in unassigned
+        list.APPEND(a)
+      end
+      node_accounts[unassigned_node] = list
+    elseif unassigned is not empty
+      out.PROBLEMS.APPEND(new /TRFIN/REPORT_MESSAGE(TEXT: "the structure {structure} has no node for unassigned accounts; {unassigned.LENGTH()} accounts are missing"))
+    end
+    var labels = NODE_TEXTS(structure)
+    for n in nodes
+      if n.PARENT_NODE is null
+        var rows = NODE_ROWS(n, nodes, node_accounts, extra, labels, 1)
+        var amount = rows[1].AMOUNT
+        for r in rows
+          out.ROWS.APPEND(r)
+        end
+        if n.SIDE = /TRFIN/SIDE.ASSETS
+          out.TOTAL_ASSETS = out.TOTAL_ASSETS + amount
+        else
+          out.TOTAL_LIABILITIES = out.TOTAL_LIABILITIES + amount
+        end
+      end
+    end
+    out.DIFFERENCE = out.TOTAL_ASSETS - out.TOTAL_LIABILITIES
+    out.BALANCED = out.DIFFERENCE = 0
+    if not out.BALANCED
+      out.PROBLEMS.APPEND(new /TRFIN/REPORT_MESSAGE(TEXT: "assets {out.TOTAL_ASSETS} and liabilities {out.TOTAL_LIABILITIES} differ by {out.DIFFERENCE}"))
+    end
+    return out
+  end
+
+  # The ledger entries of a company in a ledger and in periods of a
+  # fiscal year, of an account, a role or a partner, or all, with the keys
+  # of their journal entries. With the country chart the account is a
+  # country account and the entries of the accounts of the company with
+  # it are listed.
+  public static method LINE_ITEMS(selection: /TRFIN/LINE_ITEM_SELECTION) returns /TRFIN/LINE_ITEM_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var first = selection.FROM_PERIOD default 1
+    var last = selection.TO_PERIOD default 12
+    CHECK_PERIODS(first, last)
+    var chart = CHART_OF(company, selection.CHART_KIND)
+    var c = company.COMPANY
+    var year = selection.FISCAL_YEAR
+    var accounts: array of STRING = []
+    var account = selection.ACCOUNT
+    if account is not null
+      if chart = company.CHART
+        accounts.APPEND(account)
+      else
+        for operational, mapped in COUNTRY_MAP(c)
+          if mapped = account
+            accounts.APPEND(operational)
+          end
+        end
+      end
+    end
+    var out: /TRFIN/LINE_ITEM_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = c
+    out.CURRENCY = company.CURRENCY
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = c and LEDGER = ledger and FISCAL_YEAR = year and PERIOD >= first and PERIOD <= last and authorized /TRFIN/JOURNAL_ENTRY
+      COMPANY = COMPANY
+      DOCUMENT_TYPE = DOCUMENT_TYPE
+      ACTIVITY = READ
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end order by POSTING_DATE, DOCUMENT_NO, LINE_NO
+      if account is not null and not accounts.CONTAINS(l.ACCOUNT)
+        continue
+      end
+      var role = selection.PARTNER_ROLE
+      var partner = selection.PARTNER
+      if role is not null and (l.PARTNER_ROLE default "") <> role or partner is not null and (l.PARTNER default "") <> partner
+        continue
+      end
+      var r: /TRFIN/LINE_ITEM_ROW
+      r.COMPANY = l.COMPANY
+      r.FISCAL_YEAR = l.FISCAL_YEAR
+      r.DOCUMENT_NO = l.DOCUMENT_NO
+      r.LINE_NO = l.LINE_NO
+      r.ITEM_NO = l.ITEM_NO
+      r.DOCUMENT_TYPE = l.DOCUMENT_TYPE
+      r.POSTING_DATE = l.POSTING_DATE
+      r.PERIOD = l.PERIOD
+      r.ACCOUNT = l.ACCOUNT
+      r.PARTNER_ROLE = l.PARTNER_ROLE
+      r.PARTNER = l.PARTNER
+      r.AMOUNT = l.AMOUNT
+      r.LINE_KIND = l.LINE_KIND
+      r.OPEN_ITEM = l.OPEN_ITEM
+      r.DUE_DATE = l.DUE_DATE
+      r.CLEARING_YEAR = l.CLEARING_YEAR
+      r.CLEARING_NO = l.CLEARING_NO
+      r.CLEARING_DATE = l.CLEARING_DATE
+      out.ROWS.APPEND(r)
+      out.TOTAL = out.TOTAL + l.AMOUNT
+    end
+    return out
+  end
+
+  # The partners of a company in a ledger whose reclassification posted
+  # up to a key date differs from the one their balance at the key date
+  # needs: the balance by posting date up to the key date, the part of it
+  # on the alternative account (the credit balance of a customer, the
+  # debit balance of a supplier) and the sum of the reclassification lines
+  # on the alternative account. Postings with earlier posting dates than
+  # entries posted before them cause such differences.
+  public static method RECLASSIFICATION_CHECK(selection: /TRFIN/RECLASSIFICATION_SELECTION) returns /TRFIN/RECLASSIFICATION_REPORT raises /TRFIN/REPORT_ERROR
+    var company = COMPANY_OF(selection.COMPANY)
+    var ledger = LEDGER_OF(selection.LEDGER)
+    var c = company.COMPANY
+    var key = selection.KEY_DATE
+    var reconciliation = RECONCILIATION_KINDS(c)
+    var balances: map of STRING to DEC(38,2) = [:]
+    var posted: map of STRING to DEC(38,2) = [:]
+    for t in select PARTNER_ROLE, PARTNER, ACCOUNT, LINE_KIND, sum(AMOUNT) from /TRFIN/LEDGER_ENTRIES where COMPANY = c and LEDGER = ledger and POSTING_DATE <= key and PARTNER is not null and PARTNER_ROLE is not null and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end group by PARTNER_ROLE, PARTNER, ACCOUNT, LINE_KIND
+      var role = t.PARTNER_ROLE
+      var partner = t.PARTNER
+      if role is null or partner is null
+        continue
+      end
+      var id = "{role} {partner}"
+      var amount = t.SUM_AMOUNT default 0.00
+      if t.LINE_KIND = /TRFIN/LINE_KIND.ITEM
+        balances[id] = (balances.GET(id) default 0.00) + amount
+        posted[id] = posted.GET(id) default 0.00
+      elseif ALTERNATIVE(role, reconciliation.GET(t.ACCOUNT))
+        posted[id] = (posted.GET(id) default 0.00) + amount
+        balances[id] = balances.GET(id) default 0.00
+      end
+    end
+    var out: /TRFIN/RECLASSIFICATION_REPORT
+    out.LEDGER = ledger
+    out.COMPANY = c
+    out.KEY_DATE = key
+    for id in balances.KEYS().SORT()
+      var parts = id.SPLIT(" ")
+      var balance = balances[id]
+      var expected = SHARE(parts[1], balance)
+      var actual = posted.GET(id) default 0.00
+      if expected = actual
+        continue
+      end
+      var r: /TRFIN/RECLASSIFICATION_ROW
+      r.PARTNER_ROLE = parts[1]
+      r.PARTNER = parts[2]
+      r.BALANCE = balance
+      r.EXPECTED = expected
+      r.POSTED = actual
+      r.DIFFERENCE = actual - expected
+      out.ROWS.APPEND(r)
+    end
+    return out
+  end
+
+  # The company of a report, checked for /TRFIN/REPORT with EXECUTE.
+  package static method COMPANY_OF(company: STRING) returns /TRFIN/COMPANIES raises /TRFIN/REPORT_ERROR
+    var c = select single from /TRFIN/COMPANIES where COMPANY = company
+    if c is null
+      raise /TRFIN/REPORT_ERROR with "the company {company} does not exist"
+    end
+    check authorization /TRFIN/REPORT
+      COMPANY = company
+      ACTIVITY = EXECUTE
+    end
+    return c
+  end
+
+  # The ledger of a report: the given one, by default the primary ledger.
+  package static method LEDGER_OF(ledger: STRING?) returns STRING raises /TRFIN/REPORT_ERROR
+    if ledger is null
+      var primary = /TRFIN/LEDGER_SETS.PRIMARY()
+      if primary is null
+        raise /TRFIN/REPORT_ERROR with "there is no primary ledger"
+      end
+      return primary
+    end
+    var row = select single from /TRFIN/LEDGERS where LEDGER = ledger
+    if row is null
+      raise /TRFIN/REPORT_ERROR with "the ledger {ledger} does not exist"
+    end
+    return ledger
+  end
+
+  # The kind of reconciliation of the accounts of a company.
+  package static method RECONCILIATION_KINDS(company: STRING) returns map of STRING to /TRFIN/RECONCILIATION
+    var out: map of STRING to /TRFIN/RECONCILIATION = [:]
+    for a in select from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company
+      out[a.ACCOUNT] = a.RECONCILIATION
+    end
+    return out
+  end
+
+  # Whether an account with a kind of reconciliation is an alternative
+  # account of a role: one for suppliers for customers and the other way
+  # round.
+  package static method ALTERNATIVE(role: STRING, kind: /TRFIN/RECONCILIATION?) returns BOOL
+    if kind is null
+      return false
+    end
+    if role = "/TRFIN/CUSTOMER"
+      return kind = /TRFIN/RECONCILIATION.SUPPLIERS
+    end
+    return role = "/TRFIN/SUPPLIER" and kind = /TRFIN/RECONCILIATION.CUSTOMERS
+  end
+
+  # The part of the balance of a partner in a role on its alternative
+  # account: the credit balance of a customer, the debit balance of a
+  # supplier.
+  package static method SHARE(role: STRING, balance: DEC(38,2)) returns DEC(38,2)
+    if role = "/TRFIN/CUSTOMER" and balance < 0 or role = "/TRFIN/SUPPLIER" and balance > 0
+      return balance
+    end
+    return 0.00
+  end
+
+  # The sums of the totals of the accounts of a company in a ledger by
+  # account: the prior years as carry-forward, the periods of the year
+  # before the range, debit and credit of the range.
+  private static method ACCOUNT_SUMS(ledger: STRING, company: STRING, year: INT4, first: INT4, last: INT4) returns map of STRING to /TRFIN/BALANCE_ROW
+    var out: map of STRING to /TRFIN/BALANCE_ROW = [:]
+    for t in select ACCOUNT, FISCAL_YEAR, PERIOD, sum(DEBIT), sum(CREDIT) from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger and COMPANY = company and FISCAL_YEAR <= year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end group by ACCOUNT, FISCAL_YEAR, PERIOD
+      var debit = t.SUM_DEBIT default 0.00
+      var credit = t.SUM_CREDIT default 0.00
+      var r: /TRFIN/BALANCE_ROW
+      r.ACCOUNT = t.ACCOUNT
+      var before = out.GET(t.ACCOUNT)
+      if before is not null
+        r = before
+      end
+      if t.FISCAL_YEAR < year
+        r.CARRY_FORWARD = r.CARRY_FORWARD + debit - credit
+      elseif t.PERIOD < first
+        r.PRIOR_BALANCE = r.PRIOR_BALANCE + debit - credit
+      elseif t.PERIOD <= last
+        r.DEBIT = r.DEBIT + debit
+        r.CREDIT = r.CREDIT + credit
+      else
+        continue
+      end
+      out[t.ACCOUNT] = r
+    end
+    return out
+  end
+
+  # The rows of a node of a balance sheet: the node with its amount, its
+  # accounts and the rows of the nodes below it.
+  private static method NODE_ROWS(node: /TRFIN/STATEMENT_NODES, nodes: array of /TRFIN/STATEMENT_NODES, accounts: map of STRING to array of /TRFIN/ACCOUNT_BALANCE, extra: map of STRING to DEC(38,2), labels: map of STRING to STRING, level: INT4) returns array of /TRFIN/STATEMENT_ROW
+    var r: /TRFIN/STATEMENT_ROW
+    r.LEVEL = level
+    r.NODE = node.NODE
+    r.PARENT_NODE = node.PARENT_NODE
+    r.NODE_KIND = node.KIND
+    r.SIDE = node.SIDE
+    r.LABEL = labels.GET(node.NODE)
+    var amount = ON_SIDE(node.SIDE, extra.GET(node.NODE) default 0.00)
+    var lines: array of /TRFIN/STATEMENT_ROW = []
+    var own: array of /TRFIN/ACCOUNT_BALANCE = accounts.GET(node.NODE) default []
+    for a in own
+      var line = r
+      line.LEVEL = level + 1
+      line.ACCOUNT = a.ACCOUNT
+      line.LABEL = a.SHORT_TEXT
+      line.AMOUNT = ON_SIDE(node.SIDE, a.BALANCE)
+      lines.APPEND(line)
+      amount = amount + line.AMOUNT
+    end
+    for child in nodes
+      var parent = child.PARENT_NODE
+      if parent is not null and parent = node.NODE
+        var below = NODE_ROWS(child, nodes, accounts, extra, labels, level + 1)
+        amount = amount + below[1].AMOUNT
+        for b in below
+          lines.APPEND(b)
+        end
+      end
+    end
+    r.AMOUNT = amount
+    var out: array of /TRFIN/STATEMENT_ROW = [r]
+    for l in lines
+      out.APPEND(l)
+    end
+    return out
+  end
+
+  # A balance, debit positive, as amount on a side of a balance sheet:
+  # debit balances are positive on the assets side, credit balances on
+  # the liabilities side.
+  private static method ON_SIDE(side: /TRFIN/SIDE, balance: DEC(38,2)) returns DEC(38,2)
+    if side = /TRFIN/SIDE.LIABILITIES
+      return 0.00 - balance
+    end
+    return balance
+  end
+
+  private static method ACCOUNT_BALANCE(chart: STRING, account: STRING, text: STRING?, balance: DEC(38,2)) returns /TRFIN/ACCOUNT_BALANCE
+    var a: /TRFIN/ACCOUNT_BALANCE
+    a.CHART = chart
+    a.ACCOUNT = account
+    a.SHORT_TEXT = text
+    a.BALANCE = balance
+    return a
+  end
+
+  # The chart of a report: the operational chart of the company or its
+  # country chart.
+  private static method CHART_OF(company: /TRFIN/COMPANIES, kind: /TRFIN/CHART_KIND?) returns STRING raises /TRFIN/REPORT_ERROR
+    if kind is null or kind = /TRFIN/CHART_KIND.OPERATIONAL
+      return company.CHART
+    end
+    var chart = company.COUNTRY_CHART
+    if chart is null
+      raise /TRFIN/REPORT_ERROR with "the company {company.COMPANY} has no country chart"
+    end
+    return chart
+  end
+
+  # The structure of a balance sheet: the given one of the chart, by
+  # default the first structure of the chart.
+  private static method STRUCTURE_OF(chart: STRING, structure: STRING?) returns STRING raises /TRFIN/REPORT_ERROR
+    if structure is null
+      var first = select single from /TRFIN/STATEMENT_STRUCTURES where CHART = chart
+      if first is null
+        raise /TRFIN/REPORT_ERROR with "the chart {chart} has no balance sheet structure"
+      end
+      return first.STRUCTURE
+    end
+    var row = select single from /TRFIN/STATEMENT_STRUCTURES where STRUCTURE = structure
+    if row is null or row.CHART <> chart
+      raise /TRFIN/REPORT_ERROR with "the chart {chart} has no balance sheet structure {structure}"
+    end
+    return structure
+  end
+
+  private static method CHECK_PERIODS(first: INT4, last: INT4) raises /TRFIN/REPORT_ERROR
+    if first < 1 or last > 12 or first > last
+      raise /TRFIN/REPORT_ERROR with "the periods {first} to {last} are no range of the periods 1 to 12"
+    end
+  end
+
+  # Whether an account lies in a range; null bounds are open.
+  private static method IN_RANGE(account: STRING, first: STRING?, last: STRING?) returns BOOL
+    return (first is null or account >= first) and (last is null or account <= last)
+  end
+
+  # The kinds of the accounts of a chart.
+  private static method KINDS(chart: STRING) returns map of STRING to /TRFIN/ACCOUNT_KIND
+    var out: map of STRING to /TRFIN/ACCOUNT_KIND = [:]
+    for a in select from /TRFIN/ACCOUNTS where CHART = chart
+      out[a.ACCOUNT] = a.KIND
+    end
+    return out
+  end
+
+  # The short texts of the accounts of a chart in the language of the
+  # execution, else in English.
+  private static method TEXTS(chart: STRING) returns map of STRING to STRING
+    var out: map of STRING to STRING = [:]
+    var language = /TRBASE/CONTEXT.LANGUAGE()
+    for t in select from /TRFIN/ACCOUNT_TEXTS where CHART = chart and LANGUAGE = "en"
+      out[t.ACCOUNT] = t.SHORT_TEXT
+    end
+    if language <> "en"
+      for t in select from /TRFIN/ACCOUNT_TEXTS where CHART = chart and LANGUAGE = language
+        out[t.ACCOUNT] = t.SHORT_TEXT
+      end
+    end
+    return out
+  end
+
+  # The labels of the nodes of a structure in the language of the
+  # execution, else in English.
+  private static method NODE_TEXTS(structure: STRING) returns map of STRING to STRING
+    var out: map of STRING to STRING = [:]
+    var language = /TRBASE/CONTEXT.LANGUAGE()
+    for t in select from /TRFIN/STATEMENT_NODE_TEXTS where STRUCTURE = structure and LANGUAGE = "en"
+      out[t.NODE] = t.LABEL
+    end
+    if language <> "en"
+      for t in select from /TRFIN/STATEMENT_NODE_TEXTS where STRUCTURE = structure and LANGUAGE = language
+        out[t.NODE] = t.LABEL
+      end
+    end
+    return out
+  end
+
+  # The country accounts of the accounts of a company that have one.
+  private static method COUNTRY_MAP(company: STRING) returns map of STRING to STRING
+    var out: map of STRING to STRING = [:]
+    for a in select from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company and COUNTRY_ACCOUNT is not null
+      var target = a.COUNTRY_ACCOUNT
+      if target is not null
+        out[a.ACCOUNT] = target
+      end
+    end
+    return out
+  end
+
+  # A row with the balance of the range and the cumulative balance.
+  private static method FINISH(row: /TRFIN/BALANCE_ROW) returns /TRFIN/BALANCE_ROW
+    var r = row
+    r.PERIOD_BALANCE = r.DEBIT - r.CREDIT
+    r.CUMULATIVE_BALANCE = r.CARRY_FORWARD + r.PRIOR_BALANCE + r.PERIOD_BALANCE
+    return r
+  end
+
+  # The sums of two rows of the same account.
+  private static method ADD(a: /TRFIN/BALANCE_ROW, b: /TRFIN/BALANCE_ROW) returns /TRFIN/BALANCE_ROW
+    var r = a
+    r.CARRY_FORWARD = a.CARRY_FORWARD + b.CARRY_FORWARD
+    r.PRIOR_BALANCE = a.PRIOR_BALANCE + b.PRIOR_BALANCE
+    r.DEBIT = a.DEBIT + b.DEBIT
+    r.CREDIT = a.CREDIT + b.CREDIT
+    return r
+  end
+
+  private static method ADD_TOTALS(totals: /TRFIN/BALANCE_TOTALS, row: /TRFIN/BALANCE_ROW) returns /TRFIN/BALANCE_TOTALS
+    var t = totals
+    t.CARRY_FORWARD = t.CARRY_FORWARD + row.CARRY_FORWARD
+    t.PRIOR_BALANCE = t.PRIOR_BALANCE + row.PRIOR_BALANCE
+    t.DEBIT = t.DEBIT + row.DEBIT
+    t.CREDIT = t.CREDIT + row.CREDIT
+    t.PERIOD_BALANCE = t.PERIOD_BALANCE + row.PERIOD_BALANCE
+    t.CUMULATIVE_BALANCE = t.CUMULATIVE_BALANCE + row.CUMULATIVE_BALANCE
+    return t
+  end
+
+end

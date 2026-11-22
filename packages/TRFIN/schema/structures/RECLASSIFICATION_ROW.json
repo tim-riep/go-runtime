@@ -1,0 +1,45 @@
+{
+  "name": "/TRFIN/RECLASSIFICATION_ROW",
+  "texts": {
+    "en": {
+      "label": "Deviation of a reclassification",
+      "description": "The balance of a partner at the key date, the reclassification that follows from it and the one posted"
+    },
+    "de": {
+      "label": "Abweichung einer Umgliederung",
+      "description": "Der Saldo eines Partners zum Stichtag, die daraus folgende und die gebuchte Umgliederung"
+    }
+  },
+  "components": [
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE",
+      "notNull": true
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER",
+      "notNull": true
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRFIN/BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "EXPECTED",
+      "dataElement": "/TRFIN/EXPECTED_RECLASS",
+      "notNull": true
+    },
+    {
+      "name": "POSTED",
+      "dataElement": "/TRFIN/POSTED_RECLASS",
+      "notNull": true
+    },
+    {
+      "name": "DIFFERENCE",
+      "dataElement": "/TRFIN/DIFFERENCE",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "/TRFINTEST/REPORT_CLERK",
+  "texts": { "en": { "label": "Reports of the company 1000 in the ledger 0L without export" } },
+  "authorizations": [
+    { "object": "/TRFIN/REPORT", "fields": { "COMPANY": [{ "value": "1000" }], "ACTIVITY": [{ "value": "EXECUTE" }] } },
+    { "object": "/TRFIN/JOURNAL_ENTRY", "fields": { "COMPANY": [{ "value": "1000" }], "DOCUMENT_TYPE": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } },
+    { "object": "/TRFIN/PARTNER_COMPANY", "fields": { "COMPANY": [{ "value": "1000" }], "ROLE": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } },
+    { "object": "/TRFIN/LEDGER", "fields": { "LEDGER": [{ "value": "0L" }], "ACTIVITY": [{ "value": "READ" }] } }
+  ]
+}

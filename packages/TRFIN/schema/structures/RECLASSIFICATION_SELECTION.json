@@ -1,0 +1,29 @@
+{
+  "name": "/TRFIN/RECLASSIFICATION_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of the check of reclassifications",
+      "description": "Ledger (null for the primary ledger), company and key date"
+    },
+    "de": {
+      "label": "Selektion Prüfung der Umgliederung",
+      "description": "Ledger (null für das Hauptledger), Buchungskreis und Stichtag"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    }
+  ]
+}

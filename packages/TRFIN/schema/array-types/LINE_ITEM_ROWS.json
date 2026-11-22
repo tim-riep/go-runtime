@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/LINE_ITEM_ROWS",
+  "texts": {
+    "en": {
+      "label": "Line items"
+    },
+    "de": {
+      "label": "Einzelposten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/LINE_ITEM_ROW"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/OPEN_ITEM_ROWS",
+  "texts": {
+    "en": {
+      "label": "Open items"
+    },
+    "de": {
+      "label": "Offene Posten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/OPEN_ITEM_ROW"
+  }
+}

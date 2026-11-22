@@ -1,0 +1,75 @@
+{
+  "name": "/TRFIN/OPEN_ITEM_REPORT",
+  "texts": {
+    "en": {
+      "label": "Open items",
+      "description": "The items open at a key date with their totals by due date"
+    },
+    "de": {
+      "label": "Offene Posten",
+      "description": "Die zum Stichtag offenen Posten mit ihren Summen nach Fälligkeit"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    },
+    {
+      "name": "ROWS",
+      "arrayType": "/TRFIN/OPEN_ITEM_ROWS",
+      "notNull": true
+    },
+    {
+      "name": "TOTAL",
+      "dataElement": "/TRFIN/TOTAL",
+      "notNull": true
+    },
+    {
+      "name": "NOT_DUE",
+      "dataElement": "/TRFIN/NOT_DUE",
+      "notNull": true
+    },
+    {
+      "name": "OVERDUE",
+      "dataElement": "/TRFIN/OVERDUE",
+      "notNull": true
+    },
+    {
+      "name": "OVERDUE_1_30",
+      "dataElement": "/TRFIN/OVERDUE_1_30",
+      "notNull": true
+    },
+    {
+      "name": "OVERDUE_31_60",
+      "dataElement": "/TRFIN/OVERDUE_31_60",
+      "notNull": true
+    },
+    {
+      "name": "OVERDUE_61_90",
+      "dataElement": "/TRFIN/OVERDUE_61_90",
+      "notNull": true
+    },
+    {
+      "name": "OVERDUE_OVER_90",
+      "dataElement": "/TRFIN/OVERDUE_OVER_90",
+      "notNull": true
+    }
+  ]
+}

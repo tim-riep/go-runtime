@@ -1,0 +1,20 @@
+{
+  "name": "/TRFIN/REPORT_MESSAGE",
+  "texts": {
+    "en": {
+      "label": "Message of a report",
+      "description": "A problem a report or a reconciliation found"
+    },
+    "de": {
+      "label": "Meldung eines Berichts",
+      "description": "Ein Problem, das ein Bericht oder ein Abgleich gefunden hat"
+    }
+  },
+  "components": [
+    {
+      "name": "TEXT",
+      "dataElement": "/TRBASE/MESSAGE_TEXT",
+      "notNull": true
+    }
+  ]
+}

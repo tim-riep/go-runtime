@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "Display general ledger",
-      "description": "Reads the configuration, the master data and the journal entries of the general ledger"
+      "description": "Reads the configuration, the master data and the journal entries of the general ledger and runs and exports its reports"
     },
     "de": {
       "label": "Hauptbuch anzeigen",
-      "description": "Liest die Konfiguration, die Stammdaten und die Belege des Hauptbuchs"
+      "description": "Liest die Konfiguration, die Stammdaten und die Belege des Hauptbuchs und führt seine Berichte aus und exportiert sie"
     }
   },
   "authorizations": [
@@ -92,6 +92,24 @@
         "ACTIVITY": [
           {
             "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/REPORT",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          },
+          {
+            "value": "EXPORT"
           }
         ]
       }

@@ -1,0 +1,58 @@
+{
+  "name": "/TRFIN/BALANCE_ROW",
+  "texts": {
+    "en": {
+      "label": "Balance of an account",
+      "description": "Carry-forward, prior periods, debit, credit and balance of the range and the cumulative balance of an account"
+    },
+    "de": {
+      "label": "Saldo eines Kontos",
+      "description": "Saldovortrag, Vorperioden, Soll, Haben und Saldo des Zeitraums und kumulierter Saldo eines Kontos"
+    }
+  },
+  "components": [
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "SHORT_TEXT",
+      "dataElement": "/TRFIN/SHORT_TEXT"
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFIN/ACCOUNT_KIND"
+    },
+    {
+      "name": "CARRY_FORWARD",
+      "dataElement": "/TRFIN/CARRY_FORWARD",
+      "notNull": true
+    },
+    {
+      "name": "PRIOR_BALANCE",
+      "dataElement": "/TRFIN/PRIOR_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "DEBIT",
+      "dataElement": "/TRFIN/DEBIT",
+      "notNull": true
+    },
+    {
+      "name": "CREDIT",
+      "dataElement": "/TRFIN/CREDIT",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD_BALANCE",
+      "dataElement": "/TRFIN/PERIOD_BALANCE",
+      "notNull": true
+    },
+    {
+      "name": "CUMULATIVE_BALANCE",
+      "dataElement": "/TRFIN/CUMULATIVE_BALANCE",
+      "notNull": true
+    }
+  ]
+}

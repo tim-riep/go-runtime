@@ -1,0 +1,85 @@
+{
+  "name": "/TRFIN/STATEMENT_REPORT",
+  "texts": {
+    "en": {
+      "label": "Balance sheet",
+      "description": "The balance sheet of a company in a ledger at a key date by a balance sheet structure"
+    },
+    "de": {
+      "label": "Bilanz",
+      "description": "Die Bilanz eines Buchungskreises in einem Ledger zum Stichtag nach einer Bilanzstruktur"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    },
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART",
+      "notNull": true
+    },
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE",
+      "notNull": true
+    },
+    {
+      "name": "ROWS",
+      "arrayType": "/TRFIN/STATEMENT_ROWS",
+      "notNull": true
+    },
+    {
+      "name": "TOTAL_ASSETS",
+      "dataElement": "/TRFIN/TOTAL_ASSETS",
+      "notNull": true
+    },
+    {
+      "name": "TOTAL_LIABILITIES",
+      "dataElement": "/TRFIN/TOTAL_LIABILITIES",
+      "notNull": true
+    },
+    {
+      "name": "RESULT",
+      "dataElement": "/TRFIN/RESULT",
+      "notNull": true
+    },
+    {
+      "name": "DIFFERENCE",
+      "dataElement": "/TRFIN/DIFFERENCE",
+      "notNull": true
+    },
+    {
+      "name": "BALANCED",
+      "dataElement": "/TRFIN/BALANCED",
+      "notNull": true
+    },
+    {
+      "name": "UNASSIGNED",
+      "arrayType": "/TRFIN/ACCOUNT_BALANCES",
+      "notNull": true
+    },
+    {
+      "name": "PROBLEMS",
+      "arrayType": "/TRFIN/REPORT_MESSAGES",
+      "notNull": true
+    }
+  ]
+}

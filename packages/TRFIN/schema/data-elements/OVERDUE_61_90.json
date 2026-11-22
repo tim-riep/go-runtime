@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/OVERDUE_61_90",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "61-90 days",
+      "medium": "61-90 days overdue",
+      "long": "Overdue by 61 to 90 days",
+      "heading": "61-90 days"
+    },
+    "de": {
+      "short": "61-90 Tage",
+      "medium": "61-90 Tage überf.",
+      "long": "61 bis 90 Tage überfällig",
+      "heading": "61-90 Tage"
+    }
+  }
+}

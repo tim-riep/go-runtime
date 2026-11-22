@@ -1,0 +1,35 @@
+{
+  "name": "/TRFIN/RECONCILIATION_RESULT",
+  "texts": {
+    "en": {
+      "label": "Result of a reconciliation",
+      "description": "Whether the totals, running balances and reclassifications of a company agree with its ledger entries, and the problems"
+    },
+    "de": {
+      "label": "Ergebnis eines Abgleichs",
+      "description": "Ob Verkehrszahlen, laufende Salden und Umgliederungen eines Buchungskreises mit seinen Ledgerpositionen übereinstimmen, und die Probleme"
+    }
+  },
+  "components": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "CONSISTENT",
+      "dataElement": "/TRFIN/CONSISTENT",
+      "notNull": true
+    },
+    {
+      "name": "PROBLEMS",
+      "arrayType": "/TRFIN/REPORT_MESSAGES",
+      "notNull": true
+    }
+  ]
+}

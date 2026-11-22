@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/EXPECTED_RECLASS",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Expected",
+      "medium": "Expected reclass.",
+      "long": "Reclassification by the balance",
+      "heading": "Expected"
+    },
+    "de": {
+      "short": "Erwartet",
+      "medium": "Erwartete Umglied.",
+      "long": "Umgliederung nach dem Saldo",
+      "heading": "Erwartet"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/RESULT",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Result",
+      "medium": "Result",
+      "long": "Result, profit positive",
+      "heading": "Result"
+    },
+    "de": {
+      "short": "Ergebnis",
+      "medium": "Ergebnis",
+      "long": "Ergebnis, Gewinn positiv",
+      "heading": "Ergebnis"
+    }
+  }
+}

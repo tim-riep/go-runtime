@@ -1506,18 +1506,29 @@ period, running balances of customers and suppliers and the reclassification of 
 opposite balances to alternative accounts; posted entries change only in their texts and are
 reversed by entries with debit and credit swapped; open items of an account, customer or
 supplier that sum up to zero are cleared, with a new posting or without, and clearings are
-reset. [docs/trfin.md](docs/trfin.md) describes
-the business objects, their rules, the posting, authorizations, roles and the services
-`/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
-`/TRFIN/JOURNAL_ENTRY_SERVICE`.
+reset. The reports in `/TRFIN/REPORTS` give balances of accounts (by the operational or the
+country chart) and of partners with carry-forward, open items at a key date by due date, the
+balance sheet by a balance sheet structure, line items and a check of reclassifications, for
+code and `rt run` and over the node `/trfin/reports` as JSON or as workbook;
+`/TRFIN/LEDGER_RECONCILIATION` reconciles totals and running balances with the ledger entries,
+and `/TRFIN/SAMPLE_DATA` sets up a tenant with sample data. [docs/trfin.md](docs/trfin.md)
+describes the business objects, their rules, the posting, the reports, authorizations, roles,
+the services `/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
+`/TRFIN/JOURNAL_ENTRY_SERVICE` and the sample data.
 
 ```bash
 rt install packages/TRFIN --yes
 rt service activate /TRFIN/CONFIGURATION_SERVICE
 rt service activate /TRFIN/MASTER_DATA_SERVICE
 rt service activate /TRFIN/JOURNAL_ENTRY_SERVICE
+rt http activate /trfin
 rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999
 ```
+
+In a tenant without data of TRFIN, `rt run TRFIN /TRFIN/SAMPLE_DATA SETUP '[]' --tenant ACME
+--user admin` sets up two companies, charts, ledgers, partners and journal entries of two
+years instead of the interval above; `rt run TRFIN /TRFIN/REPORTS BALANCE_SHEET '[{"COMPANY":
+"1000", "KEY_DATE": "2026-12-31"}]' --tenant ACME --user admin` shows their balance sheet.
 
 ## Library
 

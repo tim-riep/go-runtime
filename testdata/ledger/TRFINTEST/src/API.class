@@ -415,6 +415,11 @@ public class /TRFINTEST/API
     insert row
   end
 
+  # Changes the debit of a row of totals behind the back of the postings.
+  public static method TAMPER_TOTALS(ledger: STRING, company: STRING, account: STRING, year: INT4, period: INT4, debit: DEC(18,2)) returns INT8
+    return update /TRFIN/ACCOUNT_TOTALS set DEBIT = DEBIT + debit where LEDGER = ledger and COMPANY = company and ACCOUNT = account and FISCAL_YEAR = year and PERIOD = period
+  end
+
   public static method CLEAR_TOTALS(ledger: STRING, company: STRING, account: STRING)
     delete from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger and COMPANY = company and ACCOUNT = account
   end

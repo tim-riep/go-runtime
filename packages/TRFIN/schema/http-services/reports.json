@@ -1,0 +1,29 @@
+{
+  "path": "reports",
+  "texts": {
+    "en": {
+      "label": "Reports of the general ledger",
+      "description": "POST /trfin/reports/<report> with the selection as JSON; ?format=xlsx exports the rows"
+    },
+    "de": {
+      "label": "Berichte des Hauptbuchs",
+      "description": "POST /trfin/reports/<Bericht> mit der Selektion als JSON; ?format=xlsx exportiert die Zeilen"
+    }
+  },
+  "handlers": [
+    {
+      "class": "/TRFIN/REPORT_API"
+    }
+  ],
+  "settings": {
+    "authorization": {
+      "object": "/TRFIN/REPORT",
+      "fields": {
+        "COMPANY": {
+          "any": true
+        },
+        "ACTIVITY": "EXECUTE"
+      }
+    }
+  }
+}

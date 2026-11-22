@@ -1,0 +1,49 @@
+{
+  "name": "/TRFIN/BALANCE_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of balances",
+      "description": "Ledger (null for the primary ledger), company, fiscal year, periods (null for 1 and 12), range of accounts (null for all) and kind of chart (null for the operational chart)"
+    },
+    "de": {
+      "label": "Selektion Salden",
+      "description": "Ledger (null für das Hauptledger), Buchungskreis, Geschäftsjahr, Perioden (null für 1 und 12), Kontenbereich (null für alle) und Art des Kontenplans (null für den operativen)"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "FROM_PERIOD",
+      "dataElement": "/TRFIN/FROM_PERIOD"
+    },
+    {
+      "name": "TO_PERIOD",
+      "dataElement": "/TRFIN/TO_PERIOD"
+    },
+    {
+      "name": "FROM_ACCOUNT",
+      "dataElement": "/TRFIN/FROM_ACCOUNT"
+    },
+    {
+      "name": "TO_ACCOUNT",
+      "dataElement": "/TRFIN/TO_ACCOUNT"
+    },
+    {
+      "name": "CHART_KIND",
+      "dataElement": "/TRFIN/CHART_KIND"
+    }
+  ]
+}

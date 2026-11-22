@@ -1,0 +1,40 @@
+{
+  "name": "/TRFIN/LINE_ITEM_REPORT",
+  "texts": {
+    "en": {
+      "label": "Line items",
+      "description": "The ledger entries of a company in a ledger with the keys of their journal entries"
+    },
+    "de": {
+      "label": "Einzelposten",
+      "description": "Die Ledgerpositionen eines Buchungskreises in einem Ledger mit den Schlüsseln ihrer Belege"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "ROWS",
+      "arrayType": "/TRFIN/LINE_ITEM_ROWS",
+      "notNull": true
+    },
+    {
+      "name": "TOTAL",
+      "dataElement": "/TRFIN/TOTAL",
+      "notNull": true
+    }
+  ]
+}

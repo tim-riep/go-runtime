@@ -1,0 +1,9 @@
+# Sample data that cannot be set up: the tenant has data of TRFIN
+# already, or a step of the setup failed.
+public class /TRFIN/SAMPLE_DATA_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

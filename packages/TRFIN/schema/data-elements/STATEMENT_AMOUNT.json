@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/STATEMENT_AMOUNT",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Amount",
+      "medium": "Amount",
+      "long": "Amount on the side of the node",
+      "heading": "Amount"
+    },
+    "de": {
+      "short": "Betrag",
+      "medium": "Betrag",
+      "long": "Betrag auf der Seite des Knotens",
+      "heading": "Betrag"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/BALANCE_ROWS",
+  "texts": {
+    "en": {
+      "label": "Balances of accounts"
+    },
+    "de": {
+      "label": "Salden von Konten"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/BALANCE_ROW"
+  }
+}

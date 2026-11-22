@@ -1,0 +1,9 @@
+# A selection of a report that cannot be run: a company, ledger,
+# structure or chart that does not exist, or periods out of range.
+public class /TRFIN/REPORT_ERROR extends /RT/EXCEPTION
+
+  public constructor(text: STRING)
+    super(text)
+  end
+
+end

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/STATEMENT_ROWS",
+  "texts": {
+    "en": {
+      "label": "Lines of a balance sheet"
+    },
+    "de": {
+      "label": "Zeilen einer Bilanz"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/STATEMENT_ROW"
+  }
+}

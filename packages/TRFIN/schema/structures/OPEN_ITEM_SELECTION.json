@@ -1,0 +1,41 @@
+{
+  "name": "/TRFIN/OPEN_ITEM_SELECTION",
+  "texts": {
+    "en": {
+      "label": "Selection of open items",
+      "description": "Ledger (null for the primary ledger), company, key date, and account, role and partner (null for all)"
+    },
+    "de": {
+      "label": "Selektion offene Posten",
+      "description": "Ledger (null für das Hauptledger), Buchungskreis, Stichtag und Konto, Rolle und Partner (null für alle)"
+    }
+  },
+  "components": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "KEY_DATE",
+      "dataElement": "/TRFIN/KEY_DATE",
+      "notNull": true
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    }
+  ]
+}

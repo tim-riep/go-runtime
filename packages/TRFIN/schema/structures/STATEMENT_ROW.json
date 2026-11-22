@@ -1,0 +1,52 @@
+{
+  "name": "/TRFIN/STATEMENT_ROW",
+  "texts": {
+    "en": {
+      "label": "Line of a balance sheet",
+      "description": "A node with the amount of its accounts and of the nodes below it, or an account of a node"
+    },
+    "de": {
+      "label": "Zeile einer Bilanz",
+      "description": "Ein Knoten mit dem Betrag seiner Konten und der Knoten darunter oder ein Konto eines Knotens"
+    }
+  },
+  "components": [
+    {
+      "name": "LEVEL",
+      "dataElement": "/TRFIN/LEVEL",
+      "notNull": true
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRFIN/NODE",
+      "notNull": true
+    },
+    {
+      "name": "PARENT_NODE",
+      "dataElement": "/TRFIN/PARENT_NODE"
+    },
+    {
+      "name": "NODE_KIND",
+      "dataElement": "/TRFIN/NODE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "SIDE",
+      "dataElement": "/TRFIN/SIDE",
+      "notNull": true
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRFIN/LABEL"
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRFIN/STATEMENT_AMOUNT",
+      "notNull": true
+    }
+  ]
+}

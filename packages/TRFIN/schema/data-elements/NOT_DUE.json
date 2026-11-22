@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/NOT_DUE",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Not due",
+      "medium": "Not due",
+      "long": "Due on the key date or later",
+      "heading": "Not due"
+    },
+    "de": {
+      "short": "Nicht fäll",
+      "medium": "Nicht fällig",
+      "long": "Am Stichtag oder später fällig",
+      "heading": "Nicht fällig"
+    }
+  }
+}

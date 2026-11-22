@@ -1,0 +1,202 @@
+# The reconciliation of the totals, running balances and reclassifications
+# of a company with its ledger entries.
+public class /TRFIN/LEDGER_RECONCILIATION
+
+  # Reconciles a company and fiscal year in the ledgers the user may read:
+  # the account totals of the year with the sums of the ledger entries per
+  # ledger, account and period; the partner totals of the year with the
+  # sums of the items per ledger, role, partner and period; the running
+  # balances with the sums of the items of all years and their parts on
+  # the alternative accounts with the sums of the reclassification lines
+  # there; that every entry of the year is balanced in every ledger, that
+  # ledger entries are cleared as their items and that the clearings of
+  # the year sum up to zero per ledger. Needs /TRFIN/REPORT with EXECUTE
+  # for the company.
+  public static method RUN(company: STRING, year: INT4) returns /TRFIN/RECONCILIATION_RESULT raises /TRFIN/REPORT_ERROR
+    var c = /TRFIN/REPORTS.COMPANY_OF(company).COMPANY
+    var out: /TRFIN/RECONCILIATION_RESULT
+    out.COMPANY = c
+    out.FISCAL_YEAR = year
+    var problems: array of STRING = []
+    var debits: map of STRING to DEC(38,2) = [:]
+    var credits: map of STRING to DEC(38,2) = [:]
+    var partner_debits: map of STRING to DEC(38,2) = [:]
+    var partner_credits: map of STRING to DEC(38,2) = [:]
+    var entries: map of STRING to DEC(38,2) = [:]
+    var items: map of STRING to STRING = [:]
+    for it in select from /TRFIN/JOURNAL_ENTRY_ITEMS where COMPANY = c and FISCAL_YEAR = year
+      items["{it.DOCUMENT_NO} {it.ITEM_NO}"] = CLEARING(it.CLEARING_YEAR, it.CLEARING_NO, it.CLEARING_DATE)
+    end
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = c and FISCAL_YEAR = year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end
+      var n = l.ITEM_NO
+      if n is not null
+        var iid = "{l.DOCUMENT_NO} {n}"
+        var cleared = CLEARING(l.CLEARING_YEAR, l.CLEARING_NO, l.CLEARING_DATE)
+        var item = items.GET(iid) default "no item"
+        if cleared <> item
+          problems.APPEND("the ledger entry {l.LINE_NO} of the journal entry {l.DOCUMENT_NO} in the ledger {l.LEDGER} is cleared {cleared}, its item {n} {item}")
+        end
+      end
+      var id = "{l.LEDGER} {l.ACCOUNT} {l.PERIOD}"
+      debits[id] = (debits.GET(id) default 0.00) + DEBIT(l.AMOUNT)
+      credits[id] = (credits.GET(id) default 0.00) + CREDIT(l.AMOUNT)
+      var entry = "{l.LEDGER} {l.DOCUMENT_NO}"
+      entries[entry] = (entries.GET(entry) default 0.00) + l.AMOUNT
+      var partner = l.PARTNER
+      var role = l.PARTNER_ROLE
+      if partner is not null and role is not null and l.LINE_KIND = /TRFIN/LINE_KIND.ITEM
+        var pid = "{l.LEDGER} {role} {partner} {l.PERIOD}"
+        partner_debits[pid] = (partner_debits.GET(pid) default 0.00) + DEBIT(l.AMOUNT)
+        partner_credits[pid] = (partner_credits.GET(pid) default 0.00) + CREDIT(l.AMOUNT)
+      end
+    end
+    for t in select from /TRFIN/ACCOUNT_TOTALS where COMPANY = c and FISCAL_YEAR = year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end
+      var id = "{t.LEDGER} {t.ACCOUNT} {t.PERIOD}"
+      var debit = debits.GET(id) default 0.00
+      var credit = credits.GET(id) default 0.00
+      if debit <> t.DEBIT or credit <> t.CREDIT
+        problems.APPEND("the totals of the account {t.ACCOUNT} in the ledger {t.LEDGER} and period {t.PERIOD} are {t.DEBIT} debit and {t.CREDIT} credit, the ledger entries {debit} and {credit}")
+      end
+      debits.REMOVE(id)
+    end
+    for id in debits.KEYS()
+      var parts = id.SPLIT(" ")
+      problems.APPEND("the totals of the account {parts[2]} in the ledger {parts[1]} and period {parts[3]} are missing")
+    end
+    for t in select from /TRFIN/PARTNER_TOTALS where COMPANY = c and FISCAL_YEAR = year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end
+      var id = "{t.LEDGER} {t.PARTNER_ROLE} {t.PARTNER} {t.PERIOD}"
+      var debit = partner_debits.GET(id) default 0.00
+      var credit = partner_credits.GET(id) default 0.00
+      if debit <> t.DEBIT or credit <> t.CREDIT
+        problems.APPEND("the totals of the partner {t.PARTNER} as {t.PARTNER_ROLE} in the ledger {t.LEDGER} and period {t.PERIOD} are {t.DEBIT} debit and {t.CREDIT} credit, the items {debit} and {credit}")
+      end
+      partner_debits.REMOVE(id)
+    end
+    for id in partner_debits.KEYS()
+      var parts = id.SPLIT(" ")
+      problems.APPEND("the totals of the partner {parts[3]} as {parts[2]} in the ledger {parts[1]} and period {parts[4]} are missing")
+    end
+    # The running balances hold the items of all years, and their parts on
+    # the alternative accounts the reclassification lines there.
+    var reconciliation = /TRFIN/REPORTS.RECONCILIATION_KINDS(c)
+    var balances: map of STRING to DEC(38,2) = [:]
+    var reclassified: map of STRING to DEC(38,2) = [:]
+    for t in select LEDGER, PARTNER_ROLE, PARTNER, ACCOUNT, LINE_KIND, sum(AMOUNT) from /TRFIN/LEDGER_ENTRIES where COMPANY = c and PARTNER is not null and PARTNER_ROLE is not null and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end group by LEDGER, PARTNER_ROLE, PARTNER, ACCOUNT, LINE_KIND
+      var role = t.PARTNER_ROLE
+      var partner = t.PARTNER
+      if role is null or partner is null
+        continue
+      end
+      var id = "{t.LEDGER} {role} {partner}"
+      var amount = t.SUM_AMOUNT default 0.00
+      if t.LINE_KIND = /TRFIN/LINE_KIND.ITEM
+        balances[id] = (balances.GET(id) default 0.00) + amount
+      elseif /TRFIN/REPORTS.ALTERNATIVE(role, reconciliation.GET(t.ACCOUNT))
+        reclassified[id] = (reclassified.GET(id) default 0.00) + amount
+      end
+    end
+    for b in select from /TRFIN/PARTNER_BALANCES where COMPANY = c and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end
+      var id = "{b.LEDGER} {b.PARTNER_ROLE} {b.PARTNER}"
+      var sum = balances.GET(id) default 0.00
+      if b.BALANCE <> sum
+        problems.APPEND("the running balance of the partner {b.PARTNER} as {b.PARTNER_ROLE} in the ledger {b.LEDGER} is {b.BALANCE}, the items {sum}")
+      end
+      var expected = /TRFIN/REPORTS.SHARE(b.PARTNER_ROLE, b.BALANCE)
+      var posted = reclassified.GET(id) default 0.00
+      if expected <> posted
+        problems.APPEND("the partner {b.PARTNER} as {b.PARTNER_ROLE} in the ledger {b.LEDGER} has {posted} on alternative accounts, its balance {b.BALANCE} needs {expected}")
+      end
+      balances.REMOVE(id)
+    end
+    for id, sum in balances
+      if sum <> 0
+        var parts = id.SPLIT(" ")
+        problems.APPEND("the running balance of the partner {parts[3]} as {parts[2]} in the ledger {parts[1]} is missing, the items {sum}")
+      end
+    end
+    for id, sum in entries
+      if sum <> 0
+        var parts = id.SPLIT(" ")
+        problems.APPEND("the journal entry {parts[2]} is not balanced in the ledger {parts[1]}: {sum}")
+      end
+    end
+    var clearings: map of STRING to DEC(38,2) = [:]
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = c and CLEARING_YEAR = year and authorized /TRFIN/REPORT
+      COMPANY = COMPANY
+      ACTIVITY = EXECUTE
+    end and authorized /TRFIN/LEDGER
+      LEDGER = LEDGER
+      ACTIVITY = READ
+    end
+      var id = "{l.LEDGER} {l.CLEARING_NO default "-"}"
+      clearings[id] = (clearings.GET(id) default 0.00) + l.AMOUNT
+    end
+    for id, sum in clearings
+      if sum <> 0
+        var parts = id.SPLIT(" ")
+        problems.APPEND("the clearing {parts[2]} does not sum up to zero in the ledger {parts[1]}: {sum}")
+      end
+    end
+    for p in problems
+      out.PROBLEMS.APPEND(new /TRFIN/REPORT_MESSAGE(TEXT: p))
+    end
+    out.CONSISTENT = problems is empty
+    return out
+  end
+
+  # The debit of an amount, debit positive.
+  private static method DEBIT(amount: DEC(18,2)) returns DEC(18,2)
+    if amount > 0
+      return amount
+    end
+    return 0.00
+  end
+
+  # The credit of an amount, debit positive.
+  private static method CREDIT(amount: DEC(18,2)) returns DEC(18,2)
+    if amount < 0
+      return 0.00 - amount
+    end
+    return 0.00
+  end
+
+  # A clearing as text: year/number and date, or - for none.
+  private static method CLEARING(year: INT4?, no: STRING?, date: DATE?) returns STRING
+    var d = date
+    if no is null or d is null
+      return "-"
+    end
+    return "{year default 0}/{no} {d}"
+  end
+
+end

@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/POSTED_RECLASS",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Posted",
+      "medium": "Posted reclass.",
+      "long": "Reclassification posted up to key date",
+      "heading": "Posted"
+    },
+    "de": {
+      "short": "Gebucht",
+      "medium": "Gebuchte Umglied.",
+      "long": "Bis zum Stichtag gebuchte Umgliederung",
+      "heading": "Gebucht"
+    }
+  }
+}

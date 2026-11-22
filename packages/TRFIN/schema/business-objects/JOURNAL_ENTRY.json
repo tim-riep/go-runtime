@@ -126,6 +126,13 @@
         {
           "name": "RESET_CLEARING",
           "result": "self"
+        },
+        {
+          "name": "RECONCILE",
+          "instance": false,
+          "parameter": "/TRFIN/RECONCILIATION_SELECTION",
+          "result": "/TRFIN/RECONCILIATION_RESULT",
+          "modifies": false
         }
       ],
       "authorization": {
@@ -142,7 +149,8 @@
           "CHECK": "CREATE",
           "REVERSE": "CANCEL",
           "CLEAR": "CREATE",
-          "RESET_CLEARING": "CANCEL"
+          "RESET_CLEARING": "CANCEL",
+          "RECONCILE": "READ"
         }
       }
     },

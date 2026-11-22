@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/RECLASSIFICATION_ROWS",
+  "texts": {
+    "en": {
+      "label": "Deviations of reclassifications"
+    },
+    "de": {
+      "label": "Abweichungen von Umgliederungen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/RECLASSIFICATION_ROW"
+  }
+}

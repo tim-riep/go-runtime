@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CONSISTENT",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Consistent",
+      "medium": "Consistent",
+      "long": "Totals agree with the ledger entries",
+      "heading": "Consistent"
+    },
+    "de": {
+      "short": "Konsistent",
+      "medium": "Konsistent",
+      "long": "Verkehrszahlen stimmen überein",
+      "heading": "Konsistent"
+    }
+  }
+}
