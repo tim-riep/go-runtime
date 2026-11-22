@@ -1,0 +1,50 @@
+{
+  "name": "/TRFIN/ACCOUNT_TEXTS",
+  "description": "Texts of accounts",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "SHORT_TEXT",
+      "dataElement": "/TRFIN/SHORT_TEXT",
+      "notNull": true
+    },
+    {
+      "name": "LONG_TEXT",
+      "dataElement": "/TRFIN/LONG_TEXT"
+    }
+  ],
+  "primaryKey": [
+    "CHART",
+    "ACCOUNT",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ACCOUNT",
+      "table": "/TRFIN/ACCOUNTS",
+      "fields": [
+        {
+          "field": "CHART",
+          "references": "CHART"
+        },
+        {
+          "field": "ACCOUNT",
+          "references": "ACCOUNT"
+        }
+      ]
+    }
+  ]
+}

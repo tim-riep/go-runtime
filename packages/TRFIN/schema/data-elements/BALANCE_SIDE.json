@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/BALANCE_SIDE",
+  "domain": "/TRFIN/BALANCE_SIDE",
+  "texts": {
+    "en": {
+      "short": "Balance",
+      "medium": "Balance",
+      "long": "Balance of the accounts the range takes",
+      "heading": "Balance"
+    },
+    "de": {
+      "short": "Saldo",
+      "medium": "Saldo",
+      "long": "Saldo der Konten, die der Bereich nimmt",
+      "heading": "Saldo"
+    }
+  }
+}

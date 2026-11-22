@@ -1,0 +1,20 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Journal entries"
+    },
+    "de": {
+      "label": "Belege"
+    }
+  },
+  "length": 10,
+  "subobject": {
+    "name": "COMPANY",
+    "dataElement": "/TRFIN/COMPANY"
+  },
+  "perFiscalYear": true,
+  "buffering": {
+    "mode": "none"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "/TRFIN/SMALL_NUMBER",
+  "description": "Small number such as a length, a number of decimals or a period",
+  "type": "INT4"
+}

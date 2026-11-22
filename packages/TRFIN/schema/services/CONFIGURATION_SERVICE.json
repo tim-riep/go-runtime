@@ -1,0 +1,109 @@
+{
+  "name": "/TRFIN/CONFIGURATION_SERVICE",
+  "description": {
+    "en": "Configuration of the general ledger",
+    "de": "Konfiguration des Hauptbuchs"
+  },
+  "entitySets": {
+    "Currencies": {
+      "businessObject": "/TRFIN/CURRENCY",
+      "entity": "/TRFIN/CURRENCIES"
+    },
+    "CurrencyTexts": {
+      "businessObject": "/TRFIN/CURRENCY",
+      "entity": "/TRFIN/CURRENCY_TEXTS"
+    },
+    "Charts": {
+      "businessObject": "/TRFIN/CHART",
+      "entity": "/TRFIN/CHARTS"
+    },
+    "ChartTexts": {
+      "businessObject": "/TRFIN/CHART",
+      "entity": "/TRFIN/CHART_TEXTS"
+    },
+    "Companies": {
+      "businessObject": "/TRFIN/COMPANY",
+      "entity": "/TRFIN/COMPANIES",
+      "navigations": {
+        "CURRENCY": "Currency",
+        "CHART": "Chart",
+        "COUNTRY_CHART": "CountryChart"
+      }
+    },
+    "CompanyLedgers": {
+      "businessObject": "/TRFIN/COMPANY",
+      "entity": "/TRFIN/COMPANY_LEDGERS",
+      "navigations": {
+        "LEDGER": "Ledger"
+      }
+    },
+    "Ledgers": {
+      "businessObject": "/TRFIN/LEDGER",
+      "entity": "/TRFIN/LEDGERS"
+    },
+    "LedgerTexts": {
+      "businessObject": "/TRFIN/LEDGER",
+      "entity": "/TRFIN/LEDGER_TEXTS"
+    },
+    "LedgerGroups": {
+      "businessObject": "/TRFIN/LEDGER_GROUP",
+      "entity": "/TRFIN/LEDGER_GROUPS",
+      "navigations": {
+        "REPRESENTATIVE": "Representative"
+      }
+    },
+    "LedgerGroupMembers": {
+      "businessObject": "/TRFIN/LEDGER_GROUP",
+      "entity": "/TRFIN/LEDGER_GROUP_MEMBERS",
+      "navigations": {
+        "LEDGER": "Ledger"
+      }
+    },
+    "LedgerGroupTexts": {
+      "businessObject": "/TRFIN/LEDGER_GROUP",
+      "entity": "/TRFIN/LEDGER_GROUP_TEXTS"
+    },
+    "DocumentTypes": {
+      "businessObject": "/TRFIN/DOCUMENT_TYPE",
+      "entity": "/TRFIN/DOCUMENT_TYPES",
+      "navigations": {
+        "LEDGER": "Ledger",
+        "LEDGER_GROUP": "LedgerGroup"
+      }
+    },
+    "DocumentTypeTexts": {
+      "businessObject": "/TRFIN/DOCUMENT_TYPE",
+      "entity": "/TRFIN/DOCUMENT_TYPE_TEXTS"
+    },
+    "StatementStructures": {
+      "businessObject": "/TRFIN/STATEMENT_STRUCTURE",
+      "entity": "/TRFIN/STATEMENT_STRUCTURES",
+      "navigations": {
+        "CHART": "Chart"
+      }
+    },
+    "StatementStructureTexts": {
+      "businessObject": "/TRFIN/STATEMENT_STRUCTURE",
+      "entity": "/TRFIN/STATEMENT_STRUCTURE_TEXTS"
+    },
+    "StatementNodes": {
+      "businessObject": "/TRFIN/STATEMENT_STRUCTURE",
+      "entity": "/TRFIN/STATEMENT_NODES"
+    },
+    "StatementNodeTexts": {
+      "businessObject": "/TRFIN/STATEMENT_STRUCTURE",
+      "entity": "/TRFIN/STATEMENT_NODE_TEXTS"
+    },
+    "StatementNodeRanges": {
+      "businessObject": "/TRFIN/STATEMENT_STRUCTURE",
+      "entity": "/TRFIN/STATEMENT_NODE_RANGES"
+    },
+    "PostingPeriods": {
+      "businessObject": "/TRFIN/POSTING_PERIOD",
+      "entity": "/TRFIN/POSTING_PERIODS",
+      "navigations": {
+        "COMPANY": "Company"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/SHORT_TEXT",
+  "description": "Short text",
+  "type": "CHAR",
+  "length": 20
+}

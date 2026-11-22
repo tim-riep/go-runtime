@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ALLOW_SUPPLIERS",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Suppliers",
+      "medium": "Suppliers allowed",
+      "long": "Items on suppliers are allowed",
+      "heading": "Suppliers"
+    },
+    "de": {
+      "short": "Kreditoren",
+      "medium": "Kreditoren erlaubt",
+      "long": "Positionen auf Kreditoren erlaubt",
+      "heading": "Kreditoren"
+    }
+  }
+}

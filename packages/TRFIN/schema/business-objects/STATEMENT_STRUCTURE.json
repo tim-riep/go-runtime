@@ -1,0 +1,126 @@
+{
+  "name": "/TRFIN/STATEMENT_STRUCTURE",
+  "description": {
+    "en": "Balance sheet structure",
+    "de": "Bilanzstruktur"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/STATEMENT_STRUCTURES",
+  "behaviorClass": "/TRFIN/STATEMENT_BEHAVIOR",
+  "entities": {
+    "/TRFIN/STATEMENT_STRUCTURES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "CHART": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_STRUCTURE",
+          "on": [
+            "create"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/STATEMENT_STRUCTURE_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/STATEMENT_STRUCTURES",
+      "foreignKey": "STRUCTURE",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    },
+    "/TRFIN/STATEMENT_NODES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/STATEMENT_STRUCTURES",
+      "foreignKey": "STRUCTURE",
+      "fields": {
+        "SIDE": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_NODES",
+          "on": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "fields": [
+            "PARENT_NODE",
+            "SIDE",
+            "KIND"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/STATEMENT_NODE_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/STATEMENT_NODES",
+      "foreignKey": "NODE",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    },
+    "/TRFIN/STATEMENT_NODE_RANGES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/STATEMENT_NODES",
+      "foreignKey": "NODE",
+      "fields": {
+        "FROM_ACCOUNT": {
+          "mandatory": true
+        },
+        "TO_ACCOUNT": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_RANGES",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "FROM_ACCOUNT",
+            "TO_ACCOUNT",
+            "BALANCE"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "/TRFIN/LEDGER_GROUP_TEXTS",
+  "description": "Texts of groups of ledgers",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRFIN/LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LEDGER_GROUP",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LEDGER_GROUP",
+      "table": "/TRFIN/LEDGER_GROUPS",
+      "fields": [
+        {
+          "field": "LEDGER_GROUP",
+          "references": "LEDGER_GROUP"
+        }
+      ]
+    }
+  ]
+}

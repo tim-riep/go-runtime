@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/LEDGER_GROUP",
+  "description": "Group of ledgers",
+  "type": "CHAR",
+  "length": 4
+}

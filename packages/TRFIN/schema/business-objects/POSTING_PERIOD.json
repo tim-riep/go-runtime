@@ -1,0 +1,33 @@
+{
+  "name": "/TRFIN/POSTING_PERIOD",
+  "description": {
+    "en": "Posting periods",
+    "de": "Buchungsperioden"
+  },
+  "dataClass": "runtimeConfiguration",
+  "root": "/TRFIN/POSTING_PERIODS",
+  "behaviorClass": "/TRFIN/POSTING_PERIOD_BEHAVIOR",
+  "entities": {
+    "/TRFIN/POSTING_PERIODS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "validations": [
+        {
+          "name": "CHECK_PERIODS",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "FROM_PERIOD",
+            "TO_PERIOD"
+          ]
+        }
+      ]
+    }
+  }
+}

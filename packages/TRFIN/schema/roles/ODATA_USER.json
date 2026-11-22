@@ -1,0 +1,55 @@
+{
+  "name": "/TRFIN/ODATA_USER",
+  "texts": {
+    "en": {
+      "label": "OData of the general ledger",
+      "description": "Starts the services of the general ledger below /rt/odata; what a request may read or change comes from the other roles"
+    },
+    "de": {
+      "label": "OData des Hauptbuchs",
+      "description": "Startet die Dienste des Hauptbuchs unter /rt/odata; was ein Aufruf lesen oder ändern darf, geben die übrigen Rollen"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/HTTP_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "RT"
+          }
+        ],
+        "SERVICE_PATH": [
+          {
+            "value": "/rt/odata"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/ODATA_SERVICE",
+      "fields": {
+        "PACKAGE_ID": [
+          {
+            "value": "TRFIN"
+          }
+        ],
+        "SERVICE_NAME": [
+          {
+            "pattern": "/TRFIN/*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "EXECUTE"
+          }
+        ]
+      }
+    }
+  ]
+}

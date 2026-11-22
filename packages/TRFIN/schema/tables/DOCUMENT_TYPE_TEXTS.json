@@ -1,0 +1,37 @@
+{
+  "name": "/TRFIN/DOCUMENT_TYPE_TEXTS",
+  "description": "Texts of document types",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRFIN/LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "DOCUMENT_TYPE",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "DOCUMENT_TYPE",
+      "table": "/TRFIN/DOCUMENT_TYPES",
+      "fields": [
+        {
+          "field": "DOCUMENT_TYPE",
+          "references": "DOCUMENT_TYPE"
+        }
+      ]
+    }
+  ]
+}

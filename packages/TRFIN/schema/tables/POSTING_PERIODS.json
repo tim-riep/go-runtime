@@ -1,0 +1,42 @@
+{
+  "name": "/TRFIN/POSTING_PERIODS",
+  "description": "Open posting periods of a company and fiscal year",
+  "tenantSpecific": true,
+  "dataClass": "runtimeConfiguration",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "FROM_PERIOD",
+      "dataElement": "/TRFIN/FROM_PERIOD",
+      "notNull": true
+    },
+    {
+      "name": "TO_PERIOD",
+      "dataElement": "/TRFIN/TO_PERIOD",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "FISCAL_YEAR"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        }
+      ]
+    }
+  ]
+}

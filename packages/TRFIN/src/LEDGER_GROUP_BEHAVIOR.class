@@ -1,0 +1,51 @@
+# The behavior of groups of ledgers: the representative is a member.
+public class /TRFIN/LEDGER_GROUP_BEHAVIOR
+
+  public method CHECK_GROUP(keys: array of key of /TRFIN/LEDGER_GROUPS, response: /TRBASE/ENTITY_RESPONSE)
+    var problems = PROBLEMS(keys)
+    for i, key in keys
+      var text = problems.GET(key.LEDGER_GROUP)
+      if text is not null
+        response.FIELD_ERROR(i, "REPRESENTATIVE", text)
+      end
+    end
+  end
+
+  public method CHECK_MEMBERS(keys: array of key of /TRFIN/LEDGER_GROUP_MEMBERS, response: /TRBASE/ENTITY_RESPONSE)
+    var groups: array of key of /TRFIN/LEDGER_GROUPS = []
+    for key in keys
+      var group: key of /TRFIN/LEDGER_GROUPS
+      group.LEDGER_GROUP = key.LEDGER_GROUP
+      if not groups.CONTAINS(group)
+        groups.APPEND(group)
+      end
+    end
+    var problems = PROBLEMS(groups)
+    for i, key in keys
+      var text = problems.GET(key.LEDGER_GROUP)
+      if text is not null
+        response.ERROR(i, text)
+      end
+    end
+  end
+
+  # The groups whose representative is no member, with the text of the
+  # problem; groups that are deleted are left out.
+  private method PROBLEMS(groups: array of key of /TRFIN/LEDGER_GROUPS) returns map of STRING to STRING
+    var out: map of STRING to STRING = [:]
+    var roots = read business object /TRFIN/LEDGER_GROUP in local mode
+      /TRFIN/LEDGER_GROUPS fields all keys groups
+    end
+    var members = read business object /TRFIN/LEDGER_GROUP in local mode
+      /TRFIN/LEDGER_GROUP_MEMBERS by parent fields all keys groups
+    end
+    for root in roots
+      var found = members.ANY(function (m: /TRFIN/LEDGER_GROUP_MEMBERS) => m.LEDGER_GROUP = root.LEDGER_GROUP and m.LEDGER = root.REPRESENTATIVE)
+      if not found
+        out[root.LEDGER_GROUP] = "the representative {root.REPRESENTATIVE} is no member of the group {root.LEDGER_GROUP}"
+      end
+    end
+    return out
+  end
+
+end

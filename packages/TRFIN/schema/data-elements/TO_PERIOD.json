@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/TO_PERIOD",
+  "domain": "/TRFIN/SMALL_NUMBER",
+  "texts": {
+    "en": {
+      "short": "To",
+      "medium": "To period",
+      "long": "Last open period",
+      "heading": "To period"
+    },
+    "de": {
+      "short": "Bis",
+      "medium": "Bis Periode",
+      "long": "Letzte offene Periode",
+      "heading": "Bis Periode"
+    }
+  }
+}

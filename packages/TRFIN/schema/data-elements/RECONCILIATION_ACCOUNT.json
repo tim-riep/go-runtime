@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/RECONCILIATION_ACCOUNT",
+  "domain": "/TRFIN/ACCOUNT",
+  "texts": {
+    "en": {
+      "short": "Recon. acc",
+      "medium": "Reconciliation acct.",
+      "long": "Reconciliation account",
+      "heading": "Reconciliation account"
+    },
+    "de": {
+      "short": "Abst.konto",
+      "medium": "Abstimmkonto",
+      "long": "Abstimmkonto",
+      "heading": "Abstimmkonto"
+    }
+  }
+}

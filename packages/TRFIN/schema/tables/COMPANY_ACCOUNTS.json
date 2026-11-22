@@ -1,0 +1,77 @@
+{
+  "name": "/TRFIN/COMPANY_ACCOUNTS",
+  "description": "Accounts of the operational chart of accounts in a company",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "COUNTRY_ACCOUNT",
+      "dataElement": "/TRFIN/COUNTRY_ACCOUNT",
+      "description": "The account of the country chart of the company; null for none"
+    },
+    {
+      "name": "RECONCILIATION",
+      "dataElement": "/TRFIN/RECONCILIATION",
+      "notNull": true,
+      "default": "NONE"
+    },
+    {
+      "name": "OPEN_ITEMS",
+      "dataElement": "/TRFIN/OPEN_ITEMS",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "AUTOMATIC_ONLY",
+      "dataElement": "/TRFIN/AUTOMATIC_ONLY",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "BLOCKED",
+      "dataElement": "/TRFIN/BLOCKED",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "ACCOUNT"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        }
+      ]
+    }
+  ]
+}

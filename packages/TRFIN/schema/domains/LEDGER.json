@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/LEDGER",
+  "description": "Ledger",
+  "type": "CHAR",
+  "length": 2
+}

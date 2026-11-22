@@ -1,0 +1,26 @@
+{
+  "name": "/TRFIN/LEDGER",
+  "texts": {
+    "en": {
+      "label": "Ledgers",
+      "description": "Reading the entries of a ledger and posting to it"
+    },
+    "de": {
+      "label": "Ledger",
+      "description": "Positionen eines Ledgers lesen und in das Ledger buchen"
+    }
+  },
+  "fields": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE"
+  ]
+}

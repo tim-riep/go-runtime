@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/CHART_KIND",
+  "description": "Kind of a chart of accounts",
+  "type": "CHAR",
+  "length": 12,
+  "values": [
+    {
+      "value": "OPERATIONAL"
+    },
+    {
+      "value": "COUNTRY"
+    }
+  ]
+}

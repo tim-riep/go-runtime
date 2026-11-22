@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/BALANCE_SIDE",
+  "description": "Side of the balance of an account that a range takes",
+  "type": "CHAR",
+  "length": 6,
+  "values": [
+    {
+      "value": "ANY"
+    },
+    {
+      "value": "DEBIT"
+    },
+    {
+      "value": "CREDIT"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "/TRFIN/CHART",
+  "description": {
+    "en": "Chart of accounts",
+    "de": "Kontenplan"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/CHARTS",
+  "behaviorClass": "/TRFIN/CHART_BEHAVIOR",
+  "entities": {
+    "/TRFIN/CHARTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "KIND": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "ACCOUNT_LENGTH": {
+          "readOnlyOnUpdate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_CHART",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "COUNTRY"
+          ]
+        },
+        {
+          "name": "CHECK_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/CHART_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/CHARTS",
+      "foreignKey": "CHART",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

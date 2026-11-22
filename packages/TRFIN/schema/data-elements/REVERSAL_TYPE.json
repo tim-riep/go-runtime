@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/REVERSAL_TYPE",
+  "domain": "/TRFIN/DOCUMENT_TYPE",
+  "texts": {
+    "en": {
+      "short": "Rev. type",
+      "medium": "Reversal type",
+      "long": "Document type of reversals",
+      "heading": "Reversal type"
+    },
+    "de": {
+      "short": "Stornoart",
+      "medium": "Stornobelegart",
+      "long": "Belegart der Stornobelege",
+      "heading": "Stornobelegart"
+    }
+  }
+}

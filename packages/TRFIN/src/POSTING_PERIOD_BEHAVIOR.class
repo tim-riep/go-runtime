@@ -1,0 +1,24 @@
+# The behavior of posting periods: periods 1 to 12, the first not after the
+# last.
+public class /TRFIN/POSTING_PERIOD_BEHAVIOR
+
+  public method CHECK_PERIODS(keys: array of key of /TRFIN/POSTING_PERIODS, response: /TRBASE/ENTITY_RESPONSE)
+    var periods = read business object /TRFIN/POSTING_PERIOD in local mode
+      /TRFIN/POSTING_PERIODS fields all keys keys
+    end
+    for i, period in periods
+      if period.FISCAL_YEAR < 1 or period.FISCAL_YEAR > 9999
+        response.FIELD_ERROR(i, "FISCAL_YEAR", "the fiscal year {period.FISCAL_YEAR} is no year")
+      end
+      if period.FROM_PERIOD < 1 or period.FROM_PERIOD > 12
+        response.FIELD_ERROR(i, "FROM_PERIOD", "periods run from 1 to 12, not {period.FROM_PERIOD}")
+      end
+      if period.TO_PERIOD < 1 or period.TO_PERIOD > 12
+        response.FIELD_ERROR(i, "TO_PERIOD", "periods run from 1 to 12, not {period.TO_PERIOD}")
+      elseif period.TO_PERIOD < period.FROM_PERIOD
+        response.FIELD_ERROR(i, "TO_PERIOD", "the open periods end with {period.TO_PERIOD} before they start with {period.FROM_PERIOD}")
+      end
+    end
+  end
+
+end

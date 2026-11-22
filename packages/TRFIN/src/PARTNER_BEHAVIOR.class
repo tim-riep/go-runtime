@@ -1,0 +1,128 @@
+# The behavior that TRFIN adds to the business partner /TRBP/PARTNER: the
+# company data of customers and suppliers with their reconciliation and
+# alternative accounts, for partners with the role /TRFIN/CUSTOMER or
+# /TRFIN/SUPPLIER, which stays while the partner has company data in it.
+public class /TRFIN/PARTNER_BEHAVIOR
+
+  public method CHECK_ROLE_REMOVAL(keys: array of key of /TRBP/PARTNER_ROLES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var parent: key of /TRBP/PARTNERS
+      parent.PARTNER = key.PARTNER
+      var companies: array of STRING = []
+      if key.ROLE = "/TRFIN/CUSTOMER"
+        var rows = read business object /TRBP/PARTNER in local mode
+          /TRFIN/CUSTOMER_COMPANIES by parent fields all keys [parent]
+        end
+        companies = rows.MAP(function (r: /TRFIN/CUSTOMER_COMPANIES) => r.COMPANY)
+      elseif key.ROLE = "/TRFIN/SUPPLIER"
+        var rows = read business object /TRBP/PARTNER in local mode
+          /TRFIN/SUPPLIER_COMPANIES by parent fields all keys [parent]
+        end
+        companies = rows.MAP(function (r: /TRFIN/SUPPLIER_COMPANIES) => r.COMPANY)
+      end
+      if companies is not empty
+        response.ERROR(i, "the partner {key.PARTNER} has data in the companies {companies.JOIN(", ")} in the role {key.ROLE}; remove them first")
+      end
+    end
+  end
+
+  public method CHECK_CUSTOMER(keys: array of key of /TRFIN/CUSTOMER_COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var rows = read business object /TRBP/PARTNER in local mode
+      /TRFIN/CUSTOMER_COMPANIES fields all keys keys
+    end
+    for i, row in rows
+      var reconciliation: STRING? = null
+      var alternative: STRING? = null
+      var before = select single from /TRFIN/CUSTOMER_COMPANIES where PARTNER = row.PARTNER and COMPANY = row.COMPANY
+      if before is not null
+        reconciliation = before.RECONCILIATION_ACCOUNT
+        alternative = before.ALTERNATIVE_ACCOUNT
+      end
+      CHECK_DATA(response, i, "/TRFIN/CUSTOMER", row.PARTNER, row.COMPANY, row.RECONCILIATION_ACCOUNT, row.ALTERNATIVE_ACCOUNT, reconciliation, alternative)
+    end
+  end
+
+  public method CHECK_SUPPLIER(keys: array of key of /TRFIN/SUPPLIER_COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var rows = read business object /TRBP/PARTNER in local mode
+      /TRFIN/SUPPLIER_COMPANIES fields all keys keys
+    end
+    for i, row in rows
+      var reconciliation: STRING? = null
+      var alternative: STRING? = null
+      var before = select single from /TRFIN/SUPPLIER_COMPANIES where PARTNER = row.PARTNER and COMPANY = row.COMPANY
+      if before is not null
+        reconciliation = before.RECONCILIATION_ACCOUNT
+        alternative = before.ALTERNATIVE_ACCOUNT
+      end
+      CHECK_DATA(response, i, "/TRFIN/SUPPLIER", row.PARTNER, row.COMPANY, row.RECONCILIATION_ACCOUNT, row.ALTERNATIVE_ACCOUNT, reconciliation, alternative)
+    end
+  end
+
+  public method CHECK_CUSTOMER_DELETE(keys: array of key of /TRFIN/CUSTOMER_COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      if /TRFIN/MOVEMENTS.PARTNER_IN_COMPANY("/TRFIN/CUSTOMER", key.PARTNER, key.COMPANY)
+        response.ERROR(i, "the customer {key.PARTNER} has movements in the company {key.COMPANY}; block it instead")
+      end
+    end
+  end
+
+  public method CHECK_SUPPLIER_DELETE(keys: array of key of /TRFIN/SUPPLIER_COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      if /TRFIN/MOVEMENTS.PARTNER_IN_COMPANY("/TRFIN/SUPPLIER", key.PARTNER, key.COMPANY)
+        response.ERROR(i, "the supplier {key.PARTNER} has movements in the company {key.COMPANY}; block it instead")
+      end
+    end
+  end
+
+  # Checks the company data of a partner in a role: the company exists,
+  # the partner has the role, the reconciliation account is one for the
+  # role and the alternative account one for the opposite role. A partner
+  # with movements changes the reconciliation account only for one with the
+  # same nodes in the balance sheet structures, and the alternative account
+  # only while none of its balance is on it.
+  private method CHECK_DATA(response: /TRBASE/ENTITY_RESPONSE, i: INT8, role: STRING, partner: STRING, company: STRING,
+      reconciliation: STRING, alternative: STRING, old_reconciliation: STRING?, old_alternative: STRING?)
+    var own = /TRFIN/RECONCILIATION.CUSTOMERS
+    var opposite = /TRFIN/RECONCILIATION.SUPPLIERS
+    var name = "customer"
+    if role = "/TRFIN/SUPPLIER"
+      own = /TRFIN/RECONCILIATION.SUPPLIERS
+      opposite = /TRFIN/RECONCILIATION.CUSTOMERS
+      name = "supplier"
+    end
+    var found = select single from /TRFIN/COMPANIES where COMPANY = company
+    if found is null
+      response.FIELD_ERROR(i, "COMPANY", "the company {company} does not exist")
+      return
+    end
+    var parent: key of /TRBP/PARTNERS
+    parent.PARTNER = partner
+    var roles = read business object /TRBP/PARTNER in local mode
+      /TRBP/PARTNER_ROLES by parent fields all keys [parent]
+    end
+    if not roles.ANY(function (r: /TRBP/PARTNER_ROLES) => r.ROLE = role)
+      response.ERROR(i, "the partner {partner} has no role {role}; give it the role first")
+    end
+    var account = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company and ACCOUNT = reconciliation
+    if account is null
+      response.FIELD_ERROR(i, "RECONCILIATION_ACCOUNT", "the account {reconciliation} does not exist in the company {company}")
+    elseif account.RECONCILIATION <> own
+      response.FIELD_ERROR(i, "RECONCILIATION_ACCOUNT", "the account {reconciliation} is no reconciliation account for {own}")
+    end
+    account = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company and ACCOUNT = alternative
+    if account is null
+      response.FIELD_ERROR(i, "ALTERNATIVE_ACCOUNT", "the account {alternative} does not exist in the company {company}")
+    elseif account.RECONCILIATION <> opposite
+      response.FIELD_ERROR(i, "ALTERNATIVE_ACCOUNT", "the alternative account {alternative} of a {name} is a reconciliation account for {opposite}")
+    end
+    if old_reconciliation is not null and old_reconciliation <> reconciliation and /TRFIN/MOVEMENTS.PARTNER_IN_COMPANY(role, partner, company)
+      if not /TRFIN/BALANCE_SHEET.SAME_NODES(company, old_reconciliation, reconciliation)
+        response.FIELD_ERROR(i, "RECONCILIATION_ACCOUNT", "the {name} {partner} has movements; the new reconciliation account belongs to other nodes of the balance sheet than {old_reconciliation}")
+      end
+    end
+    if old_alternative is not null and old_alternative <> alternative and /TRFIN/MOVEMENTS.RECLASSIFIED(role, partner, company)
+      response.FIELD_ERROR(i, "ALTERNATIVE_ACCOUNT", "a part of the balance of the {name} {partner} is on the alternative account {old_alternative}; it stays")
+    end
+  end
+
+end

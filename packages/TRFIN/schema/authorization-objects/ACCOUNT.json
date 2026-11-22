@@ -1,0 +1,28 @@
+{
+  "name": "/TRFIN/ACCOUNT",
+  "texts": {
+    "en": {
+      "label": "Accounts in companies",
+      "description": "Reading and changing the accounts of a company"
+    },
+    "de": {
+      "label": "Sachkonten im Buchungskreis",
+      "description": "Sachkonten eines Buchungskreises lesen und ändern"
+    }
+  },
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

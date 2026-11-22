@@ -1,0 +1,23 @@
+{
+  "name": "/TRFIN/CUSTOMER",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "LABEL": "Customer"
+      },
+      {
+        "LANGUAGE": "de",
+        "LABEL": "Debitor"
+      }
+    ],
+    "CATEGORIES": [
+      {
+        "CATEGORY": "PERSON"
+      },
+      {
+        "CATEGORY": "ORGANIZATION"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/COMPANY",
+  "description": "Company of the general ledger",
+  "type": "CHAR",
+  "length": 4
+}

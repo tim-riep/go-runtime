@@ -1,0 +1,23 @@
+{
+  "name": "/TRFIN/FISCAL_PERIOD",
+  "texts": {
+    "en": {
+      "label": "Fiscal year and period"
+    },
+    "de": {
+      "label": "Geschäftsjahr und Periode"
+    }
+  },
+  "components": [
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD",
+      "notNull": true
+    }
+  ]
+}

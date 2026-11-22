@@ -1,0 +1,43 @@
+# The behavior of ledgers: exactly one of the ledgers of a tenant is the
+# primary ledger.
+public class /TRFIN/LEDGER_BEHAVIOR
+
+  public method CHECK_PRIMARY(keys: array of key of /TRFIN/LEDGERS, response: /TRBASE/ENTITY_RESPONSE)
+    var changed: map of STRING to BOOL = [:]
+    for key in keys
+      changed[key.LEDGER] = true
+    end
+    # The ledgers of the keys as they are in the buffer, deleted ones left
+    # out, and the others as they are in the database.
+    var ledgers = read business object /TRFIN/LEDGER in local mode
+      /TRFIN/LEDGERS fields all keys keys
+    end
+    var count = ledgers.LENGTH()
+    var primaries: array of STRING = []
+    for ledger in ledgers
+      if ledger.PRIMARY
+        primaries.APPEND(ledger.LEDGER)
+      end
+    end
+    for ledger in select from /TRFIN/LEDGERS
+      if changed.CONTAINS(ledger.LEDGER)
+        continue
+      end
+      count = count + 1
+      if ledger.PRIMARY
+        primaries.APPEND(ledger.LEDGER)
+      end
+    end
+    if count = 0 or primaries.LENGTH() = 1
+      return
+    end
+    var text = "exactly one ledger is the primary ledger, not none"
+    if primaries.LENGTH() > 1
+      text = "exactly one ledger is the primary ledger, not {primaries.SORT().JOIN(", ")}"
+    end
+    for i, key in keys
+      response.FIELD_ERROR(i, "PRIMARY", text)
+    end
+  end
+
+end

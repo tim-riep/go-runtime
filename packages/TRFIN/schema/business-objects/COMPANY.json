@@ -1,0 +1,72 @@
+{
+  "name": "/TRFIN/COMPANY",
+  "description": {
+    "en": "Company",
+    "de": "Buchungskreis"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/COMPANIES",
+  "behaviorClass": "/TRFIN/COMPANY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANIES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "NAME": {
+          "mandatory": true
+        },
+        "COUNTRY": {
+          "mandatory": true
+        },
+        "CURRENCY": {
+          "mandatory": true
+        },
+        "CHART": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_COMPANY",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "COUNTRY",
+            "CURRENCY",
+            "COUNTRY_CHART"
+          ]
+        },
+        {
+          "name": "CHECK_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/COMPANY_LEDGERS": {
+      "operations": [
+        "create",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/COMPANIES",
+      "foreignKey": "COMPANY",
+      "validations": [
+        {
+          "name": "CHECK_LEDGER",
+          "on": [
+            "create"
+          ]
+        }
+      ]
+    }
+  }
+}

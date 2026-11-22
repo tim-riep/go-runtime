@@ -1,0 +1,37 @@
+{
+  "name": "/TRFIN/LEDGER_TEXTS",
+  "description": "Texts of ledgers",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRFIN/LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LEDGER",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    }
+  ]
+}

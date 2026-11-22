@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/STATEMENT_STRUCTURES",
+  "description": "Structures of balance sheets of a chart of accounts",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE"
+    },
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "STRUCTURE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "CHART",
+      "table": "/TRFIN/CHARTS",
+      "fields": [
+        {
+          "field": "CHART",
+          "references": "CHART"
+        }
+      ]
+    }
+  ]
+}

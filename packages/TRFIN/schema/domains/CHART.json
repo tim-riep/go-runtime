@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/CHART",
+  "description": "Chart of accounts",
+  "type": "CHAR",
+  "length": 4
+}

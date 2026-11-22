@@ -1,0 +1,64 @@
+# The ledgers that postings of a company go to.
+public class /TRFIN/LEDGER_SETS
+
+  # The primary ledger, null when there is none yet.
+  public static method PRIMARY() returns STRING?
+    var ledger = select single from /TRFIN/LEDGERS where PRIMARY = true
+    if ledger is null
+      return null
+    end
+    return ledger.LEDGER
+  end
+
+  # The ledgers of a company: the primary ledger and those assigned to it,
+  # sorted.
+  public static method OF_COMPANY(company: STRING) returns array of STRING
+    var out: array of STRING = []
+    var primary = PRIMARY()
+    if primary is not null
+      out.APPEND(primary)
+    end
+    for row in select from /TRFIN/COMPANY_LEDGERS where COMPANY = company
+      if not out.CONTAINS(row.LEDGER)
+        out.APPEND(row.LEDGER)
+      end
+    end
+    return out.SORT()
+  end
+
+  # The members of a group of ledgers, sorted.
+  public static method MEMBERS(group: STRING) returns array of STRING
+    var out: array of STRING = []
+    for row in select from /TRFIN/LEDGER_GROUP_MEMBERS where LEDGER_GROUP = group
+      out.APPEND(row.LEDGER)
+    end
+    return out.SORT()
+  end
+
+  # The ledgers a posting of a company goes to: the ledger, the members of
+  # the group, or without either the ledgers of the company.
+  public static method TARGETS(company: STRING, ledger: STRING?, group: STRING?) returns array of STRING
+    if ledger is not null
+      return [ledger]
+    end
+    if group is not null
+      return MEMBERS(group)
+    end
+    return OF_COMPANY(company)
+  end
+
+  # The ledgers among the given ones that are not assigned to a company;
+  # the primary ledger is assigned to every company.
+  public static method UNASSIGNED(company: STRING, ledgers: array of STRING) returns array of STRING
+    var assigned = OF_COMPANY(company)
+    return ledgers.FILTER(function (l: STRING) => not assigned.CONTAINS(l))
+  end
+
+  # The members of a group of ledgers that are not assigned to a company.
+  # A posting to the group or with a document type restricted to it needs
+  # none.
+  public static method UNASSIGNED_MEMBERS(company: STRING, group: STRING) returns array of STRING
+    return UNASSIGNED(company, MEMBERS(group))
+  end
+
+end

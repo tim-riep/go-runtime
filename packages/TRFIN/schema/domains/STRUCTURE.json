@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/STRUCTURE",
+  "description": "Structure of a balance sheet",
+  "type": "CHAR",
+  "length": 4
+}

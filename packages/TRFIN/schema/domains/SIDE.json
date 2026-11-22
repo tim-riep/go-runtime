@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/SIDE",
+  "description": "Side of a balance sheet",
+  "type": "CHAR",
+  "length": 11,
+  "values": [
+    {
+      "value": "ASSETS"
+    },
+    {
+      "value": "LIABILITIES"
+    }
+  ]
+}

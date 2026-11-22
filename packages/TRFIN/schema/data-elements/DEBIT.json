@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/DEBIT",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Debit",
+      "medium": "Debit",
+      "long": "Debit",
+      "heading": "Debit"
+    },
+    "de": {
+      "short": "Soll",
+      "medium": "Soll",
+      "long": "Soll",
+      "heading": "Soll"
+    }
+  }
+}

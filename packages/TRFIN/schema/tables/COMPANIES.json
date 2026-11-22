@@ -1,0 +1,73 @@
+{
+  "name": "/TRFIN/COMPANIES",
+  "description": "Companies with their currency and charts of accounts",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "NAME",
+      "dataElement": "/TRFIN/COMPANY_NAME",
+      "notNull": true
+    },
+    {
+      "name": "COUNTRY",
+      "dataElement": "/TRBASE/COUNTRY",
+      "notNull": true
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true
+    },
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART",
+      "notNull": true,
+      "description": "The operational chart of accounts"
+    },
+    {
+      "name": "COUNTRY_CHART",
+      "dataElement": "/TRFIN/COUNTRY_CHART",
+      "description": "The chart of accounts of the country; null for none"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY"
+  ],
+  "foreignKeys": [
+    {
+      "name": "CURRENCY",
+      "table": "/TRFIN/CURRENCIES",
+      "fields": [
+        {
+          "field": "CURRENCY",
+          "references": "CURRENCY"
+        }
+      ]
+    },
+    {
+      "name": "CHART",
+      "table": "/TRFIN/CHARTS",
+      "fields": [
+        {
+          "field": "CHART",
+          "references": "CHART"
+        }
+      ]
+    },
+    {
+      "name": "COUNTRY_CHART",
+      "table": "/TRFIN/CHARTS",
+      "fields": [
+        {
+          "field": "COUNTRY_CHART",
+          "references": "CHART"
+        }
+      ]
+    }
+  ]
+}

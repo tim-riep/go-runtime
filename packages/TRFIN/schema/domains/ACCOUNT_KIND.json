@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/ACCOUNT_KIND",
+  "description": "Kind of an account",
+  "type": "CHAR",
+  "length": 13,
+  "values": [
+    {
+      "value": "BALANCE_SHEET"
+    },
+    {
+      "value": "PROFIT_LOSS"
+    }
+  ]
+}

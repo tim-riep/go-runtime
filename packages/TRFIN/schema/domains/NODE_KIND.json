@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/NODE_KIND",
+  "description": "Kind of a node of a balance sheet structure",
+  "type": "CHAR",
+  "length": 10,
+  "values": [
+    {
+      "value": "NORMAL"
+    },
+    {
+      "value": "RESULT"
+    },
+    {
+      "value": "UNASSIGNED"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "/TRFIN/PARTNER_TOTALS",
+  "description": "Debit and credit of customers and suppliers of a company per ledger, fiscal year and period",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD"
+    },
+    {
+      "name": "DEBIT",
+      "dataElement": "/TRFIN/DEBIT",
+      "notNull": true,
+      "default": "0.00"
+    },
+    {
+      "name": "CREDIT",
+      "dataElement": "/TRFIN/CREDIT",
+      "notNull": true,
+      "default": "0.00"
+    }
+  ],
+  "primaryKey": [
+    "LEDGER",
+    "COMPANY",
+    "PARTNER_ROLE",
+    "PARTNER",
+    "FISCAL_YEAR",
+    "PERIOD"
+  ]
+}

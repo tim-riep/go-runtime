@@ -1,0 +1,93 @@
+{
+  "name": "/TRFIN/SUPPLIER_COMPANIES",
+  "description": "Company data of business partners as suppliers",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "ROLE",
+      "dataElement": "/TRBP/ROLE",
+      "notNull": true,
+      "default": "/TRFIN/SUPPLIER",
+      "description": "The partner role of the data, always /TRFIN/SUPPLIER, for the checks of authorizations"
+    },
+    {
+      "name": "RECONCILIATION_ACCOUNT",
+      "dataElement": "/TRFIN/RECONCILIATION_ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "ALTERNATIVE_ACCOUNT",
+      "dataElement": "/TRFIN/ALTERNATIVE_ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "BLOCKED",
+      "dataElement": "/TRFIN/BLOCKED",
+      "notNull": true,
+      "default": false
+    }
+  ],
+  "primaryKey": [
+    "PARTNER",
+    "COMPANY"
+  ],
+  "foreignKeys": [
+    {
+      "name": "PARTNER",
+      "table": "/TRBP/PARTNERS",
+      "fields": [
+        {
+          "field": "PARTNER",
+          "references": "PARTNER"
+        }
+      ]
+    },
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        }
+      ]
+    },
+    {
+      "name": "RECONCILIATION_ACCOUNT",
+      "table": "/TRFIN/COMPANY_ACCOUNTS",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "RECONCILIATION_ACCOUNT",
+          "references": "ACCOUNT"
+        }
+      ]
+    },
+    {
+      "name": "ALTERNATIVE_ACCOUNT",
+      "table": "/TRFIN/COMPANY_ACCOUNTS",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "ALTERNATIVE_ACCOUNT",
+          "references": "ACCOUNT"
+        }
+      ]
+    }
+  ]
+}

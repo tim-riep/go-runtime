@@ -1,0 +1,42 @@
+{
+  "name": "/TRFIN/LEDGER_GROUP_MEMBERS",
+  "description": "Ledgers of a group of ledgers",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    }
+  ],
+  "primaryKey": [
+    "LEDGER_GROUP",
+    "LEDGER"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LEDGER_GROUP",
+      "table": "/TRFIN/LEDGER_GROUPS",
+      "fields": [
+        {
+          "field": "LEDGER_GROUP",
+          "references": "LEDGER_GROUP"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    }
+  ]
+}

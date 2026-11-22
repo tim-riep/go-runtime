@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/SIDE",
+  "domain": "/TRFIN/SIDE",
+  "texts": {
+    "en": {
+      "short": "Side",
+      "medium": "Side",
+      "long": "Side of the balance sheet",
+      "heading": "Side"
+    },
+    "de": {
+      "short": "Seite",
+      "medium": "Seite",
+      "long": "Seite der Bilanz",
+      "heading": "Seite"
+    }
+  }
+}

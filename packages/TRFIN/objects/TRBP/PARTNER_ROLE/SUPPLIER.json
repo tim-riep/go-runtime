@@ -1,0 +1,23 @@
+{
+  "name": "/TRFIN/SUPPLIER",
+  "content": {
+    "TEXTS": [
+      {
+        "LANGUAGE": "en",
+        "LABEL": "Supplier"
+      },
+      {
+        "LANGUAGE": "de",
+        "LABEL": "Kreditor"
+      }
+    ],
+    "CATEGORIES": [
+      {
+        "CATEGORY": "PERSON"
+      },
+      {
+        "CATEGORY": "ORGANIZATION"
+      }
+    ]
+  }
+}

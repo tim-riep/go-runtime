@@ -1,0 +1,50 @@
+# The behavior of document types: what they allow, their reversal type and
+# the ledgers they are restricted to.
+public class /TRFIN/DOCUMENT_TYPE_BEHAVIOR
+
+  public method CHECK_TYPE(keys: array of key of /TRFIN/DOCUMENT_TYPES, response: /TRBASE/ENTITY_RESPONSE)
+    var types = read business object /TRFIN/DOCUMENT_TYPE in local mode
+      /TRFIN/DOCUMENT_TYPES fields all keys keys
+    end
+    for i, type in types
+      if not type.ALLOW_ACCOUNTS and not type.ALLOW_CUSTOMERS and not type.ALLOW_SUPPLIERS
+        response.ERROR(i, "the document type {type.DOCUMENT_TYPE} allows no items: allow accounts, customers or suppliers")
+      end
+      var ledger = type.LEDGER
+      var group = type.LEDGER_GROUP
+      if ledger is not null and group is not null
+        response.FIELD_ERROR(i, "LEDGER_GROUP", "a document type is restricted to a ledger or to a group of ledgers, not to both")
+      end
+      if ledger is not null
+        var found = select single from /TRFIN/LEDGERS where LEDGER = ledger
+        if found is null
+          response.FIELD_ERROR(i, "LEDGER", "the ledger {ledger} does not exist")
+        end
+      end
+      if group is not null
+        var found = select single from /TRFIN/LEDGER_GROUPS where LEDGER_GROUP = group
+        if found is null
+          response.FIELD_ERROR(i, "LEDGER_GROUP", "the group of ledgers {group} does not exist")
+        end
+      end
+      var reversal = type.REVERSAL_TYPE
+      if reversal is not null and reversal <> type.DOCUMENT_TYPE
+        var wanted: STRING = reversal
+        var in_buffer = types.ANY(function (t: /TRFIN/DOCUMENT_TYPES) => t.DOCUMENT_TYPE = wanted)
+        var found = select single from /TRFIN/DOCUMENT_TYPES where DOCUMENT_TYPE = reversal
+        if not in_buffer and found is null
+          response.FIELD_ERROR(i, "REVERSAL_TYPE", "the document type {reversal} does not exist")
+        end
+      end
+    end
+  end
+
+  public method CHECK_DELETE(keys: array of key of /TRFIN/DOCUMENT_TYPES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      for other in select from /TRFIN/DOCUMENT_TYPES where REVERSAL_TYPE = key.DOCUMENT_TYPE and DOCUMENT_TYPE <> key.DOCUMENT_TYPE
+        response.ERROR(i, "the document type {other.DOCUMENT_TYPE} reverses with {key.DOCUMENT_TYPE}")
+      end
+    end
+  end
+
+end

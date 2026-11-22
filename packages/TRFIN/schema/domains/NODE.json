@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/NODE",
+  "description": "Node of a balance sheet structure",
+  "type": "CHAR",
+  "length": 20
+}

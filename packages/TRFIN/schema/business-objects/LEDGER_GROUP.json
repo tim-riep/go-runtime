@@ -1,0 +1,70 @@
+{
+  "name": "/TRFIN/LEDGER_GROUP",
+  "description": {
+    "en": "Ledger group",
+    "de": "Ledgergruppe"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/LEDGER_GROUPS",
+  "behaviorClass": "/TRFIN/LEDGER_GROUP_BEHAVIOR",
+  "entities": {
+    "/TRFIN/LEDGER_GROUPS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "REPRESENTATIVE": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_GROUP",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "REPRESENTATIVE"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/LEDGER_GROUP_MEMBERS": {
+      "operations": [
+        "create",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/LEDGER_GROUPS",
+      "foreignKey": "LEDGER_GROUP",
+      "validations": [
+        {
+          "name": "CHECK_MEMBERS",
+          "on": [
+            "create",
+            "delete"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/LEDGER_GROUP_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/LEDGER_GROUPS",
+      "foreignKey": "LEDGER_GROUP",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

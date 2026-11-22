@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/LEDGER_GROUPS",
+  "description": "Groups of ledgers that entries are posted to together",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP"
+    },
+    {
+      "name": "REPRESENTATIVE",
+      "dataElement": "/TRFIN/REPRESENTATIVE",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "LEDGER_GROUP"
+  ],
+  "foreignKeys": [
+    {
+      "name": "REPRESENTATIVE",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "REPRESENTATIVE",
+          "references": "LEDGER"
+        }
+      ]
+    }
+  ]
+}

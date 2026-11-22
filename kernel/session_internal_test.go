@@ -61,3 +61,19 @@ func TestAfterCommit(t *testing.T) {
 		t.Errorf("ran = %v", ran)
 	}
 }
+
+// TestCursorName checks that cursors of different queries never share the
+// text of FETCH, whose result columns the driver keeps per connection
+// across executions, and that a session names its cursors apart.
+func TestCursorName(t *testing.T) {
+	a, b := `SELECT "A" FROM "T"`, `SELECT "A", "B" FROM "U"`
+	if cursorName(1, a) == cursorName(1, b) {
+		t.Errorf("queries with other columns share %s", cursorName(1, a))
+	}
+	if cursorName(1, a) != cursorName(1, a) {
+		t.Error("the same cursor of the same query has two names")
+	}
+	if cursorName(1, a) == cursorName(2, a) {
+		t.Errorf("two cursors of a session share %s", cursorName(1, a))
+	}
+}

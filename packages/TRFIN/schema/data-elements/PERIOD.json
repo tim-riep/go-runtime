@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/PERIOD",
+  "domain": "/TRFIN/SMALL_NUMBER",
+  "texts": {
+    "en": {
+      "short": "Period",
+      "medium": "Period",
+      "long": "Posting period",
+      "heading": "Period"
+    },
+    "de": {
+      "short": "Periode",
+      "medium": "Periode",
+      "long": "Buchungsperiode",
+      "heading": "Periode"
+    }
+  }
+}

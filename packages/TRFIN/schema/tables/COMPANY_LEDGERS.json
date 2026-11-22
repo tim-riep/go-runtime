@@ -1,0 +1,42 @@
+{
+  "name": "/TRFIN/COMPANY_LEDGERS",
+  "description": "Ledgers of a company besides the primary ledger",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "LEDGER"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    }
+  ]
+}

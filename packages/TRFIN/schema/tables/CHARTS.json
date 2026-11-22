@@ -1,0 +1,30 @@
+{
+  "name": "/TRFIN/CHARTS",
+  "description": "Charts of accounts, operational or of a country",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART"
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFIN/CHART_KIND",
+      "notNull": true
+    },
+    {
+      "name": "ACCOUNT_LENGTH",
+      "dataElement": "/TRFIN/ACCOUNT_LENGTH",
+      "notNull": true
+    },
+    {
+      "name": "COUNTRY",
+      "dataElement": "/TRBASE/COUNTRY",
+      "description": "The country of a chart of the kind COUNTRY; null for operational charts"
+    }
+  ],
+  "primaryKey": [
+    "CHART"
+  ]
+}

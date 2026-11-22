@@ -1,0 +1,123 @@
+{
+  "name": "/TRFIN/DISPLAY",
+  "texts": {
+    "en": {
+      "label": "Display general ledger",
+      "description": "Reads the configuration and master data of the general ledger"
+    },
+    "de": {
+      "label": "Hauptbuch anzeigen",
+      "description": "Liest die Konfiguration und die Stammdaten des Hauptbuchs"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRFIN/CHART_ACCOUNT",
+      "fields": {
+        "CHART": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/ACCOUNT",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/PARTNER_COMPANY",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/LEDGER",
+      "fields": {
+        "LEDGER": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRFIN/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          },
+          {
+            "value": "runtimeConfiguration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

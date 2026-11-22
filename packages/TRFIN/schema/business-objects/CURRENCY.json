@@ -1,0 +1,47 @@
+{
+  "name": "/TRFIN/CURRENCY",
+  "description": {
+    "en": "Currency",
+    "de": "Währung"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/CURRENCIES",
+  "behaviorClass": "/TRFIN/CURRENCY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/CURRENCIES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "validations": [
+        {
+          "name": "CHECK_DECIMALS",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "DECIMALS"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/CURRENCY_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/CURRENCIES",
+      "foreignKey": "CURRENCY",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -266,7 +267,7 @@ func (s *session) Query(ctx context.Context, p *bytecode.Program, q *bytecode.Qu
 		// A PostgreSQL connection runs one statement at a time, so the rows
 		// of a cursor are fetched in portions.
 		s.cursors++
-		name := fmt.Sprintf("rt_cursor_%d", s.cursors)
+		name := cursorName(s.cursors, st.text)
 		err := s.guard(ctx, func() error {
 			_, err := s.conn.ExecContext(ctx, "DECLARE "+name+" NO SCROLL CURSOR FOR "+st.text, st.args...)
 			return err
@@ -540,6 +541,16 @@ func (r *resultRows) Next() ([]any, bool, error) {
 }
 
 func (r *resultRows) Close() error { return r.rows.Close() }
+
+// cursorName names the n-th cursor of a session for a query. The driver
+// keeps the result columns of a statement by its text per connection, and
+// a connection serves the sessions of many executions; so the name, and
+// with it the text of FETCH, carries a hash of the query as well, and the
+// same text of FETCH always has the columns of the same query.
+func cursorName(n int, query string) string {
+	sum := sha256.Sum256([]byte(query))
+	return fmt.Sprintf("rt_cursor_%d_%x", n, sum[:6])
+}
 
 // fetchRows reads the rows of a PostgreSQL cursor in portions.
 type fetchRows struct {

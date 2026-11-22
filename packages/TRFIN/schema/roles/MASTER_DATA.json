@@ -1,0 +1,111 @@
+{
+  "name": "/TRFIN/MASTER_DATA",
+  "texts": {
+    "en": {
+      "label": "General ledger master data",
+      "description": "Maintains the accounts of charts of accounts and companies and the company data of customers and suppliers"
+    },
+    "de": {
+      "label": "Stammdaten Hauptbuch",
+      "description": "Pflegt die Sachkonten in Kontenplänen und Buchungskreisen und die Buchungskreisdaten von Debitoren und Kreditoren"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRFIN/CHART_ACCOUNT",
+      "fields": {
+        "CHART": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/ACCOUNT",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/PARTNER_COMPANY",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "value": "/TRFIN/CUSTOMER"
+          },
+          {
+            "value": "/TRFIN/SUPPLIER"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRFIN/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          },
+          {
+            "value": "runtimeConfiguration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/LONG_TEXT",
+  "description": "Long text",
+  "type": "CHAR",
+  "length": 50
+}

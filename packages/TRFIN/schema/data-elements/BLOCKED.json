@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/BLOCKED",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Blocked",
+      "medium": "Blocked",
+      "long": "Blocked for postings",
+      "heading": "Blocked"
+    },
+    "de": {
+      "short": "Gesperrt",
+      "medium": "Gesperrt",
+      "long": "Für Buchungen gesperrt",
+      "heading": "Gesperrt"
+    }
+  }
+}

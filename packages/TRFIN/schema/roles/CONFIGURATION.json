@@ -1,0 +1,59 @@
+{
+  "name": "/TRFIN/CONFIGURATION",
+  "texts": {
+    "en": {
+      "label": "General ledger configuration",
+      "description": "Maintains currencies, charts of accounts, companies, ledgers, document types, balance sheet structures, posting periods and the intervals of journal entries and business partners"
+    },
+    "de": {
+      "label": "Konfiguration Hauptbuch",
+      "description": "Pflegt Währungen, Kontenpläne, Buchungskreise, Ledger, Belegarten, Bilanzstrukturen, Buchungsperioden und die Intervalle von Belegen und Geschäftspartnern"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRFIN/*"
+          },
+          {
+            "pattern": "/TRBP/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          },
+          {
+            "value": "runtimeConfiguration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/NUMBER_RANGE",
+      "fields": {
+        "NUMBER_RANGE_OBJECT": [
+          {
+            "value": "/TRFIN/JOURNAL_ENTRY"
+          },
+          {
+            "value": "/TRBP/PARTNER"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    }
+  ]
+}

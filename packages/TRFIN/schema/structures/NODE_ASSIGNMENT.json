@@ -1,0 +1,28 @@
+{
+  "name": "/TRFIN/NODE_ASSIGNMENT",
+  "texts": {
+    "en": {
+      "label": "Nodes of an account in a balance sheet structure",
+      "description": "The node that takes the account with a debit balance and the one that takes it with a credit balance; null for none"
+    },
+    "de": {
+      "label": "Knoten eines Kontos in einer Bilanzstruktur",
+      "description": "Der Knoten, der das Konto mit Soll-Saldo nimmt, und der, der es mit Haben-Saldo nimmt; null für keinen"
+    }
+  },
+  "components": [
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE",
+      "notNull": true
+    },
+    {
+      "name": "DEBIT_NODE",
+      "dataElement": "/TRFIN/NODE"
+    },
+    {
+      "name": "CREDIT_NODE",
+      "dataElement": "/TRFIN/NODE"
+    }
+  ]
+}

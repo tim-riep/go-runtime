@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/RECONCILIATION",
+  "description": "Kind of reconciliation account",
+  "type": "CHAR",
+  "length": 9,
+  "values": [
+    {
+      "value": "NONE"
+    },
+    {
+      "value": "CUSTOMERS"
+    },
+    {
+      "value": "SUPPLIERS"
+    }
+  ]
+}

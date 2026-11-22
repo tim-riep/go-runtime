@@ -1,0 +1,15 @@
+# The behavior of currencies: amounts have at most two decimals.
+public class /TRFIN/CURRENCY_BEHAVIOR
+
+  public method CHECK_DECIMALS(keys: array of key of /TRFIN/CURRENCIES, response: /TRBASE/ENTITY_RESPONSE)
+    var currencies = read business object /TRFIN/CURRENCY in local mode
+      /TRFIN/CURRENCIES fields all keys keys
+    end
+    for i, currency in currencies
+      if currency.DECIMALS < 0 or currency.DECIMALS > 2
+        response.FIELD_ERROR(i, "DECIMALS", "a currency has 0 to 2 decimals, not {currency.DECIMALS}")
+      end
+    end
+  end
+
+end

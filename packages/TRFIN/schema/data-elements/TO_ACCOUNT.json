@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/TO_ACCOUNT",
+  "domain": "/TRFIN/ACCOUNT",
+  "texts": {
+    "en": {
+      "short": "To",
+      "medium": "To account",
+      "long": "Last account of the range",
+      "heading": "To account"
+    },
+    "de": {
+      "short": "Bis",
+      "medium": "Bis Konto",
+      "long": "Letztes Konto des Bereichs",
+      "heading": "Bis Konto"
+    }
+  }
+}

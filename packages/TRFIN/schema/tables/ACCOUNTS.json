@@ -1,0 +1,59 @@
+{
+  "name": "/TRFIN/ACCOUNTS",
+  "description": "Accounts of charts of accounts",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFIN/ACCOUNT_KIND",
+      "notNull": true
+    },
+    {
+      "name": "BLOCKED",
+      "dataElement": "/TRFIN/BLOCKED",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    }
+  ],
+  "primaryKey": [
+    "CHART",
+    "ACCOUNT"
+  ],
+  "foreignKeys": [
+    {
+      "name": "CHART",
+      "table": "/TRFIN/CHARTS",
+      "fields": [
+        {
+          "field": "CHART",
+          "references": "CHART"
+        }
+      ]
+    }
+  ]
+}

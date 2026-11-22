@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/PARTNER_COMPANY",
+  "texts": {
+    "en": {
+      "label": "Partners in companies",
+      "description": "Reading and changing the company data of customers and suppliers"
+    },
+    "de": {
+      "label": "Partner im Buchungskreis",
+      "description": "Buchungskreisdaten von Debitoren und Kreditoren lesen und ändern"
+    }
+  },
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}

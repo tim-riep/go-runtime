@@ -1,0 +1,48 @@
+# Whether accounts and partners have movements, from the totals and the
+# running balances that postings write.
+public class /TRFIN/MOVEMENTS
+
+  # Whether an account of a chart has movements in a company with the
+  # chart, directly or, for an account of a country chart, through the
+  # accounts of the companies that it is the country account of.
+  public static method ACCOUNT_IN_CHART(chart: STRING, account: STRING) returns BOOL
+    for company in select from /TRFIN/COMPANIES where CHART = chart
+      if ACCOUNT_IN_COMPANY(company.COMPANY, account)
+        return true
+      end
+    end
+    for company in select from /TRFIN/COMPANIES where COUNTRY_CHART = chart
+      for row in select from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and COUNTRY_ACCOUNT = account
+        if ACCOUNT_IN_COMPANY(row.COMPANY, row.ACCOUNT)
+          return true
+        end
+      end
+    end
+    return false
+  end
+
+  # Whether an account has movements in a company in any ledger.
+  public static method ACCOUNT_IN_COMPANY(company: STRING, account: STRING) returns BOOL
+    var n = select count from /TRFIN/ACCOUNT_TOTALS where COMPANY = company and ACCOUNT = account
+    return n > 0
+  end
+
+  # Whether a partner has movements in a role in a company in any ledger.
+  public static method PARTNER_IN_COMPANY(role: STRING, partner: STRING, company: STRING) returns BOOL
+    var n = select count from /TRFIN/PARTNER_TOTALS where COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+    return n > 0
+  end
+
+  # Whether a part of the balance of a partner is on its alternative
+  # account in any ledger: a credit balance of a customer, a debit balance
+  # of a supplier.
+  public static method RECLASSIFIED(role: STRING, partner: STRING, company: STRING) returns BOOL
+    for row in select from /TRFIN/PARTNER_BALANCES where COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+      if role = "/TRFIN/CUSTOMER" and row.BALANCE < 0 or role = "/TRFIN/SUPPLIER" and row.BALANCE > 0
+        return true
+      end
+    end
+    return false
+  end
+
+end

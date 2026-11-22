@@ -1,0 +1,7 @@
+{
+  "name": "/TRFIN/AMOUNT",
+  "description": "Amount in the currency of a company",
+  "type": "DEC",
+  "length": 18,
+  "decimals": 2
+}

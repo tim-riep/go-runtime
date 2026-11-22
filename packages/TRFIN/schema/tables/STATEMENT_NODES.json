@@ -1,0 +1,54 @@
+{
+  "name": "/TRFIN/STATEMENT_NODES",
+  "description": "Nodes of a balance sheet structure",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE"
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRFIN/NODE"
+    },
+    {
+      "name": "PARENT_NODE",
+      "dataElement": "/TRFIN/PARENT_NODE",
+      "description": "The node above in the same structure; null for a node at the top"
+    },
+    {
+      "name": "SORT_ORDER",
+      "dataElement": "/TRBASE/SORT_ORDER",
+      "notNull": true,
+      "default": 0
+    },
+    {
+      "name": "SIDE",
+      "dataElement": "/TRFIN/SIDE",
+      "notNull": true
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFIN/NODE_KIND",
+      "notNull": true,
+      "default": "NORMAL"
+    }
+  ],
+  "primaryKey": [
+    "STRUCTURE",
+    "NODE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "STRUCTURE",
+      "table": "/TRFIN/STATEMENT_STRUCTURES",
+      "fields": [
+        {
+          "field": "STRUCTURE",
+          "references": "STRUCTURE"
+        }
+      ]
+    }
+  ]
+}

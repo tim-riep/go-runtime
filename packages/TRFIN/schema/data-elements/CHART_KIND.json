@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CHART_KIND",
+  "domain": "/TRFIN/CHART_KIND",
+  "texts": {
+    "en": {
+      "short": "Kind",
+      "medium": "Kind of chart",
+      "long": "Kind of the chart of accounts",
+      "heading": "Kind"
+    },
+    "de": {
+      "short": "Art",
+      "medium": "Kontenplanart",
+      "long": "Art des Kontenplans",
+      "heading": "Art"
+    }
+  }
+}

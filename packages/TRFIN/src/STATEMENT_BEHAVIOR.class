@@ -1,0 +1,180 @@
+# The behavior of balance sheet structures: a tree of nodes with one side
+# each, at most one node for the result and one for unassigned accounts,
+# and ranges of accounts of the chart that do not overlap for the same
+# balance side.
+public class /TRFIN/STATEMENT_BEHAVIOR
+
+  public method CHECK_STRUCTURE(keys: array of key of /TRFIN/STATEMENT_STRUCTURES, response: /TRBASE/ENTITY_RESPONSE)
+    var structures = read business object /TRFIN/STATEMENT_STRUCTURE in local mode
+      /TRFIN/STATEMENT_STRUCTURES fields all keys keys
+    end
+    for i, structure in structures
+      var chart = select single from /TRFIN/CHARTS where CHART = structure.CHART
+      if chart is null
+        response.FIELD_ERROR(i, "CHART", "the chart {structure.CHART} does not exist")
+      end
+    end
+  end
+
+  # Problems of nodes go to the nodes; problems of ranges to their node
+  # when it changed; problems of nodes that did not change, such as nodes
+  # below a deleted one, to the first changed node of the structure.
+  public method CHECK_NODES(keys: array of key of /TRFIN/STATEMENT_NODES, response: /TRBASE/ENTITY_RESPONSE)
+    var done: array of STRING = []
+    for first, key in keys
+      if done.CONTAINS(key.STRUCTURE)
+        continue
+      end
+      done.APPEND(key.STRUCTURE)
+      for problem in PROBLEMS(key.STRUCTURE)
+        var at = first
+        for i, k in keys
+          if k.STRUCTURE = key.STRUCTURE and k.NODE = (problem.NODE default "")
+            at = i
+          end
+        end
+        if at = first and problem.RANGE_NO is not null and keys[first].NODE <> (problem.NODE default "")
+          continue
+        end
+        REPORT(response, at, problem)
+      end
+    end
+  end
+
+  public method CHECK_RANGES(keys: array of key of /TRFIN/STATEMENT_NODE_RANGES, response: /TRBASE/ENTITY_RESPONSE)
+    var done: array of STRING = []
+    for key in keys
+      if done.CONTAINS(key.STRUCTURE)
+        continue
+      end
+      done.APPEND(key.STRUCTURE)
+      for problem in PROBLEMS(key.STRUCTURE)
+        for i, k in keys
+          if k.STRUCTURE = key.STRUCTURE and k.NODE = (problem.NODE default "") and k.RANGE_NO = (problem.RANGE_NO default 0)
+            REPORT(response, i, problem)
+          end
+        end
+      end
+    end
+  end
+
+  private method REPORT(response: /TRBASE/ENTITY_RESPONSE, at: INT8, problem: /TRFIN/STRUCTURE_PROBLEM)
+    var field = problem.FIELD
+    if field is null
+      response.ERROR(at, problem.TEXT)
+    else
+      response.FIELD_ERROR(at, field, problem.TEXT)
+    end
+  end
+
+  # The problems of a structure as it is in the buffer; none when it is
+  # deleted.
+  private method PROBLEMS(name: STRING) returns array of /TRFIN/STRUCTURE_PROBLEM
+    var out: array of /TRFIN/STRUCTURE_PROBLEM = []
+    var key: key of /TRFIN/STATEMENT_STRUCTURES
+    key.STRUCTURE = name
+    var structures = read business object /TRFIN/STATEMENT_STRUCTURE in local mode
+      /TRFIN/STATEMENT_STRUCTURES fields all keys [key]
+    end
+    if structures is empty
+      return out
+    end
+    var nodes = read business object /TRFIN/STATEMENT_STRUCTURE in local mode
+      /TRFIN/STATEMENT_NODES by parent fields all keys [key]
+    end
+    var by_name: map of STRING to /TRFIN/STATEMENT_NODES = [:]
+    var node_keys: array of key of /TRFIN/STATEMENT_NODES = []
+    for node in nodes
+      by_name[node.NODE] = node
+      var k: key of /TRFIN/STATEMENT_NODES
+      k.STRUCTURE = node.STRUCTURE
+      k.NODE = node.NODE
+      node_keys.APPEND(k)
+    end
+    var kinds: map of STRING to STRING = [:]
+    for node in nodes
+      if node.KIND <> /TRFIN/NODE_KIND.NORMAL
+        var other = kinds.GET(node.KIND.NAME())
+        if other is not null
+          out.APPEND(PROBLEM(node.NODE, null, "KIND", "the structure {name} has the node {other} of the kind {node.KIND} already"))
+        else
+          kinds[node.KIND.NAME()] = node.NODE
+        end
+      end
+      var parent_name = node.PARENT_NODE
+      if parent_name is null
+        continue
+      end
+      var parent = by_name.GET(parent_name)
+      if parent is null
+        out.APPEND(PROBLEM(node.NODE, null, "PARENT_NODE", "the parent node {parent_name} does not exist in the structure {name}"))
+        continue
+      end
+      if parent.SIDE <> node.SIDE
+        out.APPEND(PROBLEM(node.NODE, null, "SIDE", "the node {node.NODE} is on the side {node.SIDE}, its parent node {parent.NODE} on {parent.SIDE}"))
+      end
+      # Up the parents: a node that comes back to itself is above itself.
+      var up: STRING? = parent_name
+      var steps = 0
+      while up is not null and steps <= nodes.LENGTH()
+        if up = node.NODE
+          out.APPEND(PROBLEM(node.NODE, null, "PARENT_NODE", "the node {node.NODE} is below itself"))
+          break
+        end
+        var above = by_name.GET(up)
+        if above is null
+          break
+        end
+        up = above.PARENT_NODE
+        steps = steps + 1
+      end
+    end
+    var chart = select single from /TRFIN/CHARTS where CHART = structures[1].CHART
+    var ranges = read business object /TRFIN/STATEMENT_STRUCTURE in local mode
+      /TRFIN/STATEMENT_NODE_RANGES by parent fields all keys node_keys
+    end
+    for range in ranges
+      var node = by_name.GET(range.NODE)
+      if node is not null and node.KIND <> /TRFIN/NODE_KIND.NORMAL
+        out.APPEND(PROBLEM(range.NODE, range.RANGE_NO, "FROM_ACCOUNT", "the node {range.NODE} of the kind {node.KIND} takes no ranges of accounts"))
+      end
+      if chart is not null
+        if range.FROM_ACCOUNT.LENGTH() <> chart.ACCOUNT_LENGTH
+          out.APPEND(PROBLEM(range.NODE, range.RANGE_NO, "FROM_ACCOUNT", "the accounts of the chart {chart.CHART} have {chart.ACCOUNT_LENGTH} characters, not {range.FROM_ACCOUNT}"))
+        end
+        if range.TO_ACCOUNT.LENGTH() <> chart.ACCOUNT_LENGTH
+          out.APPEND(PROBLEM(range.NODE, range.RANGE_NO, "TO_ACCOUNT", "the accounts of the chart {chart.CHART} have {chart.ACCOUNT_LENGTH} characters, not {range.TO_ACCOUNT}"))
+        end
+      end
+      if range.TO_ACCOUNT < range.FROM_ACCOUNT
+        out.APPEND(PROBLEM(range.NODE, range.RANGE_NO, "TO_ACCOUNT", "the range ends with {range.TO_ACCOUNT} before it starts with {range.FROM_ACCOUNT}"))
+      end
+    end
+    # Ranges of the same balance side, or of any, do not overlap: every
+    # account belongs to one node for a debit and to one for a credit
+    # balance.
+    for i, a in ranges
+      for j, b in ranges
+        if j <= i
+          continue
+        end
+        var sides = a.BALANCE = /TRFIN/BALANCE_SIDE.ANY or b.BALANCE = /TRFIN/BALANCE_SIDE.ANY or a.BALANCE = b.BALANCE
+        if sides and a.FROM_ACCOUNT <= b.TO_ACCOUNT and b.FROM_ACCOUNT <= a.TO_ACCOUNT
+          out.APPEND(PROBLEM(a.NODE, a.RANGE_NO, "FROM_ACCOUNT", "the range overlaps the range {b.RANGE_NO} of the node {b.NODE} for the same balance"))
+          out.APPEND(PROBLEM(b.NODE, b.RANGE_NO, "FROM_ACCOUNT", "the range overlaps the range {a.RANGE_NO} of the node {a.NODE} for the same balance"))
+        end
+      end
+    end
+    return out
+  end
+
+  private static method PROBLEM(node: STRING, range: INT4?, field: STRING, text: STRING) returns /TRFIN/STRUCTURE_PROBLEM
+    var p: /TRFIN/STRUCTURE_PROBLEM
+    p.NODE = node
+    p.RANGE_NO = range
+    p.FIELD = field
+    p.TEXT = text
+    return p
+  end
+
+end

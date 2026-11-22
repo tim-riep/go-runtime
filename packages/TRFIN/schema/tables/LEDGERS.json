@@ -1,0 +1,21 @@
+{
+  "name": "/TRFIN/LEDGERS",
+  "description": "Ledgers; the primary ledger applies to all companies",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "PRIMARY",
+      "dataElement": "/TRFIN/PRIMARY_LEDGER",
+      "notNull": true,
+      "default": false
+    }
+  ],
+  "primaryKey": [
+    "LEDGER"
+  ]
+}

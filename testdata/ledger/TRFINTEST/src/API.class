@@ -1,0 +1,221 @@
+# Calls of the configuration and master data of TRFIN for its tests.
+public class /TRFINTEST/API
+
+  public static method PERIOD_OF(company: STRING, date: DATE) returns STRING
+    var p = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(company, date)
+    return "{p.FISCAL_YEAR}/{p.PERIOD}"
+  end
+
+  public static method IS_OPEN(company: STRING, year: INT4, period: INT4) returns BOOL
+    return /TRFIN/FISCAL_CALENDAR.IS_OPEN(company, year, period)
+  end
+
+  public static method UNASSIGNED_MEMBERS(company: STRING, group: STRING) returns STRING
+    return /TRFIN/LEDGER_SETS.UNASSIGNED_MEMBERS(company, group).JOIN(",")
+  end
+
+  public static method TARGETS(company: STRING, ledger: STRING?, group: STRING?) returns STRING
+    return /TRFIN/LEDGER_SETS.TARGETS(company, ledger, group).JOIN(",")
+  end
+
+  public static method NODE_OF(structure: STRING, account: STRING, side: STRING) returns STRING
+    var s = /TRFIN/BALANCE_SIDE.PARSE(side) default /TRFIN/BALANCE_SIDE.ANY
+    return /TRFIN/BALANCE_SHEET.NODE_OF(structure, account, s) default "-"
+  end
+
+  public static method SAME_NODES(company: STRING, first: STRING, second: STRING) returns BOOL
+    return /TRFIN/BALANCE_SHEET.SAME_NODES(company, first, second)
+  end
+
+  # Movements as postings will write them.
+  public static method ADD_ACCOUNT_TOTALS(ledger: STRING, company: STRING, account: STRING)
+    var row: /TRFIN/ACCOUNT_TOTALS
+    row.LEDGER = ledger
+    row.COMPANY = company
+    row.ACCOUNT = account
+    row.FISCAL_YEAR = 2026
+    row.PERIOD = 1
+    row.DEBIT = 10.00
+    insert row
+  end
+
+  public static method ADD_PARTNER_TOTALS(ledger: STRING, company: STRING, role: STRING, partner: STRING, balance: DEC(18,2))
+    var row: /TRFIN/PARTNER_TOTALS
+    row.LEDGER = ledger
+    row.COMPANY = company
+    row.PARTNER_ROLE = role
+    row.PARTNER = partner
+    row.FISCAL_YEAR = 2026
+    row.PERIOD = 1
+    row.DEBIT = 10.00
+    insert row
+    var b: /TRFIN/PARTNER_BALANCES
+    b.LEDGER = ledger
+    b.COMPANY = company
+    b.PARTNER_ROLE = role
+    b.PARTNER = partner
+    b.BALANCE = balance
+    insert b
+  end
+
+  public static method SET_PRIMARY(ledger: STRING, primary: BOOL) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/LEDGERS
+    row.LEDGER = ledger
+    row.PRIMARY = primary
+    modify business object /TRFIN/LEDGER
+      update /TRFIN/LEDGERS fields (PRIMARY) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_LEDGER(ledger: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/LEDGERS
+    key.LEDGER = ledger
+    modify business object /TRFIN/LEDGER
+      delete /TRFIN/LEDGERS keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method REMOVE_MEMBER(group: STRING, ledger: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/LEDGER_GROUP_MEMBERS
+    key.LEDGER_GROUP = group
+    key.LEDGER = ledger
+    modify business object /TRFIN/LEDGER_GROUP
+      delete /TRFIN/LEDGER_GROUP_MEMBERS keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_NODE(structure: STRING, node: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/STATEMENT_NODES
+    key.STRUCTURE = structure
+    key.NODE = node
+    modify business object /TRFIN/STATEMENT_STRUCTURE
+      delete /TRFIN/STATEMENT_NODES keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method SET_ACCOUNT_KIND(chart: STRING, account: STRING, kind: STRING) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/ACCOUNTS
+    row.CHART = chart
+    row.ACCOUNT = account
+    row.KIND = /TRFIN/ACCOUNT_KIND.PARSE(kind) default /TRFIN/ACCOUNT_KIND.BALANCE_SHEET
+    modify business object /TRFIN/ACCOUNT
+      update /TRFIN/ACCOUNTS fields (KIND) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_ACCOUNT(chart: STRING, account: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/ACCOUNTS
+    key.CHART = chart
+    key.ACCOUNT = account
+    modify business object /TRFIN/ACCOUNT
+      delete /TRFIN/ACCOUNTS keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method SET_RECONCILIATION(company: STRING, account: STRING, kind: STRING) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/COMPANY_ACCOUNTS
+    row.COMPANY = company
+    row.ACCOUNT = account
+    row.RECONCILIATION = /TRFIN/RECONCILIATION.PARSE(kind) default /TRFIN/RECONCILIATION.NONE
+    modify business object /TRFIN/COMPANY_ACCOUNT
+      update /TRFIN/COMPANY_ACCOUNTS fields (RECONCILIATION) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method BLOCK_COMPANY_ACCOUNT(company: STRING, account: STRING) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/COMPANY_ACCOUNTS
+    row.COMPANY = company
+    row.ACCOUNT = account
+    row.BLOCKED = true
+    modify business object /TRFIN/COMPANY_ACCOUNT
+      update /TRFIN/COMPANY_ACCOUNTS fields (BLOCKED) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_COMPANY_ACCOUNT(company: STRING, account: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/COMPANY_ACCOUNTS
+    key.COMPANY = company
+    key.ACCOUNT = account
+    modify business object /TRFIN/COMPANY_ACCOUNT
+      delete /TRFIN/COMPANY_ACCOUNTS keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method SET_CUSTOMER_ACCOUNTS(partner: STRING, company: STRING, reconciliation: STRING, alternative: STRING) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/CUSTOMER_COMPANIES
+    row.PARTNER = partner
+    row.COMPANY = company
+    row.RECONCILIATION_ACCOUNT = reconciliation
+    row.ALTERNATIVE_ACCOUNT = alternative
+    modify business object /TRBP/PARTNER
+      update /TRFIN/CUSTOMER_COMPANIES fields (RECONCILIATION_ACCOUNT, ALTERNATIVE_ACCOUNT) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_CUSTOMER(partner: STRING, company: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/CUSTOMER_COMPANIES
+    key.PARTNER = partner
+    key.COMPANY = company
+    modify business object /TRBP/PARTNER
+      delete /TRFIN/CUSTOMER_COMPANIES keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method REMOVE_ROLE(partner: STRING, role: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRBP/PARTNER_ROLES
+    key.PARTNER = partner
+    key.ROLE = role
+    modify business object /TRBP/PARTNER
+      delete /TRBP/PARTNER_ROLES keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  public static method DELETE_PARTNER(partner: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRBP/PARTNERS
+    key.PARTNER = partner
+    modify business object /TRBP/PARTNER
+      delete /TRBP/PARTNERS keys [key]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # Saves the changes of a statement unless it failed; returns the result
+  # of the statement or of the save as JSON.
+  private static method SAVE(changed: /TRBASE/ENTITY_RESULT) returns STRING raises /RT/EXCEPTION
+    if changed.FAILURES is not empty
+      rollback business objects
+      return transform changed using /TRBASE/JSON
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+    end
+    return transform saved using /TRBASE/JSON
+  end
+
+end

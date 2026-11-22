@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CREDIT",
+  "domain": "/TRFIN/AMOUNT",
+  "texts": {
+    "en": {
+      "short": "Credit",
+      "medium": "Credit",
+      "long": "Credit",
+      "heading": "Credit"
+    },
+    "de": {
+      "short": "Haben",
+      "medium": "Haben",
+      "long": "Haben",
+      "heading": "Haben"
+    }
+  }
+}

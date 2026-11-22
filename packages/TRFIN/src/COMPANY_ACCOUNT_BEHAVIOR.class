@@ -1,0 +1,91 @@
+# The behavior of the accounts of a company: an account of the operational
+# chart of the company, a country account of its country chart used once,
+# reconciliation accounts that are balance sheet accounts without open
+# items, and no change of the kind of reconciliation or deletion while
+# partners use the account or it has movements.
+public class /TRFIN/COMPANY_ACCOUNT_BEHAVIOR
+
+  public method CHECK_ACCOUNT(keys: array of key of /TRFIN/COMPANY_ACCOUNTS, response: /TRBASE/ENTITY_RESPONSE)
+    var accounts = read business object /TRFIN/COMPANY_ACCOUNT in local mode
+      /TRFIN/COMPANY_ACCOUNTS fields all keys keys
+    end
+    for i, row in accounts
+      var company = select single from /TRFIN/COMPANIES where COMPANY = row.COMPANY
+      if company is null
+        response.FIELD_ERROR(i, "COMPANY", "the company {row.COMPANY} does not exist")
+        continue
+      end
+      var account = select single from /TRFIN/ACCOUNTS where CHART = company.CHART and ACCOUNT = row.ACCOUNT
+      if account is null
+        response.FIELD_ERROR(i, "ACCOUNT", "the account {row.ACCOUNT} does not exist in the chart {company.CHART} of the company {company.COMPANY}")
+      elseif row.RECONCILIATION <> /TRFIN/RECONCILIATION.NONE and account.KIND <> /TRFIN/ACCOUNT_KIND.BALANCE_SHEET
+        response.FIELD_ERROR(i, "RECONCILIATION", "a reconciliation account is a balance sheet account; {row.ACCOUNT} is not")
+      end
+      if row.RECONCILIATION <> /TRFIN/RECONCILIATION.NONE and row.OPEN_ITEMS
+        response.FIELD_ERROR(i, "OPEN_ITEMS", "a reconciliation account has no open items of its own; its partners have them")
+      end
+      var country = row.COUNTRY_ACCOUNT
+      if country is not null
+        var chart = company.COUNTRY_CHART
+        if chart is null
+          response.FIELD_ERROR(i, "COUNTRY_ACCOUNT", "the company {company.COMPANY} has no country chart")
+        else
+          var found = select single from /TRFIN/ACCOUNTS where CHART = chart and ACCOUNT = country
+          if found is null
+            response.FIELD_ERROR(i, "COUNTRY_ACCOUNT", "the account {country} does not exist in the country chart {chart}")
+          end
+          # The country account belongs to one account of the company:
+          # among the changed accounts and the others in the database.
+          for j, other in accounts
+            if j <> i and other.COMPANY = row.COMPANY and (other.COUNTRY_ACCOUNT default "") = country
+              response.FIELD_ERROR(i, "COUNTRY_ACCOUNT", "the country account {country} belongs to the account {other.ACCOUNT} of the company already")
+            end
+          end
+          for other in select from /TRFIN/COMPANY_ACCOUNTS where COMPANY = row.COMPANY and COUNTRY_ACCOUNT = country and ACCOUNT <> row.ACCOUNT
+            var changed = accounts.ANY(function (a: /TRFIN/COMPANY_ACCOUNTS) => a.COMPANY = other.COMPANY and a.ACCOUNT = other.ACCOUNT)
+            if not changed
+              response.FIELD_ERROR(i, "COUNTRY_ACCOUNT", "the country account {country} belongs to the account {other.ACCOUNT} of the company already")
+            end
+          end
+        end
+      end
+      var before = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = row.COMPANY and ACCOUNT = row.ACCOUNT
+      if before is not null and before.RECONCILIATION <> row.RECONCILIATION
+        var user = PARTNER_OF(row.COMPANY, row.ACCOUNT)
+        if user is not null
+          response.FIELD_ERROR(i, "RECONCILIATION", "the partner {user} uses the account {row.ACCOUNT}; its kind of reconciliation stays")
+        end
+        if /TRFIN/MOVEMENTS.ACCOUNT_IN_COMPANY(row.COMPANY, row.ACCOUNT)
+          response.FIELD_ERROR(i, "RECONCILIATION", "the account {row.ACCOUNT} has movements; its kind of reconciliation stays")
+        end
+      end
+    end
+  end
+
+  public method CHECK_DELETE(keys: array of key of /TRFIN/COMPANY_ACCOUNTS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var user = PARTNER_OF(key.COMPANY, key.ACCOUNT)
+      if user is not null
+        response.ERROR(i, "the partner {user} uses the account {key.ACCOUNT} in the company {key.COMPANY}")
+      end
+      if /TRFIN/MOVEMENTS.ACCOUNT_IN_COMPANY(key.COMPANY, key.ACCOUNT)
+        response.ERROR(i, "the account {key.ACCOUNT} has movements in the company {key.COMPANY}; block it instead")
+      end
+    end
+  end
+
+  # A customer or supplier that uses an account of a company as
+  # reconciliation or alternative account; null when none does.
+  private static method PARTNER_OF(company: STRING, account: STRING) returns STRING?
+    var customer = select single from /TRFIN/CUSTOMER_COMPANIES where COMPANY = company and (RECONCILIATION_ACCOUNT = account or ALTERNATIVE_ACCOUNT = account)
+    if customer is not null
+      return customer.PARTNER
+    end
+    var supplier = select single from /TRFIN/SUPPLIER_COMPANIES where COMPANY = company and (RECONCILIATION_ACCOUNT = account or ALTERNATIVE_ACCOUNT = account)
+    if supplier is not null
+      return supplier.PARTNER
+    end
+    return null
+  end
+
+end

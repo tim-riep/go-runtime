@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/ACCOUNT",
+  "description": "Number of an account",
+  "type": "CHAR",
+  "length": 10
+}

@@ -1,0 +1,58 @@
+{
+  "name": "/TRFIN/COMPANY_ACCOUNT",
+  "description": {
+    "en": "Account in a company",
+    "de": "Sachkonto im Buchungskreis"
+  },
+  "root": "/TRFIN/COMPANY_ACCOUNTS",
+  "behaviorClass": "/TRFIN/COMPANY_ACCOUNT_BEHAVIOR",
+  "entities": {
+    "/TRFIN/COMPANY_ACCOUNTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "administrative": {
+        "createdBy": "CREATED_BY",
+        "createdAt": "CREATED_AT",
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_ACCOUNT",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "COUNTRY_ACCOUNT",
+            "RECONCILIATION",
+            "OPEN_ITEMS"
+          ]
+        },
+        {
+          "name": "CHECK_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRFIN/ACCOUNT",
+        "fields": {
+          "COMPANY": "COMPANY"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    }
+  }
+}

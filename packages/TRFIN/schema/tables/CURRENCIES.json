@@ -1,0 +1,21 @@
+{
+  "name": "/TRFIN/CURRENCIES",
+  "description": "Currencies with their number of decimals",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY"
+    },
+    {
+      "name": "DECIMALS",
+      "dataElement": "/TRFIN/DECIMALS",
+      "notNull": true,
+      "default": 2
+    }
+  ],
+  "primaryKey": [
+    "CURRENCY"
+  ]
+}

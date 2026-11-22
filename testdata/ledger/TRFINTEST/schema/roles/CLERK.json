@@ -1,0 +1,10 @@
+{
+  "name": "/TRFINTEST/CLERK",
+  "texts": { "en": { "label": "Accounts and customers of the company 1000" } },
+  "authorizations": [
+    { "object": "/TRFIN/ACCOUNT", "fields": { "COMPANY": [{ "value": "1000" }], "ACTIVITY": [{ "pattern": "*" }] } },
+    { "object": "/TRFIN/CHART_ACCOUNT", "fields": { "CHART": [{ "value": "TRAC" }], "ACTIVITY": [{ "value": "READ" }] } },
+    { "object": "/TRFIN/PARTNER_COMPANY", "fields": { "COMPANY": [{ "value": "1000" }], "ROLE": [{ "value": "/TRFIN/CUSTOMER" }], "ACTIVITY": [{ "pattern": "*" }] } },
+    { "object": "/TRBP/PARTNER", "fields": { "GROUPING": [{ "pattern": "*" }], "ROLE": [{ "pattern": "*" }], "ACTIVITY": [{ "value": "READ" }] } }
+  ]
+}

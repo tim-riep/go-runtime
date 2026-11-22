@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/REPRESENTATIVE",
+  "domain": "/TRFIN/LEDGER",
+  "texts": {
+    "en": {
+      "short": "Represent.",
+      "medium": "Representative",
+      "long": "Ledger that represents the group",
+      "heading": "Representative"
+    },
+    "de": {
+      "short": "Vertreter",
+      "medium": "Repräsentant",
+      "long": "Ledger, das die Gruppe vertritt",
+      "heading": "Repräsentant"
+    }
+  }
+}

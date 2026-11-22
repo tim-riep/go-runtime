@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ACCOUNT_LENGTH",
+  "domain": "/TRFIN/SMALL_NUMBER",
+  "texts": {
+    "en": {
+      "short": "Length",
+      "medium": "Account length",
+      "long": "Length of the account numbers",
+      "heading": "Account length"
+    },
+    "de": {
+      "short": "Länge",
+      "medium": "Kontonummernlänge",
+      "long": "Länge der Kontonummern",
+      "heading": "Kontonummernlänge"
+    }
+  }
+}

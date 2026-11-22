@@ -1,0 +1,21 @@
+# The fiscal calendar of the companies: every other part of TRFIN takes
+# fiscal year and period from here.
+public class /TRFIN/FISCAL_CALENDAR
+
+  # The fiscal year and the period of a date in a company. Every company
+  # has the calendar year today; a fiscal year variant of the company will
+  # take its place here.
+  public static method PERIOD_OF(company: STRING, date: DATE) returns /TRFIN/FISCAL_PERIOD
+    var out: /TRFIN/FISCAL_PERIOD
+    out.FISCAL_YEAR = date.YEAR()
+    out.PERIOD = date.MONTH()
+    return out
+  end
+
+  # Whether a period of a fiscal year is open for postings in a company.
+  public static method IS_OPEN(company: STRING, year: INT4, period: INT4) returns BOOL
+    var periods = select single from /TRFIN/POSTING_PERIODS where COMPANY = company and FISCAL_YEAR = year
+    return periods is not null and periods.FROM_PERIOD <= period and period <= periods.TO_PERIOD
+  end
+
+end

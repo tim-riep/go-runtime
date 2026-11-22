@@ -1,0 +1,60 @@
+# The nodes of balance sheet structures that accounts belong to.
+public class /TRFIN/BALANCE_SHEET
+
+  # The node of a structure that takes an account with a balance on a side,
+  # DEBIT or CREDIT; null when no range takes it.
+  public static method NODE_OF(structure: STRING, account: STRING, side: /TRFIN/BALANCE_SIDE) returns STRING?
+    for range in select from /TRFIN/STATEMENT_NODE_RANGES where STRUCTURE = structure and FROM_ACCOUNT <= account and TO_ACCOUNT >= account order by NODE, RANGE_NO
+      if range.BALANCE = /TRFIN/BALANCE_SIDE.ANY or range.BALANCE = side
+        return range.NODE
+      end
+    end
+    return null
+  end
+
+  # The nodes of an account of a chart in every structure of the chart,
+  # by structure.
+  public static method ASSIGNMENTS(chart: STRING, account: STRING) returns array of /TRFIN/NODE_ASSIGNMENT
+    var out: array of /TRFIN/NODE_ASSIGNMENT = []
+    for structure in select from /TRFIN/STATEMENT_STRUCTURES where CHART = chart
+      var a: /TRFIN/NODE_ASSIGNMENT
+      a.STRUCTURE = structure.STRUCTURE
+      a.DEBIT_NODE = NODE_OF(structure.STRUCTURE, account, /TRFIN/BALANCE_SIDE.DEBIT)
+      a.CREDIT_NODE = NODE_OF(structure.STRUCTURE, account, /TRFIN/BALANCE_SIDE.CREDIT)
+      out.APPEND(a)
+    end
+    return out
+  end
+
+  # Whether two accounts of a company belong to the same nodes for debit
+  # and credit balance in every structure of the operational chart of the
+  # company and, through their country accounts, of its country chart.
+  public static method SAME_NODES(company: STRING, first: STRING, second: STRING) returns BOOL
+    var c = select single from /TRFIN/COMPANIES where COMPANY = company
+    if c is null
+      return false
+    end
+    if ASSIGNMENTS(c.CHART, first) <> ASSIGNMENTS(c.CHART, second)
+      return false
+    end
+    var country_chart = c.COUNTRY_CHART
+    if country_chart is null
+      return true
+    end
+    var a = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company and ACCOUNT = first
+    var b = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company and ACCOUNT = second
+    var x: STRING? = null
+    var y: STRING? = null
+    if a is not null
+      x = a.COUNTRY_ACCOUNT
+    end
+    if b is not null
+      y = b.COUNTRY_ACCOUNT
+    end
+    if x is null or y is null
+      return x is null and y is null
+    end
+    return ASSIGNMENTS(country_chart, x) = ASSIGNMENTS(country_chart, y)
+  end
+
+end

@@ -1,0 +1,39 @@
+# The behavior of charts of accounts: the length of their account numbers,
+# the country of country charts and no deletion while they are used.
+public class /TRFIN/CHART_BEHAVIOR
+
+  public method CHECK_CHART(keys: array of key of /TRFIN/CHARTS, response: /TRBASE/ENTITY_RESPONSE)
+    var charts = read business object /TRFIN/CHART in local mode
+      /TRFIN/CHARTS fields all keys keys
+    end
+    for i, chart in charts
+      if chart.ACCOUNT_LENGTH < 1 or chart.ACCOUNT_LENGTH > 10
+        response.FIELD_ERROR(i, "ACCOUNT_LENGTH", "account numbers have 1 to 10 characters, not {chart.ACCOUNT_LENGTH}")
+      end
+      if chart.KIND = /TRFIN/CHART_KIND.COUNTRY and chart.COUNTRY is null
+        response.FIELD_ERROR(i, "COUNTRY", "the chart of a country needs the country")
+      end
+      if chart.KIND = /TRFIN/CHART_KIND.OPERATIONAL and chart.COUNTRY is not null
+        response.FIELD_ERROR(i, "COUNTRY", "an operational chart belongs to no country")
+      end
+    end
+  end
+
+  public method CHECK_DELETE(keys: array of key of /TRFIN/CHARTS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var accounts = select count from /TRFIN/ACCOUNTS where CHART = key.CHART
+      if accounts > 0
+        response.ERROR(i, "the chart {key.CHART} has accounts")
+      end
+      var companies = select count from /TRFIN/COMPANIES where CHART = key.CHART or COUNTRY_CHART = key.CHART
+      if companies > 0
+        response.ERROR(i, "companies use the chart {key.CHART}")
+      end
+      var structures = select count from /TRFIN/STATEMENT_STRUCTURES where CHART = key.CHART
+      if structures > 0
+        response.ERROR(i, "the chart {key.CHART} has balance sheet structures")
+      end
+    end
+  end
+
+end

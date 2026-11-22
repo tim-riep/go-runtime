@@ -1,0 +1,122 @@
+{
+  "businessObject": "/TRBP/PARTNER",
+  "behaviorClass": "/TRFIN/PARTNER_BEHAVIOR",
+  "entities": {
+    "/TRBP/PARTNER_ROLES": {
+      "validations": [
+        {
+          "name": "/TRFIN/CHECK_ROLE_REMOVAL",
+          "on": [
+            "delete"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/CUSTOMER_COMPANIES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRBP/PARTNERS",
+      "foreignKey": "PARTNER",
+      "fields": {
+        "ROLE": {
+          "readOnly": true
+        },
+        "RECONCILIATION_ACCOUNT": {
+          "mandatory": true
+        },
+        "ALTERNATIVE_ACCOUNT": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "/TRFIN/CHECK_CUSTOMER",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "RECONCILIATION_ACCOUNT",
+            "ALTERNATIVE_ACCOUNT"
+          ]
+        },
+        {
+          "name": "/TRFIN/CHECK_CUSTOMER_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRFIN/PARTNER_COMPANY",
+        "fields": {
+          "COMPANY": "COMPANY",
+          "ROLE": "ROLE"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    },
+    "/TRFIN/SUPPLIER_COMPANIES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRBP/PARTNERS",
+      "foreignKey": "PARTNER",
+      "fields": {
+        "ROLE": {
+          "readOnly": true
+        },
+        "RECONCILIATION_ACCOUNT": {
+          "mandatory": true
+        },
+        "ALTERNATIVE_ACCOUNT": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "/TRFIN/CHECK_SUPPLIER",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "RECONCILIATION_ACCOUNT",
+            "ALTERNATIVE_ACCOUNT"
+          ]
+        },
+        {
+          "name": "/TRFIN/CHECK_SUPPLIER_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRFIN/PARTNER_COMPANY",
+        "fields": {
+          "COMPANY": "COMPANY",
+          "ROLE": "ROLE"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    }
+  }
+}

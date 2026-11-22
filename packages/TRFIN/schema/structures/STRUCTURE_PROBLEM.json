@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/STRUCTURE_PROBLEM",
+  "texts": {
+    "en": {
+      "label": "Problem of a balance sheet structure",
+      "description": "A problem of a node or of a range of accounts, with the field it concerns"
+    },
+    "de": {
+      "label": "Fehler einer Bilanzstruktur",
+      "description": "Ein Fehler eines Knotens oder eines Kontenbereichs mit dem betroffenen Feld"
+    }
+  },
+  "components": [
+    {
+      "name": "NODE",
+      "dataElement": "/TRFIN/NODE"
+    },
+    {
+      "name": "RANGE_NO",
+      "dataElement": "/TRFIN/RANGE_NO"
+    },
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/FIELD_NAME"
+    },
+    {
+      "name": "TEXT",
+      "dataElement": "/TRBASE/MESSAGE_TEXT",
+      "notNull": true
+    }
+  ]
+}

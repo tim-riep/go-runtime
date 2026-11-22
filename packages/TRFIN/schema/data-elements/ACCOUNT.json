@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ACCOUNT",
+  "domain": "/TRFIN/ACCOUNT",
+  "texts": {
+    "en": {
+      "short": "Account",
+      "medium": "Account",
+      "long": "Account",
+      "heading": "Account"
+    },
+    "de": {
+      "short": "Konto",
+      "medium": "Konto",
+      "long": "Sachkonto",
+      "heading": "Konto"
+    }
+  }
+}

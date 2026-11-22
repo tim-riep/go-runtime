@@ -1,0 +1,48 @@
+{
+  "name": "/TRFIN/LEDGER",
+  "description": {
+    "en": "Ledger",
+    "de": "Ledger"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/LEDGERS",
+  "behaviorClass": "/TRFIN/LEDGER_BEHAVIOR",
+  "entities": {
+    "/TRFIN/LEDGERS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "validations": [
+        {
+          "name": "CHECK_PRIMARY",
+          "on": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "fields": [
+            "PRIMARY"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/LEDGER_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/LEDGERS",
+      "foreignKey": "LEDGER",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

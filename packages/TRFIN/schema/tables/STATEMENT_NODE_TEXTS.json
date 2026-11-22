@@ -1,0 +1,46 @@
+{
+  "name": "/TRFIN/STATEMENT_NODE_TEXTS",
+  "description": "Texts of nodes of balance sheet structures",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE"
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRFIN/NODE"
+    },
+    {
+      "name": "LANGUAGE",
+      "dataElement": "/TRBASE/LANGUAGE"
+    },
+    {
+      "name": "LABEL",
+      "dataElement": "/TRFIN/LABEL",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "STRUCTURE",
+    "NODE",
+    "LANGUAGE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "NODE",
+      "table": "/TRFIN/STATEMENT_NODES",
+      "fields": [
+        {
+          "field": "STRUCTURE",
+          "references": "STRUCTURE"
+        },
+        {
+          "field": "NODE",
+          "references": "NODE"
+        }
+      ]
+    }
+  ]
+}

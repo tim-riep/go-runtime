@@ -1,0 +1,57 @@
+{
+  "name": "/TRFIN/STATEMENT_NODE_RANGES",
+  "description": "Ranges of accounts that belong to a node",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "STRUCTURE",
+      "dataElement": "/TRFIN/STRUCTURE"
+    },
+    {
+      "name": "NODE",
+      "dataElement": "/TRFIN/NODE"
+    },
+    {
+      "name": "RANGE_NO",
+      "dataElement": "/TRFIN/RANGE_NO"
+    },
+    {
+      "name": "FROM_ACCOUNT",
+      "dataElement": "/TRFIN/FROM_ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "TO_ACCOUNT",
+      "dataElement": "/TRFIN/TO_ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRFIN/BALANCE_SIDE",
+      "notNull": true,
+      "default": "ANY"
+    }
+  ],
+  "primaryKey": [
+    "STRUCTURE",
+    "NODE",
+    "RANGE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "NODE",
+      "table": "/TRFIN/STATEMENT_NODES",
+      "fields": [
+        {
+          "field": "STRUCTURE",
+          "references": "STRUCTURE"
+        },
+        {
+          "field": "NODE",
+          "references": "NODE"
+        }
+      ]
+    }
+  ]
+}

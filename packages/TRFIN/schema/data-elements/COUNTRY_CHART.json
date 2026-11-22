@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/COUNTRY_CHART",
+  "domain": "/TRFIN/CHART",
+  "texts": {
+    "en": {
+      "short": "Ctry chart",
+      "medium": "Country chart",
+      "long": "Chart of accounts of the country",
+      "heading": "Country chart"
+    },
+    "de": {
+      "short": "Landeskpl.",
+      "medium": "Landeskontenplan",
+      "long": "Landeskontenplan",
+      "heading": "Landeskontenplan"
+    }
+  }
+}

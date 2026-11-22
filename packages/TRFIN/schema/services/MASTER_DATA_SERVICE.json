@@ -1,0 +1,42 @@
+{
+  "name": "/TRFIN/MASTER_DATA_SERVICE",
+  "description": {
+    "en": "Master data of the general ledger",
+    "de": "Stammdaten des Hauptbuchs"
+  },
+  "entitySets": {
+    "Accounts": {
+      "businessObject": "/TRFIN/ACCOUNT",
+      "entity": "/TRFIN/ACCOUNTS"
+    },
+    "AccountTexts": {
+      "businessObject": "/TRFIN/ACCOUNT",
+      "entity": "/TRFIN/ACCOUNT_TEXTS"
+    },
+    "CompanyAccounts": {
+      "businessObject": "/TRFIN/COMPANY_ACCOUNT",
+      "entity": "/TRFIN/COMPANY_ACCOUNTS"
+    },
+    "Partners": {
+      "businessObject": "/TRBP/PARTNER",
+      "entity": "/TRBP/PARTNERS",
+      "readOnly": true
+    },
+    "Customers": {
+      "businessObject": "/TRBP/PARTNER",
+      "entity": "/TRFIN/CUSTOMER_COMPANIES",
+      "navigations": {
+        "RECONCILIATION_ACCOUNT": "ReconciliationAccount",
+        "ALTERNATIVE_ACCOUNT": "AlternativeAccount"
+      }
+    },
+    "Suppliers": {
+      "businessObject": "/TRBP/PARTNER",
+      "entity": "/TRFIN/SUPPLIER_COMPANIES",
+      "navigations": {
+        "RECONCILIATION_ACCOUNT": "ReconciliationAccount",
+        "ALTERNATIVE_ACCOUNT": "AlternativeAccount"
+      }
+    }
+  }
+}

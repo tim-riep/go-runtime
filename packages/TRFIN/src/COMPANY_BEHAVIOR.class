@@ -1,0 +1,80 @@
+# The behavior of companies: currency and charts that exist and fit, and
+# ledgers besides the primary one.
+public class /TRFIN/COMPANY_BEHAVIOR
+
+  public method CHECK_COMPANY(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    var companies = read business object /TRFIN/COMPANY in local mode
+      /TRFIN/COMPANIES fields all keys keys
+    end
+    for i, company in companies
+      var currency = select single from /TRFIN/CURRENCIES where CURRENCY = company.CURRENCY
+      if currency is null
+        response.FIELD_ERROR(i, "CURRENCY", "the currency {company.CURRENCY} does not exist")
+      end
+      var chart = select single from /TRFIN/CHARTS where CHART = company.CHART
+      if chart is null
+        response.FIELD_ERROR(i, "CHART", "the chart {company.CHART} does not exist")
+      elseif chart.KIND <> /TRFIN/CHART_KIND.OPERATIONAL
+        response.FIELD_ERROR(i, "CHART", "the chart {company.CHART} is no operational chart")
+      end
+      var name = company.COUNTRY_CHART
+      if name is not null
+        var country = select single from /TRFIN/CHARTS where CHART = name
+        if country is null
+          response.FIELD_ERROR(i, "COUNTRY_CHART", "the chart {name} does not exist")
+        elseif country.KIND <> /TRFIN/CHART_KIND.COUNTRY
+          response.FIELD_ERROR(i, "COUNTRY_CHART", "the chart {name} is no chart of a country")
+        elseif (country.COUNTRY default "") <> company.COUNTRY
+          response.FIELD_ERROR(i, "COUNTRY_CHART", "the chart {name} belongs to another country than the company")
+        end
+      end
+      # Country accounts refer to the country chart; it stays while the
+      # accounts of the company have them.
+      var before = select single from /TRFIN/COMPANIES where COMPANY = company.COMPANY
+      if before is not null and not SAME(before.COUNTRY_CHART, company.COUNTRY_CHART)
+        var mapped = select count from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and COUNTRY_ACCOUNT is not null
+        if mapped > 0
+          response.FIELD_ERROR(i, "COUNTRY_CHART", "accounts of the company {company.COMPANY} have country accounts; the country chart stays")
+        end
+      end
+    end
+  end
+
+  public method CHECK_DELETE(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var accounts = select count from /TRFIN/COMPANY_ACCOUNTS where COMPANY = key.COMPANY
+      if accounts > 0
+        response.ERROR(i, "the company {key.COMPANY} has accounts")
+      end
+      var customers = select count from /TRFIN/CUSTOMER_COMPANIES where COMPANY = key.COMPANY
+      var suppliers = select count from /TRFIN/SUPPLIER_COMPANIES where COMPANY = key.COMPANY
+      if customers + suppliers > 0
+        response.ERROR(i, "the company {key.COMPANY} has customers or suppliers")
+      end
+      var periods = select count from /TRFIN/POSTING_PERIODS where COMPANY = key.COMPANY
+      if periods > 0
+        response.ERROR(i, "the company {key.COMPANY} has posting periods")
+      end
+    end
+  end
+
+  # The primary ledger belongs to every company without assignment.
+  public method CHECK_LEDGER(keys: array of key of /TRFIN/COMPANY_LEDGERS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var ledger = select single from /TRFIN/LEDGERS where LEDGER = key.LEDGER
+      if ledger is null
+        response.FIELD_ERROR(i, "LEDGER", "the ledger {key.LEDGER} does not exist")
+      elseif ledger.PRIMARY
+        response.FIELD_ERROR(i, "LEDGER", "the primary ledger {key.LEDGER} belongs to every company without assignment")
+      end
+    end
+  end
+
+  private static method SAME(a: STRING?, b: STRING?) returns BOOL
+    if a is null or b is null
+      return a is null and b is null
+    end
+    return a = b
+  end
+
+end

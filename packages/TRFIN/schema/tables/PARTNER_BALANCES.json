@@ -1,0 +1,37 @@
+{
+  "name": "/TRFIN/PARTNER_BALANCES",
+  "description": "Running balance of customers and suppliers of a company per ledger over all years",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "BALANCE",
+      "dataElement": "/TRFIN/BALANCE",
+      "notNull": true,
+      "default": "0.00",
+      "description": "Debit positive, credit negative"
+    }
+  ],
+  "primaryKey": [
+    "LEDGER",
+    "COMPANY",
+    "PARTNER_ROLE",
+    "PARTNER"
+  ]
+}

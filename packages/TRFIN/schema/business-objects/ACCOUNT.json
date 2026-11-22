@@ -1,0 +1,76 @@
+{
+  "name": "/TRFIN/ACCOUNT",
+  "description": {
+    "en": "Account of a chart of accounts",
+    "de": "Sachkonto im Kontenplan"
+  },
+  "root": "/TRFIN/ACCOUNTS",
+  "behaviorClass": "/TRFIN/ACCOUNT_BEHAVIOR",
+  "entities": {
+    "/TRFIN/ACCOUNTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "KIND": {
+          "mandatory": true
+        }
+      },
+      "administrative": {
+        "createdBy": "CREATED_BY",
+        "createdAt": "CREATED_AT",
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "CHANGED_AT",
+      "validations": [
+        {
+          "name": "CHECK_ACCOUNT",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "KIND"
+          ]
+        },
+        {
+          "name": "CHECK_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ],
+      "authorization": {
+        "object": "/TRFIN/CHART_ACCOUNT",
+        "fields": {
+          "CHART": "CHART"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "delete": "DELETE"
+        }
+      }
+    },
+    "/TRFIN/ACCOUNT_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/ACCOUNTS",
+      "foreignKey": "ACCOUNT",
+      "fields": {
+        "SHORT_TEXT": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "name": "/TRFIN/DOCUMENT_TYPE",
+  "description": {
+    "en": "Document type",
+    "de": "Belegart"
+  },
+  "dataClass": "configuration",
+  "root": "/TRFIN/DOCUMENT_TYPES",
+  "behaviorClass": "/TRFIN/DOCUMENT_TYPE_BEHAVIOR",
+  "entities": {
+    "/TRFIN/DOCUMENT_TYPES": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "fields": {
+        "INTERVAL": {
+          "mandatory": true
+        }
+      },
+      "validations": [
+        {
+          "name": "CHECK_TYPE",
+          "on": [
+            "create",
+            "update"
+          ],
+          "fields": [
+            "ALLOW_ACCOUNTS",
+            "ALLOW_CUSTOMERS",
+            "ALLOW_SUPPLIERS",
+            "REVERSAL_TYPE",
+            "LEDGER",
+            "LEDGER_GROUP"
+          ]
+        },
+        {
+          "name": "CHECK_DELETE",
+          "on": [
+            "delete"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/DOCUMENT_TYPE_TEXTS": {
+      "operations": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/DOCUMENT_TYPES",
+      "foreignKey": "DOCUMENT_TYPE",
+      "fields": {
+        "LABEL": {
+          "mandatory": true
+        }
+      }
+    }
+  }
+}

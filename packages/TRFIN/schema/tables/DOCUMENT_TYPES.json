@@ -1,0 +1,76 @@
+{
+  "name": "/TRFIN/DOCUMENT_TYPES",
+  "description": "Types of journal entries",
+  "tenantSpecific": true,
+  "dataClass": "configuration",
+  "fields": [
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE"
+    },
+    {
+      "name": "INTERVAL",
+      "dataElement": "/TRBASE/INTERVAL_ID",
+      "notNull": true,
+      "description": "The interval of the number range /TRFIN/JOURNAL_ENTRY"
+    },
+    {
+      "name": "ALLOW_ACCOUNTS",
+      "dataElement": "/TRFIN/ALLOW_ACCOUNTS",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "ALLOW_CUSTOMERS",
+      "dataElement": "/TRFIN/ALLOW_CUSTOMERS",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "ALLOW_SUPPLIERS",
+      "dataElement": "/TRFIN/ALLOW_SUPPLIERS",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "REVERSAL_TYPE",
+      "dataElement": "/TRFIN/REVERSAL_TYPE",
+      "description": "The document type of reversals; null for the type itself"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "description": "The only ledger entries of the type are posted to; null for no restriction"
+    },
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP",
+      "description": "The only group of ledgers entries of the type are posted to; null for no restriction"
+    }
+  ],
+  "primaryKey": [
+    "DOCUMENT_TYPE"
+  ],
+  "foreignKeys": [
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER_GROUP",
+      "table": "/TRFIN/LEDGER_GROUPS",
+      "fields": [
+        {
+          "field": "LEDGER_GROUP",
+          "references": "LEDGER_GROUP"
+        }
+      ]
+    }
+  ]
+}

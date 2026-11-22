@@ -1488,6 +1488,24 @@ rt number-range interval add /TRBP/PARTNER 01 --tenant ACME --from 1 --to 499999
 rt service activate /TRBP/PARTNER_SERVICE
 ```
 
+## General ledger
+
+The package `TRFIN` in [packages/TRFIN](packages/TRFIN) is the general ledger. It requires
+TRBP and brings so far its configuration and master data: currencies, charts of accounts
+(operational and of countries), companies, ledgers with exactly one primary ledger, groups
+of ledgers, document types, balance sheet structures, posting periods and the fiscal
+calendar, the accounts of charts and companies, and the company data of customers and
+suppliers as an extension of the business partner with the partner roles `/TRFIN/CUSTOMER`
+and `/TRFIN/SUPPLIER`. [docs/trfin.md](docs/trfin.md) describes the business objects,
+their rules, authorizations, roles and the services `/TRFIN/CONFIGURATION_SERVICE` and
+`/TRFIN/MASTER_DATA_SERVICE`.
+
+```bash
+rt install packages/TRFIN --yes
+rt service activate /TRFIN/CONFIGURATION_SERVICE
+rt service activate /TRFIN/MASTER_DATA_SERVICE
+```
+
 ## Library
 
 ```go

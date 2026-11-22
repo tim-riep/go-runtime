@@ -1,0 +1,7 @@
+{
+  "name": "/TRFINTEST/CHART_CLERK",
+  "texts": { "en": { "label": "Accounts of the chart TRDE" } },
+  "authorizations": [
+    { "object": "/TRFIN/CHART_ACCOUNT", "fields": { "CHART": [{ "value": "TRDE" }], "ACTIVITY": [{ "pattern": "*" }] } }
+  ]
+}

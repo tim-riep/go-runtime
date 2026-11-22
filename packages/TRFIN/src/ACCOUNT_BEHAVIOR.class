@@ -1,0 +1,57 @@
+# The behavior of the accounts of a chart: numbers of the length of the
+# chart, the kind that reconciliation accounts need, and no deletion while
+# companies use the account or it has movements.
+public class /TRFIN/ACCOUNT_BEHAVIOR
+
+  public method CHECK_ACCOUNT(keys: array of key of /TRFIN/ACCOUNTS, response: /TRBASE/ENTITY_RESPONSE)
+    var accounts = read business object /TRFIN/ACCOUNT in local mode
+      /TRFIN/ACCOUNTS fields all keys keys
+    end
+    for i, account in accounts
+      var chart = select single from /TRFIN/CHARTS where CHART = account.CHART
+      if chart is null
+        response.FIELD_ERROR(i, "CHART", "the chart {account.CHART} does not exist")
+        continue
+      end
+      if account.ACCOUNT.LENGTH() <> chart.ACCOUNT_LENGTH
+        response.FIELD_ERROR(i, "ACCOUNT", "the accounts of the chart {chart.CHART} have {chart.ACCOUNT_LENGTH} characters, not {account.ACCOUNT}")
+      end
+      var before = select single from /TRFIN/ACCOUNTS where CHART = account.CHART and ACCOUNT = account.ACCOUNT
+      if before is null or before.KIND = account.KIND
+        continue
+      end
+      if /TRFIN/MOVEMENTS.ACCOUNT_IN_CHART(account.CHART, account.ACCOUNT)
+        response.FIELD_ERROR(i, "KIND", "the account {account.ACCOUNT} has movements; its kind stays")
+      end
+      if account.KIND <> /TRFIN/ACCOUNT_KIND.BALANCE_SHEET
+        for company in select from /TRFIN/COMPANIES where CHART = account.CHART
+          var reconciliation = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and ACCOUNT = account.ACCOUNT and RECONCILIATION <> /TRFIN/RECONCILIATION.NONE
+          if reconciliation is not null
+            response.FIELD_ERROR(i, "KIND", "the account {account.ACCOUNT} is a reconciliation account in the company {company.COMPANY} and stays a balance sheet account")
+          end
+        end
+      end
+    end
+  end
+
+  public method CHECK_DELETE(keys: array of key of /TRFIN/ACCOUNTS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      for company in select from /TRFIN/COMPANIES where CHART = key.CHART
+        var used = select count from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and ACCOUNT = key.ACCOUNT
+        if used > 0
+          response.ERROR(i, "the account {key.ACCOUNT} exists in the company {company.COMPANY}")
+        end
+      end
+      for company in select from /TRFIN/COMPANIES where COUNTRY_CHART = key.CHART
+        var used = select count from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and COUNTRY_ACCOUNT = key.ACCOUNT
+        if used > 0
+          response.ERROR(i, "the account {key.ACCOUNT} is a country account in the company {company.COMPANY}")
+        end
+      end
+      if /TRFIN/MOVEMENTS.ACCOUNT_IN_CHART(key.CHART, key.ACCOUNT)
+        response.ERROR(i, "the account {key.ACCOUNT} has movements; block it instead")
+      end
+    end
+  end
+
+end

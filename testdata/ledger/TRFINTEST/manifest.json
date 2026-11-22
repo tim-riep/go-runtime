@@ -1,0 +1,7 @@
+{
+  "id": "TRFINTEST",
+  "version": "1.0.0",
+  "description": "Roles and calls of the configuration and master data of the general ledger for the tests of TRFIN",
+  "languageVersion": 1,
+  "requires": [{ "id": "TRBASE" }, { "id": "TRBP" }, { "id": "TRFIN" }]
+}

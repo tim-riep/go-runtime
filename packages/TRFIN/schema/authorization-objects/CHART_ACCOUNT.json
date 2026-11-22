@@ -1,0 +1,28 @@
+{
+  "name": "/TRFIN/CHART_ACCOUNT",
+  "texts": {
+    "en": {
+      "label": "Accounts of charts",
+      "description": "Reading and changing the accounts of a chart of accounts"
+    },
+    "de": {
+      "label": "Sachkonten im Kontenplan",
+      "description": "Sachkonten eines Kontenplans lesen und ändern"
+    }
+  },
+  "fields": [
+    {
+      "name": "CHART",
+      "dataElement": "/TRFIN/CHART"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "DELETE"
+  ]
+}
