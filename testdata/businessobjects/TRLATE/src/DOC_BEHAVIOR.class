@@ -46,4 +46,22 @@ public class /TRLATE/DOC_BEHAVIOR
     end
   end
 
+  # Creates a document; the result names it by its link and has, over
+  # OData, its final key.
+  public method CREATE_DOC(parameter: /TRLATE/NEW_DOC, response: /TRBASE/ENTITY_RESPONSE) returns /TRLATE/CREATED_DOC
+    var doc: new of /TRLATE/DOCS
+    doc.LINK = "new"
+    doc.COMPANY = parameter.COMPANY
+    doc.FISCAL_YEAR = parameter.FISCAL_YEAR
+    doc.TEXT = parameter.TEXT
+    modify business object /TRLATE/DOC in local mode
+      create /TRLATE/DOCS fields (COMPANY, FISCAL_YEAR, TEXT) from [doc]
+    end
+    var out: /TRLATE/CREATED_DOC
+    out.LINK = "new"
+    out.COMPANY = parameter.COMPANY
+    out.FISCAL_YEAR = parameter.FISCAL_YEAR
+    return out
+  end
+
 end

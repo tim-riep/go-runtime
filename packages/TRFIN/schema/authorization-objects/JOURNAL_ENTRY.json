@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Journal entries",
+      "description": "Reading, posting, changing the texts of and reversing journal entries"
+    },
+    "de": {
+      "label": "Belege",
+      "description": "Belege lesen, buchen, ihre Texte ändern und stornieren"
+    }
+  },
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE"
+    },
+    {
+      "name": "ACTIVITY"
+    }
+  ],
+  "activities": [
+    "READ",
+    "CREATE",
+    "UPDATE",
+    "CANCEL"
+  ]
+}

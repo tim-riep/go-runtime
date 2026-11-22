@@ -44,6 +44,10 @@ public class /TRFIN/DOCUMENT_TYPE_BEHAVIOR
       for other in select from /TRFIN/DOCUMENT_TYPES where REVERSAL_TYPE = key.DOCUMENT_TYPE and DOCUMENT_TYPE <> key.DOCUMENT_TYPE
         response.ERROR(i, "the document type {other.DOCUMENT_TYPE} reverses with {key.DOCUMENT_TYPE}")
       end
+      var entries = select count from /TRFIN/JOURNAL_ENTRIES where DOCUMENT_TYPE = key.DOCUMENT_TYPE
+      if entries > 0
+        response.ERROR(i, "journal entries of the type {key.DOCUMENT_TYPE} exist")
+      end
     end
   end
 

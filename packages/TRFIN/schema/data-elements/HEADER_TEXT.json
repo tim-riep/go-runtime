@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/HEADER_TEXT",
+  "domain": "/TRFIN/LONG_TEXT",
+  "texts": {
+    "en": {
+      "short": "Text",
+      "medium": "Header text",
+      "long": "Text of the journal entry",
+      "heading": "Header text"
+    },
+    "de": {
+      "short": "Text",
+      "medium": "Kopftext",
+      "long": "Text des Belegs",
+      "heading": "Kopftext"
+    }
+  }
+}

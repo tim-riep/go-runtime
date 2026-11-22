@@ -282,7 +282,10 @@ Instance actions of a business object and of its extensions are bound actions:
 of the body, such as `{"TEXT": "audit"}`. Static actions are action imports at the root of
 the service: `POST STATS`. An action with result `self` answers with the entity, one with a
 structure with a complex value, one without result with 204. Actions of instances check
-`If-Match` when it is sent.
+`If-Match` when it is sent. An action of the root entity that creates an instance with late
+numbering names it by the component `LINK` of its result structure; the answer has the final
+key of that instance in the components named like the key fields, such as `DOCUMENT_NO` of
+`POST` of `/TRFIN/JOURNAL_ENTRY_SERVICE`.
 
 ## Errors and messages
 

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/LINE_KIND",
+  "description": "Kind of an entry of a ledger",
+  "type": "CHAR",
+  "length": 16,
+  "values": [
+    {
+      "value": "ITEM"
+    },
+    {
+      "value": "RECLASSIFICATION"
+    }
+  ]
+}

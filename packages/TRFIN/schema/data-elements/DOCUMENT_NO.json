@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/DOCUMENT_NO",
+  "domain": "/TRFIN/DOCUMENT_NO",
+  "texts": {
+    "en": {
+      "short": "Document",
+      "medium": "Document number",
+      "long": "Number of the journal entry",
+      "heading": "Document"
+    },
+    "de": {
+      "short": "Beleg",
+      "medium": "Belegnummer",
+      "long": "Nummer des Belegs",
+      "heading": "Beleg"
+    }
+  }
+}

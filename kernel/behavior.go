@@ -392,8 +392,19 @@ func (b *entityBuffer) authorizeChange(ctx context.Context, req vm.ModifyRequest
 // parent instance whose entity has one: read with the activity for read,
 // everything else with the activity for update of that entity. Business
 // objects of configuration without an authorization are checked with
-// the configuration object.
+// the configuration object. An entity maintained by save with an
+// authorization of its own is read only where its parent instance is read
+// as well.
 func (b *entityBuffer) check(ctx context.Context, bo *model.BusinessObject, e *model.Entity, key string, values map[string]any, parent *instance, at native.CheckLocation) (bool, error) {
+	if p := bo.Entity(e.Parent.Or("")); p != nil && key == model.ReadActivityKey && e.MaintainedBy.Valid() && e.Authorization != nil && values != nil {
+		pv, err := b.holderValues(ctx, bo, e, p, values, parent)
+		if err != nil || pv == nil {
+			return false, err
+		}
+		if ok, err := b.check(ctx, bo, p, key, pv, nil, at); !ok || err != nil {
+			return ok, err
+		}
+	}
 	if a := e.Action(key); a != nil && (a.Authorization != nil || a.Activity.Valid()) {
 		return b.checkAction(ctx, bo, e, a, values, parent, at)
 	}

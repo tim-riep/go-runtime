@@ -1,0 +1,60 @@
+{
+  "name": "/TRFIN/POSTING",
+  "texts": {
+    "en": {
+      "label": "Journal entry to post",
+      "description": "A journal entry with its items to post or check; LINK names it in the result"
+    },
+    "de": {
+      "label": "Zu buchender Beleg",
+      "description": "Ein Beleg mit seinen Positionen zum Buchen oder Prüfen; LINK benennt ihn im Ergebnis"
+    }
+  },
+  "components": [
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK"
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_DATE",
+      "dataElement": "/TRFIN/DOCUMENT_DATE",
+      "notNull": true
+    },
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE",
+      "notNull": true
+    },
+    {
+      "name": "REFERENCE",
+      "dataElement": "/TRFIN/REFERENCE"
+    },
+    {
+      "name": "HEADER_TEXT",
+      "dataElement": "/TRFIN/HEADER_TEXT"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP"
+    },
+    {
+      "name": "ITEMS",
+      "arrayType": "/TRFIN/POSTING_ITEMS",
+      "notNull": true
+    }
+  ]
+}

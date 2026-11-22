@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/VERSION",
+  "domain": "/TRBASE/COUNTER",
+  "texts": {
+    "en": {
+      "short": "Version",
+      "medium": "Version",
+      "long": "Version for optimistic locking",
+      "heading": "Version"
+    },
+    "de": {
+      "short": "Version",
+      "medium": "Version",
+      "long": "Version für optimistisches Sperren",
+      "heading": "Version"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/OPEN_ITEM",
+  "domain": "/TRBASE/FLAG",
+  "texts": {
+    "en": {
+      "short": "Open item",
+      "medium": "Open item",
+      "long": "The item is cleared as open item",
+      "heading": "Open item"
+    },
+    "de": {
+      "short": "Off.Posten",
+      "medium": "Offener Posten",
+      "long": "Als offener Posten ausgeglichen",
+      "heading": "Offener Posten"
+    }
+  }
+}

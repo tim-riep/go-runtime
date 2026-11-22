@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/REVERSAL_NO",
+  "domain": "/TRFIN/DOCUMENT_NO",
+  "texts": {
+    "en": {
+      "short": "Reversal",
+      "medium": "Reversal",
+      "long": "Number of the reversal",
+      "heading": "Reversal"
+    },
+    "de": {
+      "short": "Storno",
+      "medium": "Stornobeleg",
+      "long": "Nummer des Stornobelegs",
+      "heading": "Stornobeleg"
+    }
+  }
+}

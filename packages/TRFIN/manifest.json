@@ -1,7 +1,7 @@
 {
   "id": "TRFIN",
   "version": "1.0.0",
-  "description": "General ledger: currencies, charts of accounts, companies, ledgers, accounts and the company data of customers and suppliers",
+  "description": "General ledger: currencies, charts of accounts, companies, ledgers, accounts, the company data of customers and suppliers and journal entries",
   "languageVersion": 1,
   "requires": [
     {

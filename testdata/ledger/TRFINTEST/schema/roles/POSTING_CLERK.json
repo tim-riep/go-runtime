@@ -1,0 +1,8 @@
+{
+  "name": "/TRFINTEST/POSTING_CLERK",
+  "texts": { "en": { "label": "Entries of the type SA in 1000 in the ledger 0L" } },
+  "authorizations": [
+    { "object": "/TRFIN/JOURNAL_ENTRY", "fields": { "COMPANY": [{ "value": "1000" }], "DOCUMENT_TYPE": [{ "value": "SA" }], "ACTIVITY": [{ "pattern": "*" }] } },
+    { "object": "/TRFIN/LEDGER", "fields": { "LEDGER": [{ "value": "0L" }], "ACTIVITY": [{ "pattern": "*" }] } }
+  ]
+}

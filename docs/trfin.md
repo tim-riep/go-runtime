@@ -3,9 +3,10 @@
 TRFIN is the general ledger of a tenant. This version brings its configuration and master
 data: currencies, charts of accounts, companies, ledgers, document types, balance sheet
 structures, posting periods, the accounts of charts and companies and the company data of
-customers and suppliers. Journal entries, totals, clearing and reports follow. TRFIN
-requires TRBASE 1.11.0 or later and TRBP 1.0.0 or later; all its tables hold data of a
-tenant, and amounts are `DEC(18,2)`.
+customers and suppliers; and journal entries, posted to the ledgers with totals, running
+balances of customers and suppliers and the reclassification of their opposite balances,
+and reversed. Clearing and reports follow. TRFIN requires TRBASE 1.11.0 or later and TRBP
+1.0.0 or later; all its tables hold data of a tenant, and amounts are `DEC(18,2)`.
 
 ## Configuration
 
@@ -78,7 +79,100 @@ rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1
   chart and of the country chart; the alternative account does not change while a part of the
   balance of the partner is on it in any ledger. `/TRFIN/MOVEMENTS` answers these questions
   from the tables `/TRFIN/ACCOUNT_TOTALS`, `/TRFIN/PARTNER_TOTALS` and
-  `/TRFIN/PARTNER_BALANCES`, which postings will write.
+  `/TRFIN/PARTNER_BALANCES`, which postings write.
+- Once journal entries are posted, the primary ledger stays; a ledger with movements is not
+  deleted and stays assigned to the companies it has movements in; the currency of a company
+  with movements stays, and a document type with journal entries is not deleted.
+
+## Journal entries
+
+The business object `/TRFIN/JOURNAL_ENTRY` holds the journal entries of a company:
+
+| Entity | Key | Fields |
+|---|---|---|
+| `/TRFIN/JOURNAL_ENTRIES` | `COMPANY`, `FISCAL_YEAR`, `DOCUMENT_NO` | `DOCUMENT_TYPE`, `DOCUMENT_DATE`, `POSTING_DATE`, `PERIOD`, `REFERENCE`, `HEADER_TEXT`, `LEDGER` or `LEDGER_GROUP` (`null` for the ledgers of the company), `CURRENCY` of the company, `KIND` `NORMAL`, `CLEARING` or `REVERSAL`, `STATUS` `POSTED` or `REVERSED`, `REVERSAL_YEAR` and `REVERSAL_NO` (the entry that reverses it), `REVERSED_YEAR` and `REVERSED_NO` (the entry it reverses), administrative fields and the ETag `VERSION` |
+| `/TRFIN/JOURNAL_ENTRY_ITEMS` | + `ITEM_NO` | `ACCOUNT_KIND` `ACCOUNT`, `CUSTOMER` or `SUPPLIER`, `ACCOUNT` (for partners their reconciliation account), `PARTNER`, `DEBIT_CREDIT` `D` or `C`, `AMOUNT` greater than zero, `ITEM_TEXT`, `ASSIGNMENT`, `DUE_DATE`, `OPEN_ITEM`, the clearing fields `CLEARING_YEAR`, `CLEARING_NO`, `CLEARING_DATE` and the ETag `VERSION` |
+| `/TRFIN/CLEARED_ITEMS` | + `LINE_NO` | `ITEM_YEAR`, `ITEM_DOCUMENT_NO`, `ITEM_NO`: the items a clearing entry cleared; only clearing entries have them |
+| `/TRFIN/LEDGER_ENTRIES` | + `LEDGER`, `LINE_NO` | maintained by the save method: `DOCUMENT_TYPE`, `PERIOD`, `POSTING_DATE`, `ITEM_NO` (`null` for reclassifications), `ACCOUNT`, `PARTNER`, `PARTNER_ROLE`, `AMOUNT` (debit positive, credit negative), `LINE_KIND` `ITEM` or `RECLASSIFICATION`, `OPEN_ITEM`, `DUE_DATE` and the clearing fields |
+
+A posted entry changes only in `HEADER_TEXT`, `ITEM_TEXT` and `ASSIGNMENT`, which explain it
+and have no effect on balances or reports; everything else is read-only or read-only on
+update, entries are never deleted and posted entries get no further items. Fiscal year and
+number come from the kernel when the entry is saved: callers leave them out.
+
+**Posting.** Code and services create an entry with its items, over OData by a deep insert
+on `JournalEntries`, or with the static action `POST`, which takes the structure
+`/TRFIN/POSTING` with the items in `ITEMS` (`ITEM_NO` by default their position,
+`ACCOUNT_KIND` by default `ACCOUNT`) and names the new entry by its `LINK`. The save
+sequence then runs:
+
+1. Determinations on modify: the period of the posting date from
+   `/TRFIN/FISCAL_CALENDAR.PERIOD_OF`, the currency of the company, for an entry without
+   ledger and group the ledger or group its document type is restricted to; for customers
+   and suppliers the reconciliation account of their company data as `ACCOUNT` and the due
+   date, by default the posting date; `OPEN_ITEM` for partners always, for accounts by
+   their `OPEN_ITEMS`.
+2. Validations, with messages at the entry or the item and the field: debit equals credit,
+   at least two items, the period is open, the kind of account is allowed by the document
+   type, the account exists in the company and is blocked neither there nor in the chart,
+   no direct posting to reconciliation accounts or accounts posted only automatically, the
+   partner exists, is not blocked, has the role, valid on the posting date, and company data
+   that are not blocked, the reconciliation account is one for the role; ledger or group
+   (not both) exist, are assigned to the company and fit the document type (a type
+   restricted to a ledger takes only it, one restricted to a group its members or the
+   group); amounts are greater than zero with at most the decimals of the currency; the user
+   may post the document type in the company (`/TRFIN/JOURNAL_ENTRY`, `CREATE`) and to every
+   ledger of the entry (`/TRFIN/LEDGER`, `CREATE`).
+3. Late numbering: the fiscal year of the posting date and the next number of the interval
+   of the document type in `/TRFIN/JOURNAL_ENTRY` with the company as subobject, in the
+   savepoint of the save, so numbers have no gaps per company and year: a failure later in
+   the save gives the number back.
+4. The kernel writes the entry and its items.
+5. The save method `WRITE_LEDGERS` posts every new entry to its ledgers: its ledger, the
+   members of its group, or the primary ledger and the ledgers assigned to the company; a
+   reversal to the ledgers of the reversed entry. Per ledger it writes a ledger entry per
+   item, adds the change of every partner to its running balance in
+   `/TRFIN/PARTNER_BALANCES`, writes the reclassification (below), and adds all ledger
+   entries to `/TRFIN/ACCOUNT_TOTALS` and the items of partners to `/TRFIN/PARTNER_TOTALS`
+   per fiscal year and period. Running balances and totals change with
+   `update ... set A = A + x`; a missing row is inserted, and when a parallel posting
+   inserted it first, the update runs again. All changes of an entry run in the order of
+   their keys, running balances first, so parallel postings wait for each other instead of
+   locking each other: PostgreSQL holds the locks of the rows until the commit, SQLite has
+   one writer.
+
+The static action `CHECK` takes the same structure, runs the same determinations and
+checks without writing anything and returns `/TRFIN/CHECK_RESULT` with the fiscal year, the
+period and the messages, each with `ITEM_NO` (`null` for the entry), `FIELD` and `TEXT`.
+
+**Reclassification.** The part of the balance of a partner that is opposite to its usual
+side belongs on its alternative account: the credit balance of a customer, the debit balance
+of a supplier. With the running balance before (`s0`) and after (`s1`) a posting, the share
+is `u(s) = max(0, -s)` for a customer and `u(s) = max(0, s)` for a supplier, and
+`d = u(s1) - u(s0)`. When `d` is not zero the posting writes two ledger entries of the kind
+`RECLASSIFICATION` with the partner: for a customer `+d` on the reconciliation account and
+`-d` on the alternative account, for a supplier `-d` and `+d`. A customer with a debit
+balance of 100 who pays 150 has -50: the payment moves 50 from the reconciliation account to
+the alternative account, and an invoice of 80 later moves them back. Every entry stays
+balanced in every ledger, the items of the entry stay as they are, and the totals of
+partners hold only the items.
+
+The reclassification follows the running balance at the time of posting, in the order of
+postings, not in the order of posting dates: an entry posted with an earlier posting date
+than others reclassifies by the balance after all of them. The amounts on the alternative
+accounts are right for the balances of today; a balance sheet for an earlier key date can
+differ by entries posted later with earlier dates. A check that compares the reclassified
+amounts with the balances by posting date up to a key date comes with the reports.
+
+**Reversal.** The instance action `REVERSE` takes `/TRFIN/REVERSAL` with the posting date,
+`null` for that of the reversed entry. It is rejected when an item is cleared or the entry is
+reversed already. The reversal has the reversal type of the document type, the items with
+debit and credit swapped, the same ledgers, `KIND` `REVERSAL` and `REVERSED_YEAR` and
+`REVERSED_NO`; the reversed entry gets `STATUS` `REVERSED` and the number of the reversal in
+`REVERSAL_YEAR` and `REVERSAL_NO` when the reversal is numbered. The reversal goes through
+the same checks and follows the same reclassification, which cancels that of the reversed
+entry when nothing was posted to the partner in between. Clearing comes with a later
+version; the fields and `/TRFIN/CLEARED_ITEMS` are there already.
 
 ## Authorizations and roles
 
@@ -87,14 +181,17 @@ rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1
 | `/TRFIN/ACCOUNT` | `COMPANY` | `READ`, `CREATE`, `UPDATE`, `DELETE` | accounts of companies |
 | `/TRFIN/CHART_ACCOUNT` | `CHART` | `READ`, `CREATE`, `UPDATE`, `DELETE` | accounts of charts |
 | `/TRFIN/PARTNER_COMPANY` | `COMPANY`, `ROLE` | `READ`, `CREATE`, `UPDATE`, `DELETE` | company data of customers and suppliers |
-| `/TRFIN/LEDGER` | `LEDGER` | `READ`, `CREATE` | reading and posting to a ledger, with postings |
+| `/TRFIN/LEDGER` | `LEDGER` | `READ`, `CREATE` | reading the ledger entries of a ledger and posting to it |
+| `/TRFIN/JOURNAL_ENTRY` | `COMPANY`, `DOCUMENT_TYPE` | `READ`, `CREATE`, `UPDATE`, `CANCEL` | reading, posting (`POST`, `CHECK` and deep inserts, which need `UPDATE` for the items as well), changing the texts and reversing journal entries |
 
-Reading over OData and with `read business object` filters by the same fields.
+Reading over OData and with `read business object` filters by the same fields. Ledger
+entries are read where the user may read the journal entry and the ledger.
 
 | Role | Grants |
 |---|---|
 | `/TRFIN/MASTER_DATA` | all activities on accounts of charts and companies and on company data of customers and suppliers; reading partners and the configuration |
-| `/TRFIN/DISPLAY` | reading configuration, master data, partners and ledgers |
+| `/TRFIN/ACCOUNTANT` | posting, changing the texts of, reversing and reading journal entries in all companies and ledgers; reading configuration, master data and partners |
+| `/TRFIN/DISPLAY` | reading configuration, master data, partners, ledgers and journal entries |
 | `/TRFIN/CONFIGURATION` | maintaining the configuration of TRFIN and TRBP and the intervals of `/TRFIN/JOURNAL_ENTRY` and `/TRBP/PARTNER` |
 | `/TRFIN/ODATA_USER` | starting the services of TRFIN below `/rt/odata` |
 
@@ -105,9 +202,25 @@ Reading over OData and with `read business object` filters by the same fields.
 `StatementStructures` with `StatementNodes` and `StatementNodeRanges`, `PostingPeriods` and
 the texts. `/TRFIN/MASTER_DATA_SERVICE` offers `Accounts`, `AccountTexts`,
 `CompanyAccounts`, the partners read only as `Partners`, and their company data as
-`Customers` and `Suppliers`. Activate them with `rt service activate`.
+`Customers` and `Suppliers`. `/TRFIN/JOURNAL_ENTRY_SERVICE` offers `JournalEntries` (deep
+insert with `JournalEntryItems`, changes of the texts), `JournalEntryItems`, and read only
+`LedgerEntries` and `ClearedItems`, with the actions `POST` and `CHECK` at the root of the
+service and `REVERSE` bound to `JournalEntries`. `POST` answers with the final key of the
+new entry. Activate them with `rt service activate`.
+
+```bash
+curl -u anna -H 'X-Tenant: ACME' -H 'Content-Type: application/json' \
+  https://host/rt/odata/trfin/journal_entry_service/POST -d '{
+  "COMPANY": "1000", "DOCUMENT_TYPE": "SA", "DOCUMENT_DATE": "2026-03-01", "POSTING_DATE": "2026-03-01",
+  "ITEMS": [ { "ACCOUNT": "100000", "DEBIT_CREDIT": "D", "AMOUNT": "100.00" },
+             { "ACCOUNT": "400000", "DEBIT_CREDIT": "C", "AMOUNT": "100.00" } ] }'
+```
 
 ## Tests
 
 `go test ./kernel -run Ledger` installs TRBP and TRFIN from `packages/` with the test package
-`testdata/ledger/TRFINTEST` against SQLite and, with `RT_TEST_POSTGRES_DSN`, PostgreSQL.
+`testdata/ledger/TRFINTEST` against SQLite and, with `RT_TEST_POSTGRES_DSN`, PostgreSQL. The
+tests of postings cover every check, numbers without gaps, ledgers, groups, totals,
+reversals and reclassification; under PostgreSQL eight parallel postings to one customer,
+after which `/TRFINTEST/API.CONSISTENCY` compares totals, running balances and
+reclassifications with the ledger entries.

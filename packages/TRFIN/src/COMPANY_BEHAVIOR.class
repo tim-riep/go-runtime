@@ -1,5 +1,6 @@
 # The behavior of companies: currency and charts that exist and fit, and
-# ledgers besides the primary one.
+# ledgers besides the primary one; currency and ledgers stay once the
+# company has movements.
 public class /TRFIN/COMPANY_BEHAVIOR
 
   public method CHECK_COMPANY(keys: array of key of /TRFIN/COMPANIES, response: /TRBASE/ENTITY_RESPONSE)
@@ -29,8 +30,12 @@ public class /TRFIN/COMPANY_BEHAVIOR
         end
       end
       # Country accounts refer to the country chart; it stays while the
-      # accounts of the company have them.
+      # accounts of the company have them. The currency stays once the
+      # company has movements.
       var before = select single from /TRFIN/COMPANIES where COMPANY = company.COMPANY
+      if before is not null and before.CURRENCY <> company.CURRENCY and /TRFIN/MOVEMENTS.COMPANY(company.COMPANY)
+        response.FIELD_ERROR(i, "CURRENCY", "the company {company.COMPANY} has movements; its currency stays")
+      end
       if before is not null and not SAME(before.COUNTRY_CHART, company.COUNTRY_CHART)
         var mapped = select count from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and COUNTRY_ACCOUNT is not null
         if mapped > 0
@@ -66,6 +71,15 @@ public class /TRFIN/COMPANY_BEHAVIOR
         response.FIELD_ERROR(i, "LEDGER", "the ledger {key.LEDGER} does not exist")
       elseif ledger.PRIMARY
         response.FIELD_ERROR(i, "LEDGER", "the primary ledger {key.LEDGER} belongs to every company without assignment")
+      end
+    end
+  end
+
+  # A ledger stays assigned to a company while it has movements in it.
+  public method CHECK_LEDGER_REMOVAL(keys: array of key of /TRFIN/COMPANY_LEDGERS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      if /TRFIN/MOVEMENTS.COMPANY_LEDGER(key.COMPANY, key.LEDGER)
+        response.ERROR(i, "the ledger {key.LEDGER} has movements in the company {key.COMPANY}; it stays assigned")
       end
     end
   end

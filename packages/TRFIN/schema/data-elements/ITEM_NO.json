@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ITEM_NO",
+  "domain": "/TRFIN/SMALL_NUMBER",
+  "texts": {
+    "en": {
+      "short": "Item",
+      "medium": "Item",
+      "long": "Number of the item",
+      "heading": "Item"
+    },
+    "de": {
+      "short": "Position",
+      "medium": "Position",
+      "long": "Nummer der Position",
+      "heading": "Position"
+    }
+  }
+}

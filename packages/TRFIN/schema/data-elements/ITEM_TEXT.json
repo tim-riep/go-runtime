@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ITEM_TEXT",
+  "domain": "/TRFIN/LONG_TEXT",
+  "texts": {
+    "en": {
+      "short": "Text",
+      "medium": "Item text",
+      "long": "Text of the item",
+      "heading": "Item text"
+    },
+    "de": {
+      "short": "Text",
+      "medium": "Positionstext",
+      "long": "Text der Position",
+      "heading": "Positionstext"
+    }
+  }
+}

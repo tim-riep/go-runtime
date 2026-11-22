@@ -1,0 +1,133 @@
+{
+  "name": "/TRFIN/LEDGER_ENTRIES",
+  "description": "Entries of journal entries in the ledgers, written when an entry is posted",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER"
+    },
+    {
+      "name": "LINE_NO",
+      "dataElement": "/TRFIN/LINE_NO"
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE",
+      "notNull": true,
+      "description": "The document type of the entry, for the checks of authorizations"
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD",
+      "notNull": true
+    },
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO",
+      "description": "The item of the entry; null for reclassifications"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT",
+      "notNull": true
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "PARTNER_ROLE",
+      "dataElement": "/TRBP/ROLE",
+      "description": "/TRFIN/CUSTOMER or /TRFIN/SUPPLIER for lines of partners"
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRFIN/LEDGER_AMOUNT",
+      "notNull": true,
+      "description": "Debit positive, credit negative"
+    },
+    {
+      "name": "LINE_KIND",
+      "dataElement": "/TRFIN/LINE_KIND",
+      "notNull": true
+    },
+    {
+      "name": "OPEN_ITEM",
+      "dataElement": "/TRFIN/OPEN_ITEM",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "DUE_DATE",
+      "dataElement": "/TRFIN/DUE_DATE"
+    },
+    {
+      "name": "CLEARING_YEAR",
+      "dataElement": "/TRFIN/CLEARING_YEAR"
+    },
+    {
+      "name": "CLEARING_NO",
+      "dataElement": "/TRFIN/CLEARING_NO"
+    },
+    {
+      "name": "CLEARING_DATE",
+      "dataElement": "/TRFIN/CLEARING_DATE"
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "FISCAL_YEAR",
+    "DOCUMENT_NO",
+    "LEDGER",
+    "LINE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTRY",
+      "table": "/TRFIN/JOURNAL_ENTRIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "FISCAL_YEAR",
+          "references": "FISCAL_YEAR"
+        },
+        {
+          "field": "DOCUMENT_NO",
+          "references": "DOCUMENT_NO"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    }
+  ]
+}

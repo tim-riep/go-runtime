@@ -27,6 +27,30 @@ public class /TRFIN/MOVEMENTS
     return n > 0
   end
 
+  # Whether a ledger has movements in any company.
+  public static method LEDGER(ledger: STRING) returns BOOL
+    var n = select count from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger
+    return n > 0
+  end
+
+  # Whether a ledger has movements in a company.
+  public static method COMPANY_LEDGER(company: STRING, ledger: STRING) returns BOOL
+    var n = select count from /TRFIN/ACCOUNT_TOTALS where COMPANY = company and LEDGER = ledger
+    return n > 0
+  end
+
+  # Whether a company has movements in any ledger.
+  public static method COMPANY(company: STRING) returns BOOL
+    var n = select count from /TRFIN/ACCOUNT_TOTALS where COMPANY = company
+    return n > 0
+  end
+
+  # Whether any journal entry is posted.
+  public static method ANY() returns BOOL
+    var n = select count from /TRFIN/JOURNAL_ENTRIES
+    return n > 0
+  end
+
   # Whether a partner has movements in a role in a company in any ledger.
   public static method PARTNER_IN_COMPANY(role: STRING, partner: STRING, company: STRING) returns BOOL
     var n = select count from /TRFIN/PARTNER_TOTALS where COMPANY = company and PARTNER_ROLE = role and PARTNER = partner

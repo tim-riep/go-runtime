@@ -1,0 +1,35 @@
+{
+  "name": "/TRFIN/POSTED_ENTRY",
+  "texts": {
+    "en": {
+      "label": "Posted journal entry",
+      "description": "The link and the key of a journal entry that POST created"
+    },
+    "de": {
+      "label": "Gebuchter Beleg",
+      "description": "Der Link und der Schlüssel eines Belegs, den POST angelegt hat"
+    }
+  },
+  "components": [
+    {
+      "name": "LINK",
+      "dataElement": "/TRBASE/ENTITY_LINK",
+      "notNull": true
+    },
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY",
+      "notNull": true
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO",
+      "notNull": true
+    }
+  ]
+}

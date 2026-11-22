@@ -1,0 +1,343 @@
+# The determinations and checks of postings. The business object
+# /TRFIN/JOURNAL_ENTRY runs them for new journal entries in its
+# determinations and validations, and its action CHECK runs them for a
+# journal entry that is not posted, so both give the same messages.
+public class /TRFIN/POSTING_CHECKS
+
+  # The messages of the last check.
+  private attribute MESSAGES: array of /TRFIN/POSTING_MESSAGE
+
+  # The determined fields of a new journal entry: the period of the
+  # posting date, the currency of the company and, for a normal entry
+  # without ledger and group, the ledger or group of its document type.
+  public static method DETERMINE_ENTRY(entry: /TRFIN/JOURNAL_ENTRIES) returns /TRFIN/JOURNAL_ENTRIES
+    var out = entry
+    out.PERIOD = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(entry.COMPANY, entry.POSTING_DATE).PERIOD
+    var company = select single from /TRFIN/COMPANIES where COMPANY = entry.COMPANY
+    if company is not null
+      out.CURRENCY = company.CURRENCY
+    end
+    if entry.KIND = /TRFIN/ENTRY_KIND.NORMAL and entry.LEDGER is null and entry.LEDGER_GROUP is null
+      var type = select single from /TRFIN/DOCUMENT_TYPES where DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+      if type is not null
+        out.LEDGER = type.LEDGER
+        out.LEDGER_GROUP = type.LEDGER_GROUP
+      end
+    end
+    return out
+  end
+
+  # The determined fields of a new item: whether it is an open item, and
+  # for customers and suppliers the reconciliation account of their
+  # company data and the due date, by default the posting date. Items of
+  # reversals keep the accounts of the reversed items.
+  public static method DETERMINE_ITEM(entry: /TRFIN/JOURNAL_ENTRIES, item: /TRFIN/JOURNAL_ENTRY_ITEMS) returns /TRFIN/JOURNAL_ENTRY_ITEMS
+    var out = item
+    if item.ACCOUNT_KIND = /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT
+      out.OPEN_ITEM = false
+      var account = item.ACCOUNT
+      if account is not null
+        var row = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = entry.COMPANY and ACCOUNT = account
+        if row is not null
+          out.OPEN_ITEM = row.OPEN_ITEMS
+        end
+      end
+      return out
+    end
+    out.OPEN_ITEM = true
+    if item.DUE_DATE is null
+      out.DUE_DATE = entry.POSTING_DATE
+    end
+    var partner = item.PARTNER
+    if entry.KIND = /TRFIN/ENTRY_KIND.REVERSAL or partner is null
+      return out
+    end
+    var data = PARTNER_DATA(item.ACCOUNT_KIND, partner, entry.COMPANY)
+    if data is not null
+      out.ACCOUNT = data.RECONCILIATION_ACCOUNT
+    end
+    return out
+  end
+
+  # The partner role of the items of a kind: /TRFIN/CUSTOMER or
+  # /TRFIN/SUPPLIER.
+  public static method ROLE_OF(kind: /TRFIN/ITEM_ACCOUNT_KIND) returns STRING
+    if kind = /TRFIN/ITEM_ACCOUNT_KIND.SUPPLIER
+      return "/TRFIN/SUPPLIER"
+    end
+    return "/TRFIN/CUSTOMER"
+  end
+
+  # The company data of a customer or supplier in a company, as row of
+  # the customers, null when there is none.
+  public static method PARTNER_DATA(kind: /TRFIN/ITEM_ACCOUNT_KIND, partner: STRING, company: STRING) returns /TRFIN/CUSTOMER_COMPANIES?
+    if kind = /TRFIN/ITEM_ACCOUNT_KIND.CUSTOMER
+      return select single from /TRFIN/CUSTOMER_COMPANIES where PARTNER = partner and COMPANY = company
+    end
+    var row = select single from /TRFIN/SUPPLIER_COMPANIES where PARTNER = partner and COMPANY = company
+    if row is null
+      return null
+    end
+    var out: /TRFIN/CUSTOMER_COMPANIES
+    out.PARTNER = row.PARTNER
+    out.COMPANY = row.COMPANY
+    out.ROLE = row.ROLE
+    out.RECONCILIATION_ACCOUNT = row.RECONCILIATION_ACCOUNT
+    out.ALTERNATIVE_ACCOUNT = row.ALTERNATIVE_ACCOUNT
+    out.BLOCKED = row.BLOCKED
+    return out
+  end
+
+  # The ledgers a journal entry goes to: those of its ledger, its group or
+  # its company, and for a reversal those of the reversed entry.
+  public static method LEDGERS_OF(entry: /TRFIN/JOURNAL_ENTRIES) returns array of STRING
+    var year = entry.REVERSED_YEAR
+    var no = entry.REVERSED_NO
+    if entry.KIND = /TRFIN/ENTRY_KIND.REVERSAL and year is not null and no is not null
+      var out: array of STRING = []
+      for row in select LEDGER, count() from /TRFIN/LEDGER_ENTRIES where COMPANY = entry.COMPANY and FISCAL_YEAR = year and DOCUMENT_NO = no group by LEDGER
+        out.APPEND(row.LEDGER)
+      end
+      return out
+    end
+    return /TRFIN/LEDGER_SETS.TARGETS(entry.COMPANY, entry.LEDGER, entry.LEDGER_GROUP)
+  end
+
+  # Checks a journal entry with its determined fields and items and
+  # returns the problems that keep it from being posted, at the item and
+  # field they concern; none when it can be posted.
+  public method CHECK(entry: /TRFIN/JOURNAL_ENTRIES, items: array of /TRFIN/JOURNAL_ENTRY_ITEMS) returns array of /TRFIN/POSTING_MESSAGE
+    MESSAGES = []
+    var company = select single from /TRFIN/COMPANIES where COMPANY = entry.COMPANY
+    if company is null
+      ADD(null, "COMPANY", "the company {entry.COMPANY} does not exist")
+      return MESSAGES
+    end
+    var type = select single from /TRFIN/DOCUMENT_TYPES where DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+    if type is null
+      ADD(null, "DOCUMENT_TYPE", "the document type {entry.DOCUMENT_TYPE} does not exist")
+      return MESSAGES
+    end
+    # Reversals are checked with the activity CANCEL on the reversed
+    # entry when the action runs.
+    if entry.KIND = /TRFIN/ENTRY_KIND.NORMAL
+      var allowed = authorized /TRFIN/JOURNAL_ENTRY
+        COMPANY = entry.COMPANY
+        DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+        ACTIVITY = CREATE
+      end
+      if not allowed
+        ADD(null, "DOCUMENT_TYPE", "you may not post journal entries of the type {entry.DOCUMENT_TYPE} in the company {entry.COMPANY}")
+      end
+    end
+    var p = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(entry.COMPANY, entry.POSTING_DATE)
+    if not /TRFIN/FISCAL_CALENDAR.IS_OPEN(entry.COMPANY, p.FISCAL_YEAR, p.PERIOD)
+      ADD(null, "POSTING_DATE", "the period {p.PERIOD} of {p.FISCAL_YEAR} is not open for postings in the company {entry.COMPANY}")
+    end
+    CHECK_LEDGERS(entry, type)
+    if items.LENGTH() < 2 and entry.KIND <> /TRFIN/ENTRY_KIND.CLEARING
+      ADD(null, null, "a journal entry has at least two items, not {items.LENGTH()}")
+    end
+    var decimals = 2
+    var currency = select single from /TRFIN/CURRENCIES where CURRENCY = company.CURRENCY
+    if currency is not null
+      decimals = currency.DECIMALS
+    end
+    var debit: DEC(38,2) = 0.00
+    var credit: DEC(38,2) = 0.00
+    var numbers: array of INT4 = []
+    for item in items
+      if numbers.CONTAINS(item.ITEM_NO)
+        ADD(item.ITEM_NO, "ITEM_NO", "the item {item.ITEM_NO} is given twice")
+      end
+      numbers.APPEND(item.ITEM_NO)
+      if item.AMOUNT <= 0
+        ADD(item.ITEM_NO, "AMOUNT", "the amount is greater than zero, not {item.AMOUNT}")
+      elseif not FITS(item.AMOUNT, decimals)
+        ADD(item.ITEM_NO, "AMOUNT", "the currency {company.CURRENCY} has {decimals} decimals; the amount {item.AMOUNT} has more")
+      end
+      if item.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.D
+        debit = debit + item.AMOUNT
+      else
+        credit = credit + item.AMOUNT
+      end
+      CHECK_ITEM(entry, company, type, item)
+    end
+    if debit <> credit
+      ADD(null, null, "debit {debit} and credit {credit} differ by {debit - credit}")
+    end
+    return MESSAGES
+  end
+
+  # The ledgers of a journal entry: a ledger or a group, as the document
+  # type allows, assigned to the company, and the user may post to them.
+  private method CHECK_LEDGERS(entry: /TRFIN/JOURNAL_ENTRIES, type: /TRFIN/DOCUMENT_TYPES)
+    var ledger = entry.LEDGER
+    var group = entry.LEDGER_GROUP
+    if ledger is not null and group is not null
+      ADD(null, "LEDGER_GROUP", "a journal entry goes to a ledger or to a group of ledgers, not to both")
+      return
+    end
+    if ledger is not null
+      var found = select count from /TRFIN/LEDGERS where LEDGER = ledger
+      if found = 0
+        ADD(null, "LEDGER", "the ledger {ledger} does not exist")
+        return
+      end
+    end
+    if group is not null
+      var found = select count from /TRFIN/LEDGER_GROUPS where LEDGER_GROUP = group
+      if found = 0
+        ADD(null, "LEDGER_GROUP", "the group of ledgers {group} does not exist")
+        return
+      end
+    end
+    if entry.KIND = /TRFIN/ENTRY_KIND.NORMAL
+      var only = type.LEDGER
+      if only is not null and (ledger is null or ledger <> only)
+        ADD(null, "LEDGER", "journal entries of the type {type.DOCUMENT_TYPE} go only to the ledger {only}")
+      end
+      var members = type.LEDGER_GROUP
+      if members is not null
+        var fits = group is not null and group = members or ledger is not null and /TRFIN/LEDGER_SETS.MEMBERS(members).CONTAINS(ledger)
+        if not fits
+          ADD(null, "LEDGER_GROUP", "journal entries of the type {type.DOCUMENT_TYPE} go only to the ledgers of the group {members}")
+        end
+      end
+    end
+    var field = "LEDGER"
+    if group is not null
+      field = "LEDGER_GROUP"
+    end
+    var ledgers = LEDGERS_OF(entry)
+    if ledgers is empty and group is not null
+      ADD(null, field, "the group of ledgers {group} has no members")
+      return
+    elseif ledgers is empty
+      ADD(null, field, "the journal entry goes to no ledger; there is no primary ledger")
+      return
+    end
+    var unassigned = /TRFIN/LEDGER_SETS.UNASSIGNED(entry.COMPANY, ledgers)
+    if unassigned is not empty
+      ADD(null, field, "the ledgers {unassigned.JOIN(", ")} are not assigned to the company {entry.COMPANY}")
+    end
+    for l in ledgers
+      var allowed = authorized /TRFIN/LEDGER
+        LEDGER = l
+        ACTIVITY = CREATE
+      end
+      if not allowed
+        ADD(null, field, "you may not post to the ledger {l}")
+      end
+    end
+  end
+
+  # An item: its kind of account allowed by the document type, an account
+  # that can be posted directly, or a customer or supplier with the role,
+  # valid on the posting date, company data and a reconciliation account.
+  private method CHECK_ITEM(entry: /TRFIN/JOURNAL_ENTRIES, company: /TRFIN/COMPANIES, type: /TRFIN/DOCUMENT_TYPES, item: /TRFIN/JOURNAL_ENTRY_ITEMS)
+    var n = item.ITEM_NO
+    var kind = item.ACCOUNT_KIND
+    var allowed = kind = /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT and type.ALLOW_ACCOUNTS or kind = /TRFIN/ITEM_ACCOUNT_KIND.CUSTOMER and type.ALLOW_CUSTOMERS or kind = /TRFIN/ITEM_ACCOUNT_KIND.SUPPLIER and type.ALLOW_SUPPLIERS
+    if not allowed
+      ADD(n, "ACCOUNT_KIND", "the document type {type.DOCUMENT_TYPE} allows no items of the kind {kind}")
+    end
+    var account = item.ACCOUNT
+    if kind = /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT
+      if item.PARTNER is not null
+        ADD(n, "PARTNER", "an item on an account has no partner")
+      end
+      if account is null
+        ADD(n, "ACCOUNT", "the item needs an account")
+        return
+      end
+      CHECK_ACCOUNT(n, company, account, true)
+      return
+    end
+    var partner = item.PARTNER
+    var role = ROLE_OF(kind)
+    if partner is null
+      ADD(n, "PARTNER", "an item of the kind {kind} needs a partner")
+      return
+    end
+    var p = select single from /TRBP/PARTNERS where PARTNER = partner
+    if p is null
+      ADD(n, "PARTNER", "the partner {partner} does not exist")
+      return
+    end
+    if p.BLOCKED
+      ADD(n, "PARTNER", "the partner {partner} is blocked")
+    end
+    var r = select single from /TRBP/PARTNER_ROLES where PARTNER = partner and ROLE = role
+    if r is null
+      ADD(n, "PARTNER", "the partner {partner} has no role {role}")
+    else
+      var first = r.VALID_FROM
+      var last = r.VALID_TO
+      if first is not null and entry.POSTING_DATE < first or last is not null and last < entry.POSTING_DATE
+        ADD(n, "PARTNER", "the role {role} of the partner {partner} is not valid on {entry.POSTING_DATE}")
+      end
+    end
+    var data = PARTNER_DATA(kind, partner, entry.COMPANY)
+    if data is null
+      ADD(n, "PARTNER", "the partner {partner} has no data in the role {role} in the company {entry.COMPANY}")
+      return
+    end
+    if data.BLOCKED
+      ADD(n, "PARTNER", "the partner {partner} is blocked in the role {role} in the company {entry.COMPANY}")
+    end
+    if account is null
+      ADD(n, "ACCOUNT", "the item needs the reconciliation account of the partner")
+      return
+    end
+    CHECK_ACCOUNT(n, company, account, false)
+    var row = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = entry.COMPANY and ACCOUNT = account
+    var wanted = /TRFIN/RECONCILIATION.CUSTOMERS
+    if kind = /TRFIN/ITEM_ACCOUNT_KIND.SUPPLIER
+      wanted = /TRFIN/RECONCILIATION.SUPPLIERS
+    end
+    if row is not null and row.RECONCILIATION <> wanted
+      ADD(n, "ACCOUNT", "the account {account} is no reconciliation account for {wanted}")
+    end
+  end
+
+  # An account of a company: it exists and is blocked neither in the
+  # company nor in the chart; an account posted directly is no
+  # reconciliation account and is not posted only automatically.
+  private method CHECK_ACCOUNT(n: INT4, company: /TRFIN/COMPANIES, account: STRING, direct: BOOL)
+    var row = select single from /TRFIN/COMPANY_ACCOUNTS where COMPANY = company.COMPANY and ACCOUNT = account
+    if row is null
+      ADD(n, "ACCOUNT", "the account {account} does not exist in the company {company.COMPANY}")
+      return
+    end
+    if row.BLOCKED
+      ADD(n, "ACCOUNT", "the account {account} is blocked in the company {company.COMPANY}")
+    end
+    var chart = select single from /TRFIN/ACCOUNTS where CHART = company.CHART and ACCOUNT = account
+    if chart is not null and chart.BLOCKED
+      ADD(n, "ACCOUNT", "the account {account} is blocked in the chart {company.CHART}")
+    end
+    if direct and row.RECONCILIATION <> /TRFIN/RECONCILIATION.NONE
+      ADD(n, "ACCOUNT", "the account {account} is a reconciliation account for {row.RECONCILIATION}; post to the customer or supplier")
+    end
+    if direct and row.AUTOMATIC_ONLY
+      ADD(n, "ACCOUNT", "the account {account} is posted only automatically")
+    end
+  end
+
+  # Whether an amount has at most the given number of decimals.
+  private static method FITS(amount: DEC(18,2), decimals: INT4) returns BOOL
+    if decimals >= 2
+      return true
+    end
+    if decimals = 1
+      return amount as DEC(18,1) = amount
+    end
+    return amount as DEC(18,0) = amount
+  end
+
+  private method ADD(item: INT4?, field: STRING?, text: STRING)
+    MESSAGES.APPEND(new /TRFIN/POSTING_MESSAGE(ITEM_NO: item, FIELD: field, TEXT: text))
+  end
+
+end

@@ -1,0 +1,32 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRY_SERVICE",
+  "description": {
+    "en": "Journal entries of the general ledger",
+    "de": "Belege des Hauptbuchs"
+  },
+  "entitySets": {
+    "JournalEntries": {
+      "businessObject": "/TRFIN/JOURNAL_ENTRY",
+      "entity": "/TRFIN/JOURNAL_ENTRIES",
+      "actions": [
+        "POST",
+        "CHECK",
+        "REVERSE"
+      ]
+    },
+    "JournalEntryItems": {
+      "businessObject": "/TRFIN/JOURNAL_ENTRY",
+      "entity": "/TRFIN/JOURNAL_ENTRY_ITEMS"
+    },
+    "ClearedItems": {
+      "businessObject": "/TRFIN/JOURNAL_ENTRY",
+      "entity": "/TRFIN/CLEARED_ITEMS",
+      "readOnly": true
+    },
+    "LedgerEntries": {
+      "businessObject": "/TRFIN/JOURNAL_ENTRY",
+      "entity": "/TRFIN/LEDGER_ENTRIES",
+      "readOnly": true
+    }
+  }
+}

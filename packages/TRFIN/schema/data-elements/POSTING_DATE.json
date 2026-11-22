@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/POSTING_DATE",
+  "domain": "/TRBASE/DATE",
+  "texts": {
+    "en": {
+      "short": "Post. date",
+      "medium": "Posting date",
+      "long": "Date the entry is posted on",
+      "heading": "Posting date"
+    },
+    "de": {
+      "short": "Buch.datum",
+      "medium": "Buchungsdatum",
+      "long": "Datum, zu dem gebucht wird",
+      "heading": "Buchungsdatum"
+    }
+  }
+}

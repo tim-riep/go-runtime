@@ -794,7 +794,9 @@ and go through a fixed save sequence. `TRDEMOFIN` defines `/TRDEMOFIN/COMPANY`
   the instances are written. It writes tables without business object, also with
   `update ... set A = A + x`, and the dependent entities with `"maintainedBy": "save"`, which
   have no operations and are read like other entities, also over OData; the kernel allows
-  their writes only while the save method runs.
+  their writes only while the save method runs. Such an entity with an authorization of its
+  own is read only where the user may read its parent instance as well, so ledger entries
+  are checked with the ledger and with the journal entry they belong to.
 - `fields` sets `readOnly`, `readOnlyOnUpdate` and `mandatory`; `administrative` names the
   fields the kernel fills when it saves (`createdAt`/`changedAt` TIMESTAMP, `createdBy`/
   `changedBy` text) and `etag` a TIMESTAMP, UUID or INT8 field for optimistic locking.
@@ -804,7 +806,9 @@ and go through a fixed save sequence. `TRDEMOFIN` defines `/TRDEMOFIN/COMPANY`
 - Determinations (`when`: `modify` or `save`) and validations name methods of the behavior
   class and trigger on operations, for `update` optionally only on some `fields`. Actions
   are `instance` (the default) or static, with an optional `parameter` structure, a `result`
-  (`self` or a structure) and `modifies` (default `true`).
+  (`self` or a structure) and `modifies` (default `true`). An action of the root that
+  creates an instance with late numbering names it in its result by a component `LINK`;
+  over OData the answer has the final key in the components named like the key fields.
 - `authorization` maps every field of the authorization object except `ACTIVITY` to a field
   of the entity, or to `*` when the entity does not check it, and every operation, `read`
   and every action to an activity. The root of a
@@ -1491,19 +1495,26 @@ rt service activate /TRBP/PARTNER_SERVICE
 ## General ledger
 
 The package `TRFIN` in [packages/TRFIN](packages/TRFIN) is the general ledger. It requires
-TRBP and brings so far its configuration and master data: currencies, charts of accounts
+TRBP and brings its configuration and master data: currencies, charts of accounts
 (operational and of countries), companies, ledgers with exactly one primary ledger, groups
 of ledgers, document types, balance sheet structures, posting periods and the fiscal
 calendar, the accounts of charts and companies, and the company data of customers and
 suppliers as an extension of the business partner with the partner roles `/TRFIN/CUSTOMER`
-and `/TRFIN/SUPPLIER`. [docs/trfin.md](docs/trfin.md) describes the business objects,
-their rules, authorizations, roles and the services `/TRFIN/CONFIGURATION_SERVICE` and
-`/TRFIN/MASTER_DATA_SERVICE`.
+and `/TRFIN/SUPPLIER`. Journal entries take numbers without gaps per company and fiscal year
+and post to a ledger, a group of ledgers or the ledgers of their company, with totals per
+period, running balances of customers and suppliers and the reclassification of their
+opposite balances to alternative accounts; posted entries change only in their texts and are
+reversed by entries with debit and credit swapped. [docs/trfin.md](docs/trfin.md) describes
+the business objects, their rules, the posting, authorizations, roles and the services
+`/TRFIN/CONFIGURATION_SERVICE`, `/TRFIN/MASTER_DATA_SERVICE` and
+`/TRFIN/JOURNAL_ENTRY_SERVICE`.
 
 ```bash
 rt install packages/TRFIN --yes
 rt service activate /TRFIN/CONFIGURATION_SERVICE
 rt service activate /TRFIN/MASTER_DATA_SERVICE
+rt service activate /TRFIN/JOURNAL_ENTRY_SERVICE
+rt number-range interval add /TRFIN/JOURNAL_ENTRY 01 --tenant ACME --subobject 1000 --year 2026 --from 1 --to 999999999
 ```
 
 ## Library

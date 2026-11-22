@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CLEARING_YEAR",
+  "domain": "/TRBASE/FISCAL_YEAR",
+  "texts": {
+    "en": {
+      "short": "Clr. year",
+      "medium": "Clearing year",
+      "long": "Fiscal year of the clearing",
+      "heading": "Clearing year"
+    },
+    "de": {
+      "short": "Ausgl.jahr",
+      "medium": "Ausgleichsjahr",
+      "long": "Geschäftsjahr des Ausgleichs",
+      "heading": "Ausgleichsjahr"
+    }
+  }
+}

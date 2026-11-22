@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/ENTRY_KIND",
+  "description": "Kind of a journal entry",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "NORMAL"
+    },
+    {
+      "value": "CLEARING"
+    },
+    {
+      "value": "REVERSAL"
+    }
+  ]
+}

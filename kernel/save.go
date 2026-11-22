@@ -52,6 +52,8 @@ func (b *entityBuffer) Save(ctx context.Context, behavior vm.Behavior) (*vm.Enti
 		for i := len(undo) - 1; i >= 0; i-- {
 			undo[i]()
 		}
+		// The final keys of late numbering go back with the rollback.
+		r.Created = nil
 		if rerr := s.rollbackTo(ctx, "rt_save"); rerr != nil && err == nil {
 			err = rerr
 		}

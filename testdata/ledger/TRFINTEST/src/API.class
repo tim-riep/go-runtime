@@ -204,6 +204,248 @@ public class /TRFINTEST/API
     return SAVE(changed)
   end
 
+  # Posts a journal entry with the action POST and saves it; returns the
+  # result of the save as JSON.
+  public static method POST(posting: /TRFIN/POSTING) returns STRING raises /RT/EXCEPTION
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.POST parameter posting into posted
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # Posts journal entries in one save; returns the result as JSON.
+  public static method POST_ALL(postings: array of /TRFIN/POSTING) returns STRING raises /RT/EXCEPTION
+    for posting in postings
+      modify business object /TRFIN/JOURNAL_ENTRY
+        execute /TRFIN/JOURNAL_ENTRIES.POST parameter posting into posted
+        result changed
+      end
+      if changed.FAILURES is not empty
+        rollback business objects
+        return transform changed using /TRBASE/JSON
+      end
+    end
+    commit business objects result saved
+    if saved.FAILURES is not empty
+      rollback business objects
+    end
+    return transform saved using /TRBASE/JSON
+  end
+
+  # Checks a journal entry with the action CHECK; returns its result.
+  public static method CHECK(posting: /TRFIN/POSTING) returns STRING raises /RT/EXCEPTION
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.CHECK parameter posting into checked
+      result changed
+    end
+    if changed.FAILURES is not empty
+      return transform changed using /TRBASE/JSON
+    end
+    return transform checked using /TRBASE/JSON
+  end
+
+  # Reverses a journal entry; returns the result of the save as JSON.
+  public static method REVERSE(company: STRING, year: INT4, no: STRING, date: DATE?) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/JOURNAL_ENTRIES
+    key.COMPANY = company
+    key.FISCAL_YEAR = year
+    key.DOCUMENT_NO = no
+    var reversal: /TRFIN/REVERSAL
+    reversal.POSTING_DATE = date
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.REVERSE keys [key] parameter reversal
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # Reverses a journal entry twice in one execution.
+  public static method REVERSE_TWICE(company: STRING, year: INT4, no: STRING) returns STRING raises /RT/EXCEPTION
+    var key: key of /TRFIN/JOURNAL_ENTRIES
+    key.COMPANY = company
+    key.FISCAL_YEAR = year
+    key.DOCUMENT_NO = no
+    var reversal: /TRFIN/REVERSAL
+    modify business object /TRFIN/JOURNAL_ENTRY
+      execute /TRFIN/JOURNAL_ENTRIES.REVERSE keys [key] parameter reversal
+      execute /TRFIN/JOURNAL_ENTRIES.REVERSE keys [key] parameter reversal
+      result changed
+    end
+    rollback business objects
+    return transform changed using /TRBASE/JSON
+  end
+
+  # Changes the header text of an entry and the text and assignment of an
+  # item.
+  public static method SET_TEXTS(company: STRING, year: INT4, no: STRING, text: STRING, item: INT4, assignment: STRING) returns STRING raises /RT/EXCEPTION
+    var entry: /TRFIN/JOURNAL_ENTRIES
+    entry.COMPANY = company
+    entry.FISCAL_YEAR = year
+    entry.DOCUMENT_NO = no
+    entry.HEADER_TEXT = text
+    var row: /TRFIN/JOURNAL_ENTRY_ITEMS
+    row.COMPANY = company
+    row.FISCAL_YEAR = year
+    row.DOCUMENT_NO = no
+    row.ITEM_NO = item
+    row.ITEM_TEXT = text
+    row.ASSIGNMENT = assignment
+    modify business object /TRFIN/JOURNAL_ENTRY
+      update /TRFIN/JOURNAL_ENTRIES fields (HEADER_TEXT) from [entry]
+      update /TRFIN/JOURNAL_ENTRY_ITEMS fields (ITEM_TEXT, ASSIGNMENT) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # Adds an item to a posted entry.
+  public static method ADD_ITEM(company: STRING, year: INT4, no: STRING) returns STRING raises /RT/EXCEPTION
+    var row: /TRFIN/JOURNAL_ENTRY_ITEMS
+    row.COMPANY = company
+    row.FISCAL_YEAR = year
+    row.DOCUMENT_NO = no
+    row.ITEM_NO = 99
+    row.ACCOUNT = "100000"
+    row.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.D
+    row.AMOUNT = 1.00
+    modify business object /TRFIN/JOURNAL_ENTRY
+      create /TRFIN/JOURNAL_ENTRY_ITEMS by parent fields (ITEM_NO, ACCOUNT, DEBIT_CREDIT, AMOUNT) from [row]
+      result changed
+    end
+    return SAVE(changed)
+  end
+
+  # The ledger entries of a journal entry, a line each: ledger, line,
+  # item, account, partner, amount and kind.
+  public static method LEDGER_LINES(company: STRING, year: INT4, no: STRING) returns STRING
+    var out: array of STRING = []
+    for l in select from /TRFIN/LEDGER_ENTRIES where COMPANY = company and FISCAL_YEAR = year and DOCUMENT_NO = no
+      var item = "-"
+      if l.ITEM_NO is not null
+        item = "{l.ITEM_NO}"
+      end
+      out.APPEND("{l.LEDGER} {l.LINE_NO} {item} {l.ACCOUNT} {l.PARTNER default "-"} {l.AMOUNT} {l.LINE_KIND}")
+    end
+    return out.JOIN("\n")
+  end
+
+  # The running balance of a partner in a ledger.
+  public static method BALANCE(ledger: STRING, company: STRING, role: STRING, partner: STRING) returns STRING
+    var b = select single from /TRFIN/PARTNER_BALANCES where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+    if b is null
+      return "-"
+    end
+    return "{b.BALANCE}"
+  end
+
+  # The balance of an account in a ledger and company from its totals.
+  public static method ACCOUNT_BALANCE(ledger: STRING, company: STRING, account: STRING) returns STRING
+    var t = select single sum(DEBIT), sum(CREDIT) from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger and COMPANY = company and ACCOUNT = account
+    var debit = t.SUM_DEBIT default 0.00
+    var credit = t.SUM_CREDIT default 0.00
+    return "{debit - credit}"
+  end
+
+  # Totals near the largest amount, so that the next posting to the
+  # account overflows them.
+  public static method FILL_TOTALS(ledger: STRING, company: STRING, account: STRING, year: INT4, period: INT4)
+    var row: /TRFIN/ACCOUNT_TOTALS
+    row.LEDGER = ledger
+    row.COMPANY = company
+    row.ACCOUNT = account
+    row.FISCAL_YEAR = year
+    row.PERIOD = period
+    row.DEBIT = 9999999999999999.00
+    insert row
+  end
+
+  public static method CLEAR_TOTALS(ledger: STRING, company: STRING, account: STRING)
+    delete from /TRFIN/ACCOUNT_TOTALS where LEDGER = ledger and COMPANY = company and ACCOUNT = account
+  end
+
+  # The problems of the ledgers: totals of accounts that differ from the
+  # sum of the ledger entries, totals of partners and running balances
+  # that differ from the sum of the items, reclassified amounts that
+  # differ from the opposite balances, and entries that are not balanced
+  # in a ledger. Empty when there are none.
+  public static method CONSISTENCY() returns STRING
+    var out: array of STRING = []
+    var debits: map of STRING to DEC(38,2) = [:]
+    var credits: map of STRING to DEC(38,2) = [:]
+    var partners: map of STRING to DEC(38,2) = [:]
+    var reclassified: map of STRING to DEC(38,2) = [:]
+    var entries: map of STRING to DEC(38,2) = [:]
+    for l in select from /TRFIN/LEDGER_ENTRIES
+      var id = "{l.LEDGER} {l.COMPANY} {l.ACCOUNT} {l.FISCAL_YEAR} {l.PERIOD}"
+      debits[id] = debits.GET(id) default 0.00
+      credits[id] = credits.GET(id) default 0.00
+      if l.AMOUNT > 0
+        debits[id] = debits[id] + l.AMOUNT
+      else
+        credits[id] = credits[id] - l.AMOUNT
+      end
+      var entry = "{l.LEDGER} {l.COMPANY} {l.FISCAL_YEAR} {l.DOCUMENT_NO}"
+      entries[entry] = (entries.GET(entry) default 0.00) + l.AMOUNT
+      var partner = l.PARTNER
+      var role = l.PARTNER_ROLE
+      if partner is null or role is null
+        continue
+      end
+      var pid = "{l.LEDGER} {l.COMPANY} {role} {partner}"
+      if l.LINE_KIND = /TRFIN/LINE_KIND.ITEM
+        partners[pid] = (partners.GET(pid) default 0.00) + l.AMOUNT
+      else
+        var kind = /TRFIN/ITEM_ACCOUNT_KIND.CUSTOMER
+        if role = "/TRFIN/SUPPLIER"
+          kind = /TRFIN/ITEM_ACCOUNT_KIND.SUPPLIER
+        end
+        var data = /TRFIN/POSTING_CHECKS.PARTNER_DATA(kind, partner, l.COMPANY)
+        if data is not null and data.ALTERNATIVE_ACCOUNT = l.ACCOUNT
+          reclassified[pid] = (reclassified.GET(pid) default 0.00) + l.AMOUNT
+        end
+      end
+    end
+    for t in select from /TRFIN/ACCOUNT_TOTALS
+      var id = "{t.LEDGER} {t.COMPANY} {t.ACCOUNT} {t.FISCAL_YEAR} {t.PERIOD}"
+      if (debits.GET(id) default 0.00) <> t.DEBIT or (credits.GET(id) default 0.00) <> t.CREDIT
+        out.APPEND("account totals {id}: {t.DEBIT}/{t.CREDIT}, ledger entries {debits.GET(id) default 0.00}/{credits.GET(id) default 0.00}")
+      end
+      debits.REMOVE(id)
+    end
+    for id in debits.KEYS()
+      out.APPEND("account totals {id} missing")
+    end
+    for t in select LEDGER, COMPANY, PARTNER_ROLE, PARTNER, sum(DEBIT), sum(CREDIT) from /TRFIN/PARTNER_TOTALS group by LEDGER, COMPANY, PARTNER_ROLE, PARTNER
+      var pid = "{t.LEDGER} {t.COMPANY} {t.PARTNER_ROLE} {t.PARTNER}"
+      var sum = (t.SUM_DEBIT default 0.00) - (t.SUM_CREDIT default 0.00)
+      if sum <> (partners.GET(pid) default 0.00)
+        out.APPEND("partner totals {pid}: {sum}, items {partners.GET(pid) default 0.00}")
+      end
+    end
+    for b in select from /TRFIN/PARTNER_BALANCES
+      var pid = "{b.LEDGER} {b.COMPANY} {b.PARTNER_ROLE} {b.PARTNER}"
+      if b.BALANCE <> (partners.GET(pid) default 0.00)
+        out.APPEND("balance {pid}: {b.BALANCE}, items {partners.GET(pid) default 0.00}")
+      end
+      # The alternative account holds the opposite balance: credit of a
+      # customer, debit of a supplier.
+      var want: DEC(38,2) = 0.00
+      if b.PARTNER_ROLE = "/TRFIN/CUSTOMER" and b.BALANCE < 0 or b.PARTNER_ROLE = "/TRFIN/SUPPLIER" and b.BALANCE > 0
+        want = b.BALANCE
+      end
+      if want <> (reclassified.GET(pid) default 0.00)
+        out.APPEND("reclassified {pid}: {reclassified.GET(pid) default 0.00}, balance {b.BALANCE}")
+      end
+    end
+    for id, sum in entries
+      if sum <> 0
+        out.APPEND("entry {id} not balanced: {sum}")
+      end
+    end
+    return out.JOIN("\n")
+  end
+
   # Saves the changes of a statement unless it failed; returns the result
   # of the statement or of the save as JSON.
   private static method SAVE(changed: /TRBASE/ENTITY_RESULT) returns STRING raises /RT/EXCEPTION

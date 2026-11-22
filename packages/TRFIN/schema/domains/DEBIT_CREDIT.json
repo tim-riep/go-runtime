@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/DEBIT_CREDIT",
+  "description": "Debit or credit",
+  "type": "CHAR",
+  "length": 1,
+  "values": [
+    {
+      "value": "D"
+    },
+    {
+      "value": "C"
+    }
+  ]
+}

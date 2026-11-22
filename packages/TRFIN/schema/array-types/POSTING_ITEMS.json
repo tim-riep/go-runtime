@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/POSTING_ITEMS",
+  "texts": {
+    "en": {
+      "label": "Items to post"
+    },
+    "de": {
+      "label": "Zu buchende Positionen"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/POSTING_ITEM"
+  }
+}

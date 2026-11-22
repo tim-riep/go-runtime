@@ -1,0 +1,590 @@
+# The behavior of journal entries: the determinations and checks of
+# /TRFIN/POSTING_CHECKS, numbers without gaps from the number range
+# /TRFIN/JOURNAL_ENTRY per company and fiscal year when an entry is saved,
+# and its entries in the ledgers with the totals, the running balances of
+# customers and suppliers and the reclassification of their opposite
+# balances. Posted entries change only in their texts; reversals post the
+# items with debit and credit swapped.
+public class /TRFIN/JOURNAL_ENTRY_BEHAVIOR
+
+  public method DETERMINE_ENTRY(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
+    var entries = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/JOURNAL_ENTRIES fields all keys keys
+    end
+    var rows: array of /TRFIN/JOURNAL_ENTRIES = []
+    for entry in entries
+      rows.APPEND(/TRFIN/POSTING_CHECKS.DETERMINE_ENTRY(entry))
+    end
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      update /TRFIN/JOURNAL_ENTRIES fields (PERIOD, CURRENCY, LEDGER, LEDGER_GROUP) from rows
+    end
+  end
+
+  public method DETERMINE_ITEMS(keys: array of key of /TRFIN/JOURNAL_ENTRY_ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    var items = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/JOURNAL_ENTRY_ITEMS fields all keys keys
+    end
+    var rows: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for item in items
+      var entry = ENTRY_OF(item.COMPANY, item.FISCAL_YEAR, item.DOCUMENT_NO)
+      if entry is not null
+        rows.APPEND(/TRFIN/POSTING_CHECKS.DETERMINE_ITEM(entry, item))
+      end
+    end
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      update /TRFIN/JOURNAL_ENTRY_ITEMS fields (ACCOUNT, OPEN_ITEM, DUE_DATE) from rows
+    end
+  end
+
+  # The problems of the entry itself; those of its items go to the items.
+  public method CHECK_ENTRY(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+      if entry is null
+        continue
+      end
+      var checks = new /TRFIN/POSTING_CHECKS()
+      for m in checks.CHECK(entry, ITEMS_OF(key))
+        var field = m.FIELD
+        if m.ITEM_NO is not null
+          continue
+        elseif field is null
+          response.ERROR(i, m.TEXT)
+        else
+          response.FIELD_ERROR(i, field, m.TEXT)
+        end
+      end
+    end
+  end
+
+  # The problems of the items, checked with their entry; posted entries
+  # get no further items.
+  public method CHECK_ITEMS(keys: array of key of /TRFIN/JOURNAL_ENTRY_ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    var checked: map of STRING to array of /TRFIN/POSTING_MESSAGE = [:]
+    for i, key in keys
+      var posted = select count from /TRFIN/JOURNAL_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
+      if posted > 0
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} is posted; it gets no further items")
+        continue
+      end
+      var id = "{key.COMPANY}/{key.FISCAL_YEAR}/{key.DOCUMENT_NO}"
+      if not checked.CONTAINS(id)
+        var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+        var messages: array of /TRFIN/POSTING_MESSAGE = []
+        if entry is not null
+          var parent: key of /TRFIN/JOURNAL_ENTRIES
+          parent.COMPANY = key.COMPANY
+          parent.FISCAL_YEAR = key.FISCAL_YEAR
+          parent.DOCUMENT_NO = key.DOCUMENT_NO
+          var checks = new /TRFIN/POSTING_CHECKS()
+          messages = checks.CHECK(entry, ITEMS_OF(parent))
+        end
+        checked[id] = messages
+      end
+      for m in checked[id]
+        var n = m.ITEM_NO
+        var field = m.FIELD
+        if n is null or n <> key.ITEM_NO
+          continue
+        elseif field is null
+          response.ERROR(i, m.TEXT)
+        else
+          response.FIELD_ERROR(i, field, m.TEXT)
+        end
+      end
+    end
+  end
+
+  # Only new clearing entries list the items they cleared.
+  public method CHECK_CLEARED_ITEMS(keys: array of key of /TRFIN/CLEARED_ITEMS, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var posted = select count from /TRFIN/JOURNAL_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
+      var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+      if posted > 0 or entry is null or entry.KIND <> /TRFIN/ENTRY_KIND.CLEARING
+        response.ERROR(i, "only clearing entries list cleared items, when they are posted")
+      end
+    end
+  end
+
+  # The fiscal year of the posting date and the next number of the
+  # interval of the document type in the company and year. A reversal
+  # gives its number to the entry it reverses.
+  public method ASSIGN_NUMBERS(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE) returns array of key of /TRFIN/JOURNAL_ENTRIES
+    var out: array of key of /TRFIN/JOURNAL_ENTRIES = []
+    var reversed: array of /TRFIN/JOURNAL_ENTRIES = []
+    for i, key in keys
+      var final = key
+      out.APPEND(final)
+      var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+      if entry is null
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} is missing")
+        continue
+      end
+      var type = select single from /TRFIN/DOCUMENT_TYPES where DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+      if type is null
+        response.FIELD_ERROR(i, "DOCUMENT_TYPE", "the document type {entry.DOCUMENT_TYPE} does not exist")
+        continue
+      end
+      var year = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(entry.COMPANY, entry.POSTING_DATE).FISCAL_YEAR
+      final.FISCAL_YEAR = year
+      try
+        final.DOCUMENT_NO = /TRBASE/NUMBER_RANGE.NEXT("/TRFIN/JOURNAL_ENTRY", type.INTERVAL, entry.COMPANY, year)
+      catch e: /TRBASE/NUMBER_RANGE_ERROR
+        response.ERROR(i, e.TEXT)
+        continue
+      end
+      out[i] = final
+      var reversed_year = entry.REVERSED_YEAR
+      var reversed_no = entry.REVERSED_NO
+      if entry.KIND = /TRFIN/ENTRY_KIND.REVERSAL and reversed_year is not null and reversed_no is not null
+        var original: /TRFIN/JOURNAL_ENTRIES
+        original.COMPANY = entry.COMPANY
+        original.FISCAL_YEAR = reversed_year
+        original.DOCUMENT_NO = reversed_no
+        original.REVERSAL_YEAR = year
+        original.REVERSAL_NO = final.DOCUMENT_NO
+        reversed.APPEND(original)
+      end
+    end
+    if reversed is not empty
+      modify business object /TRFIN/JOURNAL_ENTRY in local mode
+        update /TRFIN/JOURNAL_ENTRIES fields (REVERSAL_YEAR, REVERSAL_NO) from reversed
+      end
+    end
+    return out
+  end
+
+  # Posts the new entries to their ledgers: the ledger entries of the
+  # items, the running balances of customers and suppliers with the
+  # reclassification of their opposite balances, and the totals. All
+  # updates of an entry run in the order of their keys, so that parallel
+  # postings do not lock each other.
+  public method WRITE_LEDGERS(keys: array of key of /TRFIN/JOURNAL_ENTRIES, response: /TRBASE/ENTITY_RESPONSE)
+    for i, key in keys
+      var entry = select single from /TRFIN/JOURNAL_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
+      if entry is null
+        continue
+      end
+      var written = select count from /TRFIN/LEDGER_ENTRIES where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO
+      if written > 0
+        continue
+      end
+      var items = select from /TRFIN/JOURNAL_ENTRY_ITEMS where COMPANY = key.COMPANY and FISCAL_YEAR = key.FISCAL_YEAR and DOCUMENT_NO = key.DOCUMENT_NO order by ITEM_NO
+      if items is empty
+        continue
+      end
+      var ledgers = /TRFIN/POSTING_CHECKS.LEDGERS_OF(entry).SORT()
+      if ledgers is empty
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} goes to no ledger")
+        continue
+      end
+      POST_ENTRY(i, entry, items, ledgers, response)
+    end
+  end
+
+  # Reverses posted entries: a new entry of the reversal type of their
+  # document type with the items and debit and credit swapped, posted on
+  # the given date or that of the entry to the same ledgers. Entries with
+  # cleared items and reversed entries are not reversed.
+  public method REVERSE(keys: array of key of /TRFIN/JOURNAL_ENTRIES, parameter: /TRFIN/REVERSAL, response: /TRBASE/ENTITY_RESPONSE)
+    var entries: array of new of /TRFIN/JOURNAL_ENTRIES = []
+    var items: array of new of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    var originals: array of /TRFIN/JOURNAL_ENTRIES = []
+    for i, key in keys
+      var entry = ENTRY_OF(key.COMPANY, key.FISCAL_YEAR, key.DOCUMENT_NO)
+      if entry is null
+        continue
+      end
+      if entry.STATUS = /TRFIN/ENTRY_STATUS.REVERSED
+        response.ERROR(i, "the journal entry {key.DOCUMENT_NO} of {key.FISCAL_YEAR} is reversed already")
+        continue
+      end
+      var rows = ITEMS_OF(key)
+      var cleared = rows.FILTER(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => r.CLEARING_NO is not null).MAP(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => "{r.ITEM_NO}")
+      if cleared is not empty
+        response.ERROR(i, "the items {cleared.JOIN(", ")} of the journal entry {key.DOCUMENT_NO} are cleared; reset the clearing first")
+        continue
+      end
+      var date = parameter.POSTING_DATE default entry.POSTING_DATE
+      var document_type = entry.DOCUMENT_TYPE
+      var type = select single from /TRFIN/DOCUMENT_TYPES where DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+      if type is not null
+        document_type = type.REVERSAL_TYPE default entry.DOCUMENT_TYPE
+      end
+      var link = "reversal{i}"
+      var reversal: new of /TRFIN/JOURNAL_ENTRIES
+      reversal.LINK = link
+      reversal.COMPANY = entry.COMPANY
+      reversal.DOCUMENT_TYPE = document_type
+      reversal.DOCUMENT_DATE = date
+      reversal.POSTING_DATE = date
+      reversal.REFERENCE = entry.REFERENCE
+      reversal.HEADER_TEXT = entry.HEADER_TEXT
+      reversal.LEDGER = entry.LEDGER
+      reversal.LEDGER_GROUP = entry.LEDGER_GROUP
+      reversal.KIND = /TRFIN/ENTRY_KIND.REVERSAL
+      reversal.REVERSED_YEAR = entry.FISCAL_YEAR
+      reversal.REVERSED_NO = entry.DOCUMENT_NO
+      entries.APPEND(reversal)
+      for row in rows
+        var item: new of /TRFIN/JOURNAL_ENTRY_ITEMS
+        item.PARENT_LINK = link
+        item.ITEM_NO = row.ITEM_NO
+        item.ACCOUNT_KIND = row.ACCOUNT_KIND
+        item.ACCOUNT = row.ACCOUNT
+        item.PARTNER = row.PARTNER
+        item.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.D
+        if row.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.D
+          item.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.C
+        end
+        item.AMOUNT = row.AMOUNT
+        item.ITEM_TEXT = row.ITEM_TEXT
+        item.ASSIGNMENT = row.ASSIGNMENT
+        item.DUE_DATE = row.DUE_DATE
+        items.APPEND(item)
+      end
+      var original = entry
+      original.STATUS = /TRFIN/ENTRY_STATUS.REVERSED
+      originals.APPEND(original)
+    end
+    if entries is empty
+      return
+    end
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      create /TRFIN/JOURNAL_ENTRIES fields (COMPANY, DOCUMENT_TYPE, DOCUMENT_DATE, POSTING_DATE, REFERENCE, HEADER_TEXT, LEDGER, LEDGER_GROUP, KIND, REVERSED_YEAR, REVERSED_NO) from entries
+      create /TRFIN/JOURNAL_ENTRY_ITEMS by parent fields (ITEM_NO, ACCOUNT_KIND, ACCOUNT, PARTNER, DEBIT_CREDIT, AMOUNT, ITEM_TEXT, ASSIGNMENT, DUE_DATE) from items
+      update /TRFIN/JOURNAL_ENTRIES fields (STATUS) from originals
+    end
+  end
+
+  # Creates a journal entry with its items from one structure; the save
+  # posts it. The result names the entry by its link; over OData it holds
+  # the final key, in code CREATED of the result of the save does.
+  public method POST(parameter: /TRFIN/POSTING, response: /TRBASE/ENTITY_RESPONSE) returns /TRFIN/POSTED_ENTRY
+    var link = parameter.LINK default "entry"
+    var entry: new of /TRFIN/JOURNAL_ENTRIES
+    entry.LINK = link
+    entry.COMPANY = parameter.COMPANY
+    entry.DOCUMENT_TYPE = parameter.DOCUMENT_TYPE
+    entry.DOCUMENT_DATE = parameter.DOCUMENT_DATE
+    entry.POSTING_DATE = parameter.POSTING_DATE
+    entry.REFERENCE = parameter.REFERENCE
+    entry.HEADER_TEXT = parameter.HEADER_TEXT
+    entry.LEDGER = parameter.LEDGER
+    entry.LEDGER_GROUP = parameter.LEDGER_GROUP
+    var items: array of new of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for p in ITEMS(parameter)
+      var item: new of /TRFIN/JOURNAL_ENTRY_ITEMS
+      item.PARENT_LINK = link
+      item.ITEM_NO = p.ITEM_NO
+      item.ACCOUNT_KIND = p.ACCOUNT_KIND
+      item.ACCOUNT = p.ACCOUNT
+      item.PARTNER = p.PARTNER
+      item.DEBIT_CREDIT = p.DEBIT_CREDIT
+      item.AMOUNT = p.AMOUNT
+      item.ITEM_TEXT = p.ITEM_TEXT
+      item.ASSIGNMENT = p.ASSIGNMENT
+      item.DUE_DATE = p.DUE_DATE
+      items.APPEND(item)
+    end
+    modify business object /TRFIN/JOURNAL_ENTRY in local mode
+      create /TRFIN/JOURNAL_ENTRIES fields (COMPANY, DOCUMENT_TYPE, DOCUMENT_DATE, POSTING_DATE, REFERENCE, HEADER_TEXT, LEDGER, LEDGER_GROUP) from [entry]
+      create /TRFIN/JOURNAL_ENTRY_ITEMS by parent fields (ITEM_NO, ACCOUNT_KIND, ACCOUNT, PARTNER, DEBIT_CREDIT, AMOUNT, ITEM_TEXT, ASSIGNMENT, DUE_DATE) from items
+    end
+    var out: /TRFIN/POSTED_ENTRY
+    out.LINK = link
+    out.COMPANY = parameter.COMPANY
+    return out
+  end
+
+  # Checks a journal entry as POST would post it and writes nothing.
+  public method CHECK(parameter: /TRFIN/POSTING, response: /TRBASE/ENTITY_RESPONSE) returns /TRFIN/CHECK_RESULT
+    var entry: /TRFIN/JOURNAL_ENTRIES
+    entry.COMPANY = parameter.COMPANY
+    entry.DOCUMENT_TYPE = parameter.DOCUMENT_TYPE
+    entry.DOCUMENT_DATE = parameter.DOCUMENT_DATE
+    entry.POSTING_DATE = parameter.POSTING_DATE
+    entry.REFERENCE = parameter.REFERENCE
+    entry.HEADER_TEXT = parameter.HEADER_TEXT
+    entry.LEDGER = parameter.LEDGER
+    entry.LEDGER_GROUP = parameter.LEDGER_GROUP
+    entry = /TRFIN/POSTING_CHECKS.DETERMINE_ENTRY(entry)
+    var items: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for p in ITEMS(parameter)
+      var item: /TRFIN/JOURNAL_ENTRY_ITEMS
+      item.COMPANY = entry.COMPANY
+      item.ITEM_NO = p.ITEM_NO
+      item.ACCOUNT_KIND = p.ACCOUNT_KIND
+      item.ACCOUNT = p.ACCOUNT
+      item.PARTNER = p.PARTNER
+      item.DEBIT_CREDIT = p.DEBIT_CREDIT
+      item.AMOUNT = p.AMOUNT
+      item.ITEM_TEXT = p.ITEM_TEXT
+      item.ASSIGNMENT = p.ASSIGNMENT
+      item.DUE_DATE = p.DUE_DATE
+      items.APPEND(/TRFIN/POSTING_CHECKS.DETERMINE_ITEM(entry, item))
+    end
+    var checks = new /TRFIN/POSTING_CHECKS()
+    var period = /TRFIN/FISCAL_CALENDAR.PERIOD_OF(entry.COMPANY, entry.POSTING_DATE)
+    var out: /TRFIN/CHECK_RESULT
+    out.FISCAL_YEAR = period.FISCAL_YEAR
+    out.PERIOD = period.PERIOD
+    out.MESSAGES = checks.CHECK(entry, items)
+    return out
+  end
+
+  # The items of a posting with their numbers, by default their position,
+  # and their kind, by default ACCOUNT.
+  private method ITEMS(parameter: /TRFIN/POSTING) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
+    var out: array of /TRFIN/JOURNAL_ENTRY_ITEMS = []
+    for i, p in parameter.ITEMS
+      var item: /TRFIN/JOURNAL_ENTRY_ITEMS
+      item.ITEM_NO = p.ITEM_NO default i as INT4
+      item.ACCOUNT_KIND = p.ACCOUNT_KIND default /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT
+      item.ACCOUNT = p.ACCOUNT
+      item.PARTNER = p.PARTNER
+      item.DEBIT_CREDIT = p.DEBIT_CREDIT
+      item.AMOUNT = p.AMOUNT
+      item.ITEM_TEXT = p.ITEM_TEXT
+      item.ASSIGNMENT = p.ASSIGNMENT
+      item.DUE_DATE = p.DUE_DATE
+      out.APPEND(item)
+    end
+    return out
+  end
+
+  # The posting of an entry to its ledgers.
+  private method POST_ENTRY(i: INT8, entry: /TRFIN/JOURNAL_ENTRIES, items: array of /TRFIN/JOURNAL_ENTRY_ITEMS, ledgers: array of STRING, response: /TRBASE/ENTITY_RESPONSE)
+    # The change of the balance of every customer and supplier of the
+    # entry, by role and partner, and the account of its items.
+    var deltas: map of STRING to DEC(18,2) = [:]
+    var accounts: map of STRING to STRING = [:]
+    for item in items
+      var partner = item.PARTNER
+      if item.ACCOUNT_KIND = /TRFIN/ITEM_ACCOUNT_KIND.ACCOUNT or partner is null
+        continue
+      end
+      var id = "{/TRFIN/POSTING_CHECKS.ROLE_OF(item.ACCOUNT_KIND)} {partner}"
+      deltas[id] = (deltas.GET(id) default 0.00) + SIGNED(item)
+      accounts[id] = item.ACCOUNT default ""
+    end
+    var ids = deltas.KEYS().SORT()
+    # The running balances first, by ledger, role and partner; they give
+    # the reclassifications.
+    var lines: array of /TRFIN/LEDGER_ENTRIES = []
+    for ledger in ledgers
+      var line = 0
+      for item in items
+        line = line + 1
+        var l = LINE(entry, ledger, line, item.ACCOUNT default "", item.PARTNER, SIGNED(item), /TRFIN/LINE_KIND.ITEM)
+        l.ITEM_NO = item.ITEM_NO
+        l.OPEN_ITEM = item.OPEN_ITEM
+        l.DUE_DATE = item.DUE_DATE
+        if item.PARTNER is not null
+          l.PARTNER_ROLE = /TRFIN/POSTING_CHECKS.ROLE_OF(item.ACCOUNT_KIND)
+        end
+        lines.APPEND(l)
+      end
+      for id in ids
+        var parts = id.SPLIT(" ")
+        var role = parts[1]
+        var partner = parts[2]
+        var delta = deltas[id]
+        var after = ADD_BALANCE(ledger, entry.COMPANY, role, partner, delta)
+        var before = after - delta
+        var d = SHARE(role, after) - SHARE(role, before)
+        if d = 0
+          continue
+        end
+        var kind = /TRFIN/ITEM_ACCOUNT_KIND.CUSTOMER
+        if role = "/TRFIN/SUPPLIER"
+          kind = /TRFIN/ITEM_ACCOUNT_KIND.SUPPLIER
+          d = -d
+        end
+        var data = /TRFIN/POSTING_CHECKS.PARTNER_DATA(kind, partner, entry.COMPANY)
+        if data is null
+          response.ERROR(i, "the partner {partner} has no data in the role {role} in the company {entry.COMPANY}")
+          return
+        end
+        # A customer moves the opposite balance by d from the
+        # reconciliation account to the alternative account, a supplier
+        # the other way round.
+        line = line + 1
+        var onto = LINE(entry, ledger, line, accounts[id], partner, d, /TRFIN/LINE_KIND.RECLASSIFICATION)
+        onto.PARTNER_ROLE = role
+        lines.APPEND(onto)
+        line = line + 1
+        var off = LINE(entry, ledger, line, data.ALTERNATIVE_ACCOUNT, partner, -d, /TRFIN/LINE_KIND.RECLASSIFICATION)
+        off.PARTNER_ROLE = role
+        lines.APPEND(off)
+      end
+    end
+    # The ledger entries and the totals of accounts, of all lines, and of
+    # partners, of the items, in the order of their keys.
+    var debits: map of STRING to DEC(18,2) = [:]
+    var credits: map of STRING to DEC(18,2) = [:]
+    var partner_debits: map of STRING to DEC(18,2) = [:]
+    var partner_credits: map of STRING to DEC(18,2) = [:]
+    for l in lines
+      insert l
+      var id = "{l.LEDGER} {l.ACCOUNT}"
+      debits[id] = debits.GET(id) default 0.00
+      credits[id] = credits.GET(id) default 0.00
+      if l.AMOUNT > 0
+        debits[id] = debits[id] + l.AMOUNT
+      else
+        credits[id] = credits[id] - l.AMOUNT
+      end
+      var partner = l.PARTNER
+      var role = l.PARTNER_ROLE
+      if l.LINE_KIND = /TRFIN/LINE_KIND.ITEM and partner is not null and role is not null
+        var pid = "{l.LEDGER} {role} {partner}"
+        partner_debits[pid] = partner_debits.GET(pid) default 0.00
+        partner_credits[pid] = partner_credits.GET(pid) default 0.00
+        if l.AMOUNT > 0
+          partner_debits[pid] = partner_debits[pid] + l.AMOUNT
+        else
+          partner_credits[pid] = partner_credits[pid] - l.AMOUNT
+        end
+      end
+    end
+    for id in debits.KEYS().SORT()
+      var parts = id.SPLIT(" ")
+      ADD_ACCOUNT_TOTALS(parts[1], entry.COMPANY, parts[2], entry.FISCAL_YEAR, entry.PERIOD, debits[id], credits[id])
+    end
+    for id in partner_debits.KEYS().SORT()
+      var parts = id.SPLIT(" ")
+      ADD_PARTNER_TOTALS(parts[1], entry.COMPANY, parts[2], parts[3], entry.FISCAL_YEAR, entry.PERIOD, partner_debits[id], partner_credits[id])
+    end
+  end
+
+  private static method LINE(entry: /TRFIN/JOURNAL_ENTRIES, ledger: STRING, line: INT4, account: STRING, partner: STRING?, amount: DEC(18,2), kind: /TRFIN/LINE_KIND) returns /TRFIN/LEDGER_ENTRIES
+    var l: /TRFIN/LEDGER_ENTRIES
+    l.COMPANY = entry.COMPANY
+    l.FISCAL_YEAR = entry.FISCAL_YEAR
+    l.DOCUMENT_NO = entry.DOCUMENT_NO
+    l.LEDGER = ledger
+    l.LINE_NO = line
+    l.DOCUMENT_TYPE = entry.DOCUMENT_TYPE
+    l.PERIOD = entry.PERIOD
+    l.POSTING_DATE = entry.POSTING_DATE
+    l.ACCOUNT = account
+    l.PARTNER = partner
+    l.AMOUNT = amount
+    l.LINE_KIND = kind
+    return l
+  end
+
+  # The amount of an item with its sign: debit positive, credit negative.
+  private static method SIGNED(item: /TRFIN/JOURNAL_ENTRY_ITEMS) returns DEC(18,2)
+    if item.DEBIT_CREDIT = /TRFIN/DEBIT_CREDIT.D
+      return item.AMOUNT
+    end
+    return -item.AMOUNT
+  end
+
+  # The part of a balance that belongs on the alternative account: the
+  # credit balance of a customer, the debit balance of a supplier.
+  private static method SHARE(role: STRING, balance: DEC(18,2)) returns DEC(18,2)
+    if role = "/TRFIN/SUPPLIER"
+      if balance > 0
+        return balance
+      end
+      return 0.00
+    end
+    if balance < 0
+      return -balance
+    end
+    return 0.00
+  end
+
+  # Adds to the running balance of a partner and returns the new one. The
+  # update locks the row until the commit; a parallel first posting that
+  # inserts the row first makes the insert fail, and the update runs again.
+  private static method ADD_BALANCE(ledger: STRING, company: STRING, role: STRING, partner: STRING, delta: DEC(18,2)) returns DEC(18,2)
+    var n = update /TRFIN/PARTNER_BALANCES set BALANCE = BALANCE + delta where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+    if n = 0
+      try
+        var row: /TRFIN/PARTNER_BALANCES
+        row.LEDGER = ledger
+        row.COMPANY = company
+        row.PARTNER_ROLE = role
+        row.PARTNER = partner
+        row.BALANCE = delta
+        insert row
+      catch e: /RT/DUPLICATE_ROW
+        update /TRFIN/PARTNER_BALANCES set BALANCE = BALANCE + delta where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+      end
+    end
+    var b = select single from /TRFIN/PARTNER_BALANCES where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner
+    if b is null
+      return delta
+    end
+    return b.BALANCE
+  end
+
+  private static method ADD_ACCOUNT_TOTALS(ledger: STRING, company: STRING, account: STRING, year: INT4, period: INT4, debit: DEC(18,2), credit: DEC(18,2))
+    var n = update /TRFIN/ACCOUNT_TOTALS set DEBIT = DEBIT + debit, CREDIT = CREDIT + credit where LEDGER = ledger and COMPANY = company and ACCOUNT = account and FISCAL_YEAR = year and PERIOD = period
+    if n > 0
+      return
+    end
+    try
+      var row: /TRFIN/ACCOUNT_TOTALS
+      row.LEDGER = ledger
+      row.COMPANY = company
+      row.ACCOUNT = account
+      row.FISCAL_YEAR = year
+      row.PERIOD = period
+      row.DEBIT = debit
+      row.CREDIT = credit
+      insert row
+    catch e: /RT/DUPLICATE_ROW
+      update /TRFIN/ACCOUNT_TOTALS set DEBIT = DEBIT + debit, CREDIT = CREDIT + credit where LEDGER = ledger and COMPANY = company and ACCOUNT = account and FISCAL_YEAR = year and PERIOD = period
+    end
+  end
+
+  private static method ADD_PARTNER_TOTALS(ledger: STRING, company: STRING, role: STRING, partner: STRING, year: INT4, period: INT4, debit: DEC(18,2), credit: DEC(18,2))
+    var n = update /TRFIN/PARTNER_TOTALS set DEBIT = DEBIT + debit, CREDIT = CREDIT + credit where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner and FISCAL_YEAR = year and PERIOD = period
+    if n > 0
+      return
+    end
+    try
+      var row: /TRFIN/PARTNER_TOTALS
+      row.LEDGER = ledger
+      row.COMPANY = company
+      row.PARTNER_ROLE = role
+      row.PARTNER = partner
+      row.FISCAL_YEAR = year
+      row.PERIOD = period
+      row.DEBIT = debit
+      row.CREDIT = credit
+      insert row
+    catch e: /RT/DUPLICATE_ROW
+      update /TRFIN/PARTNER_TOTALS set DEBIT = DEBIT + debit, CREDIT = CREDIT + credit where LEDGER = ledger and COMPANY = company and PARTNER_ROLE = role and PARTNER = partner and FISCAL_YEAR = year and PERIOD = period
+    end
+  end
+
+  # An entry as the buffer has it, null when there is none.
+  private method ENTRY_OF(company: STRING, year: INT4, no: STRING) returns /TRFIN/JOURNAL_ENTRIES?
+    var key: key of /TRFIN/JOURNAL_ENTRIES
+    key.COMPANY = company
+    key.FISCAL_YEAR = year
+    key.DOCUMENT_NO = no
+    var rows = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/JOURNAL_ENTRIES fields all keys [key]
+    end
+    if rows is empty
+      return null
+    end
+    return rows[1]
+  end
+
+  # The items of an entry as the buffer has them, by number.
+  private method ITEMS_OF(key: key of /TRFIN/JOURNAL_ENTRIES) returns array of /TRFIN/JOURNAL_ENTRY_ITEMS
+    var rows = read business object /TRFIN/JOURNAL_ENTRY in local mode
+      /TRFIN/JOURNAL_ENTRY_ITEMS by parent fields all keys [key]
+    end
+    return rows.SORT_BY(function (r: /TRFIN/JOURNAL_ENTRY_ITEMS) => r.ITEM_NO)
+  end
+
+end

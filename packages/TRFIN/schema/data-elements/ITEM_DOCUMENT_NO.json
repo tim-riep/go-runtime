@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ITEM_DOCUMENT_NO",
+  "domain": "/TRFIN/DOCUMENT_NO",
+  "texts": {
+    "en": {
+      "short": "Item doc.",
+      "medium": "Document of item",
+      "long": "Journal entry of the cleared item",
+      "heading": "Document of item"
+    },
+    "de": {
+      "short": "Postenbel.",
+      "medium": "Beleg des Postens",
+      "long": "Beleg des ausgeglichenen Postens",
+      "heading": "Beleg des Postens"
+    }
+  }
+}

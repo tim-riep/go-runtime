@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/CLEARING_NO",
+  "domain": "/TRFIN/DOCUMENT_NO",
+  "texts": {
+    "en": {
+      "short": "Clearing",
+      "medium": "Clearing",
+      "long": "Number of the clearing entry",
+      "heading": "Clearing"
+    },
+    "de": {
+      "short": "Ausgleich",
+      "medium": "Ausgleichsbeleg",
+      "long": "Nummer des Ausgleichsbelegs",
+      "heading": "Ausgleichsbeleg"
+    }
+  }
+}

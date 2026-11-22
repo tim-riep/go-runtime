@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/DOCUMENT_NO",
+  "description": "Number of a journal entry",
+  "type": "CHAR",
+  "length": 10
+}

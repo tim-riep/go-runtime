@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/ENTRY_STATUS",
+  "description": "Status of a journal entry",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "POSTED"
+    },
+    {
+      "value": "REVERSED"
+    }
+  ]
+}

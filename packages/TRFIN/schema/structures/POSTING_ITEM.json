@@ -1,0 +1,53 @@
+{
+  "name": "/TRFIN/POSTING_ITEM",
+  "texts": {
+    "en": {
+      "label": "Item to post",
+      "description": "An item of a journal entry to post or check; ACCOUNT_KIND null for an account"
+    },
+    "de": {
+      "label": "Zu buchende Position",
+      "description": "Eine Position eines zu buchenden oder zu prüfenden Belegs; ACCOUNT_KIND null für ein Sachkonto"
+    }
+  },
+  "components": [
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO"
+    },
+    {
+      "name": "ACCOUNT_KIND",
+      "dataElement": "/TRFIN/ITEM_ACCOUNT_KIND"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER"
+    },
+    {
+      "name": "DEBIT_CREDIT",
+      "dataElement": "/TRFIN/DEBIT_CREDIT",
+      "notNull": true
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRFIN/AMOUNT",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_TEXT",
+      "dataElement": "/TRFIN/ITEM_TEXT"
+    },
+    {
+      "name": "ASSIGNMENT",
+      "dataElement": "/TRFIN/ASSIGNMENT"
+    },
+    {
+      "name": "DUE_DATE",
+      "dataElement": "/TRFIN/DUE_DATE"
+    }
+  ]
+}

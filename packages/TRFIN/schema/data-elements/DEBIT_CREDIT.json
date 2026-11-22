@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/DEBIT_CREDIT",
+  "domain": "/TRFIN/DEBIT_CREDIT",
+  "texts": {
+    "en": {
+      "short": "D/C",
+      "medium": "Debit/credit",
+      "long": "Debit or credit",
+      "heading": "D/C"
+    },
+    "de": {
+      "short": "S/H",
+      "medium": "Soll/Haben",
+      "long": "Soll oder Haben",
+      "heading": "S/H"
+    }
+  }
+}

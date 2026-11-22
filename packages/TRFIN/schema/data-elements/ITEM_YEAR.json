@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/ITEM_YEAR",
+  "domain": "/TRBASE/FISCAL_YEAR",
+  "texts": {
+    "en": {
+      "short": "Item year",
+      "medium": "Fiscal year of item",
+      "long": "Fiscal year of the cleared item",
+      "heading": "Item year"
+    },
+    "de": {
+      "short": "Postenjahr",
+      "medium": "Jahr des Postens",
+      "long": "Geschäftsjahr des ausgeglichenen Postens",
+      "heading": "Jahr des Postens"
+    }
+  }
+}

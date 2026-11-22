@@ -3,11 +3,11 @@
   "texts": {
     "en": {
       "label": "Display general ledger",
-      "description": "Reads the configuration and master data of the general ledger"
+      "description": "Reads the configuration, the master data and the journal entries of the general ledger"
     },
     "de": {
       "label": "Hauptbuch anzeigen",
-      "description": "Liest die Konfiguration und die Stammdaten des Hauptbuchs"
+      "description": "Liest die Konfiguration, die Stammdaten und die Belege des Hauptbuchs"
     }
   },
   "authorizations": [
@@ -30,6 +30,26 @@
       "object": "/TRFIN/ACCOUNT",
       "fields": {
         "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/JOURNAL_ENTRY",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "DOCUMENT_TYPE": [
           {
             "pattern": "*"
           }

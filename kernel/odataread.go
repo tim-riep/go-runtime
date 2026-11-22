@@ -54,7 +54,9 @@ func (sr *serviceRequest) newQuery(t *odata.EntityType) (*odataQuery, error) {
 
 // readAuthorization returns the condition of the authorization for
 // reading: that of the entity, of its nearest parent entity with one, or
-// of configuration for business objects and tables of configuration.
+// of configuration for business objects and tables of configuration. An
+// entity maintained by save with an authorization of its own is read
+// where the parent instance is read as well.
 func (q *odataQuery) readAuthorization() (string, error) {
 	t, sb := q.t, q.sb
 	if t.BusinessObject == nil {
@@ -66,6 +68,29 @@ func (q *odataQuery) readAuthorization() (string, error) {
 	if !ok {
 		return "(1 = 1)", nil
 	}
+	own, err := q.authorizationCondition(ra)
+	if err != nil {
+		return "", err
+	}
+	if ra.Source != model.AuthorizationOwn || !t.Entity.MaintainedBy.Valid() {
+		return own, nil
+	}
+	pa, ok := t.BusinessObject.AuthorizationOf(t.BusinessObject.Entity(t.Entity.Parent.Or("")))
+	if !ok {
+		return own, nil
+	}
+	parent, err := q.authorizationCondition(pa)
+	if err != nil {
+		return "", err
+	}
+	return "(" + own + " AND " + parent + ")", nil
+}
+
+// authorizationCondition returns the condition of an authorization for
+// reading the entity of the query, with the values of the instances of
+// its holder: the entity itself or a parent entity.
+func (q *odataQuery) authorizationCondition(ra model.ResolvedAuthorization) (string, error) {
+	t, sb := q.t, q.sb
 	au := ra.Authorization
 	f := &bytecode.AuthFilter{Object: au.Object}
 	var params []any
@@ -86,7 +111,7 @@ func (q *odataQuery) readAuthorization() (string, error) {
 	if act, ok := au.Activities[model.ReadActivityKey]; ok {
 		param(model.ActivityField, act)
 	}
-	if ra.Source != model.AuthorizationInherited || ra.Holder == t.Entity {
+	if ra.Holder == t.Entity {
 		return sb.authFilter(f, params)
 	}
 	// The values come from the nearest parent with an authorization:

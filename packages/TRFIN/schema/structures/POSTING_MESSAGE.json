@@ -1,0 +1,28 @@
+{
+  "name": "/TRFIN/POSTING_MESSAGE",
+  "texts": {
+    "en": {
+      "label": "Message of a posting",
+      "description": "A problem of a journal entry or of one of its items, with the field it concerns"
+    },
+    "de": {
+      "label": "Meldung einer Buchung",
+      "description": "Ein Fehler eines Belegs oder einer seiner Positionen mit dem betroffenen Feld"
+    }
+  },
+  "components": [
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO"
+    },
+    {
+      "name": "FIELD",
+      "dataElement": "/TRBASE/FIELD_NAME"
+    },
+    {
+      "name": "TEXT",
+      "dataElement": "/TRBASE/MESSAGE_TEXT",
+      "notNull": true
+    }
+  ]
+}

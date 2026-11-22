@@ -1,0 +1,231 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRY",
+  "description": {
+    "en": "Journal entry",
+    "de": "Beleg"
+  },
+  "root": "/TRFIN/JOURNAL_ENTRIES",
+  "behaviorClass": "/TRFIN/JOURNAL_ENTRY_BEHAVIOR",
+  "entities": {
+    "/TRFIN/JOURNAL_ENTRIES": {
+      "operations": [
+        "create",
+        "update"
+      ],
+      "numbering": "late",
+      "lateNumbering": {
+        "fields": [
+          "FISCAL_YEAR",
+          "DOCUMENT_NO"
+        ],
+        "method": "ASSIGN_NUMBERS"
+      },
+      "save": "WRITE_LEDGERS",
+      "fields": {
+        "FISCAL_YEAR": {
+          "readOnly": true
+        },
+        "DOCUMENT_NO": {
+          "readOnly": true
+        },
+        "DOCUMENT_TYPE": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "DOCUMENT_DATE": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "POSTING_DATE": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "PERIOD": {
+          "readOnly": true
+        },
+        "REFERENCE": {
+          "readOnlyOnUpdate": true
+        },
+        "LEDGER": {
+          "readOnlyOnUpdate": true
+        },
+        "LEDGER_GROUP": {
+          "readOnlyOnUpdate": true
+        },
+        "CURRENCY": {
+          "readOnly": true
+        },
+        "KIND": {
+          "readOnly": true
+        },
+        "STATUS": {
+          "readOnly": true
+        },
+        "REVERSAL_YEAR": {
+          "readOnly": true
+        },
+        "REVERSAL_NO": {
+          "readOnly": true
+        },
+        "REVERSED_YEAR": {
+          "readOnly": true
+        },
+        "REVERSED_NO": {
+          "readOnly": true
+        }
+      },
+      "administrative": {
+        "createdBy": "CREATED_BY",
+        "createdAt": "CREATED_AT",
+        "changedBy": "CHANGED_BY",
+        "changedAt": "CHANGED_AT"
+      },
+      "etag": "VERSION",
+      "determinations": [
+        {
+          "name": "DETERMINE_ENTRY",
+          "when": "modify",
+          "on": [
+            "create"
+          ]
+        }
+      ],
+      "validations": [
+        {
+          "name": "CHECK_ENTRY",
+          "on": [
+            "create"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "name": "POST",
+          "instance": false,
+          "parameter": "/TRFIN/POSTING",
+          "result": "/TRFIN/POSTED_ENTRY"
+        },
+        {
+          "name": "CHECK",
+          "instance": false,
+          "parameter": "/TRFIN/POSTING",
+          "result": "/TRFIN/CHECK_RESULT",
+          "modifies": false
+        },
+        {
+          "name": "REVERSE",
+          "parameter": "/TRFIN/REVERSAL",
+          "result": "self"
+        }
+      ],
+      "authorization": {
+        "object": "/TRFIN/JOURNAL_ENTRY",
+        "fields": {
+          "COMPANY": "COMPANY",
+          "DOCUMENT_TYPE": "DOCUMENT_TYPE"
+        },
+        "activities": {
+          "read": "READ",
+          "create": "CREATE",
+          "update": "UPDATE",
+          "POST": "CREATE",
+          "CHECK": "CREATE",
+          "REVERSE": "CANCEL"
+        }
+      }
+    },
+    "/TRFIN/JOURNAL_ENTRY_ITEMS": {
+      "operations": [
+        "create",
+        "update"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/JOURNAL_ENTRIES",
+      "foreignKey": "ENTRY",
+      "fields": {
+        "ACCOUNT_KIND": {
+          "readOnlyOnUpdate": true
+        },
+        "ACCOUNT": {
+          "readOnlyOnUpdate": true
+        },
+        "PARTNER": {
+          "readOnlyOnUpdate": true
+        },
+        "DEBIT_CREDIT": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "AMOUNT": {
+          "mandatory": true,
+          "readOnlyOnUpdate": true
+        },
+        "DUE_DATE": {
+          "readOnlyOnUpdate": true
+        },
+        "OPEN_ITEM": {
+          "readOnly": true
+        },
+        "CLEARING_YEAR": {
+          "readOnly": true
+        },
+        "CLEARING_NO": {
+          "readOnly": true
+        },
+        "CLEARING_DATE": {
+          "readOnly": true
+        }
+      },
+      "etag": "VERSION",
+      "determinations": [
+        {
+          "name": "DETERMINE_ITEMS",
+          "when": "modify",
+          "on": [
+            "create"
+          ]
+        }
+      ],
+      "validations": [
+        {
+          "name": "CHECK_ITEMS",
+          "on": [
+            "create"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/CLEARED_ITEMS": {
+      "operations": [
+        "create"
+      ],
+      "numbering": "external",
+      "parent": "/TRFIN/JOURNAL_ENTRIES",
+      "foreignKey": "ENTRY",
+      "validations": [
+        {
+          "name": "CHECK_CLEARED_ITEMS",
+          "on": [
+            "create"
+          ]
+        }
+      ]
+    },
+    "/TRFIN/LEDGER_ENTRIES": {
+      "operations": [],
+      "numbering": "external",
+      "parent": "/TRFIN/JOURNAL_ENTRIES",
+      "foreignKey": "ENTRY",
+      "maintainedBy": "save",
+      "authorization": {
+        "object": "/TRFIN/LEDGER",
+        "fields": {
+          "LEDGER": "LEDGER"
+        },
+        "activities": {
+          "read": "READ"
+        }
+      }
+    }
+  }
+}

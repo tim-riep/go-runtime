@@ -1,0 +1,28 @@
+{
+  "name": "/TRFIN/CHECK_RESULT",
+  "texts": {
+    "en": {
+      "label": "Result of a check",
+      "description": "The fiscal year and period of a journal entry and the problems that keep it from being posted"
+    },
+    "de": {
+      "label": "Ergebnis einer Prüfung",
+      "description": "Geschäftsjahr und Periode eines Belegs und die Fehler, die das Buchen verhindern"
+    }
+  },
+  "components": [
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD"
+    },
+    {
+      "name": "MESSAGES",
+      "arrayType": "/TRFIN/POSTING_MESSAGES",
+      "notNull": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "/TRLATE/CREATED_DOC",
+  "texts": { "en": { "label": "Created document", "description": "The link of a new document and its key" } },
+  "components": [
+    { "name": "LINK", "dataElement": "/TRBASE/ENTITY_LINK", "notNull": true },
+    { "name": "COMPANY", "domain": "/TRLATE/COMPANY", "notNull": true },
+    { "name": "FISCAL_YEAR", "domain": "/TRBASE/LENGTH", "notNull": true },
+    { "name": "DOC_NO", "domain": "/TRLATE/DOC_NO" }
+  ]
+}

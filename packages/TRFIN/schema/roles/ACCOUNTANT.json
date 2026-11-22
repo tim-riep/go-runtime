@@ -1,0 +1,143 @@
+{
+  "name": "/TRFIN/ACCOUNTANT",
+  "texts": {
+    "en": {
+      "label": "Accountant",
+      "description": "Posts, changes the texts of, reverses and reads journal entries in all companies and ledgers, and reads the configuration, the master data and the partners"
+    },
+    "de": {
+      "label": "Buchhalter",
+      "description": "Bucht Belege, ändert ihre Texte, storniert und liest sie in allen Buchungskreisen und Ledgern und liest Konfiguration, Stammdaten und Partner"
+    }
+  },
+  "authorizations": [
+    {
+      "object": "/TRFIN/JOURNAL_ENTRY",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "DOCUMENT_TYPE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/LEDGER",
+      "fields": {
+        "LEDGER": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "pattern": "*"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/CHART_ACCOUNT",
+      "fields": {
+        "CHART": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/ACCOUNT",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRFIN/PARTNER_COMPANY",
+      "fields": {
+        "COMPANY": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBP/PARTNER",
+      "fields": {
+        "GROUPING": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ROLE": [
+          {
+            "pattern": "*"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    },
+    {
+      "object": "/TRBASE/CONFIGURATION",
+      "fields": {
+        "BUSINESS_OBJECT": [
+          {
+            "pattern": "/TRFIN/*"
+          }
+        ],
+        "DATA_CLASS": [
+          {
+            "value": "configuration"
+          },
+          {
+            "value": "runtimeConfiguration"
+          }
+        ],
+        "ACTIVITY": [
+          {
+            "value": "READ"
+          }
+        ]
+      }
+    }
+  ]
+}

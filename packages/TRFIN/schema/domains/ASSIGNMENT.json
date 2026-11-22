@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/ASSIGNMENT",
+  "description": "Assignment of an item for sorting and searching",
+  "type": "CHAR",
+  "length": 18
+}

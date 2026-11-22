@@ -17,6 +17,7 @@ package kernel
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/tim-riep/go-runtime/internal/odata"
@@ -122,6 +123,10 @@ func (k *Kernel) serveAction(w http.ResponseWriter, r *http.Request, sr *service
 			}
 		}
 		value, _ := result.(map[string]any)
+		if err := finalKeys(value, owner, cs0.created); err != nil {
+			sr.internal(w, "reading the key of a new instance", err)
+			return
+		}
 		o := &odata.Object{}
 		if !f.NoMetadata {
 			o.Set("@odata.context", sr.base+"$metadata#"+sr.m.Namespace+"."+model.PublicName(res))
@@ -132,4 +137,37 @@ func (k *Kernel) serveAction(w http.ResponseWriter, r *http.Request, sr *service
 		}
 		sr.writeOData(w, r, http.StatusOK, f, o)
 	}
+}
+
+// finalKeys gives the result of an action of a root entity the final key
+// of a new instance of the root that it names by its LINK: the action
+// knows only the preliminary key, late numbering gives the final one when
+// the instance is saved. Components named like the key fields take the
+// values of the final key.
+func finalKeys(value map[string]any, t *odata.EntityType, created []vm.EntityCreated) error {
+	link, ok := value[model.LinkField].(string)
+	if !ok || t == nil || t.BusinessObject == nil || t.Entity.Table != t.BusinessObject.Root {
+		return nil
+	}
+	for _, c := range created {
+		if c.Entity != t.Entity.Table || c.Link == nil || *c.Link != link {
+			continue
+		}
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(c.Key), &raw); err != nil {
+			return err
+		}
+		for _, p := range t.Key {
+			v, ok := raw[p.Field.Name]
+			if _, named := value[p.Field.Name]; !ok || !named {
+				continue
+			}
+			val, err := odata.DecodeValue(p.Domain, v)
+			if err != nil {
+				return err
+			}
+			value[p.Field.Name] = val
+		}
+	}
+	return nil
 }

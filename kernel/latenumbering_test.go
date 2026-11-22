@@ -153,6 +153,15 @@ func TestLateNumberingOverOData(t *testing.T) {
 		if a := c.do("POST", "/rt/odata/trlate/doc_service/Lines", user, `{"COMPANY":"1000","FISCAL_YEAR":2026,"DOC_NO":"0000000001","LINE_NO":9,"AMOUNT":"1.00"}`); a.status != 405 {
 			t.Errorf("lines are not created over OData: %d %s", a.status, a.body)
 		}
+		// An action that creates a document names it by its link; the
+		// answer has the final key that late numbering gave it.
+		if a := c.do("POST", "/rt/odata/trlate/doc_service/CREATE_DOC", user, `{"COMPANY":"1000","FISCAL_YEAR":2026,"TEXT":"action"}`); a.status != 200 ||
+			!strings.Contains(a.body, `"LINK":"new","COMPANY":"1000","FISCAL_YEAR":2026,"DOC_NO":"0000000002"`) {
+			t.Errorf("action: %d %s", a.status, a.body)
+		}
+		if a := c.do("GET", "/rt/odata/trlate/doc_service/Docs(COMPANY='1000',FISCAL_YEAR=2026,DOC_NO='0000000002')", user, ""); a.status != 200 || !strings.Contains(a.body, `"TEXT":"action"`) {
+			t.Errorf("document of the action: %d %s", a.status, a.body)
+		}
 	})
 }
 

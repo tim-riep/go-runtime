@@ -1,0 +1,176 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRIES",
+  "description": "Journal entries of a company and fiscal year",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO"
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "dataElement": "/TRFIN/DOCUMENT_TYPE",
+      "notNull": true
+    },
+    {
+      "name": "DOCUMENT_DATE",
+      "dataElement": "/TRFIN/DOCUMENT_DATE",
+      "notNull": true
+    },
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE",
+      "notNull": true
+    },
+    {
+      "name": "PERIOD",
+      "dataElement": "/TRFIN/PERIOD",
+      "notNull": true,
+      "description": "The period of the posting date in the fiscal year"
+    },
+    {
+      "name": "REFERENCE",
+      "dataElement": "/TRFIN/REFERENCE"
+    },
+    {
+      "name": "HEADER_TEXT",
+      "dataElement": "/TRFIN/HEADER_TEXT"
+    },
+    {
+      "name": "LEDGER",
+      "dataElement": "/TRFIN/LEDGER",
+      "description": "The only ledger the entry is posted to; null for none"
+    },
+    {
+      "name": "LEDGER_GROUP",
+      "dataElement": "/TRFIN/LEDGER_GROUP",
+      "description": "The group of ledgers the entry is posted to; null for none"
+    },
+    {
+      "name": "CURRENCY",
+      "dataElement": "/TRBASE/CURRENCY",
+      "notNull": true,
+      "description": "The currency of the company"
+    },
+    {
+      "name": "KIND",
+      "dataElement": "/TRFIN/ENTRY_KIND",
+      "notNull": true,
+      "default": "NORMAL"
+    },
+    {
+      "name": "STATUS",
+      "dataElement": "/TRFIN/ENTRY_STATUS",
+      "notNull": true,
+      "default": "POSTED"
+    },
+    {
+      "name": "REVERSAL_YEAR",
+      "dataElement": "/TRFIN/REVERSAL_YEAR",
+      "description": "The fiscal year of the entry that reverses this one"
+    },
+    {
+      "name": "REVERSAL_NO",
+      "dataElement": "/TRFIN/REVERSAL_NO",
+      "description": "The number of the entry that reverses this one"
+    },
+    {
+      "name": "REVERSED_YEAR",
+      "dataElement": "/TRFIN/REVERSED_YEAR",
+      "description": "The fiscal year of the entry this one reverses"
+    },
+    {
+      "name": "REVERSED_NO",
+      "dataElement": "/TRFIN/REVERSED_NO",
+      "description": "The number of the entry this one reverses"
+    },
+    {
+      "name": "CREATED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CREATED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "CHANGED_BY",
+      "domain": "/TRBASE/NAME"
+    },
+    {
+      "name": "CHANGED_AT",
+      "domain": "/TRBASE/TIMESTAMP"
+    },
+    {
+      "name": "VERSION",
+      "dataElement": "/TRFIN/VERSION",
+      "notNull": true,
+      "default": 0
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "FISCAL_YEAR",
+    "DOCUMENT_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "COMPANY",
+      "table": "/TRFIN/COMPANIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        }
+      ]
+    },
+    {
+      "name": "DOCUMENT_TYPE",
+      "table": "/TRFIN/DOCUMENT_TYPES",
+      "fields": [
+        {
+          "field": "DOCUMENT_TYPE",
+          "references": "DOCUMENT_TYPE"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER",
+      "table": "/TRFIN/LEDGERS",
+      "fields": [
+        {
+          "field": "LEDGER",
+          "references": "LEDGER"
+        }
+      ]
+    },
+    {
+      "name": "LEDGER_GROUP",
+      "table": "/TRFIN/LEDGER_GROUPS",
+      "fields": [
+        {
+          "field": "LEDGER_GROUP",
+          "references": "LEDGER_GROUP"
+        }
+      ]
+    },
+    {
+      "name": "CURRENCY",
+      "table": "/TRFIN/CURRENCIES",
+      "fields": [
+        {
+          "field": "CURRENCY",
+          "references": "CURRENCY"
+        }
+      ]
+    }
+  ]
+}

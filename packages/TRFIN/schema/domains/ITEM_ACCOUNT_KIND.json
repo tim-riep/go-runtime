@@ -1,0 +1,17 @@
+{
+  "name": "/TRFIN/ITEM_ACCOUNT_KIND",
+  "description": "Kind of account an item posts to",
+  "type": "CHAR",
+  "length": 8,
+  "values": [
+    {
+      "value": "ACCOUNT"
+    },
+    {
+      "value": "CUSTOMER"
+    },
+    {
+      "value": "SUPPLIER"
+    }
+  ]
+}

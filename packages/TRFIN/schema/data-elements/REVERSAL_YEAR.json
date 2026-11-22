@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/REVERSAL_YEAR",
+  "domain": "/TRBASE/FISCAL_YEAR",
+  "texts": {
+    "en": {
+      "short": "Rev. year",
+      "medium": "Reversal year",
+      "long": "Fiscal year of the reversal",
+      "heading": "Reversal year"
+    },
+    "de": {
+      "short": "Stornojahr",
+      "medium": "Stornojahr",
+      "long": "Geschäftsjahr des Stornobelegs",
+      "heading": "Stornojahr"
+    }
+  }
+}

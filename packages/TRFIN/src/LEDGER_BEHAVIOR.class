@@ -1,5 +1,6 @@
 # The behavior of ledgers: exactly one of the ledgers of a tenant is the
-# primary ledger.
+# primary ledger; once journal entries are posted it stays, and ledgers
+# with movements are not deleted.
 public class /TRFIN/LEDGER_BEHAVIOR
 
   public method CHECK_PRIMARY(keys: array of key of /TRFIN/LEDGERS, response: /TRBASE/ENTITY_RESPONSE)
@@ -17,6 +18,21 @@ public class /TRFIN/LEDGER_BEHAVIOR
     for ledger in ledgers
       if ledger.PRIMARY
         primaries.APPEND(ledger.LEDGER)
+      end
+    end
+    var posted = /TRFIN/MOVEMENTS.ANY()
+    for i, key in keys
+      var before = select single from /TRFIN/LEDGERS where LEDGER = key.LEDGER
+      if before is null
+        continue
+      end
+      var now = ledgers.FIND(function (l: /TRFIN/LEDGERS) => l.LEDGER = key.LEDGER)
+      if now is null
+        if /TRFIN/MOVEMENTS.LEDGER(key.LEDGER)
+          response.ERROR(i, "the ledger {key.LEDGER} has movements; it stays")
+        end
+      elseif now.PRIMARY <> before.PRIMARY and posted
+        response.FIELD_ERROR(i, "PRIMARY", "journal entries are posted; the primary ledger stays")
       end
     end
     for ledger in select from /TRFIN/LEDGERS

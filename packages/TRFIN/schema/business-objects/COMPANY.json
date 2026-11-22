@@ -65,6 +65,12 @@
           "on": [
             "create"
           ]
+        },
+        {
+          "name": "CHECK_LEDGER_REMOVAL",
+          "on": [
+            "delete"
+          ]
         }
       ]
     }

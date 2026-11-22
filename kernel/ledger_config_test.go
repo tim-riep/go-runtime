@@ -41,6 +41,9 @@ type ledgerEnv struct {
 	k  *kernel.Kernel
 	c  client
 	as func(user string) func(*http.Request)
+	// later is the partner that is a customer in 1000 from 2026-07-01 on,
+	// set by postingKernel.
+	later string
 }
 
 // send sends a request as user and checks the status and that the answer

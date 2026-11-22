@@ -1,0 +1,19 @@
+{
+  "name": "/TRFIN/REVERSAL",
+  "texts": {
+    "en": {
+      "label": "Reversal",
+      "description": "The posting date of a reversal; null for that of the reversed entry"
+    },
+    "de": {
+      "label": "Storno",
+      "description": "Das Buchungsdatum eines Stornos; null für das des stornierten Belegs"
+    }
+  },
+  "components": [
+    {
+      "name": "POSTING_DATE",
+      "dataElement": "/TRFIN/POSTING_DATE"
+    }
+  ]
+}

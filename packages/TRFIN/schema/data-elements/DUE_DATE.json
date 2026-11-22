@@ -1,0 +1,18 @@
+{
+  "name": "/TRFIN/DUE_DATE",
+  "domain": "/TRBASE/DATE",
+  "texts": {
+    "en": {
+      "short": "Due date",
+      "medium": "Due date",
+      "long": "Date the item is due",
+      "heading": "Due date"
+    },
+    "de": {
+      "short": "Fällig",
+      "medium": "Fälligkeit",
+      "long": "Datum, zu dem die Position fällig ist",
+      "heading": "Fälligkeit"
+    }
+  }
+}

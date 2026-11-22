@@ -1,0 +1,65 @@
+{
+  "name": "/TRFIN/CLEARED_ITEMS",
+  "description": "Items that a clearing entry cleared",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO"
+    },
+    {
+      "name": "LINE_NO",
+      "dataElement": "/TRFIN/LINE_NO"
+    },
+    {
+      "name": "ITEM_YEAR",
+      "dataElement": "/TRFIN/ITEM_YEAR",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_DOCUMENT_NO",
+      "dataElement": "/TRFIN/ITEM_DOCUMENT_NO",
+      "notNull": true
+    },
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO",
+      "notNull": true
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "FISCAL_YEAR",
+    "DOCUMENT_NO",
+    "LINE_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTRY",
+      "table": "/TRFIN/JOURNAL_ENTRIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "FISCAL_YEAR",
+          "references": "FISCAL_YEAR"
+        },
+        {
+          "field": "DOCUMENT_NO",
+          "references": "DOCUMENT_NO"
+        }
+      ]
+    }
+  ]
+}

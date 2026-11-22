@@ -9,11 +9,12 @@
       "numbering": "late",
       "lateNumbering": { "fields": ["DOC_NO"], "method": "ASSIGN_NUMBERS" },
       "save": "WRITE_LINES",
+      "actions": [{ "name": "CREATE_DOC", "instance": false, "parameter": "/TRLATE/NEW_DOC", "result": "/TRLATE/CREATED_DOC" }],
       "administrative": { "createdAt": "CREATED_AT" },
       "authorization": {
         "object": "/TRLATE/DOC",
         "fields": { "COMPANY": "COMPANY", "KIND": "*" },
-        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE" }
+        "activities": { "read": "READ", "create": "CREATE", "update": "UPDATE", "CREATE_DOC": "CREATE" }
       }
     },
     "/TRLATE/ITEMS": { "parent": "/TRLATE/DOCS", "foreignKey": "DOC", "operations": ["create"] },

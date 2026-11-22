@@ -1,0 +1,6 @@
+{
+  "name": "/TRFIN/REFERENCE",
+  "description": "Reference of a journal entry",
+  "type": "CHAR",
+  "length": 16
+}

@@ -219,7 +219,7 @@
                   "description": "A structure the action takes."
                 },
                 "result": {
-                  "description": "self for the instances the action ran on, or a structure.",
+                  "description": "self for the instances the action ran on, or a structure. An action of the root that creates an instance names it by a component LINK; over OData the answer has its final key in the components named like the key fields.",
                   "type": "string",
                   "pattern": "^(self|(/[A-Z][A-Z0-9]*/)?[A-Z][A-Z0-9_]*)$"
                 },
@@ -300,7 +300,7 @@
             "description": "The root only: a method of the behavior class that runs in the save sequence after the instances are written and writes tables without business object and entities maintained by save."
           },
           "maintainedBy": {
-            "description": "save: the entity has no operations; only the save method of the business object writes it.",
+            "description": "save: the entity has no operations; only the save method of the business object writes it. With an authorization of its own it is read only where its parent instance is read as well.",
             "enum": [
               "save"
             ]

@@ -1,0 +1,14 @@
+{
+  "name": "/TRFIN/POSTING_MESSAGES",
+  "texts": {
+    "en": {
+      "label": "Messages of a posting"
+    },
+    "de": {
+      "label": "Meldungen einer Buchung"
+    }
+  },
+  "rowType": {
+    "structure": "/TRFIN/POSTING_MESSAGE"
+  }
+}

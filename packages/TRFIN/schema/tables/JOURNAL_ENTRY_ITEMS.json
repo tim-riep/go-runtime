@@ -1,0 +1,137 @@
+{
+  "name": "/TRFIN/JOURNAL_ENTRY_ITEMS",
+  "description": "Items of journal entries",
+  "tenantSpecific": true,
+  "dataClass": "application",
+  "fields": [
+    {
+      "name": "COMPANY",
+      "dataElement": "/TRFIN/COMPANY"
+    },
+    {
+      "name": "FISCAL_YEAR",
+      "dataElement": "/TRBASE/FISCAL_YEAR"
+    },
+    {
+      "name": "DOCUMENT_NO",
+      "dataElement": "/TRFIN/DOCUMENT_NO"
+    },
+    {
+      "name": "ITEM_NO",
+      "dataElement": "/TRFIN/ITEM_NO"
+    },
+    {
+      "name": "ACCOUNT_KIND",
+      "dataElement": "/TRFIN/ITEM_ACCOUNT_KIND",
+      "notNull": true,
+      "default": "ACCOUNT"
+    },
+    {
+      "name": "ACCOUNT",
+      "dataElement": "/TRFIN/ACCOUNT",
+      "description": "The account; for customers and suppliers their reconciliation account"
+    },
+    {
+      "name": "PARTNER",
+      "dataElement": "/TRBP/PARTNER",
+      "description": "The customer or supplier; null for items on accounts"
+    },
+    {
+      "name": "DEBIT_CREDIT",
+      "dataElement": "/TRFIN/DEBIT_CREDIT",
+      "notNull": true
+    },
+    {
+      "name": "AMOUNT",
+      "dataElement": "/TRFIN/AMOUNT",
+      "notNull": true,
+      "description": "Greater than zero"
+    },
+    {
+      "name": "ITEM_TEXT",
+      "dataElement": "/TRFIN/ITEM_TEXT"
+    },
+    {
+      "name": "ASSIGNMENT",
+      "dataElement": "/TRFIN/ASSIGNMENT"
+    },
+    {
+      "name": "DUE_DATE",
+      "dataElement": "/TRFIN/DUE_DATE"
+    },
+    {
+      "name": "OPEN_ITEM",
+      "dataElement": "/TRFIN/OPEN_ITEM",
+      "notNull": true,
+      "default": false
+    },
+    {
+      "name": "CLEARING_YEAR",
+      "dataElement": "/TRFIN/CLEARING_YEAR"
+    },
+    {
+      "name": "CLEARING_NO",
+      "dataElement": "/TRFIN/CLEARING_NO"
+    },
+    {
+      "name": "CLEARING_DATE",
+      "dataElement": "/TRFIN/CLEARING_DATE"
+    },
+    {
+      "name": "VERSION",
+      "dataElement": "/TRFIN/VERSION",
+      "notNull": true,
+      "default": 0
+    }
+  ],
+  "primaryKey": [
+    "COMPANY",
+    "FISCAL_YEAR",
+    "DOCUMENT_NO",
+    "ITEM_NO"
+  ],
+  "foreignKeys": [
+    {
+      "name": "ENTRY",
+      "table": "/TRFIN/JOURNAL_ENTRIES",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "FISCAL_YEAR",
+          "references": "FISCAL_YEAR"
+        },
+        {
+          "field": "DOCUMENT_NO",
+          "references": "DOCUMENT_NO"
+        }
+      ]
+    },
+    {
+      "name": "ACCOUNT",
+      "table": "/TRFIN/COMPANY_ACCOUNTS",
+      "fields": [
+        {
+          "field": "COMPANY",
+          "references": "COMPANY"
+        },
+        {
+          "field": "ACCOUNT",
+          "references": "ACCOUNT"
+        }
+      ]
+    },
+    {
+      "name": "PARTNER",
+      "table": "/TRBP/PARTNERS",
+      "fields": [
+        {
+          "field": "PARTNER",
+          "references": "PARTNER"
+        }
+      ]
+    }
+  ]
+}
