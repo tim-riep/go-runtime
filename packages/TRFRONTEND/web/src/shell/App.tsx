@@ -107,13 +107,13 @@ export function App() {
   const apps = useMemo(() => new Map((home?.APPS ?? []).map((a) => [a.NAME, a])), [home]);
 
   const open = useCallback(
-    (name: string, params: Record<string, string> = {}) => {
+    (name: string, params: Record<string, string> = {}, entity: string | null = null) => {
       const app = apps.get(name);
       if (app?.TARGET.KIND === 'URL') {
         window.open(pageUrl(app, params), '_blank', 'noopener');
         return;
       }
-      navigate({ kind: 'app', app: name, params, entity: null });
+      navigate({ kind: 'app', app: name, params, entity: app?.TARGET.KIND === 'LIST' ? entity : null });
     },
     [apps],
   );

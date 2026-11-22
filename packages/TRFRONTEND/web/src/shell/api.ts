@@ -181,6 +181,67 @@ export async function fetchJSON<T>(path: string, init: JSONInit = {}, options: J
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/** A file of an answer: its content and its name. */
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+/**
+ * The file name of a Content-Disposition header: filename* (RFC 5987,
+ * UTF-8) before filename; null without one.
+ */
+export function filenameOf(disposition: string | null): string | null {
+  if (!disposition) {
+    return null;
+  }
+  const extended = /filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i.exec(disposition);
+  if (extended?.[2]) {
+    try {
+      return decodeURIComponent(extended[2].trim().replace(/^"|"$/g, ''));
+    } catch {
+      // A malformed encoding: try the plain name.
+    }
+  }
+  const quoted = /filename\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(disposition);
+  if (quoted?.[1] !== undefined) {
+    return quoted[1].replace(/\\(.)/g, '$1');
+  }
+  const plain = /filename\s*=\s*([^;\s]+)/i.exec(disposition);
+  return plain?.[1] ?? null;
+}
+
+/**
+ * A request for a file, such as a report with ?format=xlsx: like fetchJSON
+ * (POST with a JSON body, else GET, the CSRF token for changes), but the
+ * answer is the content with the file name of Content-Disposition, else
+ * the last segment of the path. Failures are RequestErrors.
+ */
+export async function fetchFile(path: string, init: JSONInit = {}, options: JSONOptions = {}): Promise<DownloadedFile> {
+  const method = (init.method ?? (init.body !== undefined ? 'POST' : 'GET')).toUpperCase();
+  const headers: Record<string, string> = { ...init.headers };
+  if (init.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const token = (options.csrfToken ?? currentCsrfToken)();
+  if (method !== 'GET' && method !== 'HEAD' && token) {
+    headers['X-CSRF-Token'] = token;
+  }
+  const req: RequestInit = { method, headers, credentials: 'same-origin' };
+  if (init.body !== undefined) {
+    req.body = JSON.stringify(init.body);
+  }
+  if (init.signal) {
+    req.signal = init.signal;
+  }
+  const resp = await (options.fetch ?? fetch)(path, req);
+  if (!resp.ok) {
+    throw requestError(resp.status, await resp.text());
+  }
+  const segment = path.split('?')[0]?.split('/').filter(Boolean).pop() ?? 'download';
+  return { blob: await resp.blob(), filename: filenameOf(resp.headers.get('Content-Disposition')) ?? segment };
+}
+
 /** A JSON request with the CSRF token of the session for changes. */
 export function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   return fetchJSON<T>(url, body === undefined ? { method } : { method, body });

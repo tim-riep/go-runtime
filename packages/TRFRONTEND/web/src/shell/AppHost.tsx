@@ -30,8 +30,8 @@ export interface AppHostProps {
   /** The language of the session, for the context of remote apps. */
   language: string;
   onNavigate: (entity: string | null) => void;
-  /** Opens another app with parameters, for the context of remote apps. */
-  onOpen: (app: string, params: Record<string, string>) => void;
+  /** Opens another app with parameters, a list app at an entity, for the context of remote apps. */
+  onOpen: (app: string, params: Record<string, string>, entity?: string | null) => void;
   onSignedOut: () => void;
 }
 
@@ -58,7 +58,7 @@ interface RemoteHostProps {
   params: Record<string, string>;
   texts: Record<TextKey, string>;
   language: string;
-  onOpen: (app: string, params: Record<string, string>) => void;
+  onOpen: (app: string, params: Record<string, string>, entity?: string | null) => void;
   onSignedOut: () => void;
 }
 
@@ -74,7 +74,7 @@ function Remote({ app, params, texts, language, onOpen, onSignedOut }: RemoteHos
     () =>
       createRemoteContext({
         language,
-        navigate: (a, p) => latest.current.onOpen(a, p),
+        navigate: (a, p, e) => latest.current.onOpen(a, p, e),
         notify: (message, tone) => {
           latest.current.toast.show({ message, tone });
         },

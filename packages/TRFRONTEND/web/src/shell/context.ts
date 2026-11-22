@@ -18,7 +18,7 @@
 // apps and toasts. A remote that only reads params keeps working.
 
 import { ODataClient } from '../odata/index.ts';
-import { currentCsrfToken, fetchJSON, type JSONInit } from './api.ts';
+import { currentCsrfToken, fetchFile, fetchJSON, type JSONInit } from './api.ts';
 
 /** The tone of a toast of notify. */
 export type NotifyTone = 'information' | 'success' | 'warning' | 'error';
@@ -33,8 +33,21 @@ export interface RemoteContext {
   odata(service: string): ODataClient;
   /** A JSON request to a node, such as /trfin/reports/balances; RequestError for failures. */
   fetchJSON<T = unknown>(path: string, init?: JSONInit): Promise<T>;
-  /** Opens another app of the user with parameters. */
-  navigate(app: string, params?: Record<string, string>): void;
+  /**
+   * Requests a file from a node and saves it in the browser, such as
+   * /trfin/reports/balances?format=xlsx with { body: selection }: POST with
+   * a body, else GET, the CSRF token for changes and the language of the
+   * session. The name comes from Content-Disposition; the promise gives it.
+   * Failures throw a RequestError as fetchJSON does.
+   */
+  download(path: string, init?: JSONInit): Promise<string>;
+  /**
+   * Opens another app of the user with parameters; a list app opens at an
+   * entity by its path in the service, such as
+   * JournalEntries(COMPANY='1000',FISCAL_YEAR=2026,DOCUMENT_NO='0000000001')
+   * from odata(service).entityPath(set, key).
+   */
+  navigate(app: string, params?: Record<string, string>, entity?: string | null): void;
   /** Shows a toast, by default of the tone information. */
   notify(message: string, tone?: NotifyTone): void;
 }
@@ -47,7 +60,7 @@ export interface RemoteProps {
 
 export interface RemoteContextOptions {
   language: string;
-  navigate: (app: string, params: Record<string, string>) => void;
+  navigate: (app: string, params: Record<string, string>, entity: string | null) => void;
   notify: (message: string, tone: NotifyTone) => void;
   /** Called when an answer is 401: the session is gone. */
   onSignedOut: () => void;
@@ -55,6 +68,22 @@ export interface RemoteContextOptions {
   csrfToken?: () => string | null;
   /** fetch, for tests; by default the global one at the time of the request. */
   fetch?: typeof fetch;
+  /** Saves a downloaded file, for tests; by default through a link with download. */
+  save?: (blob: Blob, filename: string) => void;
+}
+
+/** Saves a file in the browser through a temporary link with the attribute download. */
+export function saveFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.append(a);
+  a.click();
+  a.remove();
+  // The browser reads the URL after the click; revoke it later.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 const serviceName = /^\/([A-Z0-9_]+)\/([A-Z0-9_]+)$/;
@@ -97,8 +126,13 @@ export function createRemoteContext(options: RemoteContextOptions): RemoteContex
     fetchJSON<T = unknown>(path: string, init: JSONInit = {}): Promise<T> {
       return fetchJSON<T>(path, { ...init, headers: { 'Accept-Language': options.language, ...init.headers } }, { csrfToken, fetch: watched });
     },
-    navigate(app: string, params: Record<string, string> = {}) {
-      options.navigate(app, params);
+    async download(path: string, init: JSONInit = {}): Promise<string> {
+      const file = await fetchFile(path, { ...init, headers: { 'Accept-Language': options.language, ...init.headers } }, { csrfToken, fetch: watched });
+      (options.save ?? saveFile)(file.blob, file.filename);
+      return file.filename;
+    },
+    navigate(app: string, params: Record<string, string> = {}, entity: string | null = null) {
+      options.navigate(app, params, entity);
     },
     notify(message: string, tone: NotifyTone = 'information') {
       options.notify(message, tone);

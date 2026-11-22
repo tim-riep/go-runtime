@@ -1450,7 +1450,8 @@ gets, besides the parameters of the app in `params`, the `context` of the shell:
 |---|---|
 | `odata(service)` | the OData client of the shell for a service, by its name such as `/TRFIN/JOURNAL_ENTRY_SERVICE` or by its URL, with the CSRF token and the language of the session |
 | `fetchJSON(path, init)` | a JSON request to a node, e.g. `/trfin/reports/balances` with `{ body: {...} }` (`POST` with a body, else `GET`, or `init.method`), with the CSRF token for changes; failures throw an error with `status`, `code` and the message of the answer |
-| `navigate(app, params)` | opens another app of the user with parameters |
+| `download(path, init)` | requests a file the same way and saves it in the browser under the name of `Content-Disposition`, e.g. `/trfin/reports/balances?format=xlsx` with `{ body: {...} }`; it resolves with the file name and throws like `fetchJSON` |
+| `navigate(app, params, entity)` | opens another app of the user with parameters; a list app opens at an entity given by its path in the service, such as `JournalEntries(COMPANY='1000',FISCAL_YEAR=2026,DOCUMENT_NO='0000000001')` from `odata(service).entityPath(set, key)` |
 | `language` | the language of the session |
 | `notify(message, tone)` | shows a toast, by default of the tone `information` |
 

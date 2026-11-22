@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ODataError } from '../odata/index.ts';
-import { RequestError } from './api.ts';
+import { filenameOf, RequestError } from './api.ts';
 import { createRemoteContext, type NotifyTone, serviceUrl } from './context.ts';
 
 interface Call {
@@ -26,7 +26,8 @@ interface Call {
 
 function setup(answers: Array<() => Response>) {
   const calls: Call[] = [];
-  const opened: Array<[string, Record<string, string>]> = [];
+  const saved: Array<{ blob: Blob; filename: string }> = [];
+  const opened: Array<[string, Record<string, string>, string | null]> = [];
   const notes: Array<[string, NotifyTone]> = [];
   let signedOut = 0;
   const fetch = (async (url: string | URL | Request, init?: RequestInit) => {
@@ -37,15 +38,16 @@ function setup(answers: Array<() => Response>) {
   }) as typeof globalThis.fetch;
   const context = createRemoteContext({
     language: 'de',
-    navigate: (app, params) => opened.push([app, params]),
+    navigate: (app, params, entity) => opened.push([app, params, entity]),
     notify: (message, tone) => notes.push([message, tone]),
     onSignedOut: () => {
       signedOut++;
     },
     csrfToken: () => 'token-1',
     fetch,
+    save: (blob, filename) => saved.push({ blob, filename }),
   });
-  return { context, calls, opened, notes, signedOut: () => signedOut };
+  return { context, calls, opened, notes, saved, signedOut: () => signedOut };
 }
 
 const json = (body: unknown, status = 200) => () => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -103,6 +105,43 @@ describe('the context of remote apps', () => {
     expect(signedOut()).toBe(1);
   });
 
+  it('downloads files with the CSRF token and the name of the answer', async () => {
+    const xlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const { context, calls, saved, signedOut } = setup([
+      () => new Response('PK-data', { status: 200, headers: { 'Content-Type': xlsx, 'Content-Disposition': 'attachment; filename="balances-1000.xlsx"' } }),
+      () => new Response('plain', { status: 200 }),
+      json({ error: 'the company 9999 does not exist' }, 400),
+      json({ code: 'session-expired', message: 'signed out' }, 401),
+    ]);
+    expect(await context.download('/trfin/reports/balances?format=xlsx', { body: { COMPANY: '1000', FISCAL_YEAR: 2026 } })).toBe('balances-1000.xlsx');
+    expect(calls[0]).toMatchObject({ method: 'POST', url: '/trfin/reports/balances?format=xlsx', body: '{"COMPANY":"1000","FISCAL_YEAR":2026}' });
+    expect(calls[0]?.headers).toMatchObject({ 'Content-Type': 'application/json', 'X-CSRF-Token': 'token-1', 'Accept-Language': 'de' });
+    expect(saved[0]?.filename).toBe('balances-1000.xlsx');
+    expect(saved[0]?.blob.type).toBe(xlsx);
+    expect(await saved[0]?.blob.text()).toBe('PK-data');
+    // GET without a name in the answer: the last segment of the path.
+    expect(await context.download('/trfin/files/report.txt?x=1')).toBe('report.txt');
+    expect(calls[1]?.method).toBe('GET');
+    expect(calls[1]?.headers['X-CSRF-Token']).toBeUndefined();
+    const failure = async (p: Promise<unknown>) => p.then(() => null, (e: unknown) => e as RequestError);
+    expect(await failure(context.download('/trfin/reports/balances?format=xlsx', { body: { COMPANY: '9999' } }))).toMatchObject({
+      status: 400,
+      message: 'the company 9999 does not exist',
+    });
+    expect((await failure(context.download('/x', { body: {} })))?.signedOut).toBe(true);
+    expect(signedOut()).toBe(1);
+    expect(saved).toHaveLength(2);
+  });
+
+  it('reads file names of Content-Disposition', () => {
+    expect(filenameOf(null)).toBeNull();
+    expect(filenameOf('attachment')).toBeNull();
+    expect(filenameOf('attachment; filename="open-items-1000.xlsx"')).toBe('open-items-1000.xlsx');
+    expect(filenameOf('attachment; filename=plain.xlsx')).toBe('plain.xlsx');
+    expect(filenameOf('attachment; filename="a\\"b.txt"')).toBe('a"b.txt');
+    expect(filenameOf('attachment; filename="fallback.txt"; filename*=UTF-8\'\'Bilanz%20%C3%BCbersicht.xlsx')).toBe('Bilanz übersicht.xlsx');
+  });
+
   it('reports a lost session of OData requests too', async () => {
     const { context, signedOut } = setup([json({ error: { code: 'UNAUTHORIZED', message: 'sign in' } }, 401)]);
     const e = await context
@@ -121,11 +160,13 @@ describe('the context of remote apps', () => {
     expect(context.language).toBe('de');
     context.navigate('/TRFINUI/JOURNAL_ENTRIES', { COMPANY: '1000' });
     context.navigate('/TRFINUI/BALANCES');
+    context.navigate('/TRFINUI/JOURNAL_ENTRIES', {}, "JournalEntries(COMPANY='1000',FISCAL_YEAR=2026,DOCUMENT_NO='0000000001')");
     context.notify('Posted');
     context.notify('Failed', 'error');
     expect(opened).toEqual([
-      ['/TRFINUI/JOURNAL_ENTRIES', { COMPANY: '1000' }],
-      ['/TRFINUI/BALANCES', {}],
+      ['/TRFINUI/JOURNAL_ENTRIES', { COMPANY: '1000' }, null],
+      ['/TRFINUI/BALANCES', {}, null],
+      ['/TRFINUI/JOURNAL_ENTRIES', {}, "JournalEntries(COMPANY='1000',FISCAL_YEAR=2026,DOCUMENT_NO='0000000001')"],
     ]);
     expect(notes).toEqual([
       ['Posted', 'information'],
