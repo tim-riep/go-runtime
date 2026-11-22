@@ -27,6 +27,7 @@ import * as Trui from '@tim-riep/trui';
 import * as TruiCore from '@tim-riep/trui/core';
 import * as TruiIcons from '@tim-riep/trui/icons';
 import type { ComponentType } from 'react';
+import type { RemoteProps } from './context.ts';
 
 const reactVersion = React.version;
 const truiVersion = '0.2.0';
@@ -51,9 +52,9 @@ function federation() {
       'react-dom': share(ReactDOM, reactVersion, '^19.0.0'),
       'react-dom/client': share(ReactDOMClient, reactVersion, '^19.0.0'),
       'react/jsx-runtime': share(JSXRuntime, reactVersion, '^19.0.0'),
-      '@tim-riep/trui': share(Trui, truiVersion, '^0.1.0'),
-      '@tim-riep/trui/core': share(TruiCore, truiVersion, '^0.1.0'),
-      '@tim-riep/trui/icons': share(TruiIcons, truiVersion, '^0.1.0'),
+      '@tim-riep/trui': share(Trui, truiVersion, '^0.2.0'),
+      '@tim-riep/trui/core': share(TruiCore, truiVersion, '^0.2.0'),
+      '@tim-riep/trui/icons': share(TruiIcons, truiVersion, '^0.2.0'),
     },
   });
   return instance;
@@ -66,14 +67,15 @@ export function remoteName(app: string): string {
 
 /**
  * Loads the exposed module of a remote whose manifest (mf-manifest.json) or
- * entry is at url. The module exports the component of the app as default.
+ * entry is at url. The module exports the component of the app as default;
+ * it gets the parameters of the app and the context of the shell.
  */
-export async function loadRemoteApp(app: string, url: string, module: string): Promise<ComponentType<{ params: Record<string, string> }>> {
+export async function loadRemoteApp(app: string, url: string, module: string): Promise<ComponentType<RemoteProps>> {
   const mf = federation();
   const name = remoteName(app);
   mf.registerRemotes([{ name, entry: url }]);
   const exposed = module.replace(/^\.\//, '');
-  const m = (await mf.loadRemote(`${name}/${exposed}`)) as { default?: ComponentType<{ params: Record<string, string> }> } | null;
+  const m = (await mf.loadRemote(`${name}/${exposed}`)) as { default?: ComponentType<RemoteProps> } | null;
   if (!m?.default) {
     throw new Error(`the module ${module} of ${url} has no default export`);
   }

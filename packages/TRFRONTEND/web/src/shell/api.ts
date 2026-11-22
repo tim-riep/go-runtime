@@ -116,34 +116,74 @@ export function currentLanguage(): string | null {
   return language;
 }
 
-/** A JSON request with the CSRF token of the session for changes. */
-export async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-  }
-  if (method !== 'GET' && csrfToken) {
-    headers['X-CSRF-Token'] = csrfToken;
-  }
-  const init: RequestInit = { method, headers, credentials: 'same-origin' };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
-  }
-  const resp = await fetch(url, init);
-  const text = await resp.text();
-  if (!resp.ok) {
-    let code = String(resp.status);
-    let message = text;
-    try {
-      const e = JSON.parse(text) as { code?: string; message?: string; error?: { code?: string; message?: string } };
+/** A request of fetchJSON: the method, by default GET without and POST with a body, which goes as JSON. */
+export interface JSONInit {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+}
+
+/** The parts of a request that fetchJSON takes from the shell. */
+export interface JSONOptions {
+  /** The CSRF token for changes; by default that of the session. */
+  csrfToken?: () => string | null;
+  /** fetch, for tests and to watch answers; by default the global one. */
+  fetch?: typeof fetch;
+}
+
+/** The error of an answer that is no success: {"code", "message"}, {"error": {...}} or {"error": "..."}. */
+function requestError(status: number, text: string): RequestError {
+  let code = String(status);
+  let message = text;
+  try {
+    const e = JSON.parse(text) as { code?: string; message?: string; error?: string | { code?: string; message?: string } };
+    if (typeof e.error === 'string') {
+      message = e.error;
+    } else {
       code = e.code ?? e.error?.code ?? code;
       message = e.message ?? e.error?.message ?? message;
-    } catch {
-      // No JSON.
     }
-    throw new RequestError(resp.status, code, message);
+  } catch {
+    // No JSON.
+  }
+  return new RequestError(status, code, message);
+}
+
+/**
+ * A JSON request to a node of the server: Accept and Content-Type JSON, the
+ * CSRF token of the session for every method but GET and HEAD, the answer
+ * parsed (null for an empty one) and a RequestError for any other status
+ * than 2xx.
+ */
+export async function fetchJSON<T>(path: string, init: JSONInit = {}, options: JSONOptions = {}): Promise<T> {
+  const method = (init.method ?? (init.body !== undefined ? 'POST' : 'GET')).toUpperCase();
+  const headers: Record<string, string> = { Accept: 'application/json', ...init.headers };
+  if (init.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const token = (options.csrfToken ?? currentCsrfToken)();
+  if (method !== 'GET' && method !== 'HEAD' && token) {
+    headers['X-CSRF-Token'] = token;
+  }
+  const req: RequestInit = { method, headers, credentials: 'same-origin' };
+  if (init.body !== undefined) {
+    req.body = JSON.stringify(init.body);
+  }
+  if (init.signal) {
+    req.signal = init.signal;
+  }
+  const resp = await (options.fetch ?? fetch)(path, req);
+  const text = await resp.text();
+  if (!resp.ok) {
+    throw requestError(resp.status, text);
   }
   return (text ? JSON.parse(text) : null) as T;
+}
+
+/** A JSON request with the CSRF token of the session for changes. */
+export function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+  return fetchJSON<T>(url, body === undefined ? { method } : { method, body });
 }
 
 function remember(s: Session): Session {

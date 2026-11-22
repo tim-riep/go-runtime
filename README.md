@@ -1443,6 +1443,20 @@ packages extend). [docs/frontend-vocabulary.md](docs/frontend-vocabulary.md) des
 annotations in the metadata. Administrators add local entries under `/LOCAL/` in the
 administration apps or copy shipped ones.
 
+The module of a `REMOTE` app exports a React component as default. Since TRFRONTEND 1.1.0 it
+gets, besides the parameters of the app in `params`, the `context` of the shell:
+
+| Member | Meaning |
+|---|---|
+| `odata(service)` | the OData client of the shell for a service, by its name such as `/TRFIN/JOURNAL_ENTRY_SERVICE` or by its URL, with the CSRF token and the language of the session |
+| `fetchJSON(path, init)` | a JSON request to a node, e.g. `/trfin/reports/balances` with `{ body: {...} }` (`POST` with a body, else `GET`, or `init.method`), with the CSRF token for changes; failures throw an error with `status`, `code` and the message of the answer |
+| `navigate(app, params)` | opens another app of the user with parameters |
+| `language` | the language of the session |
+| `notify(message, tone)` | shows a toast, by default of the tone `information` |
+
+An answer 401 to either kind of request leads to the sign-in. Remotes share React and TRUI
+0.2 with the shell and render without a provider of their own.
+
 From an empty database to the shell with the example companies, in the directory of the
 repository (Node 22 builds the user interface):
 

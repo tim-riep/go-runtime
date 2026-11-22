@@ -270,7 +270,9 @@ export function App() {
                 params={route.params}
                 entity={route.entity}
                 texts={texts}
+                language={session.language}
                 onNavigate={(e) => navigate({ kind: 'app', app: route.app, params: route.params, entity: e })}
+                onOpen={open}
                 onSignedOut={() => failed(new RequestError(401, 'session-expired', ''))}
               />
             ) : undefined,
